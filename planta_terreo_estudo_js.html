@@ -49,6 +49,10 @@
         width: calc(var(--w) * var(--m));
         height: calc(var(--h) * var(--m));
       }
+      .plan-item:not(.room) { opacity: 0.45; }
+      .plan-item.fireplace,
+      .plan-item.table,
+      .plan-item.car { opacity: 1; }
       .room {
         border: 2px solid #222;
         background: rgba(255, 255, 255, 0.95);
@@ -82,14 +86,14 @@
       .pantry { border-top: none; border-right: none;}
       .table {
         border: 2px solid #7a5b3a;
-        background: rgba(202, 168, 120, 0.18);
+        background: #caa878;
         z-index: 5;
       }
       .wet { color: royalblue; }
       .car {
         border: 2px solid #666;
         border-radius: 14px;
-        background: rgba(187, 187, 187, 0.35);
+        background: #bbb;
         z-index: 5;
       }
       .dining { border-left: none; border-top: none; }
