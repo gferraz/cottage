@@ -13,6 +13,7 @@ class FloorPlan {
     this.rooms = new Map();
     this.roomElements = [];
     this.itemElements = [];
+    this.openings = [];
     this.currentConfig = null;
 
     root.style.setProperty("--m", `${scale}px`);
@@ -128,6 +129,62 @@ class FloorPlan {
     return element;
   }
 
+  addOpening(opening) {
+    const passage = this.normalizeOpening(opening);
+    this.openings.push(passage);
+    return passage;
+  }
+
+  normalizeOpening(opening) {
+    const match = String(opening.from ?? "").trim().match(/^(.+)\.(top|left|right|bottom)$/);
+    if (!match) throw new Error(`Invalid opening wall reference: ${opening.from}`);
+
+    const [, roomId, wall] = match;
+    const room = this.rooms.get(roomId);
+    if (!room) throw new Error(`Unknown opening room reference: ${roomId}`);
+
+    const target = String(opening.to ?? "").trim();
+    if (!target) throw new Error("An opening needs a target room or exterior");
+    if (target !== "exterior" && !this.rooms.has(target)) {
+      throw new Error(`Unknown opening target: ${target}`);
+    }
+
+    const defaults = { door: 0.8, opening: 1.0 };
+    const type = String(opening.type ?? "door").trim();
+    if (!(type in defaults)) throw new Error(`Unsupported opening type: ${type}`);
+
+    const horizontal = wall === "top" || wall === "bottom";
+    const wallStart = horizontal ? room.x0() : room.y0();
+    const wallLength = horizontal ? room.w() : room.h();
+    const length = Number(opening.length ?? defaults[type]);
+    if (!(length > 0)) throw new Error("Opening length must be greater than zero");
+    if (length > wallLength) throw new Error(`Opening is wider than wall ${opening.from}`);
+
+    const hasPosition = opening.position !== undefined || opening.x !== undefined;
+    const position = hasPosition ? Number(opening.position ?? opening.x) : (wallLength - length) / 2;
+    if (!(position >= 0) || position + length > wallLength) {
+      throw new Error(`Opening position is outside wall ${opening.from}`);
+    }
+
+    const shift = hasPosition ? Math.round(position * 100) : 0;
+    const id = opening.id ?? `${roomId}-${target}-${shift}`;
+    return {
+      ...opening,
+      id,
+      from: opening.from,
+      to: target,
+      type,
+      position,
+      length,
+      roomId,
+      wall,
+      wallLength,
+      x: horizontal ? wallStart + position : (wall === "left" ? room.x0() : room.x1()),
+      y: horizontal ? (wall === "top" ? room.y0() : room.y1()) : wallStart + position,
+      horizontal
+    };
+  }
+
   bounds({ includeItems = false } = {}) {
     const elements = includeItems
       ? [...this.roomElements, ...this.itemElements]
@@ -170,6 +227,7 @@ class FloorPlan {
     this.rooms.clear();
     this.roomElements = [];
     this.itemElements = [];
+    this.openings = [];
     this.roomArea = 0;
     this.roomCount = 0;
     this.updateSummary();
@@ -180,6 +238,7 @@ class FloorPlan {
     this.clear();
     (config.rooms ?? []).forEach((room) => this.addRoom(room));
     (config.items ?? []).forEach((item) => this.addItem(item));
+    (config.openings ?? []).forEach((opening) => this.addOpening(opening));
     if (this.reloadButton) this.reloadButton.disabled = false;
     return this;
   }
