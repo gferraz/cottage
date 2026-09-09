@@ -69,7 +69,7 @@
       .is-garage { background: rgba(225, 225, 225, 0.95); }
       .circulation { background: rgba(245, 238, 222, 0.95); }
       .stair-landing, .stair-flight, .stair-hall, .powder { z-index: 3; }
-      .stair-flight { border-top: dotted; }
+      .stair-flight { border: dotted;}
       .fireplace { background: #555; border: 2px solid #222; }
       .table {
         border: 2px solid #7a5b3a;
@@ -82,7 +82,7 @@
         background: rgba(187, 187, 187, 0.35);
         z-index: 5;
       }
-      .dining { border-left: none; }
+      .dining { border-left: none; border-top: none }
       .entry { border-bottom: none; }
       .legend {
         width: min(1064px, 100%);
@@ -199,11 +199,10 @@
       const house_y1 = office.y1();
 
       floor.addRoom({ x: house_x0, y: house_y1, w: 4.5, h: 4, label: "SUÍTE MASTER", classes: "master" });
-      floor.addRoom({ x: house_x2, y: house_y1, w: 3.2, h: 4.8, label: "SALA DE JANTAR", classes: "dining" });
+      floor.addRoom({ x: house_x2 - 0.7, y: house_y1, w: 3.9, h: 4.8, label: "SALA DE JANTAR", classes: "dining" });
       floor.addItem({ x: 8.8, y: 8.2, w: 1.05, h: 2.7, classes: "table", title: "Mesa 2,70 × 1,05 m" });
 
-      floor.addRoom({ x: house_x1, y: house_y1, w: 1.1, h: 4.5, label: "ESCADA ↓", classes: "circulation stair-flight" });
-      floor.addRoom({ x: house_x1, y: 12.6, w: 2.3, h: 1.2, label: "CIRCULAÇÃO / HALL", classes: "circulation stair-hall" });
+      floor.addRoom({ x: house_x1, y: house_y1, w: 1.1, h: 4.8, label: "ESCADA ↓", classes: "circulation stair-flight" });
       floor.addRoom({ x: 9, y: 12.1, w: 1.8, h: 2.1, label: "LAVABO", classes: "powder" });
       floor.addRoom({ x: house_x0, y: 11.3, w: 2.6, h: 3.5, label: "BANHEIRO MASTER", classes: "master-bath" });
       floor.addRoom({ x: 3.9, y: 11.3, w: 1.9, h: 3.5, label: "CLOSET", classes: "closet" });
@@ -213,7 +212,7 @@
       floor.addRoom({ x: 6.4, y: 17.9, w: 2, h: 2, label: "DESPENSA", classes: "service pantry" });
       floor.addRoom({ x: 8.4, y: 17.9, w: 2, h: 2.5, label: "MUDROOM", classes: "service mudroom" });
 
-      floor.addRoom({ x: 10.8, y: 12.1, w: 6.4, h: 6.1, label: "GARAGEM", classes: "is-garage garage" });
+      floor.addRoom({ x: house_x3, y: 10.0, w: 6.4, h: 6.1, label: "GARAGEM", classes: "is-garage garage" });
       floor.addItem({ x: 11.2, y: 15, w: 1.85, h: 4.6, classes: "car", title: "Carro" });
       floor.addItem({ x: 14, y: 15, w: 1.85, h: 4.6, classes: "car", title: "Carro" });
       floor.addRoom({ x: 1.9, y: 19.8, w: 7, h: 4, label: "TERRAÇO TRASEIRO", classes: "outdoor terrace" });
