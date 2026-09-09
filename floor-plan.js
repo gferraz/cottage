@@ -1,15 +1,17 @@
 class FloorPlan {
-  constructor({ root, summary = null, boundsSummary = null, downloadButton = null, jsonInput = null, scale = 56 }) {
+  constructor({ root, summary = null, boundsSummary = null, downloadButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
     this.summary = summary;
     this.boundsSummary = boundsSummary;
     this.downloadButton = downloadButton;
     this.jsonInput = jsonInput;
+    this.reloadButton = reloadButton;
     this.roomArea = 0;
     this.roomCount = 0;
     this.rooms = new Map();
     this.roomElements = [];
     this.itemElements = [];
+    this.currentConfig = null;
 
     root.style.setProperty("--m", `${scale}px`);
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
@@ -19,13 +21,17 @@ class FloorPlan {
         if (!file) return;
 
         try {
-          this.load(JSON.parse(await file.text()));
+          await this.loadFile(file);
         } catch (error) {
           alert(`Não foi possível carregar a planta: ${error.message}`);
         } finally {
           event.target.value = "";
         }
       });
+    }
+    if (reloadButton) {
+      reloadButton.disabled = true;
+      reloadButton.addEventListener("click", () => this.reload());
     }
   }
 
@@ -167,10 +173,21 @@ class FloorPlan {
   }
 
   load(config) {
+    this.currentConfig = config;
     this.clear();
     (config.rooms ?? []).forEach((room) => this.addRoom(room));
     (config.items ?? []).forEach((item) => this.addItem(item));
+    if (this.reloadButton) this.reloadButton.disabled = false;
     return this;
+  }
+
+  async loadFile(file) {
+    return this.load(JSON.parse(await file.text()));
+  }
+
+  reload() {
+    if (!this.currentConfig) return this;
+    return this.load(this.currentConfig);
   }
 
   formatMeters(value) {

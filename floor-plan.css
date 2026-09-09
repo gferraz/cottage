@@ -51,9 +51,6 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 }
 
 .plan-item:not(.room) { opacity: 0.45; }
-.plan-item.fireplace,
-.plan-item.table,
-.plan-item.car { opacity: 1; }
 
 .room {
   border: 2px solid #222;
@@ -84,6 +81,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .car { border: 2px solid #666; border-radius: 14px; background: #bbb; z-index: 5; }
 
 #load-json,
+#reload-json,
 #download-html {
   margin: 0 0 16px;
   padding: 8px 12px;
@@ -97,7 +95,9 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 }
 
 #load-json:hover,
+#reload-json:hover:not(:disabled),
 #download-html:hover { background: #e6e6e6; }
+#reload-json:disabled { cursor: not-allowed; opacity: 0.55; }
 .legend { width: min(1064px, 100%); margin: 18px auto 0; font-size: 13px; color: #444; }
 .area-summary { margin-bottom: 8px; font-weight: 650; color: #222; }
 #plan-bounds { margin-bottom: 8px; font-weight: 650; color: #222; }
