@@ -1,0 +1,92 @@
+:root {
+  --m: 56px;
+  --half: calc(var(--m) / 2);
+  --grid: rgba(0, 0, 0, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 24px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: #111;
+}
+
+h1 { margin: 0 0 6px; font-size: 20px; }
+p { margin: 0 0 18px; color: #555; font-size: 13px; }
+
+.site {
+  position: relative;
+  width: calc(19 * var(--m));
+  height: calc(25 * var(--m));
+  margin: 0 auto;
+  background-color: #f5f3ee;
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size: var(--half) var(--half);
+  border: 1px solid #bbb;
+  overflow: hidden;
+}
+
+.direction {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 700;
+  font-size: 14px;
+  z-index: 20;
+}
+
+.front { top: 8px; }
+.rear { bottom: 8px; }
+
+.plan-item {
+  position: absolute;
+  left: calc(var(--x) * var(--m));
+  top: calc(var(--y) * var(--m));
+  width: calc(var(--w) * var(--m));
+  height: calc(var(--h) * var(--m));
+}
+
+.room {
+  border: 2px solid #222;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px;
+  font-weight: 650;
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+.room small { margin-top: 4px; font-weight: 500; color: #555; }
+.room .area { margin-top: 2px; }
+.outdoor { background: rgba(230, 220, 190, 0.78); }
+.service { background: rgba(235, 240, 245, 0.95); }
+.circulation { background: rgba(245, 238, 222, 0.95); }
+.is-garage { background: rgba(225, 225, 225, 0.95); }
+.fireplace { background: #555; border: 2px solid #222; }
+.table { border: 2px solid #7a5b3a; background: rgba(202, 168, 120, 0.18); z-index: 5; }
+.car { border: 2px solid #666; border-radius: 14px; background: rgba(187, 187, 187, 0.35); z-index: 5; }
+
+#download-html {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border: 1px solid #888;
+  border-radius: 5px;
+  background: #f2f2f2;
+  color: #222;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
+#download-html:hover { background: #e6e6e6; }
+.legend { width: min(1064px, 100%); margin: 18px auto 0; font-size: 13px; color: #444; }
+.area-summary { margin-bottom: 8px; font-weight: 650; color: #222; }
+code { background: #f2f2f2; padding: 2px 5px; border-radius: 4px; }

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Planta térrea — separada por módulos</title>
+    <link rel="stylesheet" href="floor-plan.css" />
+    <link rel="stylesheet" href="planta-terrea.css" />
+  </head>
+  <body>
+    <button id="download-html" type="button">Baixar HTML gerado</button>
+    <h1>Planta térrea — separada por módulos</h1>
+    <p>O motor de planta é reutilizável; este arquivo declara apenas a configuração desta casa.</p>
+
+    <div class="site" id="floor-plan">
+      <div class="direction front">RUA / FRENTE ↑</div>
+      <div class="direction rear">↓ JARDIM / RIACHO</div>
+    </div>
+
+    <div class="legend">
+      <div class="area-summary" id="area-summary"></div>
+      Exemplo: <code>const porch = floor.addRoom({ pos: [3.4, 2], size: [4.3, 2.3], label: "NOVO CÔMODO" })</code>.
+      Use referências como <code>"living.x1 - 0.3"</code> para posicionamento relativo. Geometria e áreas são calculadas automaticamente.
+    </div>
+
+    <script type="module" src="planta-terrea.js"></script>
+  </body>
+</html>

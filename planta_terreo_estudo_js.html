@@ -72,8 +72,8 @@
       .stair-landing, .stair-flight, .stair-hall, .powder { z-index: 3; }
       .stair-flight { border: dotted;}
       .fireplace { background: #555; border: 2px solid #222; }
-      .kitchen { border-top: none; }
-      .laundry { border-bottom: none; border-right: none;}
+      .kitchen { border-top: none; border-right: none;}
+      .laundry { border-bottom: none; border-left: none;}
       .mudroom { border-left: none; }
       .table {
         border: 2px solid #7a5b3a;
@@ -87,8 +87,10 @@
         background: rgba(187, 187, 187, 0.35);
         z-index: 5;
       }
-      .dining { border-left: none; border-top: none }
+      .dining { border-left: none; border-top: none; }
       .entry { border-bottom: none; }
+      .living { border-left: none; border-top: none; border-bottom: none; }
+
       .legend {
         width: min(1064px, 100%);
         margin: 18px auto 0;
@@ -200,9 +202,10 @@
       const house_x0 = 1.3; // left wall of the house
       const house_y0 = 4;   // top wall of the house
 
-      const living = floor.addRoom({ x: house_x0, y: house_y0, w: 4.5, h: 3.3, label: "SALA DE ESTAR", classes: "living" });
+      const master = floor.addRoom({ x: house_x0, y: house_y0, w: 4.5, h: 4, label: "SUÍTE MASTER", classes: "master" });
 
-      const house_x1 = living.x1(); // left wall of the main corridor
+
+      const house_x1 = master.x1(); // left wall of the main corridor
 
       const entry = floor.addRoom({ x: house_x1, y: house_y0, w: 1.8, h: 3.3, label: "ENTRADA", classes: "circulation entry" });
 
@@ -212,24 +215,27 @@
 
       const house_x3 = office.x1(); // right wall of the house
 
+
       floor.addItem({ x: house_x3 -0.2, y: house_y0 + 0.8, w: 0.5, h: 1.8, classes: "fireplace", title: "Lareira" });
 
       const house_y1 = office.y1();
 
-      floor.addRoom({ x: house_x0, y: house_y1, w: 4.5, h: 4, label: "SUÍTE MASTER", classes: "master" });
-      floor.addRoom({ x: house_x2 - 0.7, y: house_y1, w: 3.9, h: 4.8, label: "SALA DE JANTAR", classes: "dining" });
-      floor.addItem({ x: 8.8, y: 8.2, w: 1.05, h: 2.7, classes: "table", title: "Mesa 2,70 × 1,05 m" });
+      const living = floor.addRoom({ x: house_x1, y: house_y1, w: 5, h: 2.5, label: "SALA DE ESTAR", classes: "living" });
+
+
+      const dining = floor.addRoom({ x: house_x2 - 0.7, y: living.y1(), w: 3.9, h: 2.5, label: "SALA DE JANTAR", classes: "dining" });
+      floor.addItem({ x: dining.x0() + 0.6, y: dining.y0() + 0.6, w: 2.7, h: 1.1, classes: "table", title: "Mesa 2,70 × 1,05 m" });
 
       const stairs = floor.addRoom({ x: house_x1, y: house_y1, w: 1.1, h: 4.8, label: "ESCADA ↓", classes: "circulation stair-flight" });
-      const powder = floor.addRoom({ x: 9, y: 12.1, w: 1.8, h: 2.1, label: "LAVABO", classes: "powder wet" });
-      floor.addRoom({ x: house_x0, y: 11.3, w: 2.6, h: 3.5, label: "BANHEIRO MASTER", classes: "master-bath wet" });
-      floor.addRoom({ x: 3.9, y: 11.3, w: 1.9, h: 3.5, label: "CLOSET", classes: "closet" });
+      const powder = floor.addRoom({ x: house_x2, y: dining.y1(), w: 1.8, h: 2.1, label: "LAVABO", classes: "powder wet" });
+      floor.addRoom({ x: house_x0, y: master.y1(), w: 2.6, h: 3.5, label: "BANHEIRO MASTER", classes: "master-bath wet" });
+      const closet = floor.addRoom({ x: 3.9, y: master.y1(), w: 1.9, h: 3.5, label: "CLOSET", classes: "closet" });
       floor.addRoom({ x: house_x1, y: stairs.y1(), w: 1.1, h: 2.7, label: "CORR.", classes: "circulation corridor" });
 
-      floor.addRoom({ x: house_x0 + 0.5, y: 14.8, w: 5.1, h: 4.0, label: "COZINHA", classes: "kitchen wet" });
-      const laundry = floor.addRoom({ x: 6.9, y: powder.y0(), w: 2.1, h: 3, label: "LAVANDERIA", classes: "service laundry wet" });
+      floor.addRoom({ x: house_x0 + 0.5, y: closet.y1(), w: 5.8, h: 4.0, label: "COZINHA", classes: "kitchen wet" });
+      const laundry = floor.addRoom({ x: powder.x1(), y: powder.y0(), w: 1.4, h: 3, label: "LAUNDRY", classes: "service laundry wet" });
       floor.addRoom({ x: laundry.x0(), y: laundry.y1(), w: laundry.w(), h: 2, label: "DESPENSA", classes: "service pantry" });
-      floor.addRoom({ x: powder.x0(), y: powder.y1(), w: powder.w(), h: 2.5, label: "MUDROOM", classes: "service mudroom" });
+      floor.addRoom({ x: laundry.x0(), y: laundry.y1(), w: laundry.w(), h: 2.5, label: "MUDROOM", classes: "service mudroom" });
 
       const garage = floor.addRoom({ x: house_x3, y: 10.0, w: 6.4, h: 6.1, label: "GARAGEM", classes: "is-garage garage" });
       floor.addItem({ x: garage.x0() + 1, y: garage.y0() + 1, w: 1.85, h: 4.6, classes: "car", title: "Carro" });
