@@ -16,7 +16,7 @@ Then open `http://localhost:8000/planta_terreo_estudo.html` in a browser. For a 
 
 ## Coding Style & Naming Conventions
 
-Use two-space indentation, UTF-8 encoding, semantic HTML where practical, and lowercase kebab-case class names (`master-bath`, `mudroom`). Preserve the existing organization: shared variables and component styles first, followed by layout sections (`FRENTE`, `MEIO`, `FUNDOS`) and furniture/reference styles. Keep dimensions expressed through the existing `--m` scale so proportional measurements remain easy to adjust. Use Portuguese user-facing labels consistently with the current page (`lang="pt-BR"`).
+Use two-space indentation, UTF-8 encoding, semantic HTML where practical, and lowercase kebab-case class names (`master-bath`, `mudroom`). Keep item geometry in the HTML through `--x`, `--y`, `--w`, and `--h`; the shared `.plan-item` rule converts those meter values using `--m`. Reserve room-specific classes for identity or appearance. Use Portuguese user-facing labels consistently with the current page (`lang="pt-BR"`).
 
 ## Testing Guidelines
 
