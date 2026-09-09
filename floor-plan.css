@@ -108,8 +108,13 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   background: #b9d9e2;
 }
 
+.plan-opening.opening-horizontal {
+  border-top: none;
+  border-bottom: none;
+}
+
 .room {
-  border: 2px solid #222;
+  border: 2px solid transparent;
   background: rgba(255, 255, 255, 0.95);
   display: flex;
   flex-direction: column;
@@ -122,15 +127,27 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   line-height: 1.15;
 }
 
+.room[data-wall-top="solid"] { border-top-color: #222; border-top-style: solid; }
+.room[data-wall-right="solid"] { border-right-color: #222; border-right-style: solid; }
+.room[data-wall-bottom="solid"] { border-bottom-color: #222; border-bottom-style: solid; }
+.room[data-wall-left="solid"] { border-left-color: #222; border-left-style: solid; }
+.room[data-wall-top="virtual"] { border-top-color: #222; border-top-style: dotted; }
+.room[data-wall-right="virtual"] { border-right-color: #222; border-right-style: dotted; }
+.room[data-wall-bottom="virtual"] { border-bottom-color: #222; border-bottom-style: dotted; }
+.room[data-wall-left="virtual"] { border-left-color: #222; border-left-style: dotted; }
+
 .room small { margin-top: 4px; font-weight: 500; color: #555; }
 .room .area { margin-top: 2px; }
 .room-overlap {
   background: rgba(220, 80, 80, 0.18) !important;
-  border-color: #b34a4a;
 }
+.room-overlap[data-wall-top="solid"], .room-overlap[data-wall-top="virtual"] { border-top-color: #b34a4a; }
+.room-overlap[data-wall-right="solid"], .room-overlap[data-wall-right="virtual"] { border-right-color: #b34a4a; }
+.room-overlap[data-wall-bottom="solid"], .room-overlap[data-wall-bottom="virtual"] { border-bottom-color: #b34a4a; }
+.room-overlap[data-wall-left="solid"], .room-overlap[data-wall-left="virtual"] { border-left-color: #b34a4a; }
 .outdoor { background: rgba(230, 220, 190, 0.78); }
 .service { background: rgba(235, 240, 245, 0.95); }
-.circulation { background: rgba(245, 238, 222, 0.95); border: none;}
+.circulation { background: rgba(245, 238, 222, 0.95); }
 .is-garage { background: rgba(225, 225, 225, 0.95); }
 .fireplace { background: #555; border: 2px solid #222; }
 .table { border: 2px solid #7a5b3a; background: #caa878; z-index: 5; }
@@ -160,6 +177,10 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .opening-list-item { display: flex; flex-wrap: wrap; gap: 8px; padding: 5px 0; border-top: 1px solid #e2e2e2; }
 .opening-list-item strong { color: #222; }
 .opening-list-item span { color: #555; }
+.error-legend { margin-top: 16px; }
+.error-legend h2 { margin: 0 0 8px; font-size: 16px; color: #9b2c2c; }
+.error-list-item { padding: 5px 0; border-top: 1px solid #e2e2e2; color: #9b2c2c; }
+.error-list-item code { color: #6b2020; }
 .area-summary { margin-bottom: 8px; font-weight: 650; color: #222; }
 #plan-bounds { margin-bottom: 8px; font-weight: 650; color: #222; }
 code { background: #f2f2f2; padding: 2px 5px; border-radius: 4px; }

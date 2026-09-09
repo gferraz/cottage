@@ -1,9 +1,4 @@
 /* Overrides specific to this floor plan, not part of the reusable toolkit. */
 .stair-landing, .stair-flight, .stair-hall, .powder { z-index: 3; }
 .stair-flight { border: dotted; }
-.kitchen { border-top: none; border-right: none;}
-.laundry { border-bottom: none; border-right: none; }
-.living { border-left:none; border-bottom: none;}
-.mudroom { border-left: none; }
-.dining { border-left: none; border-top: none; }
 .wet { color: royalblue; }

@@ -5,6 +5,7 @@ const floor = new FloorPlan({
   summary: document.querySelector("#area-summary"),
   boundsSummary: document.querySelector("#plan-bounds"),
   openingList: document.querySelector("#opening-list"),
+  errorList: document.querySelector("#item-errors"),
   downloadButton: document.querySelector("#download-html"),
   jsonInput: document.querySelector("#json-file"),
   reloadButton: document.querySelector("#reload-json"),

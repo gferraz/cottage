@@ -1,11 +1,12 @@
 class FloorPlan {
-  constructor({ root, roomList = null, roomCountSummary = null, summary = null, boundsSummary = null, openingList = null, downloadButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, roomList = null, roomCountSummary = null, summary = null, boundsSummary = null, openingList = null, errorList = null, downloadButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
     this.roomList = roomList;
     this.roomCountSummary = roomCountSummary;
     this.summary = summary;
     this.boundsSummary = boundsSummary;
     this.openingList = openingList;
+    this.errorList = errorList;
     this.downloadButton = downloadButton;
     this.jsonInput = jsonInput;
     this.reloadButton = reloadButton;
@@ -17,6 +18,7 @@ class FloorPlan {
     this.openings = [];
     this.openingElements = [];
     this.currentConfig = null;
+    this.currentFile = null;
 
     root.style.setProperty("--m", `${scale}px`);
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
@@ -36,7 +38,13 @@ class FloorPlan {
     }
     if (reloadButton) {
       reloadButton.disabled = true;
-      reloadButton.addEventListener("click", () => this.reload());
+      reloadButton.addEventListener("click", async () => {
+        try {
+          await this.reload();
+        } catch (error) {
+          alert(`Não foi possível recarregar a planta: ${error.message}`);
+        }
+      });
     }
   }
 
@@ -50,6 +58,16 @@ class FloorPlan {
     element.style.setProperty("--w", w);
     element.style.setProperty("--h", h);
     if (title) element.title = title;
+
+    const walls = room ? this.normalizeWalls(data.walls) : null;
+    if (walls) {
+      element.walls = walls;
+      ["top", "right", "bottom", "left"].forEach((side) => {
+        element.dataset[`wall${side[0].toUpperCase()}${side.slice(1)}`] = walls[side];
+      });
+      element.wallState = (side) => walls[side];
+      element.hasWall = (side) => walls[side] === "solid";
+    }
 
     element.x0 = () => Number(x);
     element.x1 = () => Number(x) + Number(w);
@@ -104,6 +122,34 @@ class FloorPlan {
     };
   }
 
+  normalizeWalls(walls) {
+    const sides = ["top", "right", "bottom", "left"];
+    const normalized = Object.fromEntries(sides.map((side) => [side, "solid"]));
+
+    if (walls === undefined) return normalized;
+    if (Array.isArray(walls)) {
+      sides.forEach((side) => { normalized[side] = "open"; });
+      walls.forEach((side) => {
+        if (!sides.includes(side)) throw new Error(`Invalid wall side: ${side}`);
+        normalized[side] = "solid";
+      });
+      return normalized;
+    }
+
+    if (typeof walls !== "object" || walls === null) {
+      throw new Error("Walls must be an array or an object");
+    }
+
+    Object.entries(walls).forEach(([side, state]) => {
+      if (!sides.includes(side)) throw new Error(`Invalid wall side: ${side}`);
+      if (!["solid", "open", "virtual"].includes(state)) {
+        throw new Error(`Invalid wall state "${state}". Use "solid", "open" or "virtual".`);
+      }
+      normalized[side] = state;
+    });
+    return normalized;
+  }
+
   resolve(value) {
     if (typeof value === "number") return value;
 
@@ -141,7 +187,7 @@ class FloorPlan {
       y: passage.horizontal ? passage.y - wallThickness / 2 : passage.y,
       w: passage.horizontal ? passage.length : wallThickness,
       h: passage.horizontal ? wallThickness : passage.length,
-      classes: `plan-opening opening-${passage.type}`,
+      classes: `plan-opening opening-${passage.type} opening-${passage.horizontal ? "horizontal" : "vertical"}`,
       title: `${passage.type}: ${passage.id}`
     });
     this.openingElements.push(element);
@@ -155,6 +201,7 @@ class FloorPlan {
     const [, roomId, wall] = match;
     const room = this.rooms.get(roomId);
     if (!room) throw new Error(`Unknown opening room reference: ${roomId}`);
+    if (!room.hasWall(wall)) throw new Error(`Room ${roomId} has no solid ${wall} wall`);
 
     const target = String(opening.to ?? "").trim();
     if (!target) throw new Error("An opening needs a target room or exterior");
@@ -179,6 +226,21 @@ class FloorPlan {
       throw new Error(`Opening position is outside wall ${opening.from}`);
     }
 
+    if (target !== "exterior") {
+      const targetRoom = this.rooms.get(target);
+      const oppositeWall = { top: "bottom", right: "left", bottom: "top", left: "right" }[wall];
+      const targetWall = this.wallSegment(targetRoom, oppositeWall);
+      const sourceWall = this.wallSegment(room, wall);
+      const sameLine = Math.abs(sourceWall.coordinate - targetWall.coordinate) < 1e-9;
+      const sharedStart = Math.max(sourceWall.start, targetWall.start);
+      const sharedEnd = Math.min(sourceWall.end, targetWall.end);
+      const openingStart = wallStart + position;
+      const openingEnd = openingStart + length;
+      if (!sameLine || sharedEnd <= sharedStart || openingStart < sharedStart || openingEnd > sharedEnd) {
+        throw new Error(`Room ${target} is not connected to ${opening.from}`);
+      }
+    }
+
     const shift = hasPosition ? Math.round(position * 100) : 0;
     const id = `${roomId}-${target}-${shift}`;
     return {
@@ -195,6 +257,17 @@ class FloorPlan {
       x: horizontal ? wallStart + position : (wall === "left" ? room.x0() : room.x1()),
       y: horizontal ? (wall === "top" ? room.y0() : room.y1()) : wallStart + position,
       horizontal
+    };
+  }
+
+  wallSegment(room, wall) {
+    const horizontal = wall === "top" || wall === "bottom";
+    return {
+      coordinate: horizontal
+        ? (wall === "top" ? room.y0() : room.y1())
+        : (wall === "left" ? room.x0() : room.x1()),
+      start: horizontal ? room.x0() : room.y0(),
+      end: horizontal ? room.x1() : room.y1()
     };
   }
 
@@ -242,6 +315,7 @@ class FloorPlan {
     this.itemElements = [];
     this.openings = [];
     this.openingElements = [];
+    this.errors = [];
     this.roomArea = 0;
     this.roomCount = 0;
     this.updateSummary();
@@ -252,17 +326,26 @@ class FloorPlan {
     this.clear();
     (config.rooms ?? []).forEach((room) => this.addRoom(room));
     (config.items ?? []).forEach((item) => this.addItem(item));
-    (config.openings ?? []).forEach((opening) => this.addOpening(opening));
+    (config.openings ?? []).forEach((opening, index) => {
+      try {
+        this.addOpening(opening);
+      } catch (error) {
+        this.errors.push({ index, opening, message: error.message });
+      }
+    });
     this.updateSummary();
     if (this.reloadButton) this.reloadButton.disabled = false;
     return this;
   }
 
   async loadFile(file) {
-    return this.load(JSON.parse(await file.text()));
+    const config = JSON.parse(await file.text());
+    this.currentFile = file;
+    return this.load(config);
   }
 
-  reload() {
+  async reload() {
+    if (this.currentFile) return this.loadFile(this.currentFile);
     if (!this.currentConfig) return this;
     return this.load(this.currentConfig);
   }
@@ -286,6 +369,7 @@ class FloorPlan {
     }
     this.updateRoomList();
     this.updateOpeningList();
+    this.updateErrorList();
   }
 
   updateRoomList() {
@@ -332,6 +416,26 @@ class FloorPlan {
 
       item.append(title, details);
       this.openingList.append(item);
+    });
+  }
+
+  updateErrorList() {
+    if (!this.errorList) return;
+
+    this.errorList.replaceChildren();
+    if (this.errors.length === 0) {
+      this.errorList.textContent = "Nenhum erro.";
+      return;
+    }
+
+    this.errors.forEach(({ index, opening, message }) => {
+      const item = document.createElement("div");
+      item.className = "error-list-item";
+      item.textContent = `Passagem ${index + 1}: ${message} `;
+      const source = document.createElement("code");
+      source.textContent = JSON.stringify(opening);
+      item.append(source);
+      this.errorList.append(item);
     });
   }
 
