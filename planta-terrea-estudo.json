@@ -24,5 +24,9 @@
     { "pos": ["living.x1 - 0.2", "dining.y0 - 1"],   "size": [0.5, 1.8],  "classes": "fireplace", "title": "Lareira" },
     { "pos": ["garage.x0 + 1",   "garage.y0 + 1"],   "size": [1.85, 4.6], "classes": "car", "title": "Carro" },
     { "pos": ["garage.x0 + 4",   "garage.y0 + 1.1"], "size": [1.85, 4.6], "classes": "car", "title": "Carro" }
+  ],
+  "openings": [
+    { "from": "master.right", "to": "entry", "type": "door" },
+    { "from": "living.bottom", "to": "dining", "type": "opening" }
   ]
 }

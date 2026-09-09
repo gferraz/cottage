@@ -14,6 +14,7 @@ class FloorPlan {
     this.roomElements = [];
     this.itemElements = [];
     this.openings = [];
+    this.openingElements = [];
     this.currentConfig = null;
 
     root.style.setProperty("--m", `${scale}px`);
@@ -132,6 +133,17 @@ class FloorPlan {
   addOpening(opening) {
     const passage = this.normalizeOpening(opening);
     this.openings.push(passage);
+
+    const wallThickness = 0.14;
+    const element = this.add({
+      x: passage.horizontal ? passage.x : passage.x - wallThickness / 2,
+      y: passage.horizontal ? passage.y - wallThickness / 2 : passage.y,
+      w: passage.horizontal ? passage.length : wallThickness,
+      h: passage.horizontal ? wallThickness : passage.length,
+      classes: `plan-opening opening-${passage.type}`,
+      title: `${passage.type}: ${passage.id}`
+    });
+    this.openingElements.push(element);
     return passage;
   }
 
@@ -167,7 +179,7 @@ class FloorPlan {
     }
 
     const shift = hasPosition ? Math.round(position * 100) : 0;
-    const id = opening.id ?? `${roomId}-${target}-${shift}`;
+    const id = `${roomId}-${target}-${shift}`;
     return {
       ...opening,
       id,
@@ -228,6 +240,7 @@ class FloorPlan {
     this.roomElements = [];
     this.itemElements = [];
     this.openings = [];
+    this.openingElements = [];
     this.roomArea = 0;
     this.roomCount = 0;
     this.updateSummary();
