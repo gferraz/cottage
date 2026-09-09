@@ -510,20 +510,37 @@ class FloorPlan {
 
   downloadHtml(filename = "planta-terrea-gerada.html") {
     const exportedDocument = document.cloneNode(true);
-    exportedDocument.querySelector("#download-html")?.remove();
+    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #plan-status")
+      .forEach((element) => element.remove());
     exportedDocument.querySelectorAll("script").forEach((script) => script.remove());
 
-    const styles = [...document.styleSheets].flatMap((sheet) => {
+    const stylesheetLinks = [...document.querySelectorAll('link[rel="stylesheet"]')];
+    const fallbackLinks = [];
+    const styles = stylesheetLinks.flatMap((link) => {
+      const sheet = link.sheet;
+      if (!sheet) {
+        fallbackLinks.push(link);
+        return [];
+      }
       try {
         return [...sheet.cssRules].map((rule) => rule.cssText);
       } catch {
+        fallbackLinks.push(link);
         return [];
       }
     });
     exportedDocument.querySelectorAll('link[rel="stylesheet"]').forEach((link) => link.remove());
-    const style = exportedDocument.createElement("style");
-    style.textContent = styles.join("\n");
-    exportedDocument.head.append(style);
+    if (styles.length > 0) {
+      const style = exportedDocument.createElement("style");
+      style.textContent = styles.join("\n");
+      exportedDocument.head.append(style);
+    }
+    fallbackLinks.forEach((link) => {
+      const fallback = exportedDocument.createElement("link");
+      fallback.rel = "stylesheet";
+      fallback.href = new URL(link.getAttribute("href"), document.baseURI).href;
+      exportedDocument.head.append(fallback);
+    });
 
     const html = `<!doctype html>\n${exportedDocument.documentElement.outerHTML}`;
     const blob = new Blob([html], { type: "text/html;charset=utf-8" });
