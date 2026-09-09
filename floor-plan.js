@@ -1,10 +1,11 @@
 class FloorPlan {
-  constructor({ root, roomList = null, roomCountSummary = null, summary = null, boundsSummary = null, downloadButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, roomList = null, roomCountSummary = null, summary = null, boundsSummary = null, openingList = null, downloadButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
     this.roomList = roomList;
     this.roomCountSummary = roomCountSummary;
     this.summary = summary;
     this.boundsSummary = boundsSummary;
+    this.openingList = openingList;
     this.downloadButton = downloadButton;
     this.jsonInput = jsonInput;
     this.reloadButton = reloadButton;
@@ -252,6 +253,7 @@ class FloorPlan {
     (config.rooms ?? []).forEach((room) => this.addRoom(room));
     (config.items ?? []).forEach((item) => this.addItem(item));
     (config.openings ?? []).forEach((opening) => this.addOpening(opening));
+    this.updateSummary();
     if (this.reloadButton) this.reloadButton.disabled = false;
     return this;
   }
@@ -283,6 +285,7 @@ class FloorPlan {
         : "Dimensões máximas: —";
     }
     this.updateRoomList();
+    this.updateOpeningList();
   }
 
   updateRoomList() {
@@ -301,6 +304,34 @@ class FloorPlan {
 
       item.append(label, area);
       this.roomList.append(item);
+    });
+  }
+
+  updateOpeningList() {
+    if (!this.openingList) return;
+
+    this.openingList.replaceChildren();
+    if (this.openings.length === 0) {
+      this.openingList.textContent = "Nenhuma passagem carregada.";
+      return;
+    }
+
+    this.openings.forEach((opening) => {
+      const item = document.createElement("div");
+      item.className = "opening-list-item";
+
+      const title = document.createElement("strong");
+      title.textContent = opening.id;
+
+      const details = document.createElement("span");
+      const from = this.rooms.get(opening.roomId)?.dataset.label || opening.roomId;
+      const to = opening.to === "exterior"
+        ? "EXTERIOR"
+        : this.rooms.get(opening.to)?.dataset.label || opening.to;
+      details.textContent = `${opening.type} — ${from} → ${to} (${this.formatMeters(opening.length)}m)`;
+
+      item.append(title, details);
+      this.openingList.append(item);
     });
   }
 
