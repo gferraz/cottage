@@ -1,6 +1,7 @@
 const floor = new FloorPlan({
   root: document.querySelector("#floor-plan"),
   summary: document.querySelector("#area-summary"),
+  boundsSummary: document.querySelector("#plan-bounds"),
   downloadButton: document.querySelector("#download-html"),
   jsonInput: document.querySelector("#json-file"),
   scale: 56

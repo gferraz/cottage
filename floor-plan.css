@@ -100,4 +100,5 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 #download-html:hover { background: #e6e6e6; }
 .legend { width: min(1064px, 100%); margin: 18px auto 0; font-size: 13px; color: #444; }
 .area-summary { margin-bottom: 8px; font-weight: 650; color: #222; }
+#plan-bounds { margin-bottom: 8px; font-weight: 650; color: #222; }
 code { background: #f2f2f2; padding: 2px 5px; border-radius: 4px; }

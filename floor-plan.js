@@ -1,13 +1,15 @@
 class FloorPlan {
-  constructor({ root, summary = null, downloadButton = null, jsonInput = null, scale = 56 }) {
+  constructor({ root, summary = null, boundsSummary = null, downloadButton = null, jsonInput = null, scale = 56 }) {
     this.root = root;
     this.summary = summary;
+    this.boundsSummary = boundsSummary;
     this.downloadButton = downloadButton;
     this.jsonInput = jsonInput;
     this.roomArea = 0;
     this.roomCount = 0;
     this.rooms = new Map();
     this.roomElements = [];
+    this.itemElements = [];
 
     root.style.setProperty("--m", `${scale}px`);
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
@@ -112,7 +114,24 @@ class FloorPlan {
   }
 
   addItem(item) {
-    return this.add(item);
+    const element = this.add(item);
+    this.itemElements.push(element);
+    return element;
+  }
+
+  bounds({ includeItems = false } = {}) {
+    const elements = includeItems
+      ? [...this.roomElements, ...this.itemElements]
+      : this.roomElements;
+
+    if (elements.length === 0) return null;
+
+    const x0 = Math.min(...elements.map((element) => element.x0()));
+    const y0 = Math.min(...elements.map((element) => element.y0()));
+    const x1 = Math.max(...elements.map((element) => element.x1()));
+    const y1 = Math.max(...elements.map((element) => element.y1()));
+
+    return { x0, y0, x1, y1, width: x1 - x0, height: y1 - y0 };
   }
 
   updateOverlaps() {
@@ -141,6 +160,7 @@ class FloorPlan {
     this.root.querySelectorAll(".plan-generated").forEach((element) => element.remove());
     this.rooms.clear();
     this.roomElements = [];
+    this.itemElements = [];
     this.roomArea = 0;
     this.roomCount = 0;
     this.updateSummary();
@@ -158,8 +178,15 @@ class FloorPlan {
   }
 
   updateSummary() {
-    if (!this.summary) return;
-    this.summary.textContent = `Área total dos cômodos: ${this.formatMeters(this.roomArea)}m² (${this.roomCount} cômodos)`;
+    if (this.summary) {
+      this.summary.textContent = `Área total dos cômodos: ${this.formatMeters(this.roomArea)}m² (${this.roomCount} cômodos)`;
+    }
+    if (this.boundsSummary) {
+      const bounds = this.bounds();
+      this.boundsSummary.textContent = bounds
+        ? `Dimensões máximas: ${this.formatMeters(bounds.width)}m × ${this.formatMeters(bounds.height)}m`
+        : "Dimensões máximas: —";
+    }
   }
 
   downloadHtml(filename = "planta-terrea-gerada.html") {
