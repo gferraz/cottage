@@ -8,6 +8,8 @@
     <link rel="stylesheet" href="planta-terrea.css" />
   </head>
   <body>
+    <input id="json-file" type="file" accept="application/json,.json" hidden />
+    <button id="load-json" type="button" onclick="document.querySelector('#json-file').click()">Carregar JSON</button>
     <button id="download-html" type="button">Baixar HTML gerado</button>
     <h1>Planta térrea — separada por módulos</h1>
     <p>O motor de planta é reutilizável; este arquivo declara apenas a configuração desta casa.</p>
@@ -23,6 +25,7 @@
       Use referências como <code>"living.x1 - 0.3"</code> para posicionamento relativo. Geometria e áreas são calculadas automaticamente.
     </div>
 
-    <script type="module" src="planta-terrea.js"></script>
+    <script src="floor-plan.js" defer></script>
+    <script src="planta-terrea.js" defer></script>
   </body>
 </html>

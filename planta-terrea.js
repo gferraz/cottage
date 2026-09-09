@@ -1,9 +1,8 @@
-import { FloorPlan } from "./floor-plan.js";
-
 const floor = new FloorPlan({
   root: document.querySelector("#floor-plan"),
   summary: document.querySelector("#area-summary"),
   downloadButton: document.querySelector("#download-html"),
+  jsonInput: document.querySelector("#json-file"),
   scale: 56
 });
 

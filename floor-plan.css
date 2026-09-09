@@ -68,12 +68,13 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .room .area { margin-top: 2px; }
 .outdoor { background: rgba(230, 220, 190, 0.78); }
 .service { background: rgba(235, 240, 245, 0.95); }
-.circulation { background: rgba(245, 238, 222, 0.95); }
+.circulation { background: rgba(245, 238, 222, 0.95); border: none;}
 .is-garage { background: rgba(225, 225, 225, 0.95); }
 .fireplace { background: #555; border: 2px solid #222; }
 .table { border: 2px solid #7a5b3a; background: rgba(202, 168, 120, 0.18); z-index: 5; }
 .car { border: 2px solid #666; border-radius: 14px; background: rgba(187, 187, 187, 0.35); z-index: 5; }
 
+#load-json,
 #download-html {
   margin: 0 0 16px;
   padding: 8px 12px;
@@ -86,6 +87,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   font-size: 13px;
 }
 
+#load-json:hover,
 #download-html:hover { background: #e6e6e6; }
 .legend { width: min(1064px, 100%); margin: 18px auto 0; font-size: 13px; color: #444; }
 .area-summary { margin-bottom: 8px; font-weight: 650; color: #222; }

@@ -1,19 +1,36 @@
-export class FloorPlan {
-  constructor({ root, summary = null, downloadButton = null, scale = 56 }) {
+class FloorPlan {
+  constructor({ root, summary = null, downloadButton = null, jsonInput = null, scale = 56 }) {
     this.root = root;
     this.summary = summary;
     this.downloadButton = downloadButton;
+    this.jsonInput = jsonInput;
     this.roomArea = 0;
     this.roomCount = 0;
     this.rooms = new Map();
 
     root.style.setProperty("--m", `${scale}px`);
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
+    if (jsonInput) {
+      jsonInput.addEventListener("change", async (event) => {
+        const [file] = event.target.files;
+        if (!file) return;
+
+        try {
+          this.load(JSON.parse(await file.text()));
+        } catch (error) {
+          alert(`Não foi possível carregar a planta: ${error.message}`);
+        } finally {
+          event.target.value = "";
+        }
+      });
+    }
   }
 
-  add({ x, y, w, h, label = "", classes = "", title = "", room = false }) {
+  add(data) {
+    const { label = "", classes = "", title = "", room = false } = data;
+    const { x, y, w, h } = this.normalizeGeometry(data);
     const element = document.createElement("div");
-    element.className = `plan-item${room ? " room" : ""}${classes ? ` ${classes}` : ""}`;
+    element.className = `plan-item plan-generated${room ? " room" : ""}${classes ? ` ${classes}` : ""}`;
     element.style.setProperty("--x", x);
     element.style.setProperty("--y", y);
     element.style.setProperty("--w", w);
@@ -45,8 +62,7 @@ export class FloorPlan {
   }
 
   addRoom(room) {
-    const normalized = this.normalizeRoom(room);
-    const element = this.add({ ...normalized, room: true });
+    const element = this.add({ ...room, room: true });
     if (room.id) this.rooms.set(room.id, element);
     this.roomArea += element.area();
     this.roomCount += 1;
@@ -54,7 +70,7 @@ export class FloorPlan {
     return element;
   }
 
-  normalizeRoom(data) {
+  normalizeGeometry(data) {
     const [xValue, yValue] = data.pos ?? [data.x, data.y];
     const [w, h] = data.size ?? [data.w, data.h];
 
@@ -96,6 +112,21 @@ export class FloorPlan {
     return this.add(item);
   }
 
+  clear() {
+    this.root.querySelectorAll(".plan-generated").forEach((element) => element.remove());
+    this.rooms.clear();
+    this.roomArea = 0;
+    this.roomCount = 0;
+    this.updateSummary();
+  }
+
+  load(config) {
+    this.clear();
+    (config.rooms ?? []).forEach((room) => this.addRoom(room));
+    (config.items ?? []).forEach((item) => this.addItem(item));
+    return this;
+  }
+
   formatMeters(value) {
     return Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
   }
@@ -132,3 +163,5 @@ export class FloorPlan {
     URL.revokeObjectURL(url);
   }
 }
+
+window.FloorPlan = FloorPlan;
