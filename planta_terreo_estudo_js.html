@@ -95,6 +95,18 @@
         font-size: 13px;
         color: #444;
       }
+      #download-html {
+        margin: 0 0 16px;
+        padding: 8px 12px;
+        border: 1px solid #888;
+        border-radius: 5px;
+        background: #f2f2f2;
+        color: #222;
+        cursor: pointer;
+        font: inherit;
+        font-size: 13px;
+      }
+      #download-html:hover { background: #e6e6e6; }
       .area-summary {
         margin-bottom: 8px;
         font-weight: 650;
@@ -104,6 +116,7 @@
     </style>
   </head>
   <body>
+    <button id="download-html" type="button">Baixar HTML gerado</button>
     <h1>Planta térrea — estudo proporcional (JS)</h1>
     <p>Os ambientes abaixo são declarados por dados e desenhados pelo pequeno objeto <code>floor</code>.</p>
 
@@ -224,6 +237,22 @@
       floor.addRoom({ x: 2.0, y: 18.8, w: 7, h: 2, label: "TERRAÇO TRASEIRO", classes: "outdoor terrace" });
 
       window.floor = floor;
+
+      document.querySelector("#download-html").addEventListener("click", () => {
+        const exportedDocument = document.cloneNode(true);
+        exportedDocument.querySelector("#download-html")?.remove();
+        exportedDocument.querySelector("script")?.remove();
+
+        const html = `<!doctype html>\n${exportedDocument.documentElement.outerHTML}`;
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = "planta-terrea-gerada.html";
+        link.click();
+        URL.revokeObjectURL(url);
+      });
     </script>
   </body>
 </html>
