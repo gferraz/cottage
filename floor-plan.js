@@ -1,11 +1,12 @@
 class FloorPlan {
-  constructor({ root, roomList = null, roomCountSummary = null, summary = null, boundsSummary = null, openingList = null, errorList = null, downloadButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, roomList = null, roomCountSummary = null, summary = null, boundsSummary = null, openingList = null, naturalList = null, errorList = null, downloadButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
     this.roomList = roomList;
     this.roomCountSummary = roomCountSummary;
     this.summary = summary;
     this.boundsSummary = boundsSummary;
     this.openingList = openingList;
+    this.naturalList = naturalList;
     this.errorList = errorList;
     this.downloadButton = downloadButton;
     this.jsonInput = jsonInput;
@@ -17,6 +18,7 @@ class FloorPlan {
     this.itemElements = [];
     this.openings = [];
     this.openingElements = [];
+    this.naturalCommunications = [];
     this.currentConfig = null;
     this.currentFile = null;
 
@@ -78,6 +80,7 @@ class FloorPlan {
     element.area = () => Number(w) * Number(h);
 
     if (room) {
+      if (data.id) element.dataset.id = data.id;
       element.dataset.label = label;
       element.append(label);
       const dimensions = document.createElement("small");
@@ -369,6 +372,7 @@ class FloorPlan {
     }
     this.updateRoomList();
     this.updateOpeningList();
+    this.updateNaturalList();
     this.updateErrorList();
   }
 
@@ -416,6 +420,71 @@ class FloorPlan {
 
       item.append(title, details);
       this.openingList.append(item);
+    });
+  }
+
+  findNaturalCommunications() {
+    const communications = [];
+    const pairs = [
+      ["right", "left", "vertical"],
+      ["bottom", "top", "horizontal"]
+    ];
+    for (let index = 0; index < this.roomElements.length; index += 1) {
+      for (let otherIndex = index + 1; otherIndex < this.roomElements.length; otherIndex += 1) {
+        const first = this.roomElements[index];
+        const second = this.roomElements[otherIndex];
+
+        for (const [firstSide, secondSide, orientation] of pairs) {
+          if (first.wallState(firstSide) === "solid" || second.wallState(secondSide) === "solid") continue;
+
+          const firstSegment = this.wallSegment(first, firstSide);
+          const secondSegment = this.wallSegment(second, secondSide);
+          if (Math.abs(firstSegment.coordinate - secondSegment.coordinate) >= 1e-9) continue;
+
+          const start = Math.max(firstSegment.start, secondSegment.start);
+          const end = Math.min(firstSegment.end, secondSegment.end);
+          if (end <= start) continue;
+
+          const firstId = first.dataset.id || `room-${index + 1}`;
+          const secondId = second.dataset.id || `room-${otherIndex + 1}`;
+          communications.push({
+            id: `${firstId}-${secondId}`,
+            firstId,
+            secondId,
+            firstLabel: first.dataset.label || firstId,
+            secondLabel: second.dataset.label || secondId,
+            orientation,
+            length: end - start
+          });
+        }
+      }
+    }
+
+    return communications;
+  }
+
+  updateNaturalList() {
+    if (!this.naturalList) return;
+
+    this.naturalCommunications = this.findNaturalCommunications();
+    this.naturalList.replaceChildren();
+    if (this.naturalCommunications.length === 0) {
+      this.naturalList.textContent = "Nenhuma comunicação natural detectada.";
+      return;
+    }
+
+    this.naturalCommunications.forEach((communication) => {
+      const item = document.createElement("div");
+      item.className = "natural-list-item";
+
+      const title = document.createElement("strong");
+      title.textContent = communication.id;
+
+      const details = document.createElement("span");
+      details.textContent = `abertura sem parede — ${communication.firstLabel} → ${communication.secondLabel} (${this.formatMeters(communication.length)}m)`;
+
+      item.append(title, details);
+      this.naturalList.append(item);
     });
   }
 
