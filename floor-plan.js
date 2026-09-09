@@ -7,6 +7,7 @@ class FloorPlan {
     this.roomArea = 0;
     this.roomCount = 0;
     this.rooms = new Map();
+    this.roomElements = [];
 
     root.style.setProperty("--m", `${scale}px`);
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
@@ -63,7 +64,9 @@ class FloorPlan {
 
   addRoom(room) {
     const element = this.add({ ...room, room: true });
+    this.roomElements.push(element);
     if (room.id) this.rooms.set(room.id, element);
+    this.updateOverlaps();
     this.roomArea += element.area();
     this.roomCount += 1;
     this.updateSummary();
@@ -112,9 +115,32 @@ class FloorPlan {
     return this.add(item);
   }
 
+  updateOverlaps() {
+    const rooms = this.roomElements;
+    rooms.forEach((room) => room.classList.remove("room-overlap"));
+
+    for (let index = 0; index < rooms.length; index += 1) {
+      for (let otherIndex = index + 1; otherIndex < rooms.length; otherIndex += 1) {
+        const first = rooms[index];
+        const second = rooms[otherIndex];
+        const overlaps =
+          first.x0() < second.x1() &&
+          first.x1() > second.x0() &&
+          first.y0() < second.y1() &&
+          first.y1() > second.y0();
+
+        if (overlaps) {
+          first.classList.add("room-overlap");
+          second.classList.add("room-overlap");
+        }
+      }
+    }
+  }
+
   clear() {
     this.root.querySelectorAll(".plan-generated").forEach((element) => element.remove());
     this.rooms.clear();
+    this.roomElements = [];
     this.roomArea = 0;
     this.roomCount = 0;
     this.updateSummary();

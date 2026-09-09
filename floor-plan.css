@@ -66,6 +66,10 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 
 .room small { margin-top: 4px; font-weight: 500; color: #555; }
 .room .area { margin-top: 2px; }
+.room-overlap {
+  background: rgba(220, 80, 80, 0.18) !important;
+  border-color: #b34a4a;
+}
 .outdoor { background: rgba(230, 220, 190, 0.78); }
 .service { background: rgba(235, 240, 245, 0.95); }
 .circulation { background: rgba(245, 238, 222, 0.95); border: none;}
