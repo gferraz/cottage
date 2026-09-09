@@ -1,6 +1,8 @@
 class FloorPlan {
-  constructor({ root, summary = null, boundsSummary = null, downloadButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, roomList = null, roomCountSummary = null, summary = null, boundsSummary = null, downloadButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
+    this.roomList = roomList;
+    this.roomCountSummary = roomCountSummary;
     this.summary = summary;
     this.boundsSummary = boundsSummary;
     this.downloadButton = downloadButton;
@@ -55,6 +57,7 @@ class FloorPlan {
     element.area = () => Number(w) * Number(h);
 
     if (room) {
+      element.dataset.label = label;
       element.append(label);
       const dimensions = document.createElement("small");
       dimensions.textContent = `${this.formatMeters(w)}m × ${this.formatMeters(h)}m`;
@@ -195,8 +198,11 @@ class FloorPlan {
   }
 
   updateSummary() {
+    if (this.roomCountSummary) {
+      this.roomCountSummary.textContent = `Total de cômodos: ${this.roomCount}`;
+    }
     if (this.summary) {
-      this.summary.textContent = `Área total dos cômodos: ${this.formatMeters(this.roomArea)}m² (${this.roomCount} cômodos)`;
+      this.summary.textContent = `Área total: ${this.formatMeters(this.roomArea)}m²`;
     }
     if (this.boundsSummary) {
       const bounds = this.bounds();
@@ -204,6 +210,26 @@ class FloorPlan {
         ? `Dimensões máximas: ${this.formatMeters(bounds.width)}m × ${this.formatMeters(bounds.height)}m`
         : "Dimensões máximas: —";
     }
+    this.updateRoomList();
+  }
+
+  updateRoomList() {
+    if (!this.roomList) return;
+
+    this.roomList.replaceChildren();
+    this.roomElements.forEach((room, index) => {
+      const item = document.createElement("div");
+      item.className = "room-list-item";
+
+      const label = document.createElement("span");
+      label.textContent = `${index + 1}. ${room.dataset.label || "Cômodo"}`;
+
+      const area = document.createElement("span");
+      area.textContent = `${this.formatMeters(room.area())}m²`;
+
+      item.append(label, area);
+      this.roomList.append(item);
+    });
   }
 
   downloadHtml(filename = "planta-terrea-gerada.html") {

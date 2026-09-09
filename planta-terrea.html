@@ -15,14 +15,24 @@
     <h1>Planta térrea — separada por módulos</h1>
     <p>Nenhuma planta é carregada automaticamente. Selecione um JSON para desenhar a planta.</p>
 
-    <div class="site" id="floor-plan">
-      <div class="direction front">RUA / FRENTE ↑</div>
-      <div class="direction rear">↓ JARDIM / RIACHO</div>
+    <div class="plan-layout">
+      <div class="site" id="floor-plan">
+        <div class="direction front">RUA / FRENTE ↑</div>
+        <div class="direction rear">↓ JARDIM / RIACHO</div>
+      </div>
+
+      <aside class="room-list" aria-labelledby="room-list-title">
+        <h2 id="room-list-title">Cômodos</h2>
+        <div id="room-list"></div>
+        <div class="room-summary">
+          <div id="room-count-summary"></div>
+          <div class="area-summary" id="area-summary"></div>
+          <div id="plan-bounds"></div>
+        </div>
+      </aside>
     </div>
 
     <div class="legend">
-      <div class="area-summary" id="area-summary"></div>
-      <div id="plan-bounds"></div>
       Exemplo: <code>const porch = floor.addRoom({ pos: [3.4, 2], size: [4.3, 2.3], label: "NOVO CÔMODO" })</code>.
       Use referências como <code>"living.x1 - 0.3"</code> para posicionamento relativo. Geometria e áreas são calculadas automaticamente.
     </div>
