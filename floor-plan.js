@@ -19,13 +19,11 @@ class FloorPlan {
     this.roomElements = [];
     this.itemElements = [];
     this.openings = [];
-    this.openingElements = [];
     this.naturalCommunications = [];
     this.currentConfig = null;
     this.currentFile = null;
     this.terrainArea = 0;
     this.terrainReference = null;
-    this.buildingOffset = { x: 0, y: 0 };
 
     root.style.setProperty("--m", `${scale}px`);
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
@@ -168,7 +166,6 @@ class FloorPlan {
     this.root.style.removeProperty("--building-offset-y");
     this.terrainArea = 0;
     this.terrainReference = null;
-    this.buildingOffset = { x: 0, y: 0 };
   }
 
   applyBuildingPlacement(building = null) {
@@ -195,9 +192,8 @@ class FloorPlan {
 
     const bounds = this.bounds();
     if (!bounds) return;
-    this.buildingOffset = { x: targetX - bounds.x0, y: targetY - bounds.y0 };
-    this.root.style.setProperty("--building-offset-x", this.buildingOffset.x);
-    this.root.style.setProperty("--building-offset-y", this.buildingOffset.y);
+    this.root.style.setProperty("--building-offset-x", targetX - bounds.x0);
+    this.root.style.setProperty("--building-offset-y", targetY - bounds.y0);
   }
 
   renderTerrain(terrain) {
@@ -263,8 +259,7 @@ class FloorPlan {
     this.root.style.setProperty("--building-offset-x", offsetX);
     this.root.style.setProperty("--building-offset-y", offsetY);
     this.terrainReference = {
-      frontStart: { x: offsetX, y: offsetY },
-      frontEnd: { x: offsetX + frontLength, y: offsetY }
+      frontStart: { x: offsetX, y: offsetY }
     };
     this.terrainLayer.setAttribute("viewBox", `0 0 ${siteWidth} ${siteHeight}`);
     this.terrainLayer.setAttribute("preserveAspectRatio", "none");
@@ -389,7 +384,6 @@ class FloorPlan {
       classes: `plan-opening opening-${passage.type} opening-${passage.horizontal ? "horizontal" : "vertical"}`,
       title: `${passage.type}: ${passage.id}`
     });
-    this.openingElements.push(element);
     return passage;
   }
 
@@ -514,7 +508,6 @@ class FloorPlan {
     this.roomElements = [];
     this.itemElements = [];
     this.openings = [];
-    this.openingElements = [];
     this.errors = [];
     this.roomArea = 0;
     this.roomCount = 0;
