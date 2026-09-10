@@ -380,6 +380,11 @@ class FloorPlan {
       classes: `plan-opening opening-${passage.type} opening-${passage.horizontal ? "horizontal" : "vertical"}`,
       title: `${passage.type}: ${passage.id}`
     });
+    if (passage.type === "opening") {
+      const sourceRoom = this.rooms.get(passage.roomId);
+      const sourceBackground = sourceRoom ? getComputedStyle(sourceRoom).backgroundColor : "";
+      if (sourceBackground) element.style.setProperty("--opening-source-background", sourceBackground);
+    }
     return passage;
   }
 
