@@ -24,6 +24,8 @@ class FloorPlan {
     this.currentConfig = null;
     this.currentFile = null;
     this.terrainArea = 0;
+    this.terrainReference = null;
+    this.buildingOffset = { x: 0, y: 0 };
 
     root.style.setProperty("--m", `${scale}px`);
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
@@ -162,7 +164,40 @@ class FloorPlan {
     this.root.style.removeProperty("--site-height");
     this.root.style.removeProperty("--plan-offset-x");
     this.root.style.removeProperty("--plan-offset-y");
+    this.root.style.removeProperty("--building-offset-x");
+    this.root.style.removeProperty("--building-offset-y");
     this.terrainArea = 0;
+    this.terrainReference = null;
+    this.buildingOffset = { x: 0, y: 0 };
+  }
+
+  applyBuildingPlacement(building = null) {
+    const position = building?.position;
+    if (!position) return;
+    const anchor = building.anchor || "terrain.front-start";
+    if (!["terrain.front-start", "bounds.top-left"].includes(anchor)) {
+      throw new Error(`Unsupported building anchor: ${building.anchor}`);
+    }
+
+    const localX = Number(position.x);
+    const localY = Number(position.y);
+    if (![localX, localY].every(Number.isFinite)) {
+      throw new Error("Building position needs numeric x and y values");
+    }
+
+    const planOffsetX = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--plan-offset-x")) || 0;
+    const planOffsetY = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--plan-offset-y")) || 0;
+    const anchorPoint = anchor === "terrain.front-start"
+      ? (this.terrainReference?.frontStart || { x: planOffsetX, y: planOffsetY })
+      : { x: planOffsetX, y: planOffsetY };
+    const targetX = anchorPoint.x + localX;
+    const targetY = anchorPoint.y + localY;
+
+    const bounds = this.bounds();
+    if (!bounds) return;
+    this.buildingOffset = { x: targetX - bounds.x0, y: targetY - bounds.y0 };
+    this.root.style.setProperty("--building-offset-x", this.buildingOffset.x);
+    this.root.style.setProperty("--building-offset-y", this.buildingOffset.y);
   }
 
   renderTerrain(terrain) {
@@ -210,20 +245,27 @@ class FloorPlan {
     const minY = Math.min(...localCorners.map((point) => point.y));
     const maxX = Math.max(...localCorners.map((point) => point.x));
     const maxY = Math.max(...localCorners.map((point) => point.y));
-    const offsetX = -minX;
-    const offsetY = -minY;
+    const terrainPadding = 2;
+    const offsetX = -minX + terrainPadding;
+    const offsetY = -minY + terrainPadding;
     localCorners.forEach((point) => {
       point.x += offsetX;
       point.y += offsetY;
     });
     const width = maxX - minX;
     const height = maxY - minY;
-    const siteWidth = Math.max(19, width);
-    const siteHeight = Math.max(25, height);
+    const siteWidth = Math.max(19, width + terrainPadding * 2);
+    const siteHeight = Math.max(25, height + terrainPadding * 2);
     this.root.style.setProperty("--plan-offset-x", offsetX);
     this.root.style.setProperty("--plan-offset-y", offsetY);
     this.root.style.setProperty("--site-width", siteWidth);
     this.root.style.setProperty("--site-height", siteHeight);
+    this.root.style.setProperty("--building-offset-x", offsetX);
+    this.root.style.setProperty("--building-offset-y", offsetY);
+    this.terrainReference = {
+      frontStart: { x: offsetX, y: offsetY },
+      frontEnd: { x: offsetX + frontLength, y: offsetY }
+    };
     this.terrainLayer.setAttribute("viewBox", `0 0 ${siteWidth} ${siteHeight}`);
     this.terrainLayer.setAttribute("preserveAspectRatio", "none");
 
@@ -233,19 +275,6 @@ class FloorPlan {
       Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
       return element;
     };
-    const definitions = create("defs");
-    const marker = create("marker", {
-      id: "terrain-north-arrow",
-      viewBox: "0 0 10 10",
-      refX: "8",
-      refY: "5",
-      markerWidth: "4",
-      markerHeight: "4",
-      orient: "auto-start-reverse"
-    });
-    marker.append(create("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: "#385a35" }));
-    definitions.append(marker);
-    this.terrainLayer.append(definitions);
     const pointString = localCorners.map((point) => `${point.x},${point.y}`).join(" ");
     this.terrainLayer.append(create("polygon", { points: pointString, class: "terrain-boundary" }));
 
@@ -280,7 +309,9 @@ class FloorPlan {
       }
     });
 
-    const addSideLabel = (side, fromId, toId) => {
+    const addSideLabel = (side) => {
+      const fallback = side === "front" ? order.slice(0, 2) : order.slice(-2);
+      const [fromId, toId] = terrain[side]?.edge ?? fallback;
       const from = localCorners.find((point) => point.id === fromId);
       const to = localCorners.find((point) => point.id === toId);
       const sideData = terrain[side];
@@ -293,26 +324,25 @@ class FloorPlan {
       label.textContent = sideData.label;
       this.terrainLayer.append(label);
     };
-    addSideLabel("front", "P1", "P2");
-    addSideLabel("rear", "P18", "P19");
+    addSideLabel("front");
+    addSideLabel("rear");
 
     const northLength = Math.hypot(uy, vy);
     const northX = uy / northLength;
     const northY = vy / northLength;
     const northBaseX = Math.min(siteWidth - 2.5, Math.max(2.5, siteWidth * 0.82));
     const northBaseY = Math.min(siteHeight - 2.5, Math.max(2.5, siteHeight * 0.18));
-    const arrowLength = 2;
-    const northLine = create("line", {
-      x1: northBaseX,
-      y1: northBaseY,
-      x2: northBaseX + northX * arrowLength,
-      y2: northBaseY + northY * arrowLength,
-      class: "terrain-north"
+    const northSymbol = create("text", {
+      x: northBaseX,
+      y: northBaseY,
+      class: "terrain-north-symbol",
+      transform: `rotate(${Math.atan2(northX, -northY) * 180 / Math.PI} ${northBaseX} ${northBaseY})`
     });
-    this.terrainLayer.append(northLine);
+    northSymbol.textContent = "↑";
+    this.terrainLayer.append(northSymbol);
     const northLabel = create("text", {
-      x: northBaseX + northX * (arrowLength + 0.35),
-      y: northBaseY + northY * (arrowLength + 0.35),
+      x: northBaseX - northY * 0.34,
+      y: northBaseY + northX * 0.34,
       class: "terrain-north-label"
     });
     northLabel.textContent = terrain.north?.label || "N";
@@ -504,6 +534,7 @@ class FloorPlan {
         this.errors.push({ index, opening, message: error.message });
       }
     });
+    this.applyBuildingPlacement(config.building);
     this.updateSummary();
     if (this.reloadButton) this.reloadButton.disabled = false;
     return this;
@@ -681,7 +712,7 @@ class FloorPlan {
     });
   }
 
-  downloadHtml(filename = "planta-terrea-gerada.html") {
+  async downloadHtml(filename = "planta-terrea-gerada.html") {
     const exportedDocument = document.cloneNode(true);
     exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #plan-status")
       .forEach((element) => element.remove());
@@ -689,19 +720,29 @@ class FloorPlan {
 
     const stylesheetLinks = [...document.querySelectorAll('link[rel="stylesheet"]')];
     const fallbackLinks = [];
-    const styles = stylesheetLinks.flatMap((link) => {
-      const sheet = link.sheet;
-      if (!sheet) {
-        fallbackLinks.push(link);
-        return [];
+    const embeddedCss = document.querySelector("#portable-export-css")?.content.textContent.trim();
+    const styles = embeddedCss ? [embeddedCss] : [];
+    if (!embeddedCss) {
+      for (const link of stylesheetLinks) {
+        const sheet = link.sheet;
+        if (!sheet) {
+          fallbackLinks.push(link);
+          continue;
+        }
+        try {
+          styles.push(...[...sheet.cssRules].map((rule) => rule.cssText));
+        } catch {
+          try {
+            const response = await fetch(link.href);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            styles.push(await response.text());
+          } catch {
+            fallbackLinks.push(link);
+          }
+        }
       }
-      try {
-        return [...sheet.cssRules].map((rule) => rule.cssText);
-      } catch {
-        fallbackLinks.push(link);
-        return [];
-      }
-    });
+    }
+    exportedDocument.querySelector("#portable-export-css")?.remove();
     exportedDocument.querySelectorAll('link[rel="stylesheet"]').forEach((link) => link.remove());
     if (styles.length > 0) {
       const style = exportedDocument.createElement("style");

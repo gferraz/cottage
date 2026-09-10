@@ -8,6 +8,261 @@
     <link rel="stylesheet" href="planta-terrea.css" />
   </head>
   <body>
+    <template id="portable-export-css"><style>
+:root {
+  --m: 56px;
+  --half: calc(var(--m) / 2);
+  --grid: rgba(0, 0, 0, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 24px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: #111;
+}
+
+h1 { margin: 0 0 6px; font-size: 20px; }
+p { margin: 0 0 18px; color: #555; font-size: 13px; }
+
+.site {
+  position: relative;
+  flex: 0 0 auto;
+  width: calc(var(--site-width, 19) * var(--m));
+  height: calc(var(--site-height, 25) * var(--m));
+  margin: 0 auto;
+  background-color: #f5f3ee;
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size: var(--half) var(--half);
+  border: 1px solid #bbb;
+  overflow: hidden;
+}
+
+.terrain-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.terrain-boundary {
+  fill: rgba(185, 214, 174, 0.18);
+  stroke: #66855d;
+  stroke-width: 0.08;
+  vector-effect: non-scaling-stroke;
+}
+
+.terrain-segment {
+  stroke: #66855d;
+  stroke-width: 0.04;
+  stroke-dasharray: 0.2 0.12;
+  vector-effect: non-scaling-stroke;
+}
+
+.terrain-point {
+  fill: #42633b;
+}
+
+.terrain-label {
+  fill: #42633b;
+  font-size: 0.35px;
+  font-weight: 700;
+}
+
+.terrain-side-label {
+  fill: #55724d;
+  font-size: 0.3px;
+  text-anchor: middle;
+}
+
+.terrain-north-symbol {
+  fill: #385a35;
+  font-size: 1.2px;
+  font-weight: 900;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.terrain-north-label {
+  fill: #385a35;
+  font-size: 0.55px;
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.plan-layout {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 24px;
+  width: min(100%, 1280px);
+  margin: 0 auto;
+}
+
+.room-list {
+  width: 220px;
+  flex: 0 0 220px;
+  border: 1px solid #bbb;
+  background: #fafafa;
+  padding: 12px;
+  font-size: 13px;
+}
+
+.room-list h2 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.room-list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  border-top: 1px solid #e2e2e2;
+}
+
+.room-list-item span:last-child {
+  flex: 0 0 auto;
+  color: #555;
+  white-space: nowrap;
+}
+
+.room-summary {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 2px solid #bbb;
+}
+
+.direction {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-weight: 700;
+  font-size: 14px;
+  z-index: 20;
+}
+
+.front { top: 8px; }
+.rear { bottom: 8px; }
+
+.plan-item {
+  position: absolute;
+  left: calc((var(--x) + var(--building-offset-x, 0)) * var(--m));
+  top: calc((var(--y) + var(--building-offset-y, 0)) * var(--m));
+  width: calc(var(--w) * var(--m));
+  height: calc(var(--h) * var(--m));
+}
+
+.plan-item:not(.room) { opacity: 0.45; }
+
+.plan-opening {
+  z-index: 15;
+  opacity: 1 !important;
+  border: 2px solid #6b4b2a;
+  background: #e8c99c;
+  pointer-events: none;
+}
+
+.opening-opening {
+  border-color: #4d6872;
+  background: #b9d9e2;
+}
+
+.plan-opening.opening-horizontal {
+  border-top: none;
+  border-bottom: none;
+}
+
+.room {
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 6px;
+  font-weight: 650;
+  font-size: 13px;
+  line-height: 1.15;
+}
+
+.room[data-wall-top="solid"] { border-top-color: #222; border-top-style: solid; }
+.room[data-wall-right="solid"] { border-right-color: #222; border-right-style: solid; }
+.room[data-wall-bottom="solid"] { border-bottom-color: #222; border-bottom-style: solid; }
+.room[data-wall-left="solid"] { border-left-color: #222; border-left-style: solid; }
+.room[data-wall-top="virtual"] { border-top-color: #222; border-top-style: dotted; }
+.room[data-wall-right="virtual"] { border-right-color: #222; border-right-style: dotted; }
+.room[data-wall-bottom="virtual"] { border-bottom-color: #222; border-bottom-style: dotted; }
+.room[data-wall-left="virtual"] { border-left-color: #222; border-left-style: dotted; }
+
+.room small { margin-top: 4px; font-weight: 500; color: #555; }
+.room .area { margin-top: 2px; }
+.room-overlap {
+  background: rgba(220, 80, 80, 0.18) !important;
+}
+.room-overlap[data-wall-top="solid"], .room-overlap[data-wall-top="virtual"] { border-top-color: #b34a4a; }
+.room-overlap[data-wall-right="solid"], .room-overlap[data-wall-right="virtual"] { border-right-color: #b34a4a; }
+.room-overlap[data-wall-bottom="solid"], .room-overlap[data-wall-bottom="virtual"] { border-bottom-color: #b34a4a; }
+.room-overlap[data-wall-left="solid"], .room-overlap[data-wall-left="virtual"] { border-left-color: #b34a4a; }
+.outdoor { background: rgba(230, 220, 190, 0.78); }
+.service { background: rgba(235, 240, 245, 0.95); }
+.circulation { background: rgba(245, 238, 222, 0.95); }
+.is-garage { background: rgba(225, 225, 225, 0.95); }
+.fireplace { background: #555; border: 2px solid #222; }
+.table { border: 2px solid #7a5b3a; background: #caa878; z-index: 5; }
+.car { border: 2px solid #666; border-radius: 14px; background: #bbb; z-index: 5; }
+
+#load-json,
+#reload-json,
+#download-html {
+  margin: 0 0 16px;
+  padding: 8px 12px;
+  border: 1px solid #888;
+  border-radius: 5px;
+  background: #f2f2f2;
+  color: #222;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
+#load-json:hover,
+#reload-json:hover:not(:disabled),
+#download-html:hover { background: #e6e6e6; }
+#reload-json:disabled { cursor: not-allowed; opacity: 0.55; }
+.legend { width: min(1064px, 100%); margin: 18px auto 0; font-size: 13px; color: #444; }
+.opening-legend { margin-top: 16px; }
+.opening-legend h2 { margin: 0 0 8px; font-size: 16px; color: #222; }
+.opening-list-item { display: flex; flex-wrap: wrap; gap: 8px; padding: 5px 0; border-top: 1px solid #e2e2e2; }
+.opening-list-item strong { color: #222; }
+.opening-list-item span { color: #555; }
+.natural-legend { margin-top: 16px; }
+.natural-legend h2 { margin: 0 0 8px; font-size: 16px; color: #2f5d4a; }
+.natural-list-item { display: flex; flex-wrap: wrap; gap: 8px; padding: 5px 0; border-top: 1px solid #e2e2e2; }
+.natural-list-item strong { color: #234837; }
+.natural-list-item span { color: #555; }
+.error-legend { margin-top: 16px; }
+.error-legend h2 { margin: 0 0 8px; font-size: 16px; color: #9b2c2c; }
+.error-list-item { padding: 5px 0; border-top: 1px solid #e2e2e2; color: #9b2c2c; }
+.error-list-item code { color: #6b2020; }
+.area-summary { margin-bottom: 8px; font-weight: 650; color: #222; }
+#plan-bounds { margin-bottom: 8px; font-weight: 650; color: #222; }
+#terrain-summary { margin-bottom: 8px; font-weight: 650; color: #55724d; }
+code { background: #f2f2f2; padding: 2px 5px; border-radius: 4px; }
+
+/* Overrides specific to this floor plan, not part of the reusable toolkit. */
+.stair-landing, .stair-flight, .stair-hall, .powder { z-index: 3; }
+.stair-flight { border: dotted; }
+.wet { color: royalblue; }
+    </style></template>
     <input id="json-file" type="file" accept="application/json,.json" hidden />
     <button id="load-json" type="button" onclick="document.querySelector('#json-file').click()">Carregar JSON</button>
     <button id="reload-json" type="button">Recarregar JSON atual</button>
@@ -18,8 +273,8 @@
     <div class="plan-layout">
       <div class="site" id="floor-plan">
         <svg class="terrain-layer" id="terrain-layer" aria-label="Limite do terreno"></svg>
-        <div class="direction front">RUA / FRENTE ↑</div>
-        <div class="direction rear">↓ JARDIM / RIACHO</div>
+        <div class="direction front">FRENTE ↑</div>
+        <div class="direction rear">FUNDO ↓</div>
       </div>
 
       <aside class="room-list" aria-labelledby="room-list-title">
