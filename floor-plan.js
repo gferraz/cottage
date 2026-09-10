@@ -1,5 +1,5 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, roomList = null, roomCountSummary = null, summary = null, boundsSummary = null, terrainSummary = null, openingList = null, naturalList = null, errorList = null, downloadButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, roomList = null, roomCountSummary = null, summary = null, boundsSummary = null, terrainSummary = null, openingList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
     this.terrainLayer = terrainLayer;
     this.roomList = roomList;
@@ -11,6 +11,7 @@ class FloorPlan {
     this.naturalList = naturalList;
     this.errorList = errorList;
     this.downloadButton = downloadButton;
+    this.markdownButton = markdownButton;
     this.jsonInput = jsonInput;
     this.reloadButton = reloadButton;
     this.roomArea = 0;
@@ -27,6 +28,7 @@ class FloorPlan {
 
     root.style.setProperty("--m", `${scale}px`);
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
+    if (markdownButton) markdownButton.addEventListener("click", () => this.downloadMarkdown());
     if (jsonInput) {
       jsonInput.addEventListener("change", async (event) => {
         const [file] = event.target.files;
@@ -706,9 +708,59 @@ class FloorPlan {
     });
   }
 
+  markdownText(value) {
+    return String(value ?? "").replaceAll("|", "\\|").replaceAll("\n", " ");
+  }
+
+  downloadMarkdown(filename = "planta-terrea-layout.md") {
+    if (!this.currentConfig) {
+      alert("Carregue uma planta antes de exportar o layout.");
+      return;
+    }
+
+    const lines = ["# Layout da planta térrea", "", "## Cômodos", "", "| # | ID | Nome | x | y | Largura | Altura | Área | Paredes |", "|---:|---|---|---:|---:|---:|---:|---:|---|"];
+    this.roomElements.forEach((room, index) => {
+      const walls = ["top", "right", "bottom", "left"]
+        .filter((side) => room.wallState?.(side) === "solid")
+        .join(", ") || "—";
+      lines.push(`| ${index + 1} | ${this.markdownText(room.dataset.id || "—")} | ${this.markdownText(room.dataset.label || "Cômodo")} | ${this.formatMeters(room.x0())} | ${this.formatMeters(room.y0())} | ${this.formatMeters(room.w())} | ${this.formatMeters(room.h())} | ${this.formatMeters(room.area())} | ${walls} |`);
+    });
+
+    lines.push("", `**Total:** ${this.roomCount} cômodos · ${this.formatMeters(this.roomArea)} m²`);
+    lines.push("", "## Passagens", "", "| ID | De | Para | Tipo | Parede | Posição | Comprimento |", "|---|---|---|---|---|---:|---:|");
+    if (this.openings.length === 0) {
+      lines.push("| — | Nenhuma passagem definida |  |  |  |  |  |");
+    } else {
+      this.openings.forEach((opening) => {
+        lines.push(`| ${this.markdownText(opening.id)} | ${this.markdownText(opening.roomId)} | ${this.markdownText(opening.to)} | ${this.markdownText(opening.type)} | ${opening.wall} | ${this.formatMeters(opening.position)} | ${this.formatMeters(opening.length)} |`);
+      });
+    }
+
+    lines.push("", "## Comunicações naturais", "");
+    if (this.naturalCommunications.length === 0) {
+      lines.push("Nenhuma comunicação natural detectada.");
+    } else {
+      this.naturalCommunications.forEach((communication) => {
+        lines.push(`- **${this.markdownText(communication.id)}:** ${this.markdownText(communication.firstId)} → ${this.markdownText(communication.secondId)} (${this.formatMeters(communication.length)} m, orientação ${communication.orientation})`);
+      });
+    }
+
+    if (this.errors.length > 0) {
+      lines.push("", "## Passagens com erro", "", ...this.errors.map(({ opening, message }) => `- \`${this.markdownText(JSON.stringify(opening))}\`: ${this.markdownText(message)}`));
+    }
+
+    const blob = new Blob([`${lines.join("\n")}\n`], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   async downloadHtml(filename = "planta-terrea-gerada.html") {
     const exportedDocument = document.cloneNode(true);
-    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #plan-status, #terrain-compass-rose-data")
+    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #download-markdown, #plan-status, #terrain-compass-rose-data")
       .forEach((element) => element.remove());
     exportedDocument.querySelectorAll("script").forEach((script) => script.remove());
 

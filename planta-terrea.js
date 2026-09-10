@@ -10,6 +10,7 @@ const floor = new FloorPlan({
   naturalList: document.querySelector("#natural-list"),
   errorList: document.querySelector("#item-errors"),
   downloadButton: document.querySelector("#download-html"),
+  markdownButton: document.querySelector("#download-markdown"),
   jsonInput: document.querySelector("#json-file"),
   reloadButton: document.querySelector("#reload-json"),
   scale: 56

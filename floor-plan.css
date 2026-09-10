@@ -200,7 +200,8 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 
 #load-json,
 #reload-json,
-#download-html {
+#download-html,
+#download-markdown {
   margin: 0 0 16px;
   padding: 8px 12px;
   border: 1px solid #888;
@@ -214,7 +215,8 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 
 #load-json:hover,
 #reload-json:hover:not(:disabled),
-#download-html:hover { background: #e6e6e6; }
+#download-html:hover,
+#download-markdown:hover { background: #e6e6e6; }
 #reload-json:disabled { cursor: not-allowed; opacity: 0.55; }
 .legend { width: min(1064px, 100%); margin: 18px auto 0; font-size: 13px; color: #444; }
 .opening-legend { margin-top: 16px; }
