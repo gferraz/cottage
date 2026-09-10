@@ -1,10 +1,12 @@
 class FloorPlan {
-  constructor({ root, roomList = null, roomCountSummary = null, summary = null, boundsSummary = null, openingList = null, naturalList = null, errorList = null, downloadButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, roomList = null, roomCountSummary = null, summary = null, boundsSummary = null, terrainSummary = null, openingList = null, naturalList = null, errorList = null, downloadButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
+    this.terrainLayer = terrainLayer;
     this.roomList = roomList;
     this.roomCountSummary = roomCountSummary;
     this.summary = summary;
     this.boundsSummary = boundsSummary;
+    this.terrainSummary = terrainSummary;
     this.openingList = openingList;
     this.naturalList = naturalList;
     this.errorList = errorList;
@@ -21,6 +23,7 @@ class FloorPlan {
     this.naturalCommunications = [];
     this.currentConfig = null;
     this.currentFile = null;
+    this.terrainArea = 0;
 
     root.style.setProperty("--m", `${scale}px`);
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
@@ -151,6 +154,169 @@ class FloorPlan {
       normalized[side] = state;
     });
     return normalized;
+  }
+
+  clearTerrain() {
+    this.terrainLayer?.replaceChildren();
+    this.root.style.removeProperty("--site-width");
+    this.root.style.removeProperty("--site-height");
+    this.root.style.removeProperty("--plan-offset-x");
+    this.root.style.removeProperty("--plan-offset-y");
+    this.terrainArea = 0;
+  }
+
+  renderTerrain(terrain) {
+    this.clearTerrain();
+    if (!this.terrainLayer || !terrain?.corners || !terrain.boundary_order?.length) return;
+
+    const order = terrain.boundary_order;
+    const corners = order.map((id) => {
+      const point = terrain.corners[id];
+      if (!point) throw new Error(`Unknown terrain corner: ${id}`);
+      return { id, easting: Number(point.easting), northing: Number(point.northing) };
+    });
+    const first = corners[0];
+    const second = corners[1];
+    const frontEasting = second.easting - first.easting;
+    const frontNorthing = second.northing - first.northing;
+    const frontLength = Math.hypot(frontEasting, frontNorthing);
+    const ux = frontEasting / frontLength;
+    const uy = frontNorthing / frontLength;
+    let vx = -uy;
+    let vy = ux;
+    const centroid = corners.reduce(
+      (sum, point) => ({ easting: sum.easting + point.easting, northing: sum.northing + point.northing }),
+      { easting: 0, northing: 0 }
+    );
+    centroid.easting /= corners.length;
+    centroid.northing /= corners.length;
+    const toCentroidEasting = centroid.easting - first.easting;
+    const toCentroidNorthing = centroid.northing - first.northing;
+    if (toCentroidEasting * vx + toCentroidNorthing * vy < 0) {
+      vx *= -1;
+      vy *= -1;
+    }
+
+    const localCorners = corners.map((point) => {
+      const easting = point.easting - first.easting;
+      const northing = point.northing - first.northing;
+      return {
+        ...point,
+        x: easting * ux + northing * uy,
+        y: easting * vx + northing * vy
+      };
+    });
+    const minX = Math.min(...localCorners.map((point) => point.x));
+    const minY = Math.min(...localCorners.map((point) => point.y));
+    const maxX = Math.max(...localCorners.map((point) => point.x));
+    const maxY = Math.max(...localCorners.map((point) => point.y));
+    const offsetX = -minX;
+    const offsetY = -minY;
+    localCorners.forEach((point) => {
+      point.x += offsetX;
+      point.y += offsetY;
+    });
+    const width = maxX - minX;
+    const height = maxY - minY;
+    const siteWidth = Math.max(19, width);
+    const siteHeight = Math.max(25, height);
+    this.root.style.setProperty("--plan-offset-x", offsetX);
+    this.root.style.setProperty("--plan-offset-y", offsetY);
+    this.root.style.setProperty("--site-width", siteWidth);
+    this.root.style.setProperty("--site-height", siteHeight);
+    this.terrainLayer.setAttribute("viewBox", `0 0 ${siteWidth} ${siteHeight}`);
+    this.terrainLayer.setAttribute("preserveAspectRatio", "none");
+
+    const svg = "http://www.w3.org/2000/svg";
+    const create = (name, attributes = {}) => {
+      const element = document.createElementNS(svg, name);
+      Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+      return element;
+    };
+    const definitions = create("defs");
+    const marker = create("marker", {
+      id: "terrain-north-arrow",
+      viewBox: "0 0 10 10",
+      refX: "8",
+      refY: "5",
+      markerWidth: "4",
+      markerHeight: "4",
+      orient: "auto-start-reverse"
+    });
+    marker.append(create("path", { d: "M 0 0 L 10 5 L 0 10 z", fill: "#385a35" }));
+    definitions.append(marker);
+    this.terrainLayer.append(definitions);
+    const pointString = localCorners.map((point) => `${point.x},${point.y}`).join(" ");
+    this.terrainLayer.append(create("polygon", { points: pointString, class: "terrain-boundary" }));
+
+    const shoelace = localCorners.reduce((sum, point, index) => {
+      const next = localCorners[(index + 1) % localCorners.length];
+      return sum + point.x * next.y - next.x * point.y;
+    }, 0);
+    this.terrainArea = Math.abs(shoelace) / 2;
+
+    localCorners.forEach((point) => {
+      this.terrainLayer.append(create("circle", { cx: point.x, cy: point.y, r: 0.12, class: "terrain-point" }));
+      const label = create("text", { x: point.x + 0.18, y: point.y - 0.18, class: "terrain-label" });
+      label.textContent = point.id;
+      this.terrainLayer.append(label);
+    });
+
+    const segmentByPair = new Map((terrain.segments ?? []).map((segment) => [`${segment.from}-${segment.to}`, segment]));
+    localCorners.forEach((point, index) => {
+      const next = localCorners[(index + 1) % localCorners.length];
+      this.terrainLayer.append(create("line", {
+        x1: point.x, y1: point.y, x2: next.x, y2: next.y, class: "terrain-segment"
+      }));
+      const segment = segmentByPair.get(`${point.id}-${next.id}`);
+      if (segment) {
+        const label = create("text", {
+          x: (point.x + next.x) / 2,
+          y: (point.y + next.y) / 2 - 0.12,
+          class: "terrain-side-label"
+        });
+        label.textContent = `${Number(segment.distance).toLocaleString("pt-BR", { maximumFractionDigits: 3 })} m`;
+        this.terrainLayer.append(label);
+      }
+    });
+
+    const addSideLabel = (side, fromId, toId) => {
+      const from = localCorners.find((point) => point.id === fromId);
+      const to = localCorners.find((point) => point.id === toId);
+      const sideData = terrain[side];
+      if (!from || !to || !sideData?.label) return;
+      const label = create("text", {
+        x: (from.x + to.x) / 2,
+        y: (from.y + to.y) / 2 + (side === "front" ? -0.35 : 0.45),
+        class: "terrain-side-label"
+      });
+      label.textContent = sideData.label;
+      this.terrainLayer.append(label);
+    };
+    addSideLabel("front", "P1", "P2");
+    addSideLabel("rear", "P18", "P19");
+
+    const northLength = Math.hypot(uy, vy);
+    const northX = uy / northLength;
+    const northY = vy / northLength;
+    const northBaseX = Math.min(siteWidth - 2.5, Math.max(2.5, siteWidth * 0.82));
+    const northBaseY = Math.min(siteHeight - 2.5, Math.max(2.5, siteHeight * 0.18));
+    const arrowLength = 2;
+    const northLine = create("line", {
+      x1: northBaseX,
+      y1: northBaseY,
+      x2: northBaseX + northX * arrowLength,
+      y2: northBaseY + northY * arrowLength,
+      class: "terrain-north"
+    });
+    this.terrainLayer.append(northLine);
+    const northLabel = create("text", {
+      x: northBaseX + northX * (arrowLength + 0.35),
+      y: northBaseY + northY * (arrowLength + 0.35),
+      class: "terrain-north-label"
+    });
+    northLabel.textContent = terrain.north?.label || "N";
+    this.terrainLayer.append(northLabel);
   }
 
   resolve(value) {
@@ -313,6 +479,7 @@ class FloorPlan {
 
   clear() {
     this.root.querySelectorAll(".plan-generated").forEach((element) => element.remove());
+    this.clearTerrain();
     this.rooms.clear();
     this.roomElements = [];
     this.itemElements = [];
@@ -327,6 +494,7 @@ class FloorPlan {
   load(config) {
     this.currentConfig = config;
     this.clear();
+    this.renderTerrain(config.terrain);
     (config.rooms ?? []).forEach((room) => this.addRoom(room));
     (config.items ?? []).forEach((item) => this.addItem(item));
     (config.openings ?? []).forEach((opening, index) => {
@@ -369,6 +537,11 @@ class FloorPlan {
       this.boundsSummary.textContent = bounds
         ? `Dimensões máximas: ${this.formatMeters(bounds.width)}m × ${this.formatMeters(bounds.height)}m`
         : "Dimensões máximas: —";
+    }
+    if (this.terrainSummary) {
+      this.terrainSummary.textContent = this.terrainArea > 0
+        ? `Área calculada do terreno: ${this.formatMeters(this.terrainArea)}m²`
+        : "Área calculada do terreno: —";
     }
     this.updateRoomList();
     this.updateOpeningList();

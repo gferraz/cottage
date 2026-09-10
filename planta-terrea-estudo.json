@@ -22,7 +22,7 @@
     { "pos": ["master.x1",       "office.y1"],       "size": [1.1, 4.8],  "classes": "circulation stair-flight", "title": "Escada 1,1 × 4,8 m" },
     { "pos": ["dining.x0 + 1.2", "dining.y1 - 1.8"], "size": [2.7, 1.1],  "classes": "table", "title": "Mesa 2,70 × 1,05 m" },
     { "pos": ["living.x1 - 0.2", "living.y0 + 1"],   "size": [0.5, 1.8],  "classes": "fireplace", "title": "Lareira" },
-    { "pos": ["garage.x0 + 1",   "garage.y0 + 1"],   "size": [1.9, 4.7], "classes": "car", "title": "Carro" },
+    { "pos": ["garage.x0 + 1",   "garage.y0 + 1"],   "size": [1.8, 4.7], "classes": "car", "title": "Carro" },
     { "pos": ["garage.x0 + 4",   "garage.y0 + 1.1"], "size": [1.85, 4.6], "classes": "car", "title": "Carro" }
   ],
   "openings": [
