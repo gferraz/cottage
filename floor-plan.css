@@ -70,20 +70,9 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   text-anchor: middle;
 }
 
-.terrain-north-symbol {
-  fill: #385a35;
-  font-size: 1.2px;
-  font-weight: 900;
-  text-anchor: middle;
-  dominant-baseline: middle;
-}
-
-.terrain-north-label {
-  fill: #385a35;
-  font-size: 1.2px;
-  font-weight: 800;
-  text-anchor: middle;
-  dominant-baseline: middle;
+.terrain-compass-rose {
+  filter: grayscale(1);
+  overflow: visible;
 }
 
 .plan-layout {

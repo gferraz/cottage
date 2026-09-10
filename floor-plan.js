@@ -325,23 +325,19 @@ class FloorPlan {
     const northLength = Math.hypot(uy, vy);
     const northX = uy / northLength;
     const northY = vy / northLength;
-    const northBaseX = Math.min(siteWidth - 2.5, Math.max(2.5, siteWidth * 0.82));
-    const northBaseY = Math.min(siteHeight - 2.5, Math.max(2.5, siteHeight * 0.18));
-    const northSymbol = create("text", {
-      x: northBaseX,
-      y: northBaseY,
-      class: "terrain-north-symbol",
+    const northBaseX = siteWidth - 2.4;
+    const northBaseY = 2.5;
+    const compassRose = create("image", {
+      class: "terrain-compass-rose",
+      href: document.querySelector("#terrain-compass-rose-data")?.content.textContent.trim(),
+      x: northBaseX - 1.5,
+      y: northBaseY - 1.8,
+      width: 3,
+      height: 3.6,
+      preserveAspectRatio: "xMidYMid meet",
       transform: `rotate(${Math.atan2(northX, -northY) * 180 / Math.PI} ${northBaseX} ${northBaseY})`
     });
-    northSymbol.textContent = "↑";
-    this.terrainLayer.append(northSymbol);
-    const northLabel = create("text", {
-      x: northBaseX - northY * 0.34,
-      y: northBaseY + northX * 0.34,
-      class: "terrain-north-label"
-    });
-    northLabel.textContent = terrain.north?.label || "N";
-    this.terrainLayer.append(northLabel);
+    this.terrainLayer.append(compassRose);
   }
 
   resolve(value) {
@@ -707,7 +703,7 @@ class FloorPlan {
 
   async downloadHtml(filename = "planta-terrea-gerada.html") {
     const exportedDocument = document.cloneNode(true);
-    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #plan-status")
+    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #plan-status, #terrain-compass-rose-data")
       .forEach((element) => element.remove());
     exportedDocument.querySelectorAll("script").forEach((script) => script.remove());
 
