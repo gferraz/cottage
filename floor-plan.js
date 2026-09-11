@@ -53,6 +53,10 @@ class FloorPlan {
         }
       });
     }
+    if (typeof window !== "undefined") {
+      window.addEventListener("beforeprint", () => this.preparePrint());
+      window.addEventListener("afterprint", () => this.clearPrintScale());
+    }
   }
 
   add(data) {
@@ -550,6 +554,25 @@ class FloorPlan {
 
   formatMeters(value) {
     return Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+  }
+
+  preparePrint() {
+    const siteWidth = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--site-width"));
+    const siteHeight = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--site-height"));
+    if (!(siteWidth > 0) || !(siteHeight > 0)) return;
+
+    const mmToPx = 96 / 25.4;
+    const printableWidth = 200 * mmToPx;
+    const printableHeight = (287 - 16) * mmToPx;
+    const maxScale = Math.min(22, printableWidth / siteWidth, printableHeight / siteHeight);
+    const printScale = Math.max(16, Math.floor(maxScale * 10) / 10);
+    this.root.style.setProperty("--print-m", `${printScale}px`);
+    this.root.dataset.printSplitRequired = maxScale < 16 ? "true" : "false";
+  }
+
+  clearPrintScale() {
+    this.root.style.removeProperty("--print-m");
+    delete this.root.dataset.printSplitRequired;
   }
 
   updateSummary() {

@@ -76,13 +76,18 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 }
 
 .plan-layout {
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 24px;
+  display: block;
   width: min(100%, 1280px);
   margin: 0 auto;
   overflow-x: auto;
+}
+
+.plan-details {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  width: min(100%, 1280px);
+  margin: 18px auto 0;
 }
 
 .room-list {
@@ -219,7 +224,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 #download-html:hover,
 #download-markdown:hover { background: #e6e6e6; }
 #reload-json:disabled { cursor: not-allowed; opacity: 0.55; }
-.legend { width: min(1064px, 100%); margin: 18px auto 0; font-size: 13px; color: #444; }
+.legend { flex: 1 1 auto; min-width: 0; font-size: 13px; color: #444; }
 .opening-legend { margin-top: 16px; }
 .opening-legend h2 { margin: 0 0 8px; font-size: 16px; color: #222; }
 .opening-list-item { display: flex; flex-wrap: wrap; gap: 8px; padding: 5px 0; border-top: 1px solid #e2e2e2; }
@@ -239,12 +244,12 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 
 @media print {
   @page {
-    size: A4 landscape;
-    margin: 10mm;
+    size: A4 portrait;
+    margin: 0;
   }
 
-  :root { --m: 24px; }
-  body { padding: 0; color: #000; }
+  :root { --m: 16px; }
+  body { padding: 5mm; color: #000; }
   #json-file,
   #load-json,
   #reload-json,
@@ -266,19 +271,44 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
     display: block;
     width: 100%;
     margin: 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
   .site {
-    --m: 24px !important;
+    --m: var(--print-m, 16px) !important;
+    --half: calc(var(--print-m, 16px) / 2);
+    --grid: rgba(0, 0, 0, 0.18);
     margin: 0 auto;
+    background-size: var(--half) var(--half);
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
     break-after: page;
     page-break-after: always;
+  }
+  .room {
+    padding: 2px;
+    font-size: 8px;
+    line-height: 1.05;
+    border-width: 0.8px;
+  }
+  .room small {
+    margin-top: 1px;
+    font-size: 5.5px;
+  }
+  .room .area { margin-top: 0; }
+  .plan-opening { border-width: 0.8px; }
+  .direction { font-size: 10px; }
+  .plan-details {
+    display: block;
+    width: 100%;
+    margin: 0;
+    break-before: page;
+    page-break-before: always;
   }
   .room-list {
     width: 100%;
     margin: 0;
     border: 0;
-    break-before: page;
-    page-break-before: always;
   }
   .legend {
     width: 100%;
