@@ -78,10 +78,11 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .plan-layout {
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 24px;
   width: min(100%, 1280px);
   margin: 0 auto;
+  overflow-x: auto;
 }
 
 .room-list {
@@ -235,5 +236,54 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .error-list-item code { color: #6b2020; }
 .area-summary { margin-bottom: 8px; font-weight: 650; color: #222; }
 #plan-bounds { margin-bottom: 8px; font-weight: 650; color: #222; }
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+
+  :root { --m: 24px; }
+  body { padding: 0; color: #000; }
+  #json-file,
+  #load-json,
+  #reload-json,
+  #download-html,
+  #download-markdown,
+  #plan-status { display: none !important; }
+  h1 {
+    margin: 0 0 5mm;
+    font-size: 18pt;
+  }
+  h1::after {
+    content: "Escala gráfica: cada quadrado da grade representa 0,5 m";
+    display: block;
+    margin-top: 2mm;
+    font-size: 9pt;
+    font-weight: 400;
+  }
+  .plan-layout {
+    display: block;
+    width: 100%;
+    margin: 0;
+  }
+  .site {
+    --m: 24px !important;
+    margin: 0 auto;
+    break-after: page;
+    page-break-after: always;
+  }
+  .room-list {
+    width: 100%;
+    margin: 0;
+    border: 0;
+    break-before: page;
+    page-break-before: always;
+  }
+  .legend {
+    width: 100%;
+    margin-top: 8mm;
+  }
+}
 #terrain-summary { margin-bottom: 8px; font-weight: 650; color: #55724d; }
 code { background: #f2f2f2; padding: 2px 5px; border-radius: 4px; }
