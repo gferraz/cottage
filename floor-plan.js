@@ -708,6 +708,119 @@ class FloorPlan {
     });
   }
 
+  asciiLayout() {
+    const bounds = this.bounds();
+    if (!bounds) return "(nenhum cômodo carregado)";
+
+    const step = 0.5;
+    const columns = Math.ceil(bounds.width / step) + 1;
+    const rows = Math.ceil(bounds.height / step) + 1;
+    const grid = Array.from({ length: rows }, () => Array.from({ length: columns }, () => ({ mask: 0, character: " " })));
+    const directions = { north: 1, east: 2, south: 4, west: 8 };
+    const column = (value) => Math.max(0, Math.min(columns - 1, Math.round((value - bounds.x0) / step)));
+    const row = (value) => Math.max(0, Math.min(rows - 1, Math.round((value - bounds.y0) / step)));
+    const connect = (x, y, direction) => {
+      if (x < 0 || x >= columns || y < 0 || y >= rows) return;
+      grid[y][x].mask |= direction;
+    };
+    const remove = (x, y, direction) => {
+      if (x < 0 || x >= columns || y < 0 || y >= rows) return;
+      grid[y][x].mask &= ~direction;
+    };
+    const setVirtual = (x, y, character) => {
+      if (x < 0 || x >= columns || y < 0 || y >= rows) return;
+      if (grid[y][x].mask === 0) grid[y][x].character = character;
+    };
+    const addHorizontal = (x, y, state) => {
+      if (state === "open") return;
+      if (state === "virtual") return setVirtual(x, y, "┄");
+      connect(x, y, directions.east | directions.west);
+    };
+    const addVertical = (x, y, state) => {
+      if (state === "open") return;
+      if (state === "virtual") return setVirtual(x, y, "┆");
+      connect(x, y, directions.north | directions.south);
+    };
+    const glyphs = {
+      0: "  ", 1: "│ ", 2: "──", 3: "└─", 4: "│ ", 5: "│ ", 6: "┌─", 7: "├─",
+      8: "─ ", 9: "┘ ", 10: "──", 11: "┴ ", 12: "┐ ", 13: "┤ ", 14: "┬ ", 15: "┼ "
+    };
+
+    this.roomElements.forEach((room) => {
+      const left = column(room.x0());
+      const right = column(room.x1());
+      const top = row(room.y0());
+      const bottom = row(room.y1());
+      const walls = room.walls || {};
+      const horizontal = (y, state) => {
+        for (let x = left; x <= right; x += 1) addHorizontal(x, y, state);
+      };
+      const vertical = (x, state) => {
+        for (let y = top; y <= bottom; y += 1) addVertical(x, y, state);
+      };
+      horizontal(top, walls.top);
+      horizontal(bottom, walls.bottom);
+      vertical(left, walls.left);
+      vertical(right, walls.right);
+
+      const label = (room.dataset.label || room.dataset.id || "Cômodo").toUpperCase();
+      const labelRow = Math.min(bottom - 1, Math.max(top + 1, Math.round((top + bottom) / 2)));
+      const available = Math.max(0, right - left - 1);
+      if (available > 1) {
+        const text = label.slice(0, available);
+        const start = left + 1 + Math.max(0, Math.floor((available - text.length) / 2));
+        [...text].forEach((character, index) => {
+          if (start + index < right && grid[labelRow][start + index].mask === 0) grid[labelRow][start + index].character = character;
+        });
+      }
+    });
+
+    this.openings.forEach((opening) => {
+      const room = this.rooms.get(opening.roomId);
+      if (!room) return;
+      const wall = opening.wall;
+      const start = opening.position;
+      const end = start + opening.length;
+      const horizontal = wall === "top" || wall === "bottom";
+      const startPoint = horizontal ? room.x0() : room.y0();
+      const from = Math.round((startPoint + start - (horizontal ? bounds.x0 : bounds.y0)) / step);
+      const to = Math.round((startPoint + end - (horizontal ? bounds.x0 : bounds.y0)) / step);
+      const fixed = horizontal
+        ? row(wall === "top" ? room.y0() : room.y1())
+        : column(wall === "left" ? room.x0() : room.x1());
+      for (let position = from; position <= to; position += 1) {
+        if (horizontal) {
+          grid[fixed][position].mask = 0;
+          grid[fixed][position].character = " ";
+        } else {
+          grid[position][fixed].mask = 0;
+          grid[position][fixed].character = " ";
+        }
+      }
+      if (to > from) {
+        if (horizontal) {
+          remove(from - 1, fixed, directions.east);
+          remove(to + 1, fixed, directions.west);
+          const inward = wall === "top" ? directions.south : directions.north;
+          grid[fixed][from].mask = (wall === "top" ? directions.south | directions.west : directions.north | directions.west);
+          grid[fixed][to].mask = (wall === "top" ? directions.south | directions.east : directions.north | directions.east);
+          grid[fixed][from].mask |= inward;
+          grid[fixed][to].mask |= inward;
+        } else {
+          remove(fixed, from - 1, directions.south);
+          remove(fixed, to + 1, directions.north);
+          const inward = wall === "left" ? directions.east : directions.west;
+          grid[from][fixed].mask = (wall === "left" ? directions.north | directions.east : directions.north | directions.west);
+          grid[to][fixed].mask = (wall === "left" ? directions.south | directions.east : directions.south | directions.west);
+          grid[from][fixed].mask |= inward;
+          grid[to][fixed].mask |= inward;
+        }
+      }
+    });
+
+    return grid.map((line) => line.map((cell) => cell.mask ? glyphs[cell.mask] : (cell.character === "┄" ? "┄┄" : cell.character === "┆" ? "┆ " : `${cell.character} `)).join("").replace(/ +$/u, "")).join("\n");
+  }
+
   markdownText(value) {
     return String(value ?? "").replaceAll("|", "\\|").replaceAll("\n", " ");
   }
@@ -748,6 +861,8 @@ class FloorPlan {
     if (this.errors.length > 0) {
       lines.push("", "## Passagens com erro", "", ...this.errors.map(({ opening, message }) => `- \`${this.markdownText(JSON.stringify(opening))}\`: ${this.markdownText(message)}`));
     }
+
+    lines.push("", "## ASCII art", "", "```text", this.asciiLayout(), "```");
 
     const blob = new Blob([`${lines.join("\n")}\n`], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
