@@ -1,5 +1,5 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, roomList = null, roomCountSummary = null, summary = null, boundsSummary = null, terrainSummary = null, openingList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, roomList = null, roomCountSummary = null, summary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
     this.terrainLayer = terrainLayer;
     this.roomList = roomList;
@@ -8,6 +8,7 @@ class FloorPlan {
     this.boundsSummary = boundsSummary;
     this.terrainSummary = terrainSummary;
     this.openingList = openingList;
+    this.windowList = windowList;
     this.naturalList = naturalList;
     this.errorList = errorList;
     this.downloadButton = downloadButton;
@@ -20,6 +21,7 @@ class FloorPlan {
     this.roomElements = [];
     this.itemElements = [];
     this.openings = [];
+    this.windows = [];
     this.naturalCommunications = [];
     this.currentConfig = null;
     this.currentFile = null;
@@ -115,6 +117,32 @@ class FloorPlan {
     this.roomCount += 1;
     this.updateSummary();
     return element;
+  }
+
+  addRooms(rooms) {
+    let pending = [...rooms];
+    while (pending.length > 0) {
+      const next = [];
+      let added = 0;
+      let lastError = null;
+
+      pending.forEach((room) => {
+        try {
+          this.addRoom(room);
+          added += 1;
+        } catch (error) {
+          if (error.message.startsWith("Unknown room reference:") || error.message.startsWith("Unknown room reference")) {
+            next.push(room);
+            lastError = error;
+          } else {
+            throw error;
+          }
+        }
+      });
+
+      if (added === 0) throw lastError || new Error("Unable to resolve room references");
+      pending = next;
+    }
   }
 
   normalizeGeometry(data) {
@@ -379,23 +407,41 @@ class FloorPlan {
 
   addOpening(opening) {
     const passage = this.normalizeOpening(opening);
+    if (passage.type === "window") {
+      this.windows.push(passage);
+      this.renderWallFeature(passage, "plan-window");
+      return passage;
+    }
     this.openings.push(passage);
+
+    this.renderWallFeature(passage, "plan-opening");
+    return passage;
+  }
+
+  addWindow(window) {
+    const feature = this.normalizeOpening({ ...window, type: "window" });
+    this.windows.push(feature);
+
+    this.renderWallFeature(feature, "plan-window");
+    return feature;
+  }
+
+  renderWallFeature(feature, baseClass) {
 
     const wallThickness = 0.14;
     const element = this.add({
-      x: passage.horizontal ? passage.x : passage.x - wallThickness / 2,
-      y: passage.horizontal ? passage.y - wallThickness / 2 : passage.y,
-      w: passage.horizontal ? passage.length : wallThickness,
-      h: passage.horizontal ? wallThickness : passage.length,
-      classes: `plan-opening opening-${passage.type} opening-${passage.horizontal ? "horizontal" : "vertical"}`,
-      title: `${passage.type}: ${passage.id}`
+      x: feature.horizontal ? feature.x : feature.x - wallThickness / 2,
+      y: feature.horizontal ? feature.y - wallThickness / 2 : feature.y,
+      w: feature.horizontal ? feature.w : wallThickness,
+      h: feature.horizontal ? wallThickness : feature.w,
+      classes: `${baseClass} opening-${feature.type} opening-${feature.horizontal ? "horizontal" : "vertical"}`,
+      title: `${feature.type}: ${feature.id}`
     });
-    if (passage.type === "opening") {
-      const sourceRoom = this.rooms.get(passage.roomId);
+    if (feature.type === "opening") {
+      const sourceRoom = this.rooms.get(feature.roomId);
       const sourceBackground = sourceRoom ? getComputedStyle(sourceRoom).backgroundColor : "";
       if (sourceBackground) element.style.setProperty("--opening-source-background", sourceBackground);
     }
-    return passage;
   }
 
   normalizeOpening(opening) {
@@ -407,26 +453,28 @@ class FloorPlan {
     if (!room) throw new Error(`Unknown opening room reference: ${roomId}`);
     if (!room.hasWall(wall)) throw new Error(`Room ${roomId} has no solid ${wall} wall`);
 
-    const target = String(opening.to ?? "").trim();
-    if (!target) throw new Error("An opening needs a target room or exterior");
+    const target = String(opening.to ?? "exterior").trim() || "exterior";
     if (target !== "exterior" && !this.rooms.has(target)) {
       throw new Error(`Unknown opening target: ${target}`);
     }
 
-    const defaults = { door: 0.8, opening: 1.0 };
+    const defaults = { door: 0.8, opening: 1.0, window: 1.2 };
     const type = String(opening.type ?? "door").trim();
     if (!(type in defaults)) throw new Error(`Unsupported opening type: ${type}`);
 
     const horizontal = wall === "top" || wall === "bottom";
     const wallStart = horizontal ? room.x0() : room.y0();
     const wallLength = horizontal ? room.w() : room.h();
-    const length = Number(opening.length ?? defaults[type]);
-    if (!(length > 0)) throw new Error("Opening length must be greater than zero");
-    if (length > wallLength) throw new Error(`Opening is wider than wall ${opening.from}`);
+    const width = Number(opening.w ?? opening.length ?? defaults[type]);
+    if (!(width > 0)) throw new Error("Opening width must be greater than zero");
+    if (width > wallLength) throw new Error(`Opening is wider than wall ${opening.from}`);
 
-    const hasPosition = opening.position !== undefined || opening.x !== undefined;
-    const position = hasPosition ? Number(opening.position ?? opening.x) : (wallLength - length) / 2;
-    if (!(position >= 0) || position + length > wallLength) {
+    const relativePosition = horizontal
+      ? (opening.dx ?? opening.position ?? opening.x)
+      : (opening.dy ?? opening.position ?? opening.y);
+    const hasPosition = relativePosition !== undefined;
+    const position = hasPosition ? this.resolve(relativePosition) : (wallLength - width) / 2;
+    if (!(position >= 0) || position + width > wallLength) {
       throw new Error(`Opening position is outside wall ${opening.from}`);
     }
 
@@ -439,7 +487,7 @@ class FloorPlan {
       const sharedStart = Math.max(sourceWall.start, targetWall.start);
       const sharedEnd = Math.min(sourceWall.end, targetWall.end);
       const openingStart = wallStart + position;
-      const openingEnd = openingStart + length;
+      const openingEnd = openingStart + width;
       if (!sameLine || sharedEnd <= sharedStart || openingStart < sharedStart || openingEnd > sharedEnd) {
         throw new Error(`Room ${target} is not connected to ${opening.from}`);
       }
@@ -454,7 +502,7 @@ class FloorPlan {
       to: target,
       type,
       position,
-      length,
+      w: width,
       roomId,
       wall,
       wallLength,
@@ -519,6 +567,7 @@ class FloorPlan {
     this.roomElements = [];
     this.itemElements = [];
     this.openings = [];
+    this.windows = [];
     this.errors = [];
     this.roomArea = 0;
     this.roomCount = 0;
@@ -529,13 +578,20 @@ class FloorPlan {
     this.currentConfig = config;
     this.clear();
     this.renderTerrain(config.terrain);
-    (config.rooms ?? []).forEach((room) => this.addRoom(room));
+    this.addRooms(config.rooms ?? []);
     (config.items ?? []).forEach((item) => this.addItem(item));
     (config.openings ?? []).forEach((opening, index) => {
       try {
         this.addOpening(opening);
       } catch (error) {
-        this.errors.push({ index, opening, message: error.message });
+        this.errors.push({ index, opening, category: opening.type === "window" ? "window" : "opening", message: error.message });
+      }
+    });
+    (config.windows ?? []).forEach((window, index) => {
+      try {
+        this.addWindow(window);
+      } catch (error) {
+        this.errors.push({ index, opening: window, category: "window", message: error.message });
       }
     });
     this.applyBuildingPlacement(config.building);
@@ -599,6 +655,7 @@ class FloorPlan {
     }
     this.updateRoomList();
     this.updateOpeningList();
+    this.updateWindowList();
     this.updateNaturalList();
     this.updateErrorList();
   }
@@ -631,7 +688,7 @@ class FloorPlan {
       return;
     }
 
-    this.openings.forEach((opening) => {
+    [...this.openings, ...this.windows].forEach((opening) => {
       const item = document.createElement("div");
       item.className = "opening-list-item";
 
@@ -643,10 +700,33 @@ class FloorPlan {
       const to = opening.to === "exterior"
         ? "EXTERIOR"
         : this.rooms.get(opening.to)?.dataset.label || opening.to;
-      details.textContent = `${opening.type} — ${from} → ${to} (${this.formatMeters(opening.length)}m)`;
+      details.textContent = `${opening.type} — ${from} → ${to} (${this.formatMeters(opening.w)}m)`;
 
       item.append(title, details);
       this.openingList.append(item);
+    });
+  }
+
+  updateWindowList() {
+    if (!this.windowList) return;
+
+    this.windowList.replaceChildren();
+    if (this.windows.length === 0) {
+      this.windowList.textContent = "Nenhuma janela carregada.";
+      return;
+    }
+
+    this.windows.forEach((window) => {
+      const item = document.createElement("div");
+      item.className = "opening-list-item";
+      const title = document.createElement("strong");
+      title.textContent = window.id;
+      const details = document.createElement("span");
+      const from = this.rooms.get(window.roomId)?.dataset.label || window.roomId;
+      const to = window.to === "exterior" ? "EXTERIOR" : this.rooms.get(window.to)?.dataset.label || window.to;
+      details.textContent = `${from} → ${to} (${this.formatMeters(window.w)}m)`;
+      item.append(title, details);
+      this.windowList.append(item);
     });
   }
 
@@ -724,10 +804,10 @@ class FloorPlan {
       return;
     }
 
-    this.errors.forEach(({ index, opening, message }) => {
+    this.errors.forEach(({ index, opening, category = "opening", message }) => {
       const item = document.createElement("div");
       item.className = "error-list-item";
-      item.textContent = `Passagem ${index + 1}: ${message} `;
+      item.textContent = `${category === "window" ? "Janela" : "Passagem"} ${index + 1}: ${message} `;
       const source = document.createElement("code");
       source.textContent = JSON.stringify(opening);
       item.append(source);
@@ -807,7 +887,7 @@ class FloorPlan {
       if (!room) return;
       const wall = opening.wall;
       const start = opening.position;
-      const end = start + opening.length;
+      const end = start + opening.w;
       const horizontal = wall === "top" || wall === "bottom";
       const startPoint = horizontal ? room.x0() : room.y0();
       const from = Math.round((startPoint + start - (horizontal ? bounds.x0 : bounds.y0)) / step);
@@ -867,12 +947,21 @@ class FloorPlan {
     });
 
     lines.push("", `**Total:** ${this.roomCount} cômodos · ${this.formatMeters(this.roomArea)} m²`);
-    lines.push("", "## Passagens", "", "| ID | De | Para | Tipo | Parede | Posição | Comprimento |", "|---|---|---|---|---|---:|---:|");
+    lines.push("", "## Passagens", "", "| ID | De | Para | Tipo | Parede | Posição | Largura |", "|---|---|---|---|---|---:|---:|");
     if (this.openings.length === 0) {
       lines.push("| — | Nenhuma passagem definida |  |  |  |  |  |");
     } else {
       this.openings.forEach((opening) => {
-        lines.push(`| ${this.markdownText(opening.id)} | ${this.markdownText(opening.roomId)} | ${this.markdownText(opening.to)} | ${this.markdownText(opening.type)} | ${opening.wall} | ${this.formatMeters(opening.position)} | ${this.formatMeters(opening.length)} |`);
+        lines.push(`| ${this.markdownText(opening.id)} | ${this.markdownText(opening.roomId)} | ${this.markdownText(opening.to)} | ${this.markdownText(opening.type)} | ${opening.wall} | ${this.formatMeters(opening.position)} | ${this.formatMeters(opening.w)} |`);
+      });
+    }
+
+    lines.push("", "## Janelas", "", "| ID | De | Para | Parede | Posição | Largura |", "|---|---|---|---|---:|---:|");
+    if (this.windows.length === 0) {
+      lines.push("| — | Nenhuma janela definida |  |  |  |  |");
+    } else {
+      this.windows.forEach((window) => {
+        lines.push(`| ${this.markdownText(window.id)} | ${this.markdownText(window.roomId)} | ${this.markdownText(window.to)} | ${window.wall} | ${this.formatMeters(window.position)} | ${this.formatMeters(window.w)} |`);
       });
     }
 
@@ -886,7 +975,7 @@ class FloorPlan {
     }
 
     if (this.errors.length > 0) {
-      lines.push("", "## Passagens com erro", "", ...this.errors.map(({ opening, message }) => `- \`${this.markdownText(JSON.stringify(opening))}\`: ${this.markdownText(message)}`));
+      lines.push("", "## Elementos com erro", "", ...this.errors.map(({ opening, category = "opening", message }) => `- **${category === "window" ? "Janela" : "Passagem"}:** \`${this.markdownText(JSON.stringify(opening))}\`: ${this.markdownText(message)}`));
     }
 
     lines.push("", "## ASCII art", "", "```text", this.asciiLayout(), "```");

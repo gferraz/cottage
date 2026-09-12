@@ -159,9 +159,22 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   background: var(--opening-source-background, #b9d9e2);
 }
 
-.plan-opening.opening-horizontal {
+.plan-opening.opening-opening.opening-horizontal {
   border-top: none;
   border-bottom: none;
+}
+
+.plan-opening.opening-opening.opening-vertical {
+  border-left: none;
+  border-right: none;
+}
+
+.plan-window {
+  z-index: 15;
+  opacity: 1 !important;
+  border: 2px solid #a7adb3;
+  background: #eefaff;
+  pointer-events: none;
 }
 
 .room {
@@ -229,6 +242,8 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .opening-list-item { display: flex; flex-wrap: wrap; gap: 8px; padding: 5px 0; border-top: 1px solid #e2e2e2; }
 .opening-list-item strong { color: #222; }
 .opening-list-item span { color: #555; }
+.window-legend { margin-top: 16px; }
+.window-legend h2 { margin: 0 0 8px; font-size: 16px; color: #3f6875; }
 .natural-legend { margin-top: 16px; }
 .natural-legend h2 { margin: 0 0 8px; font-size: 16px; color: #2f5d4a; }
 .natural-list-item { display: flex; flex-wrap: wrap; gap: 8px; padding: 5px 0; border-top: 1px solid #e2e2e2; }
@@ -295,7 +310,8 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
     font-size: 5.5px;
   }
   .room .area { margin-top: 0; }
-  .plan-opening { border-width: 0.8px; }
+  .plan-opening,
+  .plan-window { border-width: 0.8px; }
   .direction { font-size: 10px; }
   .plan-details {
     display: block;

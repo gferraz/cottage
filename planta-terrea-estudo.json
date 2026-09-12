@@ -49,16 +49,20 @@
     { "pos": ["garage.x0 + 1",   "garage.y0 + 1"],   "size": [1.8, 4.0], "classes": "car", "title": "Carro" }
   ],
   "openings": [
-    { "from": "entry.top",      "to": "porch",       "type": "door", "length": 1.0 },
-    { "from": "office.left",    "to": "entry",       "type": "door", "x": 2.3 },
+    { "from": "entry.top",      "to": "porch",       "type": "door", "w": 1.0 },
+    { "from": "office.left",    "to": "entry",       "type": "door", "dx": 2.3 },
+    { "from": "office.top",     "to": "exterior",    "type": "window", "dx": 0.8, "w": 1},
+    { "from": "office.top",     "to": "exterior",    "type": "window", "dx": "office.w - 1", "w": 1},
+    { "from": "office.right",   "to": "exterior",    "type": "window", "dy": 0.0, "w": 1},
+    { "from": "master.top",     "to": "exterior",    "type": "window" },
     { "from": "master.right",   "to": "entry",       "type": "door" },
     { "from": "masterbath.top", "to": "closet",      "type": "door" },
     { "from": "closet.top",     "to": "master",      "type": "door" },
     { "from": "pantry.top",     "to": "circulation", "type": "opening" },
     { "from": "powder.right",   "to": "corridor",    "type": "door" },
     { "from": "mudroom.right",  "to": "garage",      "type": "door" },
-    { "from": "garage.top",     "to": "exterior",    "type": "door", "length": 3.2 },
-    { "from": "garage.bottom",  "to": "exterior",    "type": "door", "length": 3.2 },
+    { "from": "garage.top",     "to": "exterior",    "type": "door", "w": 3.2 },
+    { "from": "garage.bottom",  "to": "exterior",    "type": "door", "w": 3.2 },
     { "from": "kitchen.bottom", "to": "terrace",     "type": "door" }
   ]
 }
