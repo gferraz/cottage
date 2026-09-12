@@ -119,9 +119,9 @@ class FloorPlan {
 
   normalizeGeometry(data) {
     const [xValue, yValue] = data.pos ?? [data.x, data.y];
-    const [w, h] = data.size ?? [data.w, data.h];
+    const [wValue, hValue] = data.size ?? [data.w, data.h];
 
-    if ([xValue, yValue, w, h].some((value) => value === undefined)) {
+    if ([xValue, yValue, wValue, hValue].some((value) => value === undefined)) {
       throw new Error("A room needs pos/size or x/y/w/h values");
     }
 
@@ -129,8 +129,8 @@ class FloorPlan {
       ...data,
       x: this.resolve(xValue),
       y: this.resolve(yValue),
-      w: Number(w),
-      h: Number(h)
+      w: this.resolve(wValue),
+      h: this.resolve(hValue)
     };
   }
 
@@ -348,6 +348,10 @@ class FloorPlan {
 
   resolve(value) {
     if (typeof value === "number") return value;
+
+    if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
+      return Number(value);
+    }
 
     if (typeof value === "object" && value !== null) {
       return this.resolve(value.from) + Number(value.delta ?? 0);
