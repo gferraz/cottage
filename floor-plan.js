@@ -24,7 +24,7 @@ class FloorPlan {
     this.windows = [];
     this.naturalCommunications = [];
     this.currentConfig = null;
-    this.currentFile = null;
+    this.currentSourceText = null;
     this.terrainArea = 0;
     this.terrainReference = null;
 
@@ -62,7 +62,7 @@ class FloorPlan {
   }
 
   add(data) {
-    const { label = "", classes = "", title = "", room = false } = data;
+    const { label = "", classes = "", title = "", room = false, showLabel = false } = data;
     const { x, y, w, h } = this.normalizeGeometry(data);
     const element = document.createElement("div");
     element.className = `plan-item plan-generated${room ? " room" : ""}${classes ? ` ${classes}` : ""}`;
@@ -71,6 +71,13 @@ class FloorPlan {
     element.style.setProperty("--w", w);
     element.style.setProperty("--h", h);
     if (title) element.title = title;
+    if (!room && showLabel && (label || title)) {
+      const dimensions = `${this.formatMeters(w)}m × ${this.formatMeters(h)}m`;
+      const itemLabel = String(label || title)
+        .replace(/\s+\d+(?:[,.]\d+)?\s*m?\s*[×x]\s*\d+(?:[,.]\d+)?\s*m?\s*$/iu, "")
+        .trim();
+      element.title = `${itemLabel} ${dimensions}`;
+    }
 
     const walls = room ? this.normalizeWalls(data.walls) : null;
     if (walls) {
@@ -93,7 +100,10 @@ class FloorPlan {
     if (room) {
       if (data.id) element.dataset.id = data.id;
       element.dataset.label = label;
-      element.append(label);
+      const roomLabel = document.createElement("span");
+      roomLabel.className = "room-label";
+      roomLabel.textContent = label;
+      element.append(roomLabel);
       const dimensions = document.createElement("small");
       dimensions.textContent = `${this.formatMeters(w)}m × ${this.formatMeters(h)}m`;
       element.append(dimensions);
@@ -109,7 +119,51 @@ class FloorPlan {
   }
 
   addRoom(room) {
-    const element = this.add({ ...room, room: true });
+    const parts = room.parts?.map((part, index) => ({
+      ...this.normalizeGeometry(part),
+      id: part.id || `part-${index + 1}`
+    }));
+    const geometry = parts?.length
+      ? {
+        x: Math.min(...parts.map((part) => part.x)),
+        y: Math.min(...parts.map((part) => part.y)),
+        w: Math.max(...parts.map((part) => part.x + part.w)) - Math.min(...parts.map((part) => part.x)),
+        h: Math.max(...parts.map((part) => part.y + part.h)) - Math.min(...parts.map((part) => part.y))
+      }
+      : {};
+    const roomData = parts?.length
+      ? { ...room, pos: [geometry.x, geometry.y], size: [geometry.w, geometry.h] }
+      : room;
+    const element = this.add({ ...roomData, room: true });
+    element.geometryParts = parts?.length
+      ? parts.map(({ x, y, w, h }) => ({ x, y, w, h }))
+      : [{ x: element.x0(), y: element.y0(), w: element.w(), h: element.h() }];
+    if (parts?.length) {
+      element.classList.add("compound-room");
+      element.partReferences = new Map(parts.map((part) => [part.id, {
+        x0: () => part.x,
+        x1: () => part.x + part.w,
+        y0: () => part.y,
+        y1: () => part.y + part.h,
+        w: () => part.w,
+        h: () => part.h,
+        area: () => part.w * part.h
+      }]));
+      parts.forEach((part) => {
+        const partElement = document.createElement("div");
+        partElement.className = `room-part${room.classes ? ` ${room.classes}` : ""}`;
+        partElement.style.left = `calc((${part.x} - var(--x)) * var(--m))`;
+        partElement.style.top = `calc((${part.y} - var(--y)) * var(--m))`;
+        partElement.style.width = `calc(${part.w} * var(--m))`;
+        partElement.style.height = `calc(${part.h} * var(--m))`;
+        const walls = this.normalizeWalls(part.walls ?? room.walls);
+        ["top", "right", "bottom", "left"].forEach((side) => {
+          partElement.dataset[`wall${side[0].toUpperCase()}${side.slice(1)}`] = walls[side];
+        });
+        element.prepend(partElement);
+      });
+      element.area = () => parts.reduce((total, part) => total + part.w * part.h, 0);
+    }
     this.roomElements.push(element);
     if (room.id) this.rooms.set(room.id, element);
     this.updateOverlaps();
@@ -385,7 +439,21 @@ class FloorPlan {
       return this.resolve(value.from) + Number(value.delta ?? 0);
     }
 
-    const match = String(value).trim().match(
+    const reference = String(value).trim();
+    const partMatch = reference.match(
+      /^([\w-]+)\.([\w-]+)\.(x0|x1|y0|y1|w|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
+    );
+    if (partMatch) {
+      const [, roomId, partId, method, operator, amount] = partMatch;
+      const room = this.rooms.get(roomId);
+      if (!room) throw new Error(`Unknown room reference: ${roomId}`);
+      const part = room.partReferences?.get(partId);
+      if (!part) throw new Error(`Unknown part reference: ${roomId}.${partId}`);
+      const offset = amount ? Number(amount) : 0;
+      return part[method]() + (operator === "-" ? -offset : offset);
+    }
+
+    const match = reference.match(
       /^([\w-]+)\.(x0|x1|y0|y1|w|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
     );
 
@@ -400,7 +468,7 @@ class FloorPlan {
   }
 
   addItem(item) {
-    const element = this.add(item);
+    const element = this.add({ ...item, showLabel: true });
     this.itemElements.push(element);
     return element;
   }
@@ -465,30 +533,44 @@ class FloorPlan {
     const horizontal = wall === "top" || wall === "bottom";
     const wallStart = horizontal ? room.x0() : room.y0();
     const wallLength = horizontal ? room.w() : room.h();
-    const width = Number(opening.w ?? opening.length ?? defaults[type]);
-    if (!(width > 0)) throw new Error("Opening width must be greater than zero");
-    if (width > wallLength) throw new Error(`Opening is wider than wall ${opening.from}`);
-
-    const relativePosition = horizontal
-      ? (opening.dx ?? opening.position ?? opening.x)
-      : (opening.dy ?? opening.position ?? opening.y);
-    const hasPosition = relativePosition !== undefined;
-    const position = hasPosition ? this.resolve(relativePosition) : (wallLength - width) / 2;
-    if (!(position >= 0) || position + width > wallLength) {
-      throw new Error(`Opening position is outside wall ${opening.from}`);
-    }
-
+    let sharedStart = null;
+    let sharedEnd = null;
     if (target !== "exterior") {
       const targetRoom = this.rooms.get(target);
       const oppositeWall = { top: "bottom", right: "left", bottom: "top", left: "right" }[wall];
       const targetWall = this.wallSegment(targetRoom, oppositeWall);
       const sourceWall = this.wallSegment(room, wall);
-      const sameLine = Math.abs(sourceWall.coordinate - targetWall.coordinate) < 1e-9;
-      const sharedStart = Math.max(sourceWall.start, targetWall.start);
-      const sharedEnd = Math.min(sourceWall.end, targetWall.end);
+      if (Math.abs(sourceWall.coordinate - targetWall.coordinate) >= 1e-9) {
+        throw new Error(`Room ${target} is not connected to ${opening.from}`);
+      }
+      sharedStart = Math.max(sourceWall.start, targetWall.start);
+      sharedEnd = Math.min(sourceWall.end, targetWall.end);
+      if (sharedEnd <= sharedStart) throw new Error(`Room ${target} is not connected to ${opening.from}`);
+    }
+
+    const sharedLength = sharedStart === null ? wallLength : sharedEnd - sharedStart;
+    const width = Number(opening.w ?? opening.length ?? Math.min(defaults[type], sharedLength));
+    if (!(width > 0)) throw new Error("Opening width must be greater than zero");
+    if (width > wallLength) throw new Error(`Opening is wider than wall ${opening.from}`);
+    if (width > sharedLength) throw new Error(`Opening is wider than the shared wall segment ${opening.from}`);
+
+    const relativePosition = horizontal
+      ? (opening.dx ?? opening.position ?? opening.x)
+      : (opening.dy ?? opening.position ?? opening.y);
+    const hasPosition = relativePosition !== undefined;
+    const position = hasPosition
+      ? this.resolve(relativePosition)
+      : (sharedStart === null
+        ? (wallLength - width) / 2
+        : sharedStart - wallStart + (sharedLength - width) / 2);
+    if (!(position >= 0) || position + width > wallLength) {
+      throw new Error(`Opening position is outside wall ${opening.from}`);
+    }
+
+    if (target !== "exterior") {
       const openingStart = wallStart + position;
       const openingEnd = openingStart + width;
-      if (!sameLine || sharedEnd <= sharedStart || openingStart < sharedStart || openingEnd > sharedEnd) {
+      if (openingStart < sharedStart || openingEnd > sharedEnd) {
         throw new Error(`Room ${target} is not connected to ${opening.from}`);
       }
     }
@@ -542,19 +624,20 @@ class FloorPlan {
     const rooms = this.roomElements;
     rooms.forEach((room) => room.classList.remove("room-overlap"));
 
-    for (let index = 0; index < rooms.length; index += 1) {
-      for (let otherIndex = index + 1; otherIndex < rooms.length; otherIndex += 1) {
-        const first = rooms[index];
-        const second = rooms[otherIndex];
+    const pieces = rooms.flatMap((room) => room.geometryParts.map((part) => ({ room, part })));
+    for (let index = 0; index < pieces.length; index += 1) {
+      for (let otherIndex = index + 1; otherIndex < pieces.length; otherIndex += 1) {
+        const first = pieces[index];
+        const second = pieces[otherIndex];
         const overlaps =
-          first.x0() < second.x1() &&
-          first.x1() > second.x0() &&
-          first.y0() < second.y1() &&
-          first.y1() > second.y0();
+          first.part.x < second.part.x + second.part.w &&
+          first.part.x + first.part.w > second.part.x &&
+          first.part.y < second.part.y + second.part.h &&
+          first.part.y + first.part.h > second.part.y;
 
         if (overlaps) {
-          first.classList.add("room-overlap");
-          second.classList.add("room-overlap");
+          first.room.classList.add("room-overlap");
+          second.room.classList.add("room-overlap");
         }
       }
     }
@@ -601,13 +684,17 @@ class FloorPlan {
   }
 
   async loadFile(file) {
-    const config = JSON.parse(await file.text());
-    this.currentFile = file;
+    const sourceText = await file.text();
+    const config = JSON.parse(sourceText);
+    this.currentSourceText = sourceText;
     return this.load(config);
   }
 
   async reload() {
-    if (this.currentFile) return this.loadFile(this.currentFile);
+    if (this.currentSourceText !== null) {
+      const config = JSON.parse(this.currentSourceText);
+      return this.load(config);
+    }
     if (!this.currentConfig) return this;
     return this.load(this.currentConfig);
   }
