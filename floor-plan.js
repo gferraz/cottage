@@ -625,15 +625,16 @@ class FloorPlan {
     rooms.forEach((room) => room.classList.remove("room-overlap"));
 
     const pieces = rooms.flatMap((room) => room.geometryParts.map((part) => ({ room, part })));
+    const epsilon = 1e-9;
     for (let index = 0; index < pieces.length; index += 1) {
       for (let otherIndex = index + 1; otherIndex < pieces.length; otherIndex += 1) {
         const first = pieces[index];
         const second = pieces[otherIndex];
-        const overlaps =
-          first.part.x < second.part.x + second.part.w &&
-          first.part.x + first.part.w > second.part.x &&
-          first.part.y < second.part.y + second.part.h &&
-          first.part.y + first.part.h > second.part.y;
+        const overlapWidth = Math.min(first.part.x + first.part.w, second.part.x + second.part.w)
+          - Math.max(first.part.x, second.part.x);
+        const overlapHeight = Math.min(first.part.y + first.part.h, second.part.y + second.part.h)
+          - Math.max(first.part.y, second.part.y);
+        const overlaps = overlapWidth > epsilon && overlapHeight > epsilon;
 
         if (overlaps) {
           first.room.classList.add("room-overlap");
