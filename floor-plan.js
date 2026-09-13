@@ -1,10 +1,12 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, roomList = null, roomCountSummary = null, summary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, titleElement = null, roomList = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
     this.terrainLayer = terrainLayer;
+    this.titleElement = titleElement;
     this.roomList = roomList;
     this.roomCountSummary = roomCountSummary;
     this.summary = summary;
+    this.usefulAreaSummary = usefulAreaSummary;
     this.boundsSummary = boundsSummary;
     this.terrainSummary = terrainSummary;
     this.openingList = openingList;
@@ -24,6 +26,7 @@ class FloorPlan {
     this.windows = [];
     this.naturalCommunications = [];
     this.currentConfig = null;
+    this.currentFloorId = null;
     this.currentSourceText = null;
     this.terrainArea = 0;
     this.terrainReference = null;
@@ -231,6 +234,14 @@ class FloorPlan {
         if (!sides.includes(side)) throw new Error(`Invalid wall side: ${side}`);
         normalized[side] = "solid";
       });
+      return normalized;
+    }
+
+    if (typeof walls === "string") {
+      if (!["solid", "open", "virtual"].includes(walls)) {
+        throw new Error(`Invalid wall state "${walls}". Use "solid", "open" or "virtual".`);
+      }
+      sides.forEach((side) => { normalized[side] = walls; });
       return normalized;
     }
 
@@ -719,18 +730,25 @@ class FloorPlan {
 
   load(config) {
     this.currentConfig = config;
+    const floorConfig = config.floors?.[config.activeFloor ?? 0] || config;
+    this.currentFloorId = floorConfig.id || null;
+    const title = floorConfig.label ? `${config.title || "Planta"} — ${floorConfig.label}` : config.title;
+    if (title) {
+      if (this.titleElement) this.titleElement.textContent = title;
+      if (typeof document !== "undefined") document.title = title;
+    }
     this.clear();
     this.renderTerrain(config.terrain);
-    this.addRooms(config.rooms ?? []);
-    (config.items ?? []).forEach((item) => this.addItem(item));
-    (config.openings ?? []).forEach((opening, index) => {
+    this.addRooms(floorConfig.rooms ?? []);
+    (floorConfig.items ?? []).forEach((item) => this.addItem(item));
+    (floorConfig.openings ?? []).forEach((opening, index) => {
       try {
         this.addOpening(opening);
       } catch (error) {
         this.errors.push({ index, opening, category: opening.type === "window" ? "window" : "opening", message: error.message });
       }
     });
-    (config.windows ?? []).forEach((window, index) => {
+    (floorConfig.windows ?? []).forEach((window, index) => {
       try {
         this.addWindow(window);
       } catch (error) {
@@ -763,6 +781,10 @@ class FloorPlan {
     return Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
   }
 
+  formatFixed(value) {
+    return Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
   preparePrint() {
     const siteWidth = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--site-width"));
     const siteHeight = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--site-height"));
@@ -783,10 +805,10 @@ class FloorPlan {
   }
 
   updateSummary() {
-    this.roomArea = this.calculateRoomArea();
     this.roomElements.forEach((room) => {
       room.netArea = this.calculateNetRoomArea(room);
     });
+    this.roomArea = this.roomElements.reduce((total, room) => total + room.netArea, 0);
     if (this.roomCountSummary) {
       this.roomCountSummary.textContent = `Total de cômodos: ${this.roomCount}`;
     }
@@ -815,6 +837,14 @@ class FloorPlan {
     if (!this.roomList) return;
 
     this.roomList.replaceChildren();
+    const header = document.createElement("div");
+    header.className = "room-list-header";
+    ["Cômodo", "Bruta (m²)", "Útil (m²)"].forEach((text) => {
+      const cell = document.createElement("span");
+      cell.textContent = text;
+      header.append(cell);
+    });
+    this.roomList.append(header);
     this.roomElements.forEach((room, index) => {
       const item = document.createElement("div");
       item.className = "room-list-item";
@@ -822,10 +852,13 @@ class FloorPlan {
       const label = document.createElement("span");
       label.textContent = `${index + 1}. ${room.dataset.label || "Cômodo"}`;
 
-      const area = document.createElement("span");
-      area.textContent = `${this.formatMeters(room.area())}m² bruta · ${this.formatMeters(room.netArea ?? room.area())}m² útil`;
+      const grossArea = document.createElement("span");
+      grossArea.textContent = this.formatFixed(room.area());
 
-      item.append(label, area);
+      const netArea = document.createElement("span");
+      netArea.textContent = this.formatFixed(room.netArea ?? room.area());
+
+      item.append(label, grossArea, netArea);
       this.roomList.append(item);
     });
   }
@@ -1089,7 +1122,7 @@ class FloorPlan {
       return;
     }
 
-    const lines = ["# Layout da planta térrea", "", "## Cômodos", "", "| # | ID | Nome | x | y | Largura | Altura | Área bruta | Área útil | Paredes |", "|---:|---|---|---:|---:|---:|---:|---:|---:|---|"];
+    const lines = [`# ${this.currentConfig.title || "Layout da planta térrea"}`, "", "## Cômodos", "", "| # | ID | Nome | x | y | Largura | Altura | Área bruta | Área útil | Paredes |", "|---:|---|---|---:|---:|---:|---:|---:|---:|---|"];
     this.roomElements.forEach((room, index) => {
       const walls = ["top", "right", "bottom", "left"]
         .filter((side) => room.wallState?.(side) === "solid")
@@ -1097,7 +1130,7 @@ class FloorPlan {
       lines.push(`| ${index + 1} | ${this.markdownText(room.dataset.id || "—")} | ${this.markdownText(room.dataset.label || "Cômodo")} | ${this.formatMeters(room.x0())} | ${this.formatMeters(room.y0())} | ${this.formatMeters(room.w())} | ${this.formatMeters(room.h())} | ${this.formatMeters(room.area())} | ${this.formatMeters(room.netArea ?? room.area())} | ${walls} |`);
     });
 
-    lines.push("", `**Total:** ${this.roomCount} cômodos · ${this.formatMeters(this.roomArea)} m²`);
+    lines.push("", `**Total:** ${this.roomCount} cômodos · ${this.formatMeters(this.roomArea)} m² (área líquida, com descontos de sobreposição)`);
     lines.push("", "## Itens", "", "| # | Nome | x | y | Largura | Altura | Área | Classes | Sobrepõe |", "|---:|---|---:|---:|---:|---:|---:|---|---|");
     if (this.itemElements.length === 0) {
       lines.push("| — | Nenhum item definido |  |  |  |  |  |  |");

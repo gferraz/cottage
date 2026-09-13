@@ -91,8 +91,8 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 }
 
 .room-list {
-  width: 220px;
-  flex: 0 0 220px;
+  width: 360px;
+  flex: 0 0 360px;
   border: 1px solid #bbb;
   background: #fafafa;
   padding: 12px;
@@ -105,17 +105,32 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 }
 
 .room-list-item {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 78px 78px;
+  gap: 8px;
   padding: 5px 0;
   border-top: 1px solid #e2e2e2;
 }
 
-.room-list-item span:last-child {
-  flex: 0 0 auto;
-  color: #555;
+.room-list-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 78px 78px;
+  gap: 8px;
+  padding: 0 0 5px;
+  color: #666;
+  font-size: 11px;
+}
+
+.room-list-item span:nth-child(n + 2),
+.room-list-header span:nth-child(n + 2) {
+  text-align: right;
   white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.room-list-item span:nth-child(n + 2) {
+  color: #555;
+  font-size: 11px;
 }
 
 .room-summary {
