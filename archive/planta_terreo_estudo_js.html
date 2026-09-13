@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Planta térrea — estudo proporcional (JS)</title>
+    <style>
+      :root {
+        --m: 56px;
+        --half: calc(var(--m) / 2);
+        --grid: rgba(0, 0, 0, 0.08);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        padding: 24px;
+        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        color: #111;
+      }
+      h1 { margin: 0 0 6px; font-size: 20px; }
+      p { margin: 0 0 18px; color: #555; font-size: 13px; }
+      .site {
+        position: relative;
+        width: calc(19 * var(--m));
+        height: calc(25 * var(--m));
+        margin: 0 auto;
+        background-color: #f5f3ee;
+        background-image:
+          linear-gradient(to right, var(--grid) 1px, transparent 1px),
+          linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+        background-size: var(--half) var(--half);
+        border: 1px solid #bbb;
+        overflow: hidden;
+      }
+      .direction {
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        font-weight: 700;
+        font-size: 14px;
+        z-index: 20;
+      }
+      .front { top: 8px; }
+      .rear { bottom: 8px; }
+      .plan-item {
+        position: absolute;
+        left: calc(var(--x) * var(--m));
+        top: calc(var(--y) * var(--m));
+        width: calc(var(--w) * var(--m));
+        height: calc(var(--h) * var(--m));
+      }
+      .plan-item:not(.room) { opacity: 0.45; }
+      .room {
+        border: 2px solid #222;
+        background: rgba(255, 255, 255, 0.95);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 6px;
+        font-weight: 650;
+        font-size: 13px;
+        line-height: 1.15;
+      }
+      .room small { margin-top: 4px; font-weight: 500; color: #555; }
+      .room .area { margin-top: 2px; }
+      .room-overlap {
+        background: rgba(220, 80, 80, 0.18) !important;
+        border-color: #b34a4a;
+      }
+      .outdoor { background: rgba(230, 220, 190, 0.78); }
+      .service { background: rgba(235, 240, 245, 0.95); }
+      .garage { background: rgba(225, 225, 225, 0.95); border-left: none;}
+      .circulation { background: rgba(245, 238, 222, 0.95); border: none;}
+      .corridor { border-top: none; border-bottom: none; }
+      .stair-landing, .stair-flight, .stair-hall, .powder { z-index: 3; }
+      .stair-flight { border: dotted;}
+      .fireplace { background: #555; border: 2px solid #222; }
+      .kitchen { border-top: none; border-right: none;}
+      .laundry { border-bottom: none; border-left: none;}
+      .mudroom { border-top: none; }
+      .pantry { border-top: none; border-right: none;}
+      .table {
+        border: 2px solid #7a5b3a;
+        background: #caa878;
+        z-index: 5;
+      }
+      .wet { color: royalblue; }
+      .car {
+        border: 2px solid #666;
+        border-radius: 14px;
+        background: #bbb;
+        z-index: 5;
+      }
+      .dining { border-left: none; border-top: none; }
+      .entry { border-bottom: none; }
+      .living { border-left: none; border-top: none; border-bottom: none; }
+      .terrace { border-top: none; border-right: none;}
+
+      .legend {
+        width: min(1064px, 100%);
+        margin: 18px auto 0;
+        font-size: 13px;
+        color: #444;
+      }
+      #download-html {
+        margin: 0 0 16px;
+        padding: 8px 12px;
+        border: 1px solid #888;
+        border-radius: 5px;
+        background: #f2f2f2;
+        color: #222;
+        cursor: pointer;
+        font: inherit;
+        font-size: 13px;
+      }
+      #download-html:hover { background: #e6e6e6; }
+      .area-summary {
+        margin-bottom: 8px;
+        font-weight: 650;
+        color: #222;
+      }
+      code { background: #f2f2f2; padding: 2px 5px; border-radius: 4px; }
+    </style>
+  </head>
+  <body>
+    <button id="download-html" type="button">Baixar HTML gerado</button>
+    <h1>Planta térrea — estudo proporcional (JS)</h1>
+    <p>Os ambientes abaixo são declarados por dados e desenhados pelo pequeno objeto <code>floor</code>.</p>
+
+    <div class="site" id="floor-plan">
+      <div class="direction front">RUA / FRENTE ↑</div>
+      <div class="direction rear">↓ JARDIM / RIACHO</div>
+    </div>
+
+    <div class="legend">
+      <div class="area-summary" id="area-summary"></div>
+      Para adicionar um cômodo, use <code>const porch = floor.addRoom({ x: 3.4, y: 2, w: 4.3, h: 2.3, label: "NOVO CÔMODO" })</code>.
+      Depois, <code>porch.x0()</code> retorna <code>3.4</code>, <code>porch.x1()</code> retorna <code>7.7</code>,
+      e <code>porch.area()</code> retorna <code>9.89</code>.
+      As medidas são expressas em metros e convertidas pela escala <code>var(--m)</code>.
+    </div>
+
+    <script>
+      const floor = {
+        root: document.querySelector("#floor-plan"),
+        summary: document.querySelector("#area-summary"),
+        roomArea: 0,
+        roomCount: 0,
+        roomElements: [],
+
+        add({ x, y, w, h, label = "", classes = "", title = "", room = false }) {
+          const element = document.createElement("div");
+          element.className = `plan-item${room ? " room" : ""}${classes ? ` ${classes}` : ""}`;
+          element.style.setProperty("--x", x);
+          element.style.setProperty("--y", y);
+          element.style.setProperty("--w", w);
+          element.style.setProperty("--h", h);
+          if (title) element.title = title;
+
+          if (room) {
+            element.append(label);
+            const detail = document.createElement("small");
+            detail.textContent = `${this.formatMeters(w)}m × ${this.formatMeters(h)}m`;
+            element.append(detail);
+            const area = document.createElement("small");
+            area.className = "area";
+            area.textContent = `${this.formatMeters(Number(w) * Number(h))}m²`;
+            element.append(area);
+          }
+
+          element.x0 = () => Number(x);
+          element.x1 = () => Number(x) + Number(w);
+          element.y0 = () => Number(y);
+          element.y1 = () => Number(y) + Number(h);
+          element.w = () => Number(w);
+          element.h = () => Number(h);
+          element.area = () => Number(w) * Number(h);
+
+          this.root.append(element);
+          return element;
+        },
+
+        formatMeters(value) {
+          return Number(value).toLocaleString("pt-BR", {
+            maximumFractionDigits: 2
+          });
+        },
+
+        addRoom(room) {
+          const element = this.add({ ...room, room: true });
+          this.roomElements.push(element);
+          this.updateOverlaps();
+          this.roomArea += element.area();
+          this.roomCount += 1;
+          this.updateSummary();
+          return element;
+        },
+
+        addItem(item) {
+          return this.add(item);
+        },
+
+        updateOverlaps() {
+          const rooms = this.roomElements;
+          rooms.forEach((room) => room.classList.remove("room-overlap"));
+
+          for (let index = 0; index < rooms.length; index += 1) {
+            for (let otherIndex = index + 1; otherIndex < rooms.length; otherIndex += 1) {
+              const first = rooms[index];
+              const second = rooms[otherIndex];
+              const overlaps =
+                first.x0() < second.x1() &&
+                first.x1() > second.x0() &&
+                first.y0() < second.y1() &&
+                first.y1() > second.y0();
+
+              if (overlaps) {
+                first.classList.add("room-overlap");
+                second.classList.add("room-overlap");
+              }
+            }
+          }
+        },
+
+        updateSummary() {
+          this.summary.textContent = `Área total dos cômodos: ${this.formatMeters(this.roomArea)}m² (${this.roomCount} cômodos)`;
+        }
+      };
+
+      floor.addRoom({ x: 3.6, y: 1.5, w: 8, h: 2.5, label: "VARANDA", classes: "outdoor porch" });
+
+      const house_x0 = 1.3; // left wall of the house
+      const house_y0 = 4;   // top wall of the house
+
+      const master = floor.addRoom({ x: house_x0, y: house_y0, w: 4.5, h: 4, label: "SUÍTE MASTER", classes: "master" });
+
+
+      const house_x1 = master.x1(); // left wall of the main corridor
+
+      const entry = floor.addRoom({ x: house_x1, y: house_y0, w: 1.8, h: 3.3, label: "ENTRADA", classes: "circulation entry" });
+
+      const house_x2 = entry.x1(); // right wall of the main corridor
+
+      const office = floor.addRoom({ x: house_x2, y: house_y0, w: 3.2, h: 3.3, label: "ESCRITÓRIO", classes: "office" });
+
+      const house_x3 = office.x1(); // right wall of the house
+
+
+
+      const house_y1 = office.y1();
+      const stairs = floor.addRoom({ x: house_x1, y: house_y1, w: 1.1, h: 4.8, label: "ESCADA ↓", classes: "circulation stair-flight" });
+
+      const living = floor.addRoom({ x: stairs.x1(), y: house_y1, w: 4.5, h: 2.5, label: "SALA DE ESTAR", classes: "living" });
+
+
+      const dining = floor.addRoom({ x: living.x0(), y: living.y1(), w: living.w(), h: 2.5, label: "SALA DE JANTAR", classes: "dining" });
+      floor.addItem({ x: dining.x0() + 1, y: dining.y0() + 0.6, w: 2.7, h: 1.1, classes: "table", title: "Mesa 2,70 × 1,05 m" });
+      floor.addItem({ x: living.x1() -0.2, y: dining.y0() - 1, w: 0.5, h: 1.8, classes: "fireplace", title: "Lareira" });
+
+
+      const powder = floor.addRoom({ x: house_x2, y: dining.y1(), w: 1.8, h: 2.1, label: "LAVABO", classes: "powder wet" });
+      floor.addRoom({ x: house_x0, y: master.y1(), w: 2.6, h: 3.5, label: "BANHEIRO MASTER", classes: "master-bath wet" });
+      const closet = floor.addRoom({ x: 3.9, y: master.y1(), w: 1.9, h: 3.5, label: "CLOSET", classes: "closet" });
+      floor.addRoom({ x: house_x1, y: stairs.y1(), w: 1.1, h: 2.7, label: "CORR.", classes: "circulation corridor" });
+
+      const kitchen = floor.addRoom({ x: house_x0 + 1, y: closet.y1(), w: 5.3, h: 3.9, label: "COZINHA", classes: "kitchen wet" });
+      const laundry = floor.addRoom({ x: powder.x1(), y: powder.y0(), w: 1.4, h: 2.1, label: "LAUNDRY", classes: "service laundry wet" });
+      const circulation = floor.addRoom({ x: powder.x0(), y: powder.y1(), w: powder.w() + laundry.w(), h: 1, label: "CIRC", classes: "circulation" });
+      floor.addRoom({ x: powder.x0(), y: circulation.y1(), w: powder.w(), h: 2, label: "DESPENSA", classes: "service pantry" });
+      floor.addRoom({ x: laundry.x0(), y: circulation.y1(), w: laundry.w(), h: 2, label: "MUDROOM", classes: "service mudroom" });
+
+      const garage = floor.addRoom({ x: house_x3, y: powder.y0(), w: 6.4, h: 6.1, label: "GARAGEM", classes: "service garage" });
+      floor.addItem({ x: garage.x0() + 1, y: garage.y0() + 1, w: 1.85, h: 4.6, classes: "car", title: "Carro" });
+      floor.addItem({ x: garage.x0() + 4, y: garage.y0() + 1.1, w: 1.85, h: 4.6, classes: "car", title: "Carro" });
+      floor.addRoom({ x: kitchen.x0(), y: kitchen.y1(), w: kitchen.w(), h: 2, label: "TERRAÇO TRASEIRO", classes: "outdoor terrace" });
+
+      window.floor = floor;
+
+      document.querySelector("#download-html").addEventListener("click", () => {
+        const exportedDocument = document.cloneNode(true);
+        exportedDocument.querySelector("#download-html")?.remove();
+        exportedDocument.querySelector("script")?.remove();
+
+        const html = `<!doctype html>\n${exportedDocument.documentElement.outerHTML}`;
+        const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+
+        link.href = url;
+        link.download = "planta-terrea-gerada.html";
+        link.click();
+        URL.revokeObjectURL(url);
+      });
+    </script>
+  </body>
+</html>
