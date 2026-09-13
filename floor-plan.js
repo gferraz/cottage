@@ -76,6 +76,7 @@ class FloorPlan {
       const itemLabel = String(label || title)
         .replace(/\s+\d+(?:[,.]\d+)?\s*m?\s*[×x]\s*\d+(?:[,.]\d+)?\s*m?\s*$/iu, "")
         .trim();
+      element.dataset.label = itemLabel;
       element.title = `${itemLabel} ${dimensions}`;
     }
 
@@ -135,6 +136,9 @@ class FloorPlan {
       ? { ...room, pos: [geometry.x, geometry.y], size: [geometry.w, geometry.h] }
       : room;
     const element = this.add({ ...roomData, room: true });
+    element.allowedOverlaps = room.overlaps === undefined
+      ? []
+      : (Array.isArray(room.overlaps) ? room.overlaps : [room.overlaps]).map(String);
     element.geometryParts = parts?.length
       ? parts.map(({ x, y, w, h }) => ({ x, y, w, h }))
       : [{ x: element.x0(), y: element.y0(), w: element.w(), h: element.h() }];
@@ -469,6 +473,9 @@ class FloorPlan {
 
   addItem(item) {
     const element = this.add({ ...item, showLabel: true });
+    element.allowedOverlaps = item.overlaps === undefined
+      ? []
+      : (Array.isArray(item.overlaps) ? item.overlaps : [item.overlaps]).map(String);
     this.itemElements.push(element);
     return element;
   }
@@ -526,7 +533,7 @@ class FloorPlan {
       throw new Error(`Unknown opening target: ${target}`);
     }
 
-    const defaults = { door: 0.8, opening: 1.0, window: 1.2 };
+    const defaults = { door: 0.8, opening: 1.0, window: 0.9 };
     const type = String(opening.type ?? "door").trim();
     if (!(type in defaults)) throw new Error(`Unsupported opening type: ${type}`);
 
@@ -635,13 +642,65 @@ class FloorPlan {
         const overlapHeight = Math.min(first.part.y + first.part.h, second.part.y + second.part.h)
           - Math.max(first.part.y, second.part.y);
         const overlaps = overlapWidth > epsilon && overlapHeight > epsilon;
+        const allowed = first.room.allowedOverlaps.includes(second.room.dataset.id)
+          || second.room.allowedOverlaps.includes(first.room.dataset.id);
 
-        if (overlaps) {
+        if (overlaps && !allowed) {
           first.room.classList.add("room-overlap");
           second.room.classList.add("room-overlap");
         }
       }
     }
+  }
+
+  calculateRoomArea() {
+    return this.calculateUnionArea(this.roomElements.flatMap((room) => room.geometryParts));
+  }
+
+  calculateUnionArea(rectangles) {
+    if (rectangles.length === 0) return 0;
+
+    const xs = [...new Set(rectangles.flatMap(({ x, w }) => [x, x + w]))].sort((a, b) => a - b);
+    const ys = [...new Set(rectangles.flatMap(({ y, h }) => [y, y + h]))].sort((a, b) => a - b);
+    let area = 0;
+
+    for (let xIndex = 0; xIndex < xs.length - 1; xIndex += 1) {
+      for (let yIndex = 0; yIndex < ys.length - 1; yIndex += 1) {
+        const x0 = xs[xIndex];
+        const x1 = xs[xIndex + 1];
+        const y0 = ys[yIndex];
+        const y1 = ys[yIndex + 1];
+        const covered = rectangles.some((rectangle) =>
+          rectangle.x <= x0 && rectangle.x + rectangle.w >= x1
+          && rectangle.y <= y0 && rectangle.y + rectangle.h >= y1
+        );
+        if (covered) area += (x1 - x0) * (y1 - y0);
+      }
+    }
+
+    return area;
+  }
+
+  calculateNetRoomArea(room) {
+    const coveredBy = this.roomElements
+      .filter((other) => other !== room && other.allowedOverlaps.includes(room.dataset.id))
+      .flatMap((other) => other.geometryParts);
+    const itemOverlaps = this.itemElements
+      .filter((item) => item.allowedOverlaps.includes(room.dataset.id))
+      .map((item) => ({ x: item.x0(), y: item.y0(), w: item.w(), h: item.h() }));
+    coveredBy.push(...itemOverlaps);
+    const deductions = [];
+    room.geometryParts.forEach((part) => {
+      coveredBy.forEach((other) => {
+        const x0 = Math.max(part.x, other.x);
+        const y0 = Math.max(part.y, other.y);
+        const x1 = Math.min(part.x + part.w, other.x + other.w);
+        const y1 = Math.min(part.y + part.h, other.y + other.h);
+        if (x1 > x0 && y1 > y0) deductions.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+      });
+    });
+    const grossArea = room.geometryParts.reduce((total, part) => total + part.w * part.h, 0);
+    return grossArea - this.calculateUnionArea(deductions);
   }
 
   clear() {
@@ -724,6 +783,10 @@ class FloorPlan {
   }
 
   updateSummary() {
+    this.roomArea = this.calculateRoomArea();
+    this.roomElements.forEach((room) => {
+      room.netArea = this.calculateNetRoomArea(room);
+    });
     if (this.roomCountSummary) {
       this.roomCountSummary.textContent = `Total de cômodos: ${this.roomCount}`;
     }
@@ -760,7 +823,7 @@ class FloorPlan {
       label.textContent = `${index + 1}. ${room.dataset.label || "Cômodo"}`;
 
       const area = document.createElement("span");
-      area.textContent = `${this.formatMeters(room.area())}m²`;
+      area.textContent = `${this.formatMeters(room.area())}m² bruta · ${this.formatMeters(room.netArea ?? room.area())}m² útil`;
 
       item.append(label, area);
       this.roomList.append(item);
@@ -1026,15 +1089,27 @@ class FloorPlan {
       return;
     }
 
-    const lines = ["# Layout da planta térrea", "", "## Cômodos", "", "| # | ID | Nome | x | y | Largura | Altura | Área | Paredes |", "|---:|---|---|---:|---:|---:|---:|---:|---|"];
+    const lines = ["# Layout da planta térrea", "", "## Cômodos", "", "| # | ID | Nome | x | y | Largura | Altura | Área bruta | Área útil | Paredes |", "|---:|---|---|---:|---:|---:|---:|---:|---:|---|"];
     this.roomElements.forEach((room, index) => {
       const walls = ["top", "right", "bottom", "left"]
         .filter((side) => room.wallState?.(side) === "solid")
         .join(", ") || "—";
-      lines.push(`| ${index + 1} | ${this.markdownText(room.dataset.id || "—")} | ${this.markdownText(room.dataset.label || "Cômodo")} | ${this.formatMeters(room.x0())} | ${this.formatMeters(room.y0())} | ${this.formatMeters(room.w())} | ${this.formatMeters(room.h())} | ${this.formatMeters(room.area())} | ${walls} |`);
+      lines.push(`| ${index + 1} | ${this.markdownText(room.dataset.id || "—")} | ${this.markdownText(room.dataset.label || "Cômodo")} | ${this.formatMeters(room.x0())} | ${this.formatMeters(room.y0())} | ${this.formatMeters(room.w())} | ${this.formatMeters(room.h())} | ${this.formatMeters(room.area())} | ${this.formatMeters(room.netArea ?? room.area())} | ${walls} |`);
     });
 
     lines.push("", `**Total:** ${this.roomCount} cômodos · ${this.formatMeters(this.roomArea)} m²`);
+    lines.push("", "## Itens", "", "| # | Nome | x | y | Largura | Altura | Área | Classes | Sobrepõe |", "|---:|---|---:|---:|---:|---:|---:|---|---|");
+    if (this.itemElements.length === 0) {
+      lines.push("| — | Nenhum item definido |  |  |  |  |  |  |");
+    } else {
+      this.itemElements.forEach((item, index) => {
+        const classes = [...item.classList]
+          .filter((className) => !["plan-item", "plan-generated"].includes(className))
+          .join(", ") || "—";
+        const overlaps = item.allowedOverlaps.join(", ") || "—";
+        lines.push(`| ${index + 1} | ${this.markdownText(item.dataset.label || item.title || "Item")} | ${this.formatMeters(item.x0())} | ${this.formatMeters(item.y0())} | ${this.formatMeters(item.w())} | ${this.formatMeters(item.h())} | ${this.formatMeters(item.area())} | ${this.markdownText(classes)} | ${this.markdownText(overlaps)} |`);
+      });
+    }
     lines.push("", "## Passagens", "", "| ID | De | Para | Tipo | Parede | Posição | Largura |", "|---|---|---|---|---|---:|---:|");
     if (this.openings.length === 0) {
       lines.push("| — | Nenhuma passagem definida |  |  |  |  |  |");
