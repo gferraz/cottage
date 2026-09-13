@@ -31,6 +31,7 @@ class FloorPlan {
     this.currentConfig = null;
     this.currentFloorId = null;
     this.currentSourceText = null;
+    this.model = null;
     this.roomDefinitions = new Map();
     this.roomGeometryCache = new Map();
     this.roomGeometryStack = new Set();
@@ -138,7 +139,7 @@ class FloorPlan {
       element.append(area);
     }
 
-    this.root.append(element);
+    FloorPlanRenderer.append(this.root, element);
     return element;
   }
 
@@ -239,21 +240,9 @@ class FloorPlan {
     this.roomGeometryCache.clear();
     this.roomGeometryStack.clear();
     this.invalidRoomIds.clear();
-    const floors = config.floors ?? [config];
-
-    floors.forEach((floorConfig) => {
-      (floorConfig.rooms ?? []).forEach((room) => {
-        if (!room.id) {
-          this.errors.push({ category: "room", opening: room, message: "Cômodo sem id global" });
-          return;
-        }
-        if (this.roomDefinitions.has(room.id)) {
-          this.errors.push({ category: "room", id: room.id, opening: room, message: `ID de cômodo duplicado: ${room.id}` });
-          return;
-        }
-        this.roomDefinitions.set(room.id, room);
-      });
-    });
+    const collected = FloorPlanValidation.collectRoomDefinitions(this.model || FloorPlanModel.fromConfig(config));
+    this.roomDefinitions = collected.definitions;
+    this.errors.push(...collected.errors);
 
     this.roomDefinitions.forEach((_room, id) => this.rooms.set(id, this.createRoomReference(id)));
     this.roomDefinitions.forEach((_room, id) => {
@@ -912,7 +901,7 @@ class FloorPlan {
   }
 
   clear() {
-    this.root.querySelectorAll(".plan-generated").forEach((element) => element.remove());
+    FloorPlanRenderer.clearGenerated(this.root);
     this.clearTerrain();
     this.rooms.clear();
     this.roomElements = [];
@@ -926,6 +915,7 @@ class FloorPlan {
   }
 
   load(config) {
+    this.model = FloorPlanModel.fromConfig(config);
     this.currentConfig = config;
     const configuredFloorIndex = Number.isInteger(config.activeFloor)
       ? config.activeFloor
@@ -1122,26 +1112,13 @@ class FloorPlan {
 
   updateFloorSummary() {
     if (!this.floorSummary) return;
-    const floors = this.currentConfig?.floors ?? [{ id: null, label: "Planta", rooms: [] }];
-    const rows = floors.map((floorConfig) => {
-      const rooms = (floorConfig.rooms ?? [])
-        .filter((room) => this.roomDefinitions.get(room.id) === room)
-        .map((room) => this.rooms.get(room.id))
-        .filter(Boolean);
-      const baseRooms = (floorConfig.rooms ?? [])
-        .filter((room) => room.overlaps === undefined && this.roomDefinitions.get(room.id) === room)
-        .map((room) => this.rooms.get(room.id))
-        .filter(Boolean);
-      const dimensionRooms = baseRooms.length ? baseRooms : rooms;
-      return {
-        label: floorConfig.label || floorConfig.id || "Piso",
-        count: rooms.length,
-        width: dimensionRooms.length ? Math.max(...dimensionRooms.map((room) => room.x1())) - Math.min(...dimensionRooms.map((room) => room.x0())) : 0,
-        height: dimensionRooms.length ? Math.max(...dimensionRooms.map((room) => room.y1())) - Math.min(...dimensionRooms.map((room) => room.y0())) : 0,
-        area: this.calculateUnionArea((baseRooms.length ? baseRooms : rooms)
-          .flatMap((room) => room.geometryParts || []))
-      };
-    });
+    const floors = this.model?.floors ?? [{ id: null, label: "Planta", rooms: [] }];
+    const rows = FloorPlanLegend.floorRows(
+      floors,
+      this.roomDefinitions,
+      this.rooms,
+      (rectangles) => this.calculateUnionArea(rectangles)
+    );
     const total = {
       label: "Total geral",
       count: rows.reduce((sum, row) => sum + row.count, 0),
@@ -1523,13 +1500,7 @@ class FloorPlan {
 
     lines.push("", "## ASCII art", "", "```text", this.asciiLayout(), "```");
 
-    const blob = new Blob([`${lines.join("\n")}\n`], { type: "text/markdown;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(url);
+    FloorPlanExport.downloadText(`${lines.join("\n")}\n`, filename, "text/markdown;charset=utf-8");
   }
 
   async downloadHtml(filename = "planta-terrea-gerada.html") {
