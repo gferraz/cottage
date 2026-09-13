@@ -1,4 +1,0 @@
-/* Overrides specific to this floor plan, not part of the reusable toolkit. */
-.stair-landing, .stair-flight, .stair-hall, .powder { z-index: 3; }
-.stair-flight { border: dotted; }
-.wet { color: royalblue; }
