@@ -1,0 +1,80 @@
+{
+  "terrain": {
+    "front": { "edge": ["P1", "P2"], "position": "top", "label": "RUA/FRENTE" },
+    "rear": { "edge": ["P18", "P19"], "position": "bottom", "label": "JARDIM" },
+    "north": { "label": "N" },
+    "unit": "m",
+    "boundary_order": ["P2", "P1", "P19", "P18"],
+    "corners": {
+      "P1": { "easting": 674802.650, "northing": 7150515.678 },
+      "P2": { "easting": 674787.417, "northing": 7150525.268 },
+      "P18": { "easting": 674768.743, "northing": 7150486.108 },
+      "P19": { "easting": 674787.138, "northing": 7150477.614 }
+    },
+    "segments": [
+      { "from": "P1", "to": "P2", "distance": 18.000, "azimuth_deg": 302.192641, "azimuth_dms": "302° 11' 34\"" },
+      { "from": "P2", "to": "P18", "distance": 43.385, "azimuth_deg": 205.494801, "azimuth_dms": "205° 29' 41\"" },
+      { "from": "P18", "to": "P19", "distance": 20.261, "azimuth_deg": 114.785411, "azimuth_dms": "114° 47' 07\"" },
+      { "from": "P19", "to": "P1", "distance": 41.103, "azimuth_deg": 22.172083, "azimuth_dms": "22° 10' 19\"" }
+    ]
+  },
+  "building": {
+    "anchor": "terrain.front-start",
+    "position": { "x": 4.0, "y": 3.0 }
+  },
+  "rooms": [
+    { "id": "porch", "label": "Varanda", "pos": [0.0, 0.0], "size": [6.3, 2.5], "classes": "outdoor porch" },
+    { "id": "master", "label": "Suíte Master", "pos": ["porch.x0", "porch.y1"], "size": [4.5, 3.5], "classes": "master" },
+    { "id": "entry", "label": "Entrada", "pos": ["master.x1", "porch.y1"], "size": [1.8, 3.2], "classes": "circulation entry", "walls": ["top", "left"] },
+    { "id": "office", "label": "Escritório", "pos": ["entry.x1", 1], "size": [3.5, 3.3], "classes": "office" },
+    { "id": "corridor", "label": "Corr.", "classes": "service corridor",
+      "parts": [
+        {"id": "a", "pos": ["entry.x0",       "entry.y1"], "size": [1.8, 2.0]},
+        {"id": "b", "pos": ["entry.x0 + 1.4", "entry.y1 + 2"], "size": [0.4, 2.3]}
+      ]
+    },
+    { "id": "living", "label": "Estar", "pos": ["office.x0", "office.y1"], "size": [4.5, 3.4], "classes": "living", "walls": ["top", "right"] },
+    { "id": "dining", "label": "Jantar", "pos": ["living.x0", "living.y1"], "size": ["living.w", 3.4], "classes": "dining", "walls": ["right", "bottom"] },
+    { "id": "closet", "label": "Closet", "pos": ["master.x0", "master.y1"], "size": [3.5, 2.0], "classes": "closet" },
+    { "id": "dressing", "label": "Trocador", "pos": ["closet.x1", "master.y1"], "size": [1, "closet.h"], "classes": "circulation" },
+    { "id": "masterbath", "label": "Banheiro Master", "pos": ["master.x0", "closet.y1"], "size": ["closet.w + 1", 2.5], "classes": "masterbath wet" },
+    { "id": "powder", "label": "Lavabo", "pos": ["masterbath.x1", "corridor.a.y1"], "size": [1.4, 2.3], "classes": "powder wet" },
+    { "id": "kitchen", "label": "Cozinha", "pos": ["master.x0 + 0.5", "masterbath.y1"], "size": [5.0, 4.0], "classes": "kitchen wet", "walls": ["left", "bottom"] },
+    { "id": "laundry", "label": "Lavanderia", "pos": ["kitchen.x1", "dining.y1"], "size": [4.5, 1.5], "classes": "service laundry wet", "walls": ["top", "left"] },
+    { "id": "circulation", "label": "Circulação", "pos": ["kitchen.x1", "laundry.y1"], "size": [4.4, 1], "classes": "circulation", "walls": [] },
+    { "id": "pantry", "label": "Despensa", "pos": ["kitchen.x1", "circulation.y1"], "size": [2.3, 2.0], "classes": "service pantry" },
+    { "id": "mudroom", "label": "Mudroom", "pos": ["pantry.x1", "circulation.y1"], "size": [2.2, 2.0], "classes": "service mudroom", "walls": ["right", "bottom"] },
+    { "id": "garage", "label": "Garagem", "pos": ["dining.x1", "laundry.y0 - 0.9"], "size": [4.0, 6.5], "classes": "service garage" },
+    { "id": "terrace", "label": "Terraço Traseiro", "pos": ["kitchen.x0 - 2", "kitchen.y1"], "size": [6.0, 3.0], "classes": "outdoor terrace"}
+  ],
+  "items": [
+    { "pos": ["entry.x0",        "living.y0 + 1"],   "size": [1.4, 4.5], "classes": "circulation table", "title": "Escada" },
+    { "pos": ["dining.x0 + 1.2", "dining.y1 - 1.8"], "size": [2.7, 1.1], "classes": "table", "title": "Mesa" },
+    { "pos": ["living.x1 - 0.2", "living.y0 + 1"],   "size": [0.5, 1.8], "classes": "fireplace", "title": "Lareira" },
+    { "pos": ["garage.x0 + 1",   "garage.y0 + 1"],   "size": [1.8, 4.0], "classes": "car", "title": "Carro" }
+  ],
+  "openings": [
+    { "from": "porch.top",       "to": "exterior",    "type": "opening", "w": 2.0 },
+    { "from": "entry.top",       "to": "porch",       "type": "door",    "w": 1.0 },
+    { "from": "office.left",     "to": "entry",       "type": "door" },
+    { "from": "office.top",      "to": "exterior",    "type": "window", "dx": 0.8, "w": 1},
+    { "from": "office.top",      "to": "exterior",    "type": "window", "dx": "office.w - 1", "w": 1},
+    { "from": "office.right",    "to": "exterior",    "type": "window", "dy": 0.0, "w": 2},
+    { "from": "master.top",      "to": "exterior",    "type": "window", "dx": 0.8, "w": 1},
+    { "from": "master.top",      "to": "exterior",    "type": "window", "dx": 2.6, "w": 1},
+    { "from": "master.right",    "to": "entry",       "type": "door" },
+    { "from": "master.bottom",   "to": "dressing",    "type": "door" },
+    { "from": "master.left",     "to": "exterior",    "type": "window" },
+    { "from": "closet.right",    "to": "dressing",    "type": "opening" },
+    { "from": "closet.left",     "to": "exterior",    "type": "window" },
+    { "from": "masterbath.top",  "to": "dressing",    "type": "door" },
+    { "from": "masterbath.left", "to": "exterior",    "type": "window" },
+    { "from": "kitchen.left",    "to": "exterior",    "type": "window", "w": 2.4 },
+    { "from": "pantry.top",      "to": "circulation", "type": "opening" },
+    { "from": "powder.right",    "to": "corridor-2",      "type": "door" },
+    { "from": "mudroom.right",   "to": "garage",      "type": "door" },
+    { "from": "garage.top",      "to": "exterior",    "type": "door", "w": 3.2 },
+    { "from": "garage.bottom",   "to": "exterior",    "type": "door", "w": 3.2 },
+    { "from": "kitchen.bottom",  "to": "terrace",     "type": "door" }
+  ]
+}
