@@ -22,3 +22,20 @@ const floor = new FloorPlan({
 });
 
 window.floor = floor;
+
+function loadJsonFromCommandLine() {
+  const encoded = window.location.hash.startsWith("#json=")
+    ? window.location.hash.slice("#json=".length)
+    : "";
+  if (!encoded) return;
+
+  try {
+    const binary = atob(encoded);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    floor.load(JSON.parse(new TextDecoder().decode(bytes)));
+  } catch (error) {
+    alert(`Não foi possível carregar a planta: ${error.message}`);
+  }
+}
+
+loadJsonFromCommandLine();
