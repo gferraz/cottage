@@ -26,7 +26,7 @@
   "floors": [
     {
       "id": "ground",
-      "label": "Piso térreo",
+      "label": "Térreo",
       "rooms": [
         { "id": "porch", "label": "Varanda", "pos": [4.5, 0.0], "size": [6.3, 2.5], "classes": "outdoor porch" },
         { "id": "office", "label": "Escritório", "pos": [0, 1.5], "size": [4.5, 2.5], "classes": "office" },
@@ -45,7 +45,7 @@
         { "id": "pantry", "label": "Despensa", "pos": ["corridor.x1", "circulation.y1"], "size": [2.3, 2.0], "classes": "service pantry" },
         { "id": "mudroom", "label": "Mudroom", "pos": ["pantry.x1", "circulation.y1"], "size": [2.2, 2.0], "classes": "service mudroom", "walls": ["right", "bottom"] },
         { "id": "garage", "label": "Garagem", "pos": ["dining.x1", "laundry.y0 - 0.9"], "size": [4.0, 6.5], "classes": "service garage" },
-        { "id": "terrace", "label": "Terraço Traseiro", "pos": ["kitchen.x0 - 2", "kitchen.y1"], "size": [6.0, 3.0], "classes": "outdoor terrace" }
+        { "id": "terrace", "label": "Terraço Traseiro", "pos": ["kitchen.x0", "kitchen.y1"], "size": [6.0, 3.0], "classes": "outdoor terrace" }
       ],
       "items": [
         { "title": "Escada", "pos": ["corridor.x1 - 1.4", "corridor.y0 + 1"], "size": [1.4, 4.0], "classes": "circulation table", "overlaps": ["entry", "corridor"] },
@@ -79,9 +79,9 @@
     },
     {
       "id": "upper",
-      "label": "Segundo pavimento",
+      "label": "1º andar",
       "rooms": [
-        { "id": "floor", "label": "Piso", "pos": [0, 0], "size": [11.5, 11.5] },
+        { "id": "floor", "label": "Piso", "pos": ["office.x0", "entry.y0"], "size": [11.5, 11.5] },
         { "id": "half", "label": "Meia Altura", "pos": [0.6, 0.6], "size": [10.3, 10.3], "overlaps": "floor", "walls": "virtual" },
         { "id": "confort", "label": "Zona de Conforto", "pos": [1.2, 1.2], "size": [9.1, 9.1], "overlaps": ["floor", "half"], "walls": "virtual" },
         { "id": "stairs", "label": "Escadaria", "pos": [5.6, 4.0], "size": [1.4, 3.5], "overlaps": ["floor", "half", "confort"], "classes": "circulation" },

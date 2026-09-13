@@ -1,10 +1,12 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, titleElement = null, floorSelect = null, roomList = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
     this.terrainLayer = terrainLayer;
     this.titleElement = titleElement;
     this.floorSelect = floorSelect;
     this.roomList = roomList;
+    this.itemList = itemList;
+    this.floorSummary = floorSummary;
     this.roomCountSummary = roomCountSummary;
     this.summary = summary;
     this.usefulAreaSummary = usefulAreaSummary;
@@ -29,7 +31,16 @@ class FloorPlan {
     this.currentConfig = null;
     this.currentFloorId = null;
     this.currentSourceText = null;
+    this.roomDefinitions = new Map();
+    this.roomGeometryCache = new Map();
+    this.roomGeometryStack = new Set();
+    this.invalidRoomIds = new Set();
+    this.allRooms = [];
+    this.allItems = [];
+    this.allOpenings = [];
+    this.allWindows = [];
     this.terrainArea = 0;
+    this.terrainDimensions = null;
     this.terrainReference = null;
 
     root.style.setProperty("--m", `${scale}px`);
@@ -194,7 +205,6 @@ class FloorPlan {
     while (pending.length > 0) {
       const next = [];
       let added = 0;
-      let lastError = null;
 
       pending.forEach((room) => {
         try {
@@ -203,15 +213,191 @@ class FloorPlan {
         } catch (error) {
           if (error.message.startsWith("Unknown room reference:") || error.message.startsWith("Unknown room reference")) {
             next.push(room);
-            lastError = error;
           } else {
-            throw error;
+            this.errors.push({ category: "room", id: room.id, opening: room, message: error.message });
           }
         }
       });
 
-      if (added === 0) throw lastError || new Error("Unable to resolve room references");
+      if (added === 0) {
+        next.forEach((room) => {
+          this.errors.push({
+            category: "room",
+            id: room.id,
+            opening: room,
+            message: "Não foi possível resolver as referências geométricas do cômodo"
+          });
+        });
+        break;
+      }
       pending = next;
+    }
+  }
+
+  prepareRoomReferences(config) {
+    this.roomDefinitions.clear();
+    this.roomGeometryCache.clear();
+    this.roomGeometryStack.clear();
+    this.invalidRoomIds.clear();
+    const floors = config.floors ?? [config];
+
+    floors.forEach((floorConfig) => {
+      (floorConfig.rooms ?? []).forEach((room) => {
+        if (!room.id) {
+          this.errors.push({ category: "room", opening: room, message: "Cômodo sem id global" });
+          return;
+        }
+        if (this.roomDefinitions.has(room.id)) {
+          this.errors.push({ category: "room", id: room.id, opening: room, message: `ID de cômodo duplicado: ${room.id}` });
+          return;
+        }
+        this.roomDefinitions.set(room.id, room);
+      });
+    });
+
+    this.roomDefinitions.forEach((_room, id) => this.rooms.set(id, this.createRoomReference(id)));
+    this.roomDefinitions.forEach((_room, id) => {
+      try {
+        this.getRoomGeometry(id);
+      } catch (error) {
+        this.invalidRoomIds.add(id);
+        this.errors.push({ category: "room", id, opening: this.roomDefinitions.get(id), message: error.message });
+      }
+    });
+  }
+
+  validateInactiveFloorFeatures(config, activeFloorIndex) {
+    (config.floors ?? []).forEach((floorConfig, floorIndex) => {
+      if (floorIndex === activeFloorIndex) return;
+      (floorConfig.items ?? []).forEach((item, index) => {
+        try {
+          this.normalizeGeometry(item);
+        } catch (error) {
+          this.errors.push({ index, opening: item, category: "item", message: error.message });
+        }
+      });
+      (floorConfig.openings ?? []).forEach((opening, index) => {
+        try {
+          this.normalizeOpening(opening);
+        } catch (error) {
+          this.errors.push({ index, opening, category: opening.type === "window" ? "window" : "opening", message: error.message });
+        }
+      });
+      (floorConfig.windows ?? []).forEach((window, index) => {
+        try {
+          this.normalizeOpening({ ...window, type: "window" });
+        } catch (error) {
+          this.errors.push({ index, opening: window, category: "window", message: error.message });
+        }
+      });
+    });
+  }
+
+  prepareGlobalLists(config) {
+    const floors = config.floors ?? [{ id: null, label: null, ...config }];
+    this.allRooms = [...this.roomDefinitions.entries()].map(([id, room]) => {
+      const floor = floors.find((floorConfig) => (floorConfig.rooms ?? []).includes(room));
+      const reference = this.rooms.get(id);
+      return { id, label: room.label || id, floorId: floor?.id, floorLabel: floor?.label, reference };
+    });
+    this.allItems = [];
+    this.allOpenings = [];
+    this.allWindows = [];
+    floors.forEach((floorConfig) => {
+      (floorConfig.items ?? []).forEach((item) => {
+        try {
+          const geometry = this.normalizeGeometry(item);
+          this.allItems.push({ ...item, ...geometry, floorId: floorConfig.id, floorLabel: floorConfig.label });
+        } catch {
+          // The active-floor render path records the detailed error.
+        }
+      });
+      (floorConfig.openings ?? []).forEach((opening) => {
+        try {
+          const feature = this.normalizeOpening(opening);
+          const target = feature.type === "window" ? this.allWindows : this.allOpenings;
+          target.push({ ...feature, floorId: floorConfig.id, floorLabel: floorConfig.label });
+        } catch {
+          // Validation and rendering record the error with its source data.
+        }
+      });
+      (floorConfig.windows ?? []).forEach((window) => {
+        try {
+          const feature = this.normalizeOpening({ ...window, type: "window" });
+          this.allWindows.push({ ...feature, floorId: floorConfig.id, floorLabel: floorConfig.label });
+        } catch {
+          // Validation and rendering record the error with its source data.
+        }
+      });
+    });
+  }
+
+  createRoomReference(id) {
+    const floorPlan = this;
+    return {
+      dataset: { id, label: this.roomDefinitions.get(id)?.label || id },
+      x0: () => this.getRoomGeometry(id).x0(),
+      x1: () => this.getRoomGeometry(id).x1(),
+      y0: () => this.getRoomGeometry(id).y0(),
+      y1: () => this.getRoomGeometry(id).y1(),
+      w: () => this.getRoomGeometry(id).w(),
+      h: () => this.getRoomGeometry(id).h(),
+      area: () => this.getRoomGeometry(id).area(),
+      wallState: (side) => this.getRoomGeometry(id).wallState(side),
+      hasWall: (side) => this.getRoomGeometry(id).hasWall(side),
+      get geometryParts() { return floorPlan.getRoomGeometry(id).geometryParts; },
+      get partReferences() { return floorPlan.getRoomGeometry(id).partReferences; }
+    };
+  }
+
+  getRoomGeometry(id) {
+    if (this.roomGeometryCache.has(id)) return this.roomGeometryCache.get(id);
+    if (!this.roomDefinitions.has(id)) throw new Error(`Unknown room reference: ${id}`);
+    if (this.roomGeometryStack.has(id)) throw new Error(`Circular room reference: ${id}`);
+
+    this.roomGeometryStack.add(id);
+    try {
+      const room = this.roomDefinitions.get(id);
+      const parts = room.parts?.map((part, index) => ({
+        ...this.normalizeGeometry(part),
+        id: part.id || `part-${index + 1}`
+      }));
+      const geometry = parts?.length
+        ? {
+          x: Math.min(...parts.map((part) => part.x)),
+          y: Math.min(...parts.map((part) => part.y)),
+          w: Math.max(...parts.map((part) => part.x + part.w)) - Math.min(...parts.map((part) => part.x)),
+          h: Math.max(...parts.map((part) => part.y + part.h)) - Math.min(...parts.map((part) => part.y))
+        }
+        : this.normalizeGeometry(room);
+      const walls = this.normalizeWalls(room.walls);
+      const reference = {
+        x0: () => geometry.x,
+        x1: () => geometry.x + geometry.w,
+        y0: () => geometry.y,
+        y1: () => geometry.y + geometry.h,
+        w: () => geometry.w,
+        h: () => geometry.h,
+        area: () => parts?.length ? parts.reduce((total, part) => total + part.w * part.h, 0) : geometry.w * geometry.h,
+        wallState: (side) => walls[side],
+        hasWall: (side) => walls[side] === "solid",
+        geometryParts: parts?.length
+          ? parts.map(({ x, y, w, h }) => ({ x, y, w, h }))
+          : [{ x: geometry.x, y: geometry.y, w: geometry.w, h: geometry.h }],
+        partReferences: new Map((parts ?? []).map((part) => [part.id, {
+          x0: () => part.x,
+          x1: () => part.x + part.w,
+          y0: () => part.y,
+          y1: () => part.y + part.h,
+          w: () => part.w,
+          h: () => part.h,
+          area: () => part.w * part.h
+        }]))
+      };
+      this.roomGeometryCache.set(id, reference);
+      return reference;
+    } finally {
+      this.roomGeometryStack.delete(id);
     }
   }
 
@@ -277,6 +463,7 @@ class FloorPlan {
     this.root.style.removeProperty("--building-offset-x");
     this.root.style.removeProperty("--building-offset-y");
     this.terrainArea = 0;
+    this.terrainDimensions = null;
     this.terrainReference = null;
   }
 
@@ -362,6 +549,7 @@ class FloorPlan {
     });
     const width = maxX - minX;
     const height = maxY - minY;
+    this.terrainDimensions = { width, height };
     const siteWidth = Math.max(19, width + terrainPadding * 2);
     const siteHeight = Math.max(25, height + terrainPadding * 2);
     this.root.style.setProperty("--plan-offset-x", offsetX);
@@ -766,9 +954,25 @@ class FloorPlan {
       if (typeof document !== "undefined") document.title = title;
     }
     this.clear();
-    this.renderTerrain(config.terrain);
-    this.addRooms(floorConfig.rooms ?? []);
-    (floorConfig.items ?? []).forEach((item) => this.addItem(item));
+    this.prepareRoomReferences(config);
+    this.validateInactiveFloorFeatures(config, floorIndex);
+    this.prepareGlobalLists(config);
+    try {
+      this.renderTerrain(config.terrain);
+    } catch (error) {
+      this.errors.push({ category: "presentation", message: error.message });
+    }
+    const validRooms = (floorConfig.rooms ?? []).filter((room) => room.id
+      && this.roomDefinitions.get(room.id) === room
+      && !this.invalidRoomIds.has(room.id));
+    this.addRooms(validRooms);
+    (floorConfig.items ?? []).forEach((item, index) => {
+      try {
+        this.addItem(item);
+      } catch (error) {
+        this.errors.push({ index, opening: item, category: "item", message: error.message });
+      }
+    });
     (floorConfig.openings ?? []).forEach((opening, index) => {
       try {
         this.addOpening(opening);
@@ -783,7 +987,11 @@ class FloorPlan {
         this.errors.push({ index, opening: window, category: "window", message: error.message });
       }
     });
-    this.applyBuildingPlacement(config.building);
+    try {
+      this.applyBuildingPlacement(config.building);
+    } catch (error) {
+      this.errors.push({ category: "presentation", message: error.message });
+    }
     this.updateSummary();
     if (this.reloadButton) this.reloadButton.disabled = false;
     return this;
@@ -861,6 +1069,8 @@ class FloorPlan {
         : "Área calculada do terreno: —";
     }
     this.updateRoomList();
+    this.updateFloorSummary();
+    this.updateItemList();
     this.updateOpeningList();
     this.updateWindowList();
     this.updateNaturalList();
@@ -873,27 +1083,110 @@ class FloorPlan {
     this.roomList.replaceChildren();
     const header = document.createElement("div");
     header.className = "room-list-header";
-    ["Cômodo", "Bruta (m²)", "Útil (m²)"].forEach((text) => {
+    ["Cômodo", "Largura (m)", "Comprimento (m)", "Bruta (m²)", "Útil (m²)"].forEach((text) => {
       const cell = document.createElement("span");
       cell.textContent = text;
       header.append(cell);
     });
     this.roomList.append(header);
-    this.roomElements.forEach((room, index) => {
+    const rooms = this.allRooms.length ? this.allRooms : this.roomElements.map((reference) => ({
+      id: reference.dataset.id,
+      label: reference.dataset.label,
+      reference
+    }));
+    rooms.forEach((roomEntry, index) => {
+      const room = roomEntry.reference || roomEntry;
+      const activeRoom = this.roomElements.find((candidate) => candidate.dataset.id === roomEntry.id);
       const item = document.createElement("div");
       item.className = "room-list-item";
 
       const label = document.createElement("span");
-      label.textContent = `${index + 1}. ${room.dataset.label || "Cômodo"}`;
+      label.textContent = `${index + 1}. ${roomEntry.label || room.dataset.label || "Cômodo"}${roomEntry.floorLabel ? ` (${roomEntry.floorLabel})` : ""}`;
 
       const grossArea = document.createElement("span");
       grossArea.textContent = this.formatFixed(room.area());
 
       const netArea = document.createElement("span");
-      netArea.textContent = this.formatFixed(room.netArea ?? room.area());
+      netArea.textContent = this.formatFixed(activeRoom?.netArea ?? room.area());
 
-      item.append(label, grossArea, netArea);
+      const width = document.createElement("span");
+      width.textContent = this.formatFixed(room.w());
+
+      const height = document.createElement("span");
+      height.textContent = this.formatFixed(room.h());
+
+      item.append(label, width, height, grossArea, netArea);
       this.roomList.append(item);
+    });
+  }
+
+  updateFloorSummary() {
+    if (!this.floorSummary) return;
+    const floors = this.currentConfig?.floors ?? [{ id: null, label: "Planta", rooms: [] }];
+    const rows = floors.map((floorConfig) => {
+      const rooms = (floorConfig.rooms ?? [])
+        .filter((room) => this.roomDefinitions.get(room.id) === room)
+        .map((room) => this.rooms.get(room.id))
+        .filter(Boolean);
+      const baseRooms = (floorConfig.rooms ?? [])
+        .filter((room) => room.overlaps === undefined && this.roomDefinitions.get(room.id) === room)
+        .map((room) => this.rooms.get(room.id))
+        .filter(Boolean);
+      const dimensionRooms = baseRooms.length ? baseRooms : rooms;
+      return {
+        label: floorConfig.label || floorConfig.id || "Piso",
+        count: rooms.length,
+        width: dimensionRooms.length ? Math.max(...dimensionRooms.map((room) => room.x1())) - Math.min(...dimensionRooms.map((room) => room.x0())) : 0,
+        height: dimensionRooms.length ? Math.max(...dimensionRooms.map((room) => room.y1())) - Math.min(...dimensionRooms.map((room) => room.y0())) : 0,
+        area: this.calculateUnionArea((baseRooms.length ? baseRooms : rooms)
+          .flatMap((room) => room.geometryParts || []))
+      };
+    });
+    const total = {
+      label: "Total geral",
+      count: rows.reduce((sum, row) => sum + row.count, 0),
+      width: rows.length ? Math.max(...rows.map((row) => row.width)) : 0,
+      height: rows.length ? Math.max(...rows.map((row) => row.height)) : 0,
+      area: rows.reduce((sum, row) => sum + row.area, 0)
+    };
+    const terrain = this.terrainDimensions
+      ? { label: "Terreno", count: "—", width: this.terrainDimensions.width, height: this.terrainDimensions.height, area: this.terrainArea }
+      : null;
+    const table = document.createElement("table");
+    table.className = "floor-summary-table";
+    table.innerHTML = "<thead><tr><th>Local</th><th>Cômodos</th><th>Largura máx.</th><th>Comprimento máx.</th><th>Área</th></tr></thead>";
+    const body = document.createElement("tbody");
+    [...rows, total, ...(terrain ? [terrain] : [])].forEach((row) => {
+      const tr = document.createElement("tr");
+      if (row === total) tr.className = "floor-summary-total";
+      [row.label, row.count, this.formatFixed(row.width), this.formatFixed(row.height), this.formatFixed(row.area)].forEach((value, index) => {
+        const cell = document.createElement(index === 0 ? "th" : "td");
+        cell.textContent = index > 1 ? `${value} ${index === 4 ? "m²" : "m"}` : value;
+        tr.append(cell);
+      });
+      body.append(tr);
+    });
+    table.append(body);
+    this.floorSummary.replaceChildren(table);
+  }
+
+  updateItemList() {
+    if (!this.itemList) return;
+
+    this.itemList.replaceChildren();
+    if (this.allItems.length === 0) {
+      this.itemList.textContent = "Nenhum item carregado.";
+      return;
+    }
+    this.allItems.forEach((item, index) => {
+      const entry = document.createElement("div");
+      entry.className = "opening-list-item";
+      const title = document.createElement("strong");
+      title.textContent = `${index + 1}. ${item.label || item.title || "Item"}`;
+      const details = document.createElement("span");
+      details.textContent = `${this.formatMeters(item.w)}m × ${this.formatMeters(item.h)}m${item.floorLabel ? ` — ${item.floorLabel}` : ""}`;
+      entry.append(title, details);
+      this.itemList.append(entry);
     });
   }
 
@@ -901,12 +1194,13 @@ class FloorPlan {
     if (!this.openingList) return;
 
     this.openingList.replaceChildren();
-    if (this.openings.length === 0) {
+    const openings = this.allOpenings.length ? this.allOpenings : this.openings;
+    if (openings.length === 0) {
       this.openingList.textContent = "Nenhuma passagem carregada.";
       return;
     }
 
-    [...this.openings, ...this.windows].forEach((opening) => {
+    openings.forEach((opening) => {
       const item = document.createElement("div");
       item.className = "opening-list-item";
 
@@ -918,7 +1212,7 @@ class FloorPlan {
       const to = opening.to === "exterior"
         ? "EXTERIOR"
         : this.rooms.get(opening.to)?.dataset.label || opening.to;
-      details.textContent = `${opening.type} — ${from} → ${to} (${this.formatMeters(opening.w)}m)`;
+      details.textContent = `${opening.type} — ${from} → ${to} (${this.formatMeters(opening.w)}m)${opening.floorLabel ? ` — ${opening.floorLabel}` : ""}`;
 
       item.append(title, details);
       this.openingList.append(item);
@@ -929,12 +1223,13 @@ class FloorPlan {
     if (!this.windowList) return;
 
     this.windowList.replaceChildren();
-    if (this.windows.length === 0) {
+    const windows = this.allWindows.length ? this.allWindows : this.windows;
+    if (windows.length === 0) {
       this.windowList.textContent = "Nenhuma janela carregada.";
       return;
     }
 
-    this.windows.forEach((window) => {
+    windows.forEach((window) => {
       const item = document.createElement("div");
       item.className = "opening-list-item";
       const title = document.createElement("strong");
@@ -942,7 +1237,7 @@ class FloorPlan {
       const details = document.createElement("span");
       const from = this.rooms.get(window.roomId)?.dataset.label || window.roomId;
       const to = window.to === "exterior" ? "EXTERIOR" : this.rooms.get(window.to)?.dataset.label || window.to;
-      details.textContent = `${from} → ${to} (${this.formatMeters(window.w)}m)`;
+      details.textContent = `${from} → ${to} (${this.formatMeters(window.w)}m)${window.floorLabel ? ` — ${window.floorLabel}` : ""}`;
       item.append(title, details);
       this.windowList.append(item);
     });
@@ -1022,12 +1317,14 @@ class FloorPlan {
       return;
     }
 
-    this.errors.forEach(({ index, opening, category = "opening", message }) => {
+    this.errors.forEach(({ index, id, opening, category = "opening", message }) => {
       const item = document.createElement("div");
       item.className = "error-list-item";
-      item.textContent = `${category === "window" ? "Janela" : "Passagem"} ${index + 1}: ${message} `;
+      const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem" };
+      const name = id || (index === undefined ? "" : ` ${index + 1}`);
+      item.textContent = `${labels[category] || "Erro"}${name ? ` ${name}` : ""}: ${message} `;
       const source = document.createElement("code");
-      source.textContent = JSON.stringify(opening);
+      if (opening !== undefined) source.textContent = JSON.stringify(opening);
       item.append(source);
       this.errorList.append(item);
     });
@@ -1157,40 +1454,51 @@ class FloorPlan {
     }
 
     const lines = [`# ${this.currentConfig.title || "Layout da planta térrea"}`, "", "## Cômodos", "", "| # | ID | Nome | x | y | Largura | Altura | Área bruta | Área útil | Paredes |", "|---:|---|---|---:|---:|---:|---:|---:|---:|---|"];
-    this.roomElements.forEach((room, index) => {
+    const rooms = this.allRooms.length ? this.allRooms : this.roomElements.map((reference) => ({ reference }));
+    rooms.forEach((roomEntry, index) => {
+      const room = roomEntry.reference || roomEntry;
       const walls = ["top", "right", "bottom", "left"]
         .filter((side) => room.wallState?.(side) === "solid")
         .join(", ") || "—";
-      lines.push(`| ${index + 1} | ${this.markdownText(room.dataset.id || "—")} | ${this.markdownText(room.dataset.label || "Cômodo")} | ${this.formatMeters(room.x0())} | ${this.formatMeters(room.y0())} | ${this.formatMeters(room.w())} | ${this.formatMeters(room.h())} | ${this.formatMeters(room.area())} | ${this.formatMeters(room.netArea ?? room.area())} | ${walls} |`);
+      const activeRoom = this.roomElements.find((candidate) => candidate.dataset.id === roomEntry.id);
+      lines.push(`| ${index + 1} | ${this.markdownText(roomEntry.id || room.dataset?.id || "—")} | ${this.markdownText(roomEntry.label || room.dataset?.label || "Cômodo")}${roomEntry.floorLabel ? ` (${this.markdownText(roomEntry.floorLabel)})` : ""} | ${this.formatMeters(room.x0())} | ${this.formatMeters(room.y0())} | ${this.formatMeters(room.w())} | ${this.formatMeters(room.h())} | ${this.formatMeters(room.area())} | ${this.formatMeters(activeRoom?.netArea ?? room.area())} | ${walls} |`);
     });
 
     lines.push("", `**Total:** ${this.roomCount} cômodos · ${this.formatMeters(this.roomArea)} m² (área líquida, com descontos de sobreposição)`);
     lines.push("", "## Itens", "", "| # | Nome | x | y | Largura | Altura | Área | Classes | Sobrepõe |", "|---:|---|---:|---:|---:|---:|---:|---|---|");
-    if (this.itemElements.length === 0) {
+    const items = this.allItems.length ? this.allItems : this.itemElements;
+    if (items.length === 0) {
       lines.push("| — | Nenhum item definido |  |  |  |  |  |  |");
     } else {
-      this.itemElements.forEach((item, index) => {
-        const classes = [...item.classList]
+      items.forEach((item, index) => {
+        const classes = item.classes || [...(item.classList || [])]
           .filter((className) => !["plan-item", "plan-generated"].includes(className))
           .join(", ") || "—";
-        const overlaps = item.allowedOverlaps.join(", ") || "—";
-        lines.push(`| ${index + 1} | ${this.markdownText(item.dataset.label || item.title || "Item")} | ${this.formatMeters(item.x0())} | ${this.formatMeters(item.y0())} | ${this.formatMeters(item.w())} | ${this.formatMeters(item.h())} | ${this.formatMeters(item.area())} | ${this.markdownText(classes)} | ${this.markdownText(overlaps)} |`);
+        const overlaps = item.overlaps || item.allowedOverlaps?.join(", ") || "—";
+        const x = item.x0 ? item.x0() : item.x;
+        const y = item.y0 ? item.y0() : item.y;
+        const w = item.w instanceof Function ? item.w() : item.w;
+        const h = item.h instanceof Function ? item.h() : item.h;
+        const area = item.area instanceof Function ? item.area() : w * h;
+        lines.push(`| ${index + 1} | ${this.markdownText(item.label || item.dataset?.label || item.title || "Item")}${item.floorLabel ? ` (${this.markdownText(item.floorLabel)})` : ""} | ${this.formatMeters(x)} | ${this.formatMeters(y)} | ${this.formatMeters(w)} | ${this.formatMeters(h)} | ${this.formatMeters(area)} | ${this.markdownText(classes)} | ${this.markdownText(overlaps)} |`);
       });
     }
     lines.push("", "## Passagens", "", "| ID | De | Para | Tipo | Parede | Posição | Largura |", "|---|---|---|---|---|---:|---:|");
-    if (this.openings.length === 0) {
+    const openings = this.allOpenings.length ? this.allOpenings : this.openings;
+    if (openings.length === 0) {
       lines.push("| — | Nenhuma passagem definida |  |  |  |  |  |");
     } else {
-      this.openings.forEach((opening) => {
+      openings.forEach((opening) => {
         lines.push(`| ${this.markdownText(opening.id)} | ${this.markdownText(opening.roomId)} | ${this.markdownText(opening.to)} | ${this.markdownText(opening.type)} | ${opening.wall} | ${this.formatMeters(opening.position)} | ${this.formatMeters(opening.w)} |`);
       });
     }
 
     lines.push("", "## Janelas", "", "| ID | De | Para | Parede | Posição | Largura |", "|---|---|---|---|---:|---:|");
-    if (this.windows.length === 0) {
+    const windows = this.allWindows.length ? this.allWindows : this.windows;
+    if (windows.length === 0) {
       lines.push("| — | Nenhuma janela definida |  |  |  |  |");
     } else {
-      this.windows.forEach((window) => {
+      windows.forEach((window) => {
         lines.push(`| ${this.markdownText(window.id)} | ${this.markdownText(window.roomId)} | ${this.markdownText(window.to)} | ${window.wall} | ${this.formatMeters(window.position)} | ${this.formatMeters(window.w)} |`);
       });
     }
@@ -1205,7 +1513,12 @@ class FloorPlan {
     }
 
     if (this.errors.length > 0) {
-      lines.push("", "## Elementos com erro", "", ...this.errors.map(({ opening, category = "opening", message }) => `- **${category === "window" ? "Janela" : "Passagem"}:** \`${this.markdownText(JSON.stringify(opening))}\`: ${this.markdownText(message)}`));
+      lines.push("", "## Elementos com erro", "", ...this.errors.map(({ opening, id, category = "opening", message }) => {
+        const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem" };
+        const label = `${labels[category] || "Erro"}${id ? ` ${id}` : ""}`;
+        const source = opening === undefined ? "" : ` \`${this.markdownText(JSON.stringify(opening))}\``;
+        return `- **${label}:**${source} ${this.markdownText(message)}`;
+      }));
     }
 
     lines.push("", "## ASCII art", "", "```text", this.asciiLayout(), "```");

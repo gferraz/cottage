@@ -102,8 +102,8 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 }
 
 .room-list {
-  width: 360px;
-  flex: 0 0 360px;
+  width: 540px;
+  flex: 0 0 540px;
   border: 1px solid #bbb;
   background: #fafafa;
   padding: 12px;
@@ -117,7 +117,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 
 .room-list-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 78px 78px;
+  grid-template-columns: minmax(0, 1fr) 78px 92px 78px 78px;
   gap: 8px;
   padding: 5px 0;
   border-top: 1px solid #e2e2e2;
@@ -125,7 +125,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 
 .room-list-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 78px 78px;
+  grid-template-columns: minmax(0, 1fr) 78px 92px 78px 78px;
   gap: 8px;
   padding: 0 0 5px;
   color: #666;
@@ -149,6 +149,24 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   padding-top: 10px;
   border-top: 2px solid #bbb;
 }
+.floor-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+}
+.floor-summary-table th,
+.floor-summary-table td {
+  padding: 4px 2px;
+  border-top: 1px solid #e2e2e2;
+  text-align: right;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.floor-summary-table th:first-child,
+.floor-summary-table td:first-child { text-align: left; font-family: inherit; }
+.floor-summary-table thead th { color: #666; font-size: 9px; }
+.floor-summary-table .floor-summary-total th,
+.floor-summary-table .floor-summary-total td { border-top: 2px solid #aaa; font-weight: 700; }
 
 .direction {
   position: absolute;
@@ -442,10 +460,7 @@ code { background: #f2f2f2; padding: 2px 5px; border-radius: 4px; }
         <h2 id="room-list-title">Cômodos</h2>
         <div id="room-list"></div>
         <div class="room-summary">
-          <div id="room-count-summary"></div>
-          <div class="area-summary" id="area-summary"></div>
-          <div id="plan-bounds"></div>
-          <div id="terrain-summary"></div>
+          <div id="floor-summary"></div>
         </div>
       </aside>
       <div class="legend">
@@ -454,6 +469,10 @@ code { background: #f2f2f2; padding: 2px 5px; border-radius: 4px; }
       <section class="opening-legend" aria-labelledby="opening-list-title">
         <h2 id="opening-list-title">Passagens</h2>
         <div id="opening-list">Nenhuma passagem carregada.</div>
+      </section>
+      <section class="opening-legend" aria-labelledby="item-list-title">
+        <h2 id="item-list-title">Itens</h2>
+        <div id="item-list">Nenhum item carregado.</div>
       </section>
       <section class="window-legend" aria-labelledby="window-list-title">
         <h2 id="window-list-title">Janelas</h2>
@@ -470,7 +489,7 @@ code { background: #f2f2f2; padding: 2px 5px; border-radius: 4px; }
       </div>
     </div>
 
-    <script src="floor-plan.js?v=floor-selector" defer></script>
-    <script src="planta-terrea.js?v=floor-selector" defer></script>
+    <script src="floor-plan.js?v=global-lists-2" defer></script>
+    <script src="planta-terrea.js?v=global-lists-2" defer></script>
   </body>
 </html>

@@ -4,6 +4,8 @@ const floor = new FloorPlan({
   titleElement: document.querySelector("h1"),
   floorSelect: document.querySelector("#floor-select"),
   roomList: document.querySelector("#room-list"),
+  itemList: document.querySelector("#item-list"),
+  floorSummary: document.querySelector("#floor-summary"),
   roomCountSummary: document.querySelector("#room-count-summary"),
   summary: document.querySelector("#area-summary"),
   boundsSummary: document.querySelector("#plan-bounds"),
