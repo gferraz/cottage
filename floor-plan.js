@@ -1,8 +1,9 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, titleElement = null, roomList = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, titleElement = null, floorSelect = null, roomList = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
     this.terrainLayer = terrainLayer;
     this.titleElement = titleElement;
+    this.floorSelect = floorSelect;
     this.roomList = roomList;
     this.roomCountSummary = roomCountSummary;
     this.summary = summary;
@@ -34,6 +35,14 @@ class FloorPlan {
     root.style.setProperty("--m", `${scale}px`);
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
     if (markdownButton) markdownButton.addEventListener("click", () => this.downloadMarkdown());
+    if (floorSelect) {
+      floorSelect.disabled = true;
+      floorSelect.addEventListener("change", () => {
+        if (!this.currentConfig?.floors) return;
+        const activeFloor = this.currentConfig.floors.findIndex((floorConfig) => floorConfig.id === floorSelect.value);
+        if (activeFloor >= 0) this.load({ ...this.currentConfig, activeFloor });
+      });
+    }
     if (jsonInput) {
       jsonInput.addEventListener("change", async (event) => {
         const [file] = event.target.files;
@@ -730,8 +739,27 @@ class FloorPlan {
 
   load(config) {
     this.currentConfig = config;
-    const floorConfig = config.floors?.[config.activeFloor ?? 0] || config;
+    const configuredFloorIndex = Number.isInteger(config.activeFloor)
+      ? config.activeFloor
+      : config.floors?.findIndex((floorConfig) => floorConfig.id === this.currentFloorId);
+    const floorIndex = configuredFloorIndex >= 0 ? configuredFloorIndex : 0;
+    const floorConfig = config.floors?.[floorIndex] || config;
     this.currentFloorId = floorConfig.id || null;
+    if (this.floorSelect) {
+      this.floorSelect.replaceChildren();
+      if (config.floors?.length) {
+        config.floors.forEach((availableFloor) => {
+          const option = document.createElement("option");
+          option.value = availableFloor.id || "";
+          option.textContent = availableFloor.label || availableFloor.id || "Pavimento";
+          this.floorSelect.append(option);
+        });
+        this.floorSelect.value = this.currentFloorId || "";
+        this.floorSelect.disabled = false;
+      } else {
+        this.floorSelect.disabled = true;
+      }
+    }
     const title = floorConfig.label ? `${config.title || "Planta"} — ${floorConfig.label}` : config.title;
     if (title) {
       if (this.titleElement) this.titleElement.textContent = title;
@@ -769,12 +797,18 @@ class FloorPlan {
   }
 
   async reload() {
+    let config;
     if (this.currentSourceText !== null) {
-      const config = JSON.parse(this.currentSourceText);
-      return this.load(config);
+      config = JSON.parse(this.currentSourceText);
+    } else {
+      config = this.currentConfig;
     }
-    if (!this.currentConfig) return this;
-    return this.load(this.currentConfig);
+    if (!config) return this;
+    if (config.floors) {
+      const activeFloor = config.floors.findIndex((floorConfig) => floorConfig.id === this.currentFloorId);
+      if (activeFloor >= 0) config = { ...config, activeFloor };
+    }
+    return this.load(config);
   }
 
   formatMeters(value) {
@@ -1187,7 +1221,7 @@ class FloorPlan {
 
   async downloadHtml(filename = "planta-terrea-gerada.html") {
     const exportedDocument = document.cloneNode(true);
-    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #download-markdown, #plan-status, #terrain-compass-rose-data")
+    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #download-markdown, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
       .forEach((element) => element.remove());
     exportedDocument.querySelectorAll("script").forEach((script) => script.remove());
 

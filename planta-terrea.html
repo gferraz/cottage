@@ -288,6 +288,22 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   font: inherit;
   font-size: 13px;
 }
+.floor-selector {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 16px 0;
+  font-size: 13px;
+}
+#floor-select {
+  padding: 7px 10px;
+  border: 1px solid #888;
+  border-radius: 5px;
+  background: #f2f2f2;
+  color: #222;
+  font: inherit;
+  font-size: 13px;
+}
 
 #load-json:hover,
 #reload-json:hover:not(:disabled),
@@ -327,6 +343,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   #reload-json,
   #download-html,
   #download-markdown,
+  .floor-selector,
   #plan-status { display: none !important; }
   h1 {
     margin: 0 0 5mm;
@@ -401,6 +418,12 @@ code { background: #f2f2f2; padding: 2px 5px; border-radius: 4px; }
     <input id="json-file" type="file" accept="application/json,.json" hidden />
     <button id="load-json" type="button" onclick="document.querySelector('#json-file').click()">Carregar JSON</button>
     <button id="reload-json" type="button">Recarregar JSON atual</button>
+    <label class="floor-selector" for="floor-select">
+      Piso:
+      <select id="floor-select" disabled>
+        <option>Carregue um projeto</option>
+      </select>
+    </label>
     <button id="download-html" type="button">Baixar HTML gerado</button>
     <button id="download-markdown" type="button">Baixar layout em Markdown</button>
     <h1>Planta térrea — separada por módulos</h1>
@@ -447,7 +470,7 @@ code { background: #f2f2f2; padding: 2px 5px; border-radius: 4px; }
       </div>
     </div>
 
-    <script src="floor-plan.js?v=area-union" defer></script>
-    <script src="planta-terrea.js?v=area-union" defer></script>
+    <script src="floor-plan.js?v=floor-selector" defer></script>
+    <script src="planta-terrea.js?v=floor-selector" defer></script>
   </body>
 </html>

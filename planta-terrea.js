@@ -2,6 +2,7 @@ const floor = new FloorPlan({
   root: document.querySelector("#floor-plan"),
   terrainLayer: document.querySelector("#terrain-layer"),
   titleElement: document.querySelector("h1"),
+  floorSelect: document.querySelector("#floor-select"),
   roomList: document.querySelector("#room-list"),
   roomCountSummary: document.querySelector("#room-count-summary"),
   summary: document.querySelector("#area-summary"),

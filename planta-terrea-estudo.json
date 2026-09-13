@@ -55,7 +55,6 @@
     { "title": "Lareira", "pos": ["living.x1 - 0.2",    "living.y0 + 1"],   "size": [0.5, 1.8], "classes": "fireplace" },
     { "title": "Carro",   "pos": ["garage.x0 + 1",      "garage.y0 + 1"],   "size": [1.8, 4.0], "classes": "car" }
   ],
-    ],
     "openings": [
     { "from": "porch.top",       "to": "exterior",    "type": "opening", "w": 1.8 },
     { "from": "entry.top",       "to": "porch",       "type": "door"},
