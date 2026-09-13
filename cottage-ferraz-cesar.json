@@ -1,5 +1,9 @@
 {
   "title": "Cottage Ferraz-César",
+  "viewport": {
+    "size": [20, 20],
+    "origin": [0, 0]
+  },
   "terrain": {
     "front": { "edge": ["P1", "P2"], "position": "top", "label": "RUA/FRENTE" },
     "rear": { "edge": ["P18", "P19"], "position": "bottom", "label": "JARDIM" },
@@ -21,7 +25,7 @@
   },
   "building": {
     "anchor": "terrain.front-start",
-    "position": { "x": 4.0, "y": 3.0 }
+    "position": { "x": 0, "y": 0 }
   },
   "floors": [
     {

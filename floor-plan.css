@@ -9,6 +9,7 @@
 body {
   margin: 0;
   padding: 24px;
+  min-width: 1280px;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   color: #111;
 }
@@ -19,16 +20,30 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .site {
   position: relative;
   flex: 0 0 auto;
-  width: calc(var(--site-width, 19) * var(--m));
-  height: calc(var(--site-height, 25) * var(--m));
+  width: calc(var(--viewport-width, 20) * var(--m));
+  height: calc(var(--viewport-height, 20) * var(--m));
   margin: 0 auto;
   background-color: #f5f3ee;
   background-image:
     linear-gradient(to right, var(--grid) 1px, transparent 1px),
     linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
-  background-size: var(--half) var(--half);
+  background-size: calc(var(--m) / 2) calc(var(--m) / 2);
+  background-position:
+    calc(var(--viewport-origin-x, 0) * -1 * var(--m))
+    calc(var(--viewport-origin-y, 0) * -1 * var(--m));
   border: 1px solid #bbb;
   overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.site.is-panning { cursor: grabbing; }
+
+.viewport-summary {
+  margin: -8px 0 18px;
+  color: #555;
+  font: 12px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 .terrain-layer {
@@ -171,8 +186,8 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 
 .plan-item {
   position: absolute;
-  left: calc((var(--x) + var(--building-offset-x, 0)) * var(--m));
-  top: calc((var(--y) + var(--building-offset-y, 0)) * var(--m));
+  left: calc((var(--x) + var(--building-offset-x, 0) - var(--viewport-origin-x, 0)) * var(--m));
+  top: calc((var(--y) + var(--building-offset-y, 0) - var(--viewport-origin-y, 0)) * var(--m));
   width: calc(var(--w) * var(--m));
   height: calc(var(--h) * var(--m));
 }

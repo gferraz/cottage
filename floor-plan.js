@@ -1,7 +1,8 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
     this.terrainLayer = terrainLayer;
+    this.viewportSummary = viewportSummary;
     this.titleElement = titleElement;
     this.floorSelect = floorSelect;
     this.roomList = roomList;
@@ -45,8 +46,22 @@ class FloorPlan {
     this.terrainArea = 0;
     this.terrainDimensions = null;
     this.terrainReference = null;
+    this.viewport = { size: [20, 20], origin: [-4.25, -4.25] };
+    this.viewportScale = scale;
+    this.pointerPan = null;
 
     root.style.setProperty("--m", `${scale}px`);
+    root.addEventListener("pointerdown", (event) => this.beginViewportPan(event));
+    root.addEventListener("pointermove", (event) => this.updateViewportPan(event));
+    root.addEventListener("pointerup", (event) => this.endViewportPan(event));
+    root.addEventListener("pointercancel", (event) => this.endViewportPan(event));
+    root.addEventListener("lostpointercapture", () => { this.pointerPan = null; });
+    if (typeof ResizeObserver !== "undefined") {
+      this.viewportResizeObserver = new ResizeObserver(() => this.resizeViewport());
+      this.viewportResizeObserver.observe(root.parentElement || root);
+    } else if (typeof window !== "undefined") {
+      window.addEventListener("resize", () => this.resizeViewport());
+    }
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
     if (markdownButton) markdownButton.addEventListener("click", () => this.downloadMarkdown());
     if (floorSelect) {
@@ -85,6 +100,72 @@ class FloorPlan {
       window.addEventListener("beforeprint", () => this.preparePrint());
       window.addEventListener("afterprint", () => this.clearPrintScale());
     }
+  }
+
+  configureViewport(viewport) {
+    const size = Array.isArray(viewport?.size) ? viewport.size.map(Number) : [20, 20];
+    const origin = Array.isArray(viewport?.origin) ? viewport.origin.map(Number) : [-4.25, -4.25];
+    if (size.length !== 2 || size.some((value) => !(value > 0))) {
+      throw new Error("Viewport size must contain two positive metre values");
+    }
+    if (origin.length !== 2 || origin.some((value) => !Number.isFinite(value))) {
+      throw new Error("Viewport origin must contain two numeric metre values");
+    }
+    this.viewport = { size, origin };
+    this.root.style.setProperty("--viewport-width", size[0]);
+    this.root.style.setProperty("--viewport-height", size[1]);
+    this.root.style.setProperty("--viewport-origin-x", origin[0]);
+    this.root.style.setProperty("--viewport-origin-y", origin[1]);
+    this.resizeViewport();
+  }
+
+  resizeViewport() {
+    const [width] = this.viewport.size;
+    const availableWidth = this.root.parentElement?.clientWidth || width * this.viewportScale;
+    const scale = Math.max(1, availableWidth / width);
+    this.viewportScale = scale;
+    this.root.style.setProperty("--m", `${scale}px`);
+    this.updateViewportSummary();
+  }
+
+  updateViewportSummary() {
+    if (!this.viewportSummary) return;
+    const [width, height] = this.viewport.size;
+    const [originX, originY] = this.viewport.origin;
+    this.viewportSummary.textContent = `Viewport: ${this.formatMeters(width)}m × ${this.formatMeters(height)}m · origem (${this.formatMeters(originX)}, ${this.formatMeters(originY)})m · escala ${this.viewportScale.toFixed(2)} px/m`;
+  }
+
+  beginViewportPan(event) {
+    if (event.button !== 0 || event.target.closest("button, select, input, a")) return;
+    this.pointerPan = { id: event.pointerId, x: event.clientX, y: event.clientY, origin: [...this.viewport.origin] };
+    this.root.setPointerCapture(event.pointerId);
+    this.root.classList.add("is-panning");
+  }
+
+  updateViewportPan(event) {
+    if (!this.pointerPan || event.pointerId !== this.pointerPan.id) return;
+    const dx = (event.clientX - this.pointerPan.x) / this.viewportScale;
+    const dy = (event.clientY - this.pointerPan.y) / this.viewportScale;
+    this.viewport.origin[0] = this.pointerPan.origin[0] - dx;
+    this.viewport.origin[1] = this.pointerPan.origin[1] - dy;
+    this.root.style.setProperty("--viewport-origin-x", this.viewport.origin[0]);
+    this.root.style.setProperty("--viewport-origin-y", this.viewport.origin[1]);
+    this.updateTerrainViewport();
+    this.updateViewportSummary();
+  }
+
+  endViewportPan(event) {
+    if (this.pointerPan && (!event || event.pointerId === this.pointerPan.id)) {
+      this.pointerPan = null;
+      this.root.classList.remove("is-panning");
+    }
+  }
+
+  updateTerrainViewport() {
+    if (!this.terrainLayer) return;
+    const [width, height] = this.viewport.size;
+    const [originX, originY] = this.viewport.origin;
+    this.terrainLayer.setAttribute("viewBox", `${originX} ${originY} ${width} ${height}`);
   }
 
   add(data) {
@@ -487,8 +568,6 @@ class FloorPlan {
 
   clearTerrain() {
     this.terrainLayer?.replaceChildren();
-    this.root.style.removeProperty("--site-width");
-    this.root.style.removeProperty("--site-height");
     this.root.style.removeProperty("--plan-offset-x");
     this.root.style.removeProperty("--plan-offset-y");
     this.root.style.removeProperty("--building-offset-x");
@@ -581,19 +660,15 @@ class FloorPlan {
     const width = maxX - minX;
     const height = maxY - minY;
     this.terrainDimensions = { width, height };
-    const siteWidth = Math.max(19, width + terrainPadding * 2);
-    const siteHeight = Math.max(25, height + terrainPadding * 2);
     this.root.style.setProperty("--plan-offset-x", offsetX);
     this.root.style.setProperty("--plan-offset-y", offsetY);
-    this.root.style.setProperty("--site-width", siteWidth);
-    this.root.style.setProperty("--site-height", siteHeight);
     this.root.style.setProperty("--building-offset-x", offsetX);
     this.root.style.setProperty("--building-offset-y", offsetY);
     this.terrainReference = {
       frontStart: { x: offsetX, y: offsetY }
     };
-    this.terrainLayer.setAttribute("viewBox", `0 0 ${siteWidth} ${siteHeight}`);
-    this.terrainLayer.setAttribute("preserveAspectRatio", "none");
+    this.updateTerrainViewport();
+    this.terrainLayer.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
     const svg = "http://www.w3.org/2000/svg";
     const create = (name, attributes = {}) => {
@@ -656,7 +731,7 @@ class FloorPlan {
     const northLength = Math.hypot(uy, vy);
     const northX = uy / northLength;
     const northY = vy / northLength;
-    const northBaseX = siteWidth - 2.4;
+    const northBaseX = width - 2.4;
     const northBaseY = 2.5;
     const compassRose = create("image", {
       class: "terrain-compass-rose",
@@ -997,6 +1072,7 @@ class FloorPlan {
   load(config) {
     this.model = FloorPlanModel.fromConfig(config);
     this.currentConfig = config;
+    this.configureViewport(this.model.viewport);
     const configuredFloorIndex = Number.isInteger(config.activeFloor)
       ? config.activeFloor
       : config.floors?.findIndex((floorConfig) => floorConfig.id === this.currentFloorId);
@@ -1099,8 +1175,7 @@ class FloorPlan {
   }
 
   preparePrint() {
-    const siteWidth = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--site-width"));
-    const siteHeight = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--site-height"));
+    const [siteWidth, siteHeight] = this.viewport.size;
     if (!(siteWidth > 0) || !(siteHeight > 0)) return;
 
     const mmToPx = 96 / 25.4;
