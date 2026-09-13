@@ -23,8 +23,10 @@ class FloorPlan {
     this.roomArea = 0;
     this.roomCount = 0;
     this.rooms = new Map();
+    this.references = new Map();
     this.roomElements = [];
     this.itemElements = [];
+    this.zoneElements = [];
     this.openings = [];
     this.windows = [];
     this.naturalCommunications = [];
@@ -193,7 +195,10 @@ class FloorPlan {
       element.area = () => parts.reduce((total, part) => total + part.w * part.h, 0);
     }
     this.roomElements.push(element);
-    if (room.id) this.rooms.set(room.id, element);
+    if (room.id) {
+      this.rooms.set(room.id, element);
+      this.references.set(room.id, element);
+    }
     this.updateOverlaps();
     this.roomArea += element.area();
     this.roomCount += 1;
@@ -244,7 +249,11 @@ class FloorPlan {
     this.roomDefinitions = collected.definitions;
     this.errors.push(...collected.errors);
 
-    this.roomDefinitions.forEach((_room, id) => this.rooms.set(id, this.createRoomReference(id)));
+    this.roomDefinitions.forEach((_room, id) => {
+      const reference = this.createRoomReference(id);
+      this.rooms.set(id, reference);
+      this.references.set(id, reference);
+    });
     this.roomDefinitions.forEach((_room, id) => {
       try {
         this.getRoomGeometry(id);
@@ -253,11 +262,44 @@ class FloorPlan {
         this.errors.push({ category: "room", id, opening: this.roomDefinitions.get(id), message: error.message });
       }
     });
+    this.validateGlobalObjectIds(config);
+  }
+
+  validateGlobalObjectIds(config) {
+    this.globalObjectIds = new Set(this.roomDefinitions.keys());
+    this.validZoneIds = new Set();
+    (config.floors ?? [config]).forEach((floorConfig) => {
+      (floorConfig.zones ?? []).forEach((zone) => {
+        if (!zone.id) {
+          this.errors.push({ category: "zone", opening: zone, message: "Zona sem id global" });
+        } else if (this.globalObjectIds.has(zone.id)) {
+          this.errors.push({ category: "zone", id: zone.id, opening: zone, message: `ID global duplicado: ${zone.id}` });
+        } else {
+          this.globalObjectIds.add(zone.id);
+          this.validZoneIds.add(zone.id);
+        }
+      });
+      [...(floorConfig.items ?? []), ...(floorConfig.openings ?? []), ...(floorConfig.windows ?? [])].forEach((object) => {
+        if (!object.id) return;
+        if (this.globalObjectIds.has(object.id)) {
+          this.errors.push({ category: "object", id: object.id, opening: object, message: `ID global duplicado: ${object.id}` });
+        } else {
+          this.globalObjectIds.add(object.id);
+        }
+      });
+    });
   }
 
   validateInactiveFloorFeatures(config, activeFloorIndex) {
     (config.floors ?? []).forEach((floorConfig, floorIndex) => {
       if (floorIndex === activeFloorIndex) return;
+      (floorConfig.zones ?? []).forEach((zone, index) => {
+        try {
+          this.normalizeGeometry(zone);
+        } catch (error) {
+          this.errors.push({ index, opening: zone, category: "zone", message: error.message });
+        }
+      });
       (floorConfig.items ?? []).forEach((item, index) => {
         try {
           this.normalizeGeometry(item);
@@ -646,7 +688,7 @@ class FloorPlan {
     );
     if (partMatch) {
       const [, roomId, partId, method, operator, amount] = partMatch;
-      const room = this.rooms.get(roomId);
+      const room = this.references.get(roomId);
       if (!room) throw new Error(`Unknown room reference: ${roomId}`);
       const part = room.partReferences?.get(partId);
       if (!part) throw new Error(`Unknown part reference: ${roomId}.${partId}`);
@@ -661,7 +703,7 @@ class FloorPlan {
     if (!match) throw new Error(`Invalid geometric reference: ${value}`);
 
     const [, roomId, method, operator, amount] = match;
-    const room = this.rooms.get(roomId);
+    const room = this.references.get(roomId);
     if (!room) throw new Error(`Unknown room reference: ${roomId}`);
 
     const offset = amount ? Number(amount) : 0;
@@ -674,7 +716,43 @@ class FloorPlan {
       ? []
       : (Array.isArray(item.overlaps) ? item.overlaps : [item.overlaps]).map(String);
     this.itemElements.push(element);
+    if (item.id) {
+      element.dataset.id = item.id;
+      this.references.set(item.id, element);
+    }
     return element;
+  }
+
+  addZone(zone) {
+    const element = this.add({ ...zone, showLabel: true, classes: `${zone.classes || ""} reference-zone`.trim() });
+    element.dataset.id = zone.id;
+    element.dataset.label = zone.label || zone.id;
+    element.allowedOverlaps = [];
+    this.zoneElements.push(element);
+    if (zone.id) this.references.set(zone.id, element);
+    return element;
+  }
+
+  addZones(zones) {
+    let pending = [...zones];
+    while (pending.length) {
+      const next = [];
+      let added = 0;
+      pending.forEach((zone, index) => {
+        try {
+          this.addZone(zone);
+          added += 1;
+        } catch (error) {
+          if (error.message.startsWith("Unknown room reference:")) next.push(zone);
+          else this.errors.push({ index, id: zone.id, opening: zone, category: "zone", message: error.message });
+        }
+      });
+      if (!added) {
+        next.forEach((zone) => this.errors.push({ id: zone.id, opening: zone, category: "zone", message: "Não foi possível resolver as referências geométricas da zona" }));
+        break;
+      }
+      pending = next;
+    }
   }
 
   addOpening(opening) {
@@ -904,8 +982,10 @@ class FloorPlan {
     FloorPlanRenderer.clearGenerated(this.root);
     this.clearTerrain();
     this.rooms.clear();
+    this.references.clear();
     this.roomElements = [];
     this.itemElements = [];
+    this.zoneElements = [];
     this.openings = [];
     this.windows = [];
     this.errors = [];
@@ -956,6 +1036,7 @@ class FloorPlan {
       && this.roomDefinitions.get(room.id) === room
       && !this.invalidRoomIds.has(room.id));
     this.addRooms(validRooms);
+    this.addZones((floorConfig.zones ?? []).filter((zone) => this.validZoneIds.has(zone.id)));
     (floorConfig.items ?? []).forEach((item, index) => {
       try {
         this.addItem(item);
