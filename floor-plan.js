@@ -1180,11 +1180,12 @@ class FloorPlan {
 
     const mmToPx = 96 / 25.4;
     const printableWidth = 200 * mmToPx;
-    const printableHeight = (287 - 16) * mmToPx;
-    const maxScale = Math.min(22, printableWidth / siteWidth, printableHeight / siteHeight);
-    const printScale = Math.max(16, Math.floor(maxScale * 10) / 10);
+    // Reserve space for the printed title and its scale note above the plan.
+    const printableHeight = (287 - 24) * mmToPx;
+    const maxScale = Math.min(printableWidth / siteWidth, printableHeight / siteHeight);
+    const printScale = Math.max(1, Math.floor(maxScale * 10) / 10);
     this.root.style.setProperty("--print-m", `${printScale}px`);
-    this.root.dataset.printSplitRequired = maxScale < 16 ? "true" : "false";
+    this.root.dataset.printSplitRequired = "false";
   }
 
   clearPrintScale() {

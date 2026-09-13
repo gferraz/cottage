@@ -376,14 +376,15 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   }
 
   :root { --m: 16px; }
-  body { padding: 5mm; color: #000; }
+  body { min-width: 0; padding: 5mm; color: #000; overflow: visible; }
   #json-file,
   #load-json,
   #reload-json,
   #download-html,
   #download-markdown,
   .floor-selector,
-  #plan-status { display: none !important; }
+  #plan-status,
+  #viewport-summary { display: none !important; }
   h1 {
     margin: 0 0 5mm;
     font-size: 18pt;
@@ -399,6 +400,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
     display: block;
     width: 100%;
     margin: 0;
+    overflow: visible;
     break-inside: avoid;
     page-break-inside: avoid;
   }
