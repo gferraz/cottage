@@ -1,8 +1,9 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, viewportSummary = null, zoneLayerToggleButton = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
     this.terrainLayer = terrainLayer;
     this.viewportSummary = viewportSummary;
+    this.zoneLayerToggleButton = zoneLayerToggleButton;
     this.titleElement = titleElement;
     this.floorSelect = floorSelect;
     this.roomList = roomList;
@@ -49,6 +50,7 @@ class FloorPlan {
     this.viewport = { size: [20, 20], origin: [-4.25, -4.25] };
     this.viewportScale = scale;
     this.pointerPan = null;
+    this.zonesInFront = false;
 
     root.style.setProperty("--m", `${scale}px`);
     root.addEventListener("pointerdown", (event) => this.beginViewportPan(event));
@@ -64,6 +66,10 @@ class FloorPlan {
     }
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
     if (markdownButton) markdownButton.addEventListener("click", () => this.downloadMarkdown());
+    if (zoneLayerToggleButton) {
+      zoneLayerToggleButton.addEventListener("click", () => this.setZonesInFront(!this.zonesInFront));
+      this.updateZoneLayerToggleButton();
+    }
     if (floorSelect) {
       floorSelect.disabled = true;
       floorSelect.addEventListener("change", () => {
@@ -133,6 +139,18 @@ class FloorPlan {
     const [width, height] = this.viewport.size;
     const [originX, originY] = this.viewport.origin;
     this.viewportSummary.textContent = `Viewport: ${this.formatMeters(width)}m × ${this.formatMeters(height)}m · origem (${this.formatMeters(originX)}, ${this.formatMeters(originY)})m · escala ${this.viewportScale.toFixed(2)} px/m`;
+  }
+
+  setZonesInFront(enabled) {
+    this.zonesInFront = Boolean(enabled);
+    this.root.classList.toggle("zones-in-front", this.zonesInFront);
+    this.updateZoneLayerToggleButton();
+  }
+
+  updateZoneLayerToggleButton() {
+    if (!this.zoneLayerToggleButton) return;
+    this.zoneLayerToggleButton.textContent = this.zonesInFront ? "Zonas: à frente" : "Zonas: camada normal";
+    this.zoneLayerToggleButton.setAttribute("aria-pressed", String(this.zonesInFront));
   }
 
   beginViewportPan(event) {
@@ -335,6 +353,7 @@ class FloorPlan {
       this.rooms.set(id, reference);
       this.references.set(id, reference);
     });
+    this.registerStaticZoneReferences(config);
     this.roomDefinitions.forEach((_room, id) => {
       try {
         this.getRoomGeometry(id);
@@ -344,6 +363,27 @@ class FloorPlan {
       }
     });
     this.validateGlobalObjectIds(config);
+  }
+
+  registerStaticZoneReferences(config) {
+    (config.floors ?? [config]).flatMap((floorConfig) => floorConfig.zones ?? []).forEach((zone) => {
+      if (!zone.id || this.references.has(zone.id)) return;
+      const [x, y] = zone.pos ?? [zone.x, zone.y];
+      const [w, h] = zone.size ?? [zone.w, zone.h];
+      const values = [x, y, w, h].map(Number);
+      if (values.every(Number.isFinite)) {
+        const [x0, y0, width, height] = values;
+        this.references.set(zone.id, {
+          x0: () => x0,
+          x1: () => x0 + width,
+          y0: () => y0,
+          y1: () => y0 + height,
+          w: () => width,
+          h: () => height,
+          area: () => width * height
+        });
+      }
+    });
   }
 
   validateGlobalObjectIds(config) {
@@ -759,7 +799,7 @@ class FloorPlan {
 
     const reference = String(value).trim();
     const partMatch = reference.match(
-      /^([\w-]+)\.([\w-]+)\.(x0|x1|y0|y1|w|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
+      /^([\w-]+)\.([\w-]+)\.(x|x0|x1|y|y0|y1|w|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
     );
     if (partMatch) {
       const [, roomId, partId, method, operator, amount] = partMatch;
@@ -768,11 +808,12 @@ class FloorPlan {
       const part = room.partReferences?.get(partId);
       if (!part) throw new Error(`Unknown part reference: ${roomId}.${partId}`);
       const offset = amount ? Number(amount) : 0;
-      return part[method]() + (operator === "-" ? -offset : offset);
+      const resolvedMethod = { x: "x0", y: "y0" }[method] || method;
+      return part[resolvedMethod]() + (operator === "-" ? -offset : offset);
     }
 
     const match = reference.match(
-      /^([\w-]+)\.(x0|x1|y0|y1|w|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
+      /^([\w-]+)\.(x|x0|x1|y|y0|y1|w|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
     );
 
     if (!match) throw new Error(`Invalid geometric reference: ${value}`);
@@ -782,7 +823,8 @@ class FloorPlan {
     if (!room) throw new Error(`Unknown room reference: ${roomId}`);
 
     const offset = amount ? Number(amount) : 0;
-    return room[method]() + (operator === "-" ? -offset : offset);
+    const resolvedMethod = { x: "x0", y: "y0" }[method] || method;
+    return room[resolvedMethod]() + (operator === "-" ? -offset : offset);
   }
 
   addItem(item) {
@@ -800,6 +842,7 @@ class FloorPlan {
 
   addZone(zone) {
     const element = this.add({ ...zone, showLabel: true, classes: `${zone.classes || ""} reference-zone`.trim() });
+    if (zone.color) element.style.setProperty("--zone-line-color", zone.color);
     element.dataset.id = zone.id;
     element.dataset.label = zone.label || zone.id;
     element.allowedOverlaps = [];
@@ -1662,7 +1705,7 @@ class FloorPlan {
 
   async downloadHtml(filename = "planta-terrea-gerada.html") {
     const exportedDocument = document.cloneNode(true);
-    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #download-markdown, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
+    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #toggle-zones, #download-html, #download-markdown, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
       .forEach((element) => element.remove());
     exportedDocument.querySelectorAll("script").forEach((script) => script.remove());
 
