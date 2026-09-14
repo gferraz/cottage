@@ -37,8 +37,8 @@
   ],
   "zones": [
     { "id": "main",    "label": "Área Principal",   "pos": [0, 2.5], "size": [11.5, 11.5], "color": "red" },
-    { "id": "dorm",    "label": "Dormitórios",      "pos": ["dorm-left.x", -2.5], "size": [10.3, 10.3], "color": "blue" },
-    { "id": "confort", "label": "Zona de Conforto", "pos": [1.2, 1.2], "size": [9.1, 9.1], "color": "blue"}
+    { "id": "dorm",    "label": "Dormitórios",      "pos": ["dorm-left.x0", "dorm-top.y0"], "size": [10.3, 10.3], "color": "blue" },
+    { "id": "confort", "label": "Zona de Conforto", "pos": ["dorm-left.x0 + 1.2",  "dorm-top.y0 + 1.2"], "size":["dorm.w - 2.4",  "dorm.h - 2.4"], "color": "blue"}
   ],
   "building": {
     "anchor": "terrain.front-start",
@@ -100,7 +100,7 @@
     },
     {
       "id": "upper",
-      "label": "1º andar",
+      "label": "Dormitórios",
       "rooms": [
         { "id": "stairs", "label": "Escadaria", "pos": [5.6, 4.0], "size": [1.4, 3.5],"classes": "circulation" },
         { "id": "bedroom-n", "label": "Quarto N", "pos": ["dorm.x0", "dorm.y0"], "size": [3.9, 4.0]},

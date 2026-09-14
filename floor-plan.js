@@ -343,6 +343,7 @@ class FloorPlan {
       this.rooms.set(id, reference);
       this.references.set(id, reference);
     });
+    this.registerStaticGuideReferences(config);
     this.registerStaticZoneReferences(config);
     this.roomDefinitions.forEach((_room, id) => {
       try {
@@ -355,6 +356,27 @@ class FloorPlan {
     this.validateGlobalObjectIds(config);
   }
 
+  registerStaticGuideReferences(config) {
+    const floorGuides = (config.floors ?? [config]).flatMap((floorConfig) => floorConfig.guides ?? []);
+    const guides = config.floors ? [...(config.guides ?? []), ...floorGuides] : floorGuides;
+    guides.forEach((guide) => {
+      if (!guide.id || this.references.has(guide.id)) return;
+      const [xValue, yValue] = guide.pos ?? [];
+      const widthValue = guide.w;
+      const heightValue = guide.h;
+      if ((widthValue === undefined) === (heightValue === undefined)) return;
+      this.references.set(guide.id, {
+        x0: () => this.resolve(xValue),
+        x1: () => this.resolve(xValue) + (widthValue === undefined ? 0 : this.resolve(widthValue)),
+        y0: () => this.resolve(yValue),
+        y1: () => this.resolve(yValue) + (heightValue === undefined ? 0 : this.resolve(heightValue)),
+        w: () => widthValue === undefined ? 0 : this.resolve(widthValue),
+        h: () => heightValue === undefined ? 0 : this.resolve(heightValue),
+        area: () => 0
+      });
+    });
+  }
+
   registerStaticZoneReferences(config) {
     const floorZones = (config.floors ?? [config]).flatMap((floorConfig) => floorConfig.zones ?? []);
     const zones = config.floors ? [...(config.zones ?? []), ...floorZones] : floorZones;
@@ -362,19 +384,15 @@ class FloorPlan {
       if (!zone.id || this.references.has(zone.id)) return;
       const [x, y] = zone.pos ?? [zone.x, zone.y];
       const [w, h] = zone.size ?? [zone.w, zone.h];
-      const values = [x, y, w, h].map(Number);
-      if (values.every(Number.isFinite)) {
-        const [x0, y0, width, height] = values;
-        this.references.set(zone.id, {
-          x0: () => x0,
-          x1: () => x0 + width,
-          y0: () => y0,
-          y1: () => y0 + height,
-          w: () => width,
-          h: () => height,
-          area: () => width * height
-        });
-      }
+      this.references.set(zone.id, {
+        x0: () => this.resolve(x),
+        x1: () => this.resolve(x) + this.resolve(w),
+        y0: () => this.resolve(y),
+        y1: () => this.resolve(y) + this.resolve(h),
+        w: () => this.resolve(w),
+        h: () => this.resolve(h),
+        area: () => this.resolve(w) * this.resolve(h)
+      });
     });
   }
 
@@ -644,7 +662,7 @@ class FloorPlan {
     const targetX = anchorPoint.x + localX;
     const targetY = anchorPoint.y + localY;
 
-    const bounds = this.bounds();
+    const bounds = this.buildingReferenceBounds();
     if (!bounds) return;
     this.root.style.setProperty("--building-offset-x", targetX - bounds.x0);
     this.root.style.setProperty("--building-offset-y", targetY - bounds.y0);
@@ -1081,6 +1099,20 @@ class FloorPlan {
     const x1 = Math.max(...elements.map((element) => element.x1()));
     const y1 = Math.max(...elements.map((element) => element.y1()));
 
+    return { x0, y0, x1, y1, width: x1 - x0, height: y1 - y0 };
+  }
+
+  buildingReferenceBounds() {
+    const referenceRooms = this.model?.floors?.[0]?.rooms ?? [];
+    const geometries = referenceRooms
+      .map((room) => room.id && this.roomDefinitions.has(room.id) ? this.getRoomGeometry(room.id) : null)
+      .filter(Boolean);
+    if (!geometries.length) return this.bounds();
+
+    const x0 = Math.min(...geometries.map((geometry) => geometry.x0()));
+    const y0 = Math.min(...geometries.map((geometry) => geometry.y0()));
+    const x1 = Math.max(...geometries.map((geometry) => geometry.x1()));
+    const y1 = Math.max(...geometries.map((geometry) => geometry.y1()));
     return { x0, y0, x1, y1, width: x1 - x0, height: y1 - y0 };
   }
 
