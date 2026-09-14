@@ -24,7 +24,7 @@
     ]
   },
   "zones": [
-    { "id": "main",    "label": "Área Principal",   "pos": [0, 2.5], "size": [11.5, 11.5], "color": "red" },
+    { "id": "main",    "label": "Área Principal",   "pos": [0, 2.5], "size": [11.5, 9.2], "color": "red" },
     { "id": "dorm",    "label": "Dormitórios",      "inset": ["main", 0.6, 0.6], "color": "blue" },
     { "id": "confort", "label": "Zona de Conforto", "inset": ["dorm", 1.2, 1.2], "color": "blue" }
   ],
@@ -59,14 +59,14 @@
         { "id": "master", "label": "Suíte Master", "pos": ["main.x0", "office.y1"], "size": [4.5, 3.5], "classes": "master" },
 
         { "id": "entry",      "label": "Entrada", "pos": ["master.x1", "porch.y1"], "size": [2.5, 2.3], "classes": "circulation entry", "walls": ["top", "left"] },
-        { "id": "corridor",   "label": "Corr.", "pos": ["entry.x0", "entry.y1"], "size": ["entry.w", 6.0], "classes": "service corridor" },
+        { "id": "corridor",   "label": "Corr.", "pos": ["entry.x0", "entry.y1"], "size": ["entry.w", 7.2], "classes": "service corridor" },
         { "id": "stairs",     "label": "Escadaria", "pos": ["corridor.x1 - 1.4", "corridor.y0"], "size": [1.4, 4.0], "overlaps": "corridor", "classes": "circulation" },
 
         { "id": "living", "label": "Estar", "pos": ["entry.x1", "porch.y1"], "size": [4.5, 3.4], "classes": "living", "walls": ["top", "right"] },
         { "id": "dining", "label": "Jantar", "pos": ["living.x0", "living.y1"], "size": ["living.w", 3.4], "classes": "dining", "walls": ["right", "bottom"] },
 
         { "id": "powder", "label": "Lavabo", "pos": ["masterbath.x1", "masterbath.y0 + 0.3"], "size": [1.4, 2.2], "classes": "powder wet", "overlaps": "corridor" },
-        { "id": "kitchen", "label": "Cozinha", "pos": ["master.x0 + 0.5", "masterbath.y1"], "size": [5.0, 4.0], "classes": "kitchen wet", "walls": ["left", "bottom"] },
+        { "id": "kitchen", "label": "Cozinha", "pos": ["master.x0 + 2", "masterbath.y1"], "size": [5.0, 4.0], "classes": "kitchen wet", "walls": ["left", "bottom"] },
         { "id": "laundry", "label": "Lavanderia", "pos": ["corridor.x1", "dining.y1"], "size": [4.5, 1.5], "classes": "service laundry wet", "walls": ["top", "left"] },
         { "id": "circulation", "label": "Circulação", "pos": ["corridor.x1", "laundry.y1"], "size": [4.4, 1], "classes": "circulation", "walls": [] },
         { "id": "pantry", "label": "Despensa", "pos": ["corridor.x1", "circulation.y1"], "size": [2.3, 2.0], "classes": "service pantry" },
@@ -112,8 +112,7 @@
         { "id": "bedroom-n",     "label": "Quarto N",  "pos": ["dorm.x0", "dorm.y0"], "size": [3.9, 4.0]},
         { "id": "bedroom-e",     "label": "Quarto E",  "pos": ["stairs.x1", "dorm.y0"], "size": [3.9, "bedroom-n.l"]},
         { "id": "bedroom-w",     "label": "Quarto W",  "pos": ["dorm.x0", "bedroom-n.y1"], "size": ["bedroom-n.w", "bedroom-n.l"]},
-        { "id": "bathroom",      "label": "Banheiro",  "pos": ["stairs.x1", "bedroom-e.y1"], "size": ["bedroom-e.w", "bedroom-e.l"], "classes": "wet" },
-        { "id": "space",         "label": "Sobra",     "pos": ["dorm.x0", "bedroom-w.y1"], "size": ["dorm.w", 2.3], "overlaps": "dorm-corridor"}
+        { "id": "bathroom",      "label": "Banheiro",  "pos": ["stairs.x1", "bedroom-e.y1"], "size": ["bedroom-e.w", "bedroom-e.l"], "classes": "wet" }
       ],
       "items": [],
       "openings": [

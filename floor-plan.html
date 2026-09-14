@@ -18,7 +18,7 @@
 
 body {
   margin: 0;
-  padding: 24px;
+  padding: 20px;
   min-width: 1280px;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   color: #111;
@@ -123,7 +123,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 
 .plan-layout {
   display: block;
-  width: min(100%, 1280px);
+  width: min(100%, 1240px);
   margin: 0 auto;
   overflow-x: auto;
 }
@@ -132,13 +132,13 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   display: flex;
   align-items: flex-start;
   gap: 24px;
-  width: min(100%, 1280px);
+  width: min(100%, 1240px);
   margin: 18px auto 0;
 }
 
 .room-list {
-  width: 540px;
-  flex: 0 0 540px;
+  width: calc(50% - 12px);
+  flex: 0 0 calc(50% - 12px);
   border: 1px solid #bbb;
   background: #fafafa;
   padding: 12px;

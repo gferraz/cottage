@@ -1756,7 +1756,7 @@ class FloorPlan {
     return String(value ?? "").replaceAll("|", "\\|").replaceAll("\n", " ");
   }
 
-  downloadMarkdown(filename = "planta-terrea-layout.md") {
+  downloadMarkdownLegacy(filename = "planta-terrea-layout.md") {
     if (!this.currentConfig) {
       alert("Carregue uma planta antes de exportar o layout.");
       return;
@@ -1832,6 +1832,105 @@ class FloorPlan {
 
     lines.push("", "## ASCII art", "", "```text", this.asciiLayout(), "```");
 
+    FloorPlanExport.downloadText(`${lines.join("\n")}\n`, filename, "text/markdown;charset=utf-8");
+  }
+
+  downloadMarkdown(filename = "planta-layout.md") {
+    if (!this.currentConfig) {
+      alert("Carregue uma planta antes de exportar o layout.");
+      return;
+    }
+
+    const lines = [`# ${this.currentConfig.title || "Layout da planta"}`];
+    const floors = this.model?.floors ?? [{ id: null, label: "Planta", rooms: [] }];
+    const rooms = this.allRooms.length
+      ? this.allRooms
+      : this.roomElements.map((reference) => ({ reference, floorId: this.currentFloorId }));
+    const items = this.allItems.length ? this.allItems : this.itemElements;
+    const openings = this.allOpenings.length ? this.allOpenings : this.openings;
+    const windows = this.allWindows.length ? this.allWindows : this.windows;
+
+    floors.forEach((floor, floorIndex) => {
+      const floorId = floor.id ?? null;
+      const floorName = floor.label || floor.id || `Piso ${floorIndex + 1}`;
+      const floorRooms = rooms.filter((entry) => (entry.floorId ?? null) === floorId);
+      const floorItems = items.filter((item) => (item.floorId ?? null) === floorId);
+      const floorOpenings = openings.filter((opening) => (opening.floorId ?? null) === floorId);
+      const floorWindows = windows.filter((window) => (window.floorId ?? null) === floorId);
+
+      lines.push("", `## ${this.markdownText(floorName)}`);
+      lines.push("", "### Cômodos", "", "| # | ID | Nome | x | y | Largura | Comprimento | Área bruta | Área útil | Paredes |", "|---:|---|---|---:|---:|---:|---:|---:|---:|---|");
+      if (floorRooms.length === 0) {
+        lines.push("| — | Nenhum cômodo definido |  |  |  |  |  |  |  |  |");
+      } else {
+        floorRooms.forEach((entry, index) => {
+          const room = entry.reference || entry;
+          const walls = ["top", "right", "bottom", "left"]
+            .filter((side) => room.wallState?.(side) === "solid")
+            .join(", ") || "—";
+          const activeRoom = this.roomElements.find((candidate) => candidate.dataset.id === entry.id);
+          lines.push(`| ${index + 1} | ${this.markdownText(entry.id || room.dataset?.id || "—")} | ${this.markdownText(entry.label || room.dataset?.label || "Cômodo")} | ${this.formatMeters(room.x0())} | ${this.formatMeters(room.y0())} | ${this.formatMeters(room.w())} | ${this.formatMeters(room.l())} | ${this.formatMeters(room.area())} | ${this.formatMeters(activeRoom?.netArea ?? room.area())} | ${walls} |`);
+        });
+      }
+      const floorArea = floorRooms.reduce((sum, entry) => sum + (entry.reference || entry).area(), 0);
+      lines.push("", `**Total do piso:** ${floorRooms.length} cômodos · ${this.formatMeters(floorArea)} m²`);
+
+      lines.push("", "### Itens", "", "| # | Nome | x | y | Largura | Comprimento | Área | Classes | Sobrepõe |", "|---:|---|---:|---:|---:|---:|---:|---|---|");
+      if (floorItems.length === 0) {
+        lines.push("| — | Nenhum item definido |  |  |  |  |  |  |  |");
+      } else {
+        floorItems.forEach((item, index) => {
+          const classes = item.classes || [...(item.classList || [])]
+            .filter((className) => !["plan-item", "plan-generated"].includes(className))
+            .join(", ") || "—";
+          const overlaps = item.overlaps || item.allowedOverlaps?.join(", ") || "—";
+          const x = item.x0 ? item.x0() : item.x;
+          const y = item.y0 ? item.y0() : item.y;
+          const w = item.w instanceof Function ? item.w() : item.w;
+          const l = item.l instanceof Function ? item.l() : item.l;
+          const area = item.area instanceof Function ? item.area() : w * l;
+          lines.push(`| ${index + 1} | ${this.markdownText(item.label || item.dataset?.label || item.title || "Item")} | ${this.formatMeters(x)} | ${this.formatMeters(y)} | ${this.formatMeters(w)} | ${this.formatMeters(l)} | ${this.formatMeters(area)} | ${this.markdownText(classes)} | ${this.markdownText(overlaps)} |`);
+        });
+      }
+
+      lines.push("", "### Passagens", "", "| ID | De | Para | Tipo | Parede | Posição | Largura |", "|---|---|---|---|---|---:|---:|");
+      if (floorOpenings.length === 0) {
+        lines.push("| — | Nenhuma passagem definida |  |  |  |  |  |");
+      } else {
+        floorOpenings.forEach((opening) => {
+          lines.push(`| ${this.markdownText(opening.id)} | ${this.markdownText(opening.roomId)} | ${this.markdownText(opening.to)} | ${this.markdownText(opening.type)} | ${opening.wall} | ${this.formatMeters(opening.position)} | ${this.formatMeters(opening.w)} |`);
+        });
+      }
+
+      lines.push("", "### Janelas", "", "| ID | De | Para | Parede | Posição | Largura |", "|---|---|---|---|---:|---:|");
+      if (floorWindows.length === 0) {
+        lines.push("| — | Nenhuma janela definida |  |  |  |  |");
+      } else {
+        floorWindows.forEach((window) => {
+          lines.push(`| ${this.markdownText(window.id)} | ${this.markdownText(window.roomId)} | ${this.markdownText(window.to)} | ${window.wall} | ${this.formatMeters(window.position)} | ${this.formatMeters(window.w)} |`);
+        });
+      }
+    });
+
+    lines.push("", "## Comunicações naturais do piso ativo", "");
+    if (this.naturalCommunications.length === 0) {
+      lines.push("Nenhuma comunicação natural detectada.");
+    } else {
+      this.naturalCommunications.forEach((communication) => {
+        lines.push(`- **${this.markdownText(communication.id)}:** ${this.markdownText(communication.firstId)} → ${this.markdownText(communication.secondId)} (${this.formatMeters(communication.length)} m, orientação ${communication.orientation})`);
+      });
+    }
+
+    if (this.errors.length > 0) {
+      lines.push("", "## Elementos com erro", "", ...this.errors.map(({ opening, id, category = "opening", message }) => {
+        const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem" };
+        const label = `${labels[category] || "Erro"}${id ? ` ${id}` : ""}`;
+        const source = opening === undefined ? "" : ` \`${this.markdownText(JSON.stringify(opening))}\``;
+        return `- **${label}:**${source} ${this.markdownText(message)}`;
+      }));
+    }
+
+    lines.push("", "## ASCII art", "", "```text", this.asciiLayout(), "```");
     FloorPlanExport.downloadText(`${lines.join("\n")}\n`, filename, "text/markdown;charset=utf-8");
   }
 
