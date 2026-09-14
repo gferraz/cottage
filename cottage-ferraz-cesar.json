@@ -25,8 +25,8 @@
   },
   "zones": [
     { "id": "main",    "label": "Área Principal",   "pos": [0, 2.5], "size": [11.5, 11.5], "color": "red" },
-    { "id": "dorm",    "label": "Dormitórios",      "pos": ["main.x0 + 0.6", "main.y0 + 0.6"], "size": [10.3, 10.3], "color": "blue" },
-    { "id": "confort", "label": "Zona de Conforto", "pos": ["dorm.x0 + 1.2",  "dorm.y0 + 1.2"], "size":["dorm.w - 2.4",  "dorm.l - 2.4"], "color": "blue"}
+    { "id": "dorm",    "label": "Dormitórios",      "inset": ["main", 0.6, 0.6], "color": "blue" },
+    { "id": "confort", "label": "Zona de Conforto", "inset": ["dorm", 1.2, 1.2], "color": "blue" }
   ],
   "guides": [
     { "id": "main-left",   "label": "Parede esquerda",          "pos": ["main.x0", -2.5], "l": 20, "color": "green" },
@@ -37,8 +37,8 @@
     { "id": "main-right",  "label": "Parede direita",           "pos": ["main.x1", -2.5], "l": 20, "color": "green" },
     { "id": "main-top",    "label": "Parede frontal",           "pos": [-4.0,  "main.y0"], "w": 20, "color": "green" },
     { "id": "dorm-top",    "label": "Meia parede frontal",      "pos": [-4.0,  "dorm.y0"], "w": 20, "color": "green" },
-    { "id": "dorm-bottom", "label": "Meia parede traseira",     "pos": [-4.0,  13.4], "w": 20, "color": "green" },
-    { "id": "main-bottom", "label": "Parede traseira",          "pos": [-4.0,  14.0], "w": 20, "color": "green" }
+    { "id": "dorm-bottom", "label": "Meia parede traseira",     "pos": [-4.0,  "dorm.y1"], "w": 20, "color": "green" },
+    { "id": "main-bottom", "label": "Parede traseira",          "pos": [-4.0,  "main.y1"], "w": 20, "color": "green" }
   ],
 
   "building": {
@@ -103,7 +103,8 @@
       "id": "upper",
       "label": "Dormitórios",
       "rooms": [
-        { "id": "stairs", "label": "Escadaria", "pos": [5.6, 4.0], "size": [1.4, 3.5],"classes": "circulation" },
+        { "id": "upper-corridor", "label": "Corredor", "pos": ["corridor.x0", "corridor.y0"], "size": ["corridor.w",  "dorm.l"], "classes": "circulation" },
+        { "id": "stairs", "label": "Escadaria", "pos": [5.6, 4.0], "size": [1.4, 3.5], "classes": "circulation" },
         { "id": "bedroom-n", "label": "Quarto N", "pos": ["dorm.x0", "dorm.y0"], "size": [3.9, 4.0]},
         { "id": "bedroom-e", "label": "Quarto E", "pos": ["stairs.x1", "dorm.y0"], "size": [3.9, "bedroom-n.l"]},
         { "id": "bedroom-w", "label": "Quarto W", "pos": ["dorm.x0", "bedroom-n.y1"], "size": ["bedroom-n.w", "bedroom-n.l"]},

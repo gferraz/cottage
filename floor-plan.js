@@ -382,16 +382,15 @@ class FloorPlan {
     const zones = config.floors ? [...(config.zones ?? []), ...floorZones] : floorZones;
     zones.forEach((zone) => {
       if (!zone.id || this.references.has(zone.id)) return;
-      const [x, y] = zone.pos ?? [zone.x, zone.y];
-      const [w, l] = zone.size ?? [zone.w, zone.l];
+      const geometry = () => this.normalizeGeometry(zone);
       this.references.set(zone.id, {
-        x0: () => this.resolve(x),
-        x1: () => this.resolve(x) + this.resolve(w),
-        y0: () => this.resolve(y),
-        y1: () => this.resolve(y) + this.resolve(l),
-        w: () => this.resolve(w),
-        l: () => this.resolve(l),
-        area: () => this.resolve(w) * this.resolve(l)
+        x0: () => geometry().x,
+        x1: () => geometry().x + geometry().w,
+        y0: () => geometry().y,
+        y1: () => geometry().y + geometry().l,
+        w: () => geometry().w,
+        l: () => geometry().l,
+        area: () => geometry().w * geometry().l
       });
     });
   }
@@ -576,6 +575,35 @@ class FloorPlan {
   }
 
   normalizeGeometry(data) {
+    if (data.inset !== undefined) {
+      if (!Array.isArray(data.inset) || data.inset.length !== 3) {
+        throw new Error("Inset precisa ter [id, dx, dy]");
+      }
+
+      const [referenceId, xInsetValue, yInsetValue] = data.inset;
+      const reference = this.references.get(String(referenceId));
+      if (!reference) throw new Error(`Unknown geometric reference: ${referenceId}`);
+
+      const xInset = this.resolve(xInsetValue);
+      const yInset = this.resolve(yInsetValue);
+      const baseWidth = reference.w();
+      const baseLength = reference.l();
+      if (![xInset, yInset, baseWidth, baseLength].every(Number.isFinite)) {
+        throw new Error(`Inset precisa usar valores numéricos: ${referenceId}`);
+      }
+      if (!(xInset > 0 && xInset < baseWidth / 2 && yInset > 0 && yInset < baseLength / 2)) {
+        throw new Error(`Inset deve ser positivo e menor que metade das dimensões de ${referenceId}`);
+      }
+
+      return {
+        ...data,
+        x: reference.x0() + xInset,
+        y: reference.y0() + yInset,
+        w: baseWidth - 2 * xInset,
+        l: baseLength - 2 * yInset
+      };
+    }
+
     const [xValue, yValue] = data.pos ?? [data.x, data.y];
     const [wValue, lValue] = data.size ?? [data.w, data.l];
 

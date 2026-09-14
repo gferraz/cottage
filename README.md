@@ -55,6 +55,17 @@ Use `pos: [x, y]` e `size: [largura (w), comprimento (l)]`, em metros. Também s
 }
 ```
 
+Para criar um retângulo interno a partir de outra geometria, use `inset`:
+
+```json
+{
+  "id": "confort",
+  "inset": ["dorm", 1.0, 1.1]
+}
+```
+
+Os valores são recuos positivos nos eixos `x` e `y`, aplicados nos dois lados. Cada valor deve ser menor que metade da dimensão correspondente da geometria de referência.
+
 Cômodos compostos usam `parts`:
 
 ```json
