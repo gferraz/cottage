@@ -66,6 +66,17 @@ Para criar um retângulo interno a partir de outra geometria, use `inset`:
 
 Os valores são recuos positivos nos eixos `x` e `y`, aplicados nos dois lados. Cada valor deve ser menor que metade da dimensão correspondente da geometria de referência.
 
+Como alternativa a `pos` + `size`, use `rectangle: [x0, y0, x1, y1]`:
+
+```json
+{
+  "id": "master-room",
+  "rectangle": [3.4, 4.5, 8.0, 9.0]
+}
+```
+
+O renderer calcula `w = x1 - x0` e `l = y1 - y0`. Os quatro valores também podem ser referências geométricas.
+
 Cômodos compostos usam `parts`:
 
 ```json

@@ -577,6 +577,31 @@ class FloorPlan {
   }
 
   normalizeGeometry(data) {
+    if (data.rectangle !== undefined) {
+      if (!Array.isArray(data.rectangle) || data.rectangle.length !== 4) {
+        throw new Error("Rectangle precisa ter [x0, y0, x1, y1]");
+      }
+      if (data.inset !== undefined || data.pos !== undefined || data.size !== undefined || data.x !== undefined || data.y !== undefined || data.w !== undefined || data.l !== undefined) {
+        throw new Error("Rectangle não pode ser combinado com outra definição geométrica");
+      }
+
+      const [x0Value, y0Value, x1Value, y1Value] = data.rectangle.map((value) => this.resolve(value));
+      if (![x0Value, y0Value, x1Value, y1Value].every(Number.isFinite)) {
+        throw new Error("Rectangle precisa usar valores numéricos");
+      }
+      if (!(x1Value > x0Value && y1Value > y0Value)) {
+        throw new Error("Rectangle precisa ter x1 maior que x0 e y1 maior que y0");
+      }
+
+      return {
+        ...data,
+        x: x0Value,
+        y: y0Value,
+        w: x1Value - x0Value,
+        l: y1Value - y0Value
+      };
+    }
+
     if (data.inset !== undefined) {
       if (!Array.isArray(data.inset) || data.inset.length !== 3) {
         throw new Error("Inset precisa ter [id, dx, dy]");

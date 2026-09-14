@@ -52,15 +52,16 @@
       "rooms": [
         { "id": "porch", "label": "Varanda", "pos": [4.5, 0.0], "size": [6.4, 2.5], "classes": "outdoor porch" },
         { "id": "office", "label": "Escritório", "pos": ["main.x0", "main.y0 - 1"], "size": [4.5, 2.5], "classes": "office" },
-        { "id": "closet", "label": "Closet", "pos": ["master.x0", "master.y1"], "size": [3.5, 2.0], "classes": "closet" },
-        { "id": "dressing", "label": "Trocador", "pos": ["closet.x1", "master.y1"], "size": [1, "closet.l"], "classes": "circulation" },
-        { "id": "masterbath", "label": "Banheiro Master", "pos": ["master.x0", "closet.y1"], "size": ["closet.w + 1", 2.5], "classes": "masterbath wet" },
 
         { "id": "master", "label": "Suíte Master", "pos": ["main.x0", "office.y1"], "size": [4.5, 3.5], "classes": "master" },
+        { "id": "closet", "label": "Closet", "pos": ["master.x0", "master.y1"], "size": [3.5, 1.8], "classes": "closet" },
+        { "id": "dressing", "label": "Trocador", "pos": ["closet.x1", "master.y1"], "size": [1, "closet.l"], "classes": "circulation" },
+        { "id": "masterbath", "label": "Banheiro Master", "pos": ["master.x0", "closet.y1"], "size": ["closet.w + 1", 1.8], "classes": "masterbath wet" },
+
 
         { "id": "entry",      "label": "Entrada", "pos": ["master.x1", "porch.y1"], "size": [2.5, 2.3], "classes": "circulation entry", "walls": ["top", "left"] },
-        { "id": "corridor",   "label": "Corr.", "pos": ["entry.x0", "entry.y1"], "size": ["entry.w", 7.2], "classes": "service corridor" },
-        { "id": "stairs",     "label": "Escadaria", "pos": ["corridor.x1 - 1.4", "corridor.y0"], "size": [1.4, 4.0], "overlaps": "corridor", "classes": "circulation" },
+        { "id": "corridor",   "label": "Corr.", "rectangle": ["entry.x0", "entry.y1", "entry.x1", "masterbath.y1"], "classes": "corridor", "walls": [] },
+        { "id": "stairs",     "label": "Escadaria", "pos": ["corridor.x1 - 1.4", "corridor.y0"], "size": [1.4, 4.0], "overlaps": "corridor", "classes": "circulation", "walls": ["right", "bottom", "left"] },
 
         { "id": "living", "label": "Estar", "pos": ["entry.x1", "porch.y1"], "size": [4.5, 3.4], "classes": "living", "walls": ["top", "right"] },
         { "id": "dining", "label": "Jantar", "pos": ["living.x0", "living.y1"], "size": ["living.w", 3.4], "classes": "dining", "walls": ["right", "bottom"] },
