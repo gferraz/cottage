@@ -178,16 +178,16 @@ class FloorPlan {
 
   add(data) {
     const { label = "", classes = "", title = "", room = false, showLabel = false } = data;
-    const { x, y, w, h } = this.normalizeGeometry(data);
+    const { x, y, w, l } = this.normalizeGeometry(data);
     const element = document.createElement("div");
     element.className = `plan-item plan-generated${room ? " room" : ""}${classes ? ` ${classes}` : ""}`;
     element.style.setProperty("--x", x);
     element.style.setProperty("--y", y);
     element.style.setProperty("--w", w);
-    element.style.setProperty("--h", h);
+    element.style.setProperty("--l", l);
     if (title) element.title = title;
     if (!room && showLabel && (label || title)) {
-      const dimensions = `${this.formatMeters(w)}m × ${this.formatMeters(h)}m`;
+      const dimensions = `${this.formatMeters(w)}m × ${this.formatMeters(l)}m`;
       const itemLabel = String(label || title)
         .replace(/\s+\d+(?:[,.]\d+)?\s*m?\s*[×x]\s*\d+(?:[,.]\d+)?\s*m?\s*$/iu, "")
         .trim();
@@ -208,10 +208,10 @@ class FloorPlan {
     element.x0 = () => Number(x);
     element.x1 = () => Number(x) + Number(w);
     element.y0 = () => Number(y);
-    element.y1 = () => Number(y) + Number(h);
+    element.y1 = () => Number(y) + Number(l);
     element.w = () => Number(w);
-    element.h = () => Number(h);
-    element.area = () => Number(w) * Number(h);
+    element.l = () => Number(l);
+    element.area = () => Number(w) * Number(l);
 
     if (room) {
       if (data.id) element.dataset.id = data.id;
@@ -221,7 +221,7 @@ class FloorPlan {
       roomLabel.textContent = label;
       element.append(roomLabel);
       const dimensions = document.createElement("small");
-      dimensions.textContent = `${this.formatMeters(w)}m × ${this.formatMeters(h)}m`;
+      dimensions.textContent = `${this.formatMeters(w)}m × ${this.formatMeters(l)}m`;
       element.append(dimensions);
 
       const area = document.createElement("small");
@@ -244,29 +244,29 @@ class FloorPlan {
         x: Math.min(...parts.map((part) => part.x)),
         y: Math.min(...parts.map((part) => part.y)),
         w: Math.max(...parts.map((part) => part.x + part.w)) - Math.min(...parts.map((part) => part.x)),
-        h: Math.max(...parts.map((part) => part.y + part.h)) - Math.min(...parts.map((part) => part.y))
+        l: Math.max(...parts.map((part) => part.y + part.l)) - Math.min(...parts.map((part) => part.y))
       }
       : {};
     const roomData = parts?.length
-      ? { ...room, pos: [geometry.x, geometry.y], size: [geometry.w, geometry.h] }
+      ? { ...room, pos: [geometry.x, geometry.y], size: [geometry.w, geometry.l] }
       : room;
     const element = this.add({ ...roomData, room: true });
     element.allowedOverlaps = room.overlaps === undefined
       ? []
       : (Array.isArray(room.overlaps) ? room.overlaps : [room.overlaps]).map(String);
     element.geometryParts = parts?.length
-      ? parts.map(({ x, y, w, h }) => ({ x, y, w, h }))
-      : [{ x: element.x0(), y: element.y0(), w: element.w(), h: element.h() }];
+      ? parts.map(({ x, y, w, l }) => ({ x, y, w, l }))
+      : [{ x: element.x0(), y: element.y0(), w: element.w(), l: element.l() }];
     if (parts?.length) {
       element.classList.add("compound-room");
       element.partReferences = new Map(parts.map((part) => [part.id, {
         x0: () => part.x,
         x1: () => part.x + part.w,
         y0: () => part.y,
-        y1: () => part.y + part.h,
+        y1: () => part.y + part.l,
         w: () => part.w,
-        h: () => part.h,
-        area: () => part.w * part.h
+        l: () => part.l,
+        area: () => part.w * part.l
       }]));
       parts.forEach((part) => {
         const partElement = document.createElement("div");
@@ -274,14 +274,14 @@ class FloorPlan {
         partElement.style.left = `calc((${part.x} - var(--x)) * var(--m))`;
         partElement.style.top = `calc((${part.y} - var(--y)) * var(--m))`;
         partElement.style.width = `calc(${part.w} * var(--m))`;
-        partElement.style.height = `calc(${part.h} * var(--m))`;
+        partElement.style.height = `calc(${part.l} * var(--m))`;
         const walls = this.normalizeWalls(part.walls ?? room.walls);
         ["top", "right", "bottom", "left"].forEach((side) => {
           partElement.dataset[`wall${side[0].toUpperCase()}${side.slice(1)}`] = walls[side];
         });
         element.prepend(partElement);
       });
-      element.area = () => parts.reduce((total, part) => total + part.w * part.h, 0);
+      element.area = () => parts.reduce((total, part) => total + part.w * part.l, 0);
     }
     this.roomElements.push(element);
     if (room.id) {
@@ -363,15 +363,15 @@ class FloorPlan {
       if (!guide.id || this.references.has(guide.id)) return;
       const [xValue, yValue] = guide.pos ?? [];
       const widthValue = guide.w;
-      const heightValue = guide.h;
-      if ((widthValue === undefined) === (heightValue === undefined)) return;
+      const lengthValue = guide.l;
+      if ((widthValue === undefined) === (lengthValue === undefined)) return;
       this.references.set(guide.id, {
         x0: () => this.resolve(xValue),
         x1: () => this.resolve(xValue) + (widthValue === undefined ? 0 : this.resolve(widthValue)),
         y0: () => this.resolve(yValue),
-        y1: () => this.resolve(yValue) + (heightValue === undefined ? 0 : this.resolve(heightValue)),
+        y1: () => this.resolve(yValue) + (lengthValue === undefined ? 0 : this.resolve(lengthValue)),
         w: () => widthValue === undefined ? 0 : this.resolve(widthValue),
-        h: () => heightValue === undefined ? 0 : this.resolve(heightValue),
+        l: () => lengthValue === undefined ? 0 : this.resolve(lengthValue),
         area: () => 0
       });
     });
@@ -383,15 +383,15 @@ class FloorPlan {
     zones.forEach((zone) => {
       if (!zone.id || this.references.has(zone.id)) return;
       const [x, y] = zone.pos ?? [zone.x, zone.y];
-      const [w, h] = zone.size ?? [zone.w, zone.h];
+      const [w, l] = zone.size ?? [zone.w, zone.l];
       this.references.set(zone.id, {
         x0: () => this.resolve(x),
         x1: () => this.resolve(x) + this.resolve(w),
         y0: () => this.resolve(y),
-        y1: () => this.resolve(y) + this.resolve(h),
+        y1: () => this.resolve(y) + this.resolve(l),
         w: () => this.resolve(w),
-        h: () => this.resolve(h),
-        area: () => this.resolve(w) * this.resolve(h)
+        l: () => this.resolve(l),
+        area: () => this.resolve(w) * this.resolve(l)
       });
     });
   }
@@ -515,7 +515,7 @@ class FloorPlan {
       y0: () => this.getRoomGeometry(id).y0(),
       y1: () => this.getRoomGeometry(id).y1(),
       w: () => this.getRoomGeometry(id).w(),
-      h: () => this.getRoomGeometry(id).h(),
+      l: () => this.getRoomGeometry(id).l(),
       area: () => this.getRoomGeometry(id).area(),
       wallState: (side) => this.getRoomGeometry(id).wallState(side),
       hasWall: (side) => this.getRoomGeometry(id).hasWall(side),
@@ -541,7 +541,7 @@ class FloorPlan {
           x: Math.min(...parts.map((part) => part.x)),
           y: Math.min(...parts.map((part) => part.y)),
           w: Math.max(...parts.map((part) => part.x + part.w)) - Math.min(...parts.map((part) => part.x)),
-          h: Math.max(...parts.map((part) => part.y + part.h)) - Math.min(...parts.map((part) => part.y))
+          l: Math.max(...parts.map((part) => part.y + part.l)) - Math.min(...parts.map((part) => part.y))
         }
         : this.normalizeGeometry(room);
       const walls = this.normalizeWalls(room.walls);
@@ -549,23 +549,23 @@ class FloorPlan {
         x0: () => geometry.x,
         x1: () => geometry.x + geometry.w,
         y0: () => geometry.y,
-        y1: () => geometry.y + geometry.h,
+        y1: () => geometry.y + geometry.l,
         w: () => geometry.w,
-        h: () => geometry.h,
-        area: () => parts?.length ? parts.reduce((total, part) => total + part.w * part.h, 0) : geometry.w * geometry.h,
+        l: () => geometry.l,
+        area: () => parts?.length ? parts.reduce((total, part) => total + part.w * part.l, 0) : geometry.w * geometry.l,
         wallState: (side) => walls[side],
         hasWall: (side) => walls[side] === "solid",
         geometryParts: parts?.length
-          ? parts.map(({ x, y, w, h }) => ({ x, y, w, h }))
-          : [{ x: geometry.x, y: geometry.y, w: geometry.w, h: geometry.h }],
+          ? parts.map(({ x, y, w, l }) => ({ x, y, w, l }))
+          : [{ x: geometry.x, y: geometry.y, w: geometry.w, l: geometry.l }],
         partReferences: new Map((parts ?? []).map((part) => [part.id, {
           x0: () => part.x,
           x1: () => part.x + part.w,
           y0: () => part.y,
-          y1: () => part.y + part.h,
+          y1: () => part.y + part.l,
           w: () => part.w,
-          h: () => part.h,
-          area: () => part.w * part.h
+          l: () => part.l,
+          area: () => part.w * part.l
         }]))
       };
       this.roomGeometryCache.set(id, reference);
@@ -577,10 +577,10 @@ class FloorPlan {
 
   normalizeGeometry(data) {
     const [xValue, yValue] = data.pos ?? [data.x, data.y];
-    const [wValue, hValue] = data.size ?? [data.w, data.h];
+    const [wValue, lValue] = data.size ?? [data.w, data.l];
 
-    if ([xValue, yValue, wValue, hValue].some((value) => value === undefined)) {
-      throw new Error("A room needs pos/size or x/y/w/h values");
+    if ([xValue, yValue, wValue, lValue].some((value) => value === undefined)) {
+      throw new Error("A figure needs pos/size or x/y/w/l values");
     }
 
     return {
@@ -588,7 +588,7 @@ class FloorPlan {
       x: this.resolve(xValue),
       y: this.resolve(yValue),
       w: this.resolve(wValue),
-      h: this.resolve(hValue)
+      l: this.resolve(lValue)
     };
   }
 
@@ -821,18 +821,18 @@ class FloorPlan {
     guides.forEach((guide, index) => {
       const [xValue, yValue] = guide.pos ?? [];
       const width = guide.w;
-      const height = guide.h;
+      const lengthValue = guide.l;
       const hasWidth = width !== undefined;
-      const hasHeight = height !== undefined;
+      const hasLength = lengthValue !== undefined;
       let values;
       try {
-        values = [xValue, yValue, hasWidth ? width : height].map((value) => this.resolve(value));
+        values = [xValue, yValue, hasWidth ? width : lengthValue].map((value) => this.resolve(value));
       } catch (error) {
         this.errors.push({ index, opening: guide, category: "guide", message: error.message });
         return;
       }
-      if (values.some((value) => !Number.isFinite(value)) || hasWidth === hasHeight || values[2] <= 0) {
-        this.errors.push({ index, opening: guide, category: "guide", message: "Guia precisa de pos e exatamente um valor positivo w ou h" });
+      if (values.some((value) => !Number.isFinite(value)) || hasWidth === hasLength || values[2] <= 0) {
+        this.errors.push({ index, opening: guide, category: "guide", message: "Guia precisa de pos e exatamente um valor positivo w ou l" });
         return;
       }
 
@@ -881,7 +881,7 @@ class FloorPlan {
 
     const reference = String(value).trim();
     const partMatch = reference.match(
-      /^([\w-]+)\.([\w-]+)\.(x|x0|x1|y|y0|y1|w|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
+      /^([\w-]+)\.([\w-]+)\.(x|x0|x1|y|y0|y1|w|l|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
     );
     if (partMatch) {
       const [, roomId, partId, method, operator, amount] = partMatch;
@@ -895,7 +895,7 @@ class FloorPlan {
     }
 
     const match = reference.match(
-      /^([\w-]+)\.(x|x0|x1|y|y0|y1|w|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
+      /^([\w-]+)\.(x|x0|x1|y|y0|y1|w|l|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
     );
 
     if (!match) throw new Error(`Invalid geometric reference: ${value}`);
@@ -983,7 +983,7 @@ class FloorPlan {
       x: feature.horizontal ? feature.x : feature.x - wallThickness / 2,
       y: feature.horizontal ? feature.y - wallThickness / 2 : feature.y,
       w: feature.horizontal ? feature.w : wallThickness,
-      h: feature.horizontal ? wallThickness : feature.w,
+      l: feature.horizontal ? wallThickness : feature.w,
       classes: `${baseClass} opening-${feature.type} opening-${feature.horizontal ? "horizontal" : "vertical"}`,
       title: `${feature.type}: ${feature.id}`
     });
@@ -1014,7 +1014,7 @@ class FloorPlan {
 
     const horizontal = wall === "top" || wall === "bottom";
     const wallStart = horizontal ? room.x0() : room.y0();
-    const wallLength = horizontal ? room.w() : room.h();
+    const wallLength = horizontal ? room.w() : room.l();
     let sharedStart = null;
     let sharedEnd = null;
     if (target !== "exterior") {
@@ -1128,7 +1128,7 @@ class FloorPlan {
         const second = pieces[otherIndex];
         const overlapWidth = Math.min(first.part.x + first.part.w, second.part.x + second.part.w)
           - Math.max(first.part.x, second.part.x);
-        const overlapHeight = Math.min(first.part.y + first.part.h, second.part.y + second.part.h)
+        const overlapHeight = Math.min(first.part.y + first.part.l, second.part.y + second.part.l)
           - Math.max(first.part.y, second.part.y);
         const overlaps = overlapWidth > epsilon && overlapHeight > epsilon;
         const allowed = first.room.allowedOverlaps.includes(second.room.dataset.id)
@@ -1150,7 +1150,7 @@ class FloorPlan {
     if (rectangles.length === 0) return 0;
 
     const xs = [...new Set(rectangles.flatMap(({ x, w }) => [x, x + w]))].sort((a, b) => a - b);
-    const ys = [...new Set(rectangles.flatMap(({ y, h }) => [y, y + h]))].sort((a, b) => a - b);
+    const ys = [...new Set(rectangles.flatMap(({ y, l }) => [y, y + l]))].sort((a, b) => a - b);
     let area = 0;
 
     for (let xIndex = 0; xIndex < xs.length - 1; xIndex += 1) {
@@ -1161,7 +1161,7 @@ class FloorPlan {
         const y1 = ys[yIndex + 1];
         const covered = rectangles.some((rectangle) =>
           rectangle.x <= x0 && rectangle.x + rectangle.w >= x1
-          && rectangle.y <= y0 && rectangle.y + rectangle.h >= y1
+          && rectangle.y <= y0 && rectangle.y + rectangle.l >= y1
         );
         if (covered) area += (x1 - x0) * (y1 - y0);
       }
@@ -1176,7 +1176,7 @@ class FloorPlan {
       .flatMap((other) => other.geometryParts);
     const itemOverlaps = this.itemElements
       .filter((item) => item.allowedOverlaps.includes(room.dataset.id))
-      .map((item) => ({ x: item.x0(), y: item.y0(), w: item.w(), h: item.h() }));
+      .map((item) => ({ x: item.x0(), y: item.y0(), w: item.w(), l: item.l() }));
     coveredBy.push(...itemOverlaps);
     const deductions = [];
     room.geometryParts.forEach((part) => {
@@ -1184,11 +1184,11 @@ class FloorPlan {
         const x0 = Math.max(part.x, other.x);
         const y0 = Math.max(part.y, other.y);
         const x1 = Math.min(part.x + part.w, other.x + other.w);
-        const y1 = Math.min(part.y + part.h, other.y + other.h);
-        if (x1 > x0 && y1 > y0) deductions.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+        const y1 = Math.min(part.y + part.l, other.y + other.l);
+        if (x1 > x0 && y1 > y0) deductions.push({ x: x0, y: y0, w: x1 - x0, l: y1 - y0 });
       });
     });
-    const grossArea = room.geometryParts.reduce((total, part) => total + part.w * part.h, 0);
+    const grossArea = room.geometryParts.reduce((total, part) => total + part.w * part.l, 0);
     return grossArea - this.calculateUnionArea(deductions);
   }
 
@@ -1405,7 +1405,7 @@ class FloorPlan {
       width.textContent = this.formatFixed(room.w());
 
       const height = document.createElement("span");
-      height.textContent = this.formatFixed(room.h());
+      height.textContent = this.formatFixed(room.l());
 
       item.append(label, width, height, grossArea, netArea);
       this.roomList.append(item);
@@ -1463,7 +1463,7 @@ class FloorPlan {
       const title = document.createElement("strong");
       title.textContent = `${index + 1}. ${item.label || item.title || "Item"}`;
       const details = document.createElement("span");
-      details.textContent = `${this.formatMeters(item.w)}m × ${this.formatMeters(item.h)}m${item.floorLabel ? ` — ${item.floorLabel}` : ""}`;
+      details.textContent = `${this.formatMeters(item.w)}m × ${this.formatMeters(item.l)}m${item.floorLabel ? ` — ${item.floorLabel}` : ""}`;
       entry.append(title, details);
       this.itemList.append(entry);
     });
@@ -1740,7 +1740,7 @@ class FloorPlan {
         .filter((side) => room.wallState?.(side) === "solid")
         .join(", ") || "—";
       const activeRoom = this.roomElements.find((candidate) => candidate.dataset.id === roomEntry.id);
-      lines.push(`| ${index + 1} | ${this.markdownText(roomEntry.id || room.dataset?.id || "—")} | ${this.markdownText(roomEntry.label || room.dataset?.label || "Cômodo")}${roomEntry.floorLabel ? ` (${this.markdownText(roomEntry.floorLabel)})` : ""} | ${this.formatMeters(room.x0())} | ${this.formatMeters(room.y0())} | ${this.formatMeters(room.w())} | ${this.formatMeters(room.h())} | ${this.formatMeters(room.area())} | ${this.formatMeters(activeRoom?.netArea ?? room.area())} | ${walls} |`);
+      lines.push(`| ${index + 1} | ${this.markdownText(roomEntry.id || room.dataset?.id || "—")} | ${this.markdownText(roomEntry.label || room.dataset?.label || "Cômodo")}${roomEntry.floorLabel ? ` (${this.markdownText(roomEntry.floorLabel)})` : ""} | ${this.formatMeters(room.x0())} | ${this.formatMeters(room.y0())} | ${this.formatMeters(room.w())} | ${this.formatMeters(room.l())} | ${this.formatMeters(room.area())} | ${this.formatMeters(activeRoom?.netArea ?? room.area())} | ${walls} |`);
     });
 
     lines.push("", `**Total:** ${this.roomCount} cômodos · ${this.formatMeters(this.roomArea)} m² (área líquida, com descontos de sobreposição)`);
@@ -1757,9 +1757,9 @@ class FloorPlan {
         const x = item.x0 ? item.x0() : item.x;
         const y = item.y0 ? item.y0() : item.y;
         const w = item.w instanceof Function ? item.w() : item.w;
-        const h = item.h instanceof Function ? item.h() : item.h;
-        const area = item.area instanceof Function ? item.area() : w * h;
-        lines.push(`| ${index + 1} | ${this.markdownText(item.label || item.dataset?.label || item.title || "Item")}${item.floorLabel ? ` (${this.markdownText(item.floorLabel)})` : ""} | ${this.formatMeters(x)} | ${this.formatMeters(y)} | ${this.formatMeters(w)} | ${this.formatMeters(h)} | ${this.formatMeters(area)} | ${this.markdownText(classes)} | ${this.markdownText(overlaps)} |`);
+        const l = item.l instanceof Function ? item.l() : item.l;
+        const area = item.area instanceof Function ? item.area() : w * l;
+        lines.push(`| ${index + 1} | ${this.markdownText(item.label || item.dataset?.label || item.title || "Item")}${item.floorLabel ? ` (${this.markdownText(item.floorLabel)})` : ""} | ${this.formatMeters(x)} | ${this.formatMeters(y)} | ${this.formatMeters(w)} | ${this.formatMeters(l)} | ${this.formatMeters(area)} | ${this.markdownText(classes)} | ${this.markdownText(overlaps)} |`);
       });
     }
     lines.push("", "## Passagens", "", "| ID | De | Para | Tipo | Parede | Posição | Largura |", "|---|---|---|---|---|---:|---:|");

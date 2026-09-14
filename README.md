@@ -44,7 +44,7 @@ IDs são obrigatórios para cômodos e devem ser únicos em todo o arquivo, inde
 
 ## Cômodos e partes
 
-Use `pos: [x, y]` e `size: [largura (w), comprimento (h)]`, em metros. Também são aceitos `x`, `y`, `w` e `h`. Valores podem referenciar outro cômodo:
+Use `pos: [x, y]` e `size: [largura (w), comprimento (l)]`, em metros. Também são aceitos `x`, `y`, `w` e `l`. Valores podem referenciar outro cômodo:
 
 ```json
 {
