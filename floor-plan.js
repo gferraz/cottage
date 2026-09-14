@@ -1,7 +1,8 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, viewportSummary = null, zoneLayerToggleButton = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, guidesLayer = null, viewportSummary = null, zoneLayerToggleButton = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
     this.terrainLayer = terrainLayer;
+    this.guidesLayer = guidesLayer;
     this.viewportSummary = viewportSummary;
     this.zoneLayerToggleButton = zoneLayerToggleButton;
     this.titleElement = titleElement;
@@ -47,6 +48,7 @@ class FloorPlan {
     this.terrainArea = 0;
     this.terrainDimensions = null;
     this.terrainReference = null;
+    this.theme = { colors: { red: "#c94c4c", blue: "#4d7899", green: "#628b5a", gray: "#777" } };
     this.viewport = { size: [20, 20], origin: [-4.25, -4.25] };
     this.viewportScale = scale;
     this.pointerPan = null;
@@ -180,10 +182,16 @@ class FloorPlan {
   }
 
   updateTerrainViewport() {
-    if (!this.terrainLayer) return;
     const [width, height] = this.viewport.size;
     const [originX, originY] = this.viewport.origin;
-    this.terrainLayer.setAttribute("viewBox", `${originX} ${originY} ${width} ${height}`);
+    const viewBox = `${originX} ${originY} ${width} ${height}`;
+    this.terrainLayer?.setAttribute("viewBox", viewBox);
+    this.guidesLayer?.setAttribute("viewBox", viewBox);
+  }
+
+  themeColor(color) {
+    const value = this.theme.colors?.[color];
+    return typeof value === "string" ? value : (value?.line || color || "#777");
   }
 
   add(data) {
@@ -366,7 +374,9 @@ class FloorPlan {
   }
 
   registerStaticZoneReferences(config) {
-    (config.floors ?? [config]).flatMap((floorConfig) => floorConfig.zones ?? []).forEach((zone) => {
+    const floorZones = (config.floors ?? [config]).flatMap((floorConfig) => floorConfig.zones ?? []);
+    const zones = config.floors ? [...(config.zones ?? []), ...floorZones] : floorZones;
+    zones.forEach((zone) => {
       if (!zone.id || this.references.has(zone.id)) return;
       const [x, y] = zone.pos ?? [zone.x, zone.y];
       const [w, h] = zone.size ?? [zone.w, zone.h];
@@ -389,8 +399,9 @@ class FloorPlan {
   validateGlobalObjectIds(config) {
     this.globalObjectIds = new Set(this.roomDefinitions.keys());
     this.validZoneIds = new Set();
-    (config.floors ?? [config]).forEach((floorConfig) => {
-      (floorConfig.zones ?? []).forEach((zone) => {
+    const floorConfigs = config.floors ?? [config];
+    const globalZones = config.floors ? (config.zones ?? []) : [];
+    [...globalZones, ...floorConfigs.flatMap((floorConfig) => floorConfig.zones ?? [])].forEach((zone) => {
         if (!zone.id) {
           this.errors.push({ category: "zone", opening: zone, message: "Zona sem id global" });
         } else if (this.globalObjectIds.has(zone.id)) {
@@ -400,6 +411,7 @@ class FloorPlan {
           this.validZoneIds.add(zone.id);
         }
       });
+    floorConfigs.forEach((floorConfig) => {
       [...(floorConfig.items ?? []), ...(floorConfig.openings ?? []), ...(floorConfig.windows ?? [])].forEach((object) => {
         if (!object.id) return;
         if (this.globalObjectIds.has(object.id)) {
@@ -409,6 +421,16 @@ class FloorPlan {
         }
       });
     });
+  }
+
+  visibleZones(config, floorConfig) {
+    const globalZones = config.floors ? (config.zones ?? []) : [];
+    return [...globalZones, ...(floorConfig.zones ?? [])];
+  }
+
+  visibleGuides(config, floorConfig) {
+    const globalGuides = config.floors ? (config.guides ?? []) : [];
+    return [...globalGuides, ...(floorConfig.guides ?? [])];
   }
 
   validateInactiveFloorFeatures(config, activeFloorIndex) {
@@ -608,6 +630,7 @@ class FloorPlan {
 
   clearTerrain() {
     this.terrainLayer?.replaceChildren();
+    this.guidesLayer?.replaceChildren();
     this.root.style.removeProperty("--plan-offset-x");
     this.root.style.removeProperty("--plan-offset-y");
     this.root.style.removeProperty("--building-offset-x");
@@ -786,6 +809,65 @@ class FloorPlan {
     this.terrainLayer.append(compassRose);
   }
 
+  renderGuides(guides = []) {
+    if (!this.guidesLayer) return;
+    const svg = "http://www.w3.org/2000/svg";
+    const create = (name, attributes = {}) => {
+      const element = document.createElementNS(svg, name);
+      Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+      return element;
+    };
+
+    guides.forEach((guide, index) => {
+      const [xValue, yValue] = guide.pos ?? [];
+      const width = guide.w;
+      const height = guide.h;
+      const hasWidth = width !== undefined;
+      const hasHeight = height !== undefined;
+      let values;
+      try {
+        values = [xValue, yValue, hasWidth ? width : height].map((value) => this.resolve(value));
+      } catch (error) {
+        this.errors.push({ index, opening: guide, category: "guide", message: error.message });
+        return;
+      }
+      if (values.some((value) => !Number.isFinite(value)) || hasWidth === hasHeight || values[2] <= 0) {
+        this.errors.push({ index, opening: guide, category: "guide", message: "Guia precisa de pos e exatamente um valor positivo w ou h" });
+        return;
+      }
+
+      const offsetX = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--building-offset-x")) || 0;
+      const offsetY = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--building-offset-y")) || 0;
+      const [localX, localY, length] = values;
+      const x = localX + offsetX;
+      const y = localY + offsetY;
+      const line = hasWidth
+        ? create("line", { x1: x, y1: y, x2: x + length, y2: y, class: "guide-line" })
+        : create("line", { x1: x, y1: y, x2: x, y2: y + length, class: "guide-line" });
+      line.setAttribute("stroke", this.themeColor(guide.color));
+      if (guide.id) line.dataset.id = guide.id;
+      this.guidesLayer.append(line);
+
+      if (guide.label) {
+        const labelGap = 0.25;
+        const label = create("text", {
+          x,
+          y,
+          class: "guide-label",
+          fill: this.themeColor(guide.color)
+        });
+        if (hasWidth) {
+          label.setAttribute("dy", -labelGap);
+        } else {
+          label.setAttribute("dy", -labelGap);
+          label.setAttribute("transform", `rotate(90 ${x} ${y})`);
+        }
+        label.textContent = guide.label;
+        this.guidesLayer.append(label);
+      }
+    });
+  }
+
   resolve(value) {
     if (typeof value === "number") return value;
 
@@ -842,7 +924,7 @@ class FloorPlan {
 
   addZone(zone) {
     const element = this.add({ ...zone, showLabel: true, classes: `${zone.classes || ""} reference-zone`.trim() });
-    if (zone.color) element.style.setProperty("--zone-line-color", zone.color);
+    if (zone.color) element.style.setProperty("--zone-line-color", this.themeColor(zone.color));
     element.dataset.id = zone.id;
     element.dataset.label = zone.label || zone.id;
     element.allowedOverlaps = [];
@@ -1115,6 +1197,11 @@ class FloorPlan {
   load(config) {
     this.model = FloorPlanModel.fromConfig(config);
     this.currentConfig = config;
+    this.theme = {
+      ...this.theme,
+      ...(config.theme || {}),
+      colors: { ...this.theme.colors, ...(config.theme?.colors || {}) }
+    };
     this.configureViewport(this.model.viewport);
     const configuredFloorIndex = Number.isInteger(config.activeFloor)
       ? config.activeFloor
@@ -1155,7 +1242,7 @@ class FloorPlan {
       && this.roomDefinitions.get(room.id) === room
       && !this.invalidRoomIds.has(room.id));
     this.addRooms(validRooms);
-    this.addZones((floorConfig.zones ?? []).filter((zone) => this.validZoneIds.has(zone.id)));
+    this.addZones(this.visibleZones(config, floorConfig).filter((zone) => this.validZoneIds.has(zone.id)));
     (floorConfig.items ?? []).forEach((item, index) => {
       try {
         this.addItem(item);
@@ -1182,6 +1269,7 @@ class FloorPlan {
     } catch (error) {
       this.errors.push({ category: "presentation", message: error.message });
     }
+    this.renderGuides(this.visibleGuides(config, floorConfig));
     this.updateSummary();
     if (this.reloadButton) this.reloadButton.disabled = false;
     return this;

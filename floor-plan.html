@@ -65,6 +65,27 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   pointer-events: none;
 }
 
+.guides-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 16;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.guide-line {
+  stroke-width: 0.03;
+  stroke-dasharray: 0.20 0.12;
+}
+
+.guide-label {
+  font-size: 0.22px;
+  font-weight: 400;
+  dominant-baseline: hanging;
+}
+
 .terrain-boundary {
   fill: rgba(185, 214, 174, 0.18);
   stroke: #66855d;
@@ -479,6 +500,7 @@ code { background: #f2f2f2; padding: 2px 5px; border-radius: 4px; }
     <div class="plan-layout">
       <div class="site" id="floor-plan">
         <svg class="terrain-layer" id="terrain-layer" aria-label="Limite do terreno"></svg>
+        <svg class="guides-layer" id="guides-layer" aria-label="Linhas-guia"></svg>
         <div class="direction front">FRENTE ↑</div>
         <div class="direction rear">FUNDO ↓</div>
       </div>

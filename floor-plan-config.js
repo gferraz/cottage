@@ -1,6 +1,7 @@
 const floor = new FloorPlan({
   root: document.querySelector("#floor-plan"),
   terrainLayer: document.querySelector("#terrain-layer"),
+  guidesLayer: document.querySelector("#guides-layer"),
   viewportSummary: document.querySelector("#viewport-summary"),
   zoneLayerToggleButton: document.querySelector("#toggle-zones"),
   titleElement: document.querySelector("h1"),

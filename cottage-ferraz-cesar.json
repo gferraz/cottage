@@ -23,6 +23,17 @@
       { "from": "P19", "to": "P1", "distance": 41.103, "azimuth_deg": 22.172083, "azimuth_dms": "22° 10' 19\"" }
     ]
   },
+  "guides": [
+    { "id": "left-main",  "label": "Parede esquerda",          "pos": [ 0.0, -2.5], "h": 20, "color": "green" },
+    { "id": "left-2nd",   "label": "Meia parede esquerda",     "pos": [ 0.6, -2.5], "h": 20, "color": "green" },
+    { "id": "left-corr",  "label": "Corredor parede esquerda", "pos": [ 4.5, -2.5], "h": 20, "color": "green" },
+    { "id": "right-corr", "label": "Corredor parede direita",  "pos": [ 7.0, -2.5], "h": 20, "color": "green" },
+    { "id": "right-2nd",  "label": "Meia parede esquerda",     "pos": [10.9, -2.5], "h": 20, "color": "green" },
+    { "id": "right-main", "label": "Parede esquerda",          "pos": [11.5, -2.5], "h": 20, "color": "green" },
+    { "id": "top-main",   "label": "Parede frontal",           "pos": [-4.0,  1.5], "w": 20, "color": "green" },
+    { "id": "top-2nd",    "label": "Meia parede frontal",      "pos": [-4.0,  2.1], "w": 20, "color": "green" }
+
+  ],
   "building": {
     "anchor": "terrain.front-start",
     "position": { "x": 4, "y": 3 }
@@ -35,7 +46,7 @@
         { "id": "main", "label": "Área Principal", "pos": [0, 2.5], "size": [11.5, 11.5], "color": "red" }
       ],
       "rooms": [
-        { "id": "porch", "label": "Varanda", "pos": [4.5, 0.0], "size": [6.3, 2.5], "classes": "outdoor porch" },
+        { "id": "porch", "label": "Varanda", "pos": [4.5, 0.0], "size": [6.4, 2.5], "classes": "outdoor porch" },
         { "id": "office", "label": "Escritório", "pos": ["main.x0", "main.y0 - 1"], "size": [4.5, 2.5], "classes": "office" },
         { "id": "master", "label": "Suíte Master", "pos": ["main.x0", "office.y1"], "size": [4.5, 3.5], "classes": "master" },
         { "id": "entry", "label": "Entrada", "pos": ["master.x1", "porch.y1"], "size": [2.5, 2.3], "classes": "circulation entry", "walls": ["top", "left"] },
