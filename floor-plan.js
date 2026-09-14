@@ -1,10 +1,9 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, guidesLayer = null, viewportSummary = null, zoneLayerToggleButton = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
     this.root = root;
     this.terrainLayer = terrainLayer;
     this.guidesLayer = guidesLayer;
     this.viewportSummary = viewportSummary;
-    this.zoneLayerToggleButton = zoneLayerToggleButton;
     this.titleElement = titleElement;
     this.floorSelect = floorSelect;
     this.roomList = roomList;
@@ -52,7 +51,6 @@ class FloorPlan {
     this.viewport = { size: [20, 20], origin: [-4.25, -4.25] };
     this.viewportScale = scale;
     this.pointerPan = null;
-    this.zonesInFront = false;
 
     root.style.setProperty("--m", `${scale}px`);
     root.addEventListener("pointerdown", (event) => this.beginViewportPan(event));
@@ -68,10 +66,6 @@ class FloorPlan {
     }
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
     if (markdownButton) markdownButton.addEventListener("click", () => this.downloadMarkdown());
-    if (zoneLayerToggleButton) {
-      zoneLayerToggleButton.addEventListener("click", () => this.setZonesInFront(!this.zonesInFront));
-      this.updateZoneLayerToggleButton();
-    }
     if (floorSelect) {
       floorSelect.disabled = true;
       floorSelect.addEventListener("change", () => {
@@ -141,18 +135,6 @@ class FloorPlan {
     const [width, height] = this.viewport.size;
     const [originX, originY] = this.viewport.origin;
     this.viewportSummary.textContent = `Viewport: ${this.formatMeters(width)}m × ${this.formatMeters(height)}m · origem (${this.formatMeters(originX)}, ${this.formatMeters(originY)})m · escala ${this.viewportScale.toFixed(2)} px/m`;
-  }
-
-  setZonesInFront(enabled) {
-    this.zonesInFront = Boolean(enabled);
-    this.root.classList.toggle("zones-in-front", this.zonesInFront);
-    this.updateZoneLayerToggleButton();
-  }
-
-  updateZoneLayerToggleButton() {
-    if (!this.zoneLayerToggleButton) return;
-    this.zoneLayerToggleButton.textContent = this.zonesInFront ? "Zonas: à frente" : "Zonas: camada normal";
-    this.zoneLayerToggleButton.setAttribute("aria-pressed", String(this.zonesInFront));
   }
 
   beginViewportPan(event) {
@@ -1793,7 +1775,7 @@ class FloorPlan {
 
   async downloadHtml(filename = "planta-terrea-gerada.html") {
     const exportedDocument = document.cloneNode(true);
-    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #toggle-zones, #download-html, #download-markdown, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
+    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #download-markdown, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
       .forEach((element) => element.remove());
     exportedDocument.querySelectorAll("script").forEach((script) => script.remove());
 

@@ -224,7 +224,6 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   pointer-events: none;
 }
 
-.site.zones-in-front .reference-zone { z-index: 30; }
 
 .plan-opening {
   z-index: 15;
@@ -327,7 +326,6 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 
 #load-json,
 #reload-json,
-#toggle-zones,
 #download-html,
 #download-markdown {
   margin: 0 0 16px;
@@ -359,7 +357,6 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 
 #load-json:hover,
 #reload-json:hover:not(:disabled),
-#toggle-zones:hover,
 #download-html:hover,
 #download-markdown:hover { background: #e6e6e6; }
 #reload-json:disabled { cursor: not-allowed; opacity: 0.55; }
@@ -394,7 +391,6 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   #json-file,
   #load-json,
   #reload-json,
-  #toggle-zones,
   #download-html,
   #download-markdown,
   .floor-selector,

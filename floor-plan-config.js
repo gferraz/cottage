@@ -3,7 +3,6 @@ const floor = new FloorPlan({
   terrainLayer: document.querySelector("#terrain-layer"),
   guidesLayer: document.querySelector("#guides-layer"),
   viewportSummary: document.querySelector("#viewport-summary"),
-  zoneLayerToggleButton: document.querySelector("#toggle-zones"),
   titleElement: document.querySelector("h1"),
   floorSelect: document.querySelector("#floor-select"),
   roomList: document.querySelector("#room-list"),
