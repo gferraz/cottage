@@ -112,7 +112,8 @@
         { "id": "bedroom-n",     "label": "Quarto N",  "pos": ["dorm.x0", "dorm.y0"], "size": [3.9, 4.0]},
         { "id": "bedroom-e",     "label": "Quarto E",  "pos": ["stairs.x1", "dorm.y0"], "size": [3.9, "bedroom-n.l"]},
         { "id": "bedroom-w",     "label": "Quarto W",  "pos": ["dorm.x0", "bedroom-n.y1"], "size": ["bedroom-n.w", "bedroom-n.l"]},
-        { "id": "bathroom",      "label": "Banheiro",  "pos": ["stairs.x1", "bedroom-e.y1"], "size": ["bedroom-e.w", "bedroom-e.l"], "classes": "wet" }
+        { "id": "bathroom",      "label": "Banheiro",  "pos": ["stairs.x1", "bedroom-e.y1"], "size": ["bedroom-e.w", "bedroom-e.l"], "classes": "wet" },
+        { "id": "space",         "label": "Sobra",     "pos": ["dorm.x0", "bedroom-w.y1"], "size": ["dorm.w", 2.3], "overlaps": "dorm-corridor"}
       ],
       "items": [],
       "openings": [
