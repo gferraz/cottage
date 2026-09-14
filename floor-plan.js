@@ -334,6 +334,8 @@ class FloorPlan {
     this.roomGeometryCache.clear();
     this.roomGeometryStack.clear();
     this.invalidRoomIds.clear();
+    this.rooms.clear();
+    this.references.clear();
     const collected = FloorPlanValidation.collectRoomDefinitions(this.model || FloorPlanModel.fromConfig(config));
     this.roomDefinitions = collected.definitions;
     this.errors.push(...collected.errors);
