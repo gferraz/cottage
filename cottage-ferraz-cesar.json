@@ -113,7 +113,7 @@
       "h": 6.0,
       "rooms": [
         { "id": "dorm-corridor", "label": "Corredor",  "pos": ["corridor.x0", "dorm.y0"], "size": ["corridor.w",  "dorm.l"], "classes": "circulation" },
-        { "id": "upstairs",      "label": "Escadaria", "pos": ["stairs.x0", "stairs.y0 + 0.5"], "size": ["stairs.w", "stairs.l - 0.5"], "overlaps": "dorm-corridor", "classes": "circulation" },
+        { "id": "upstairs",      "label": "Escadaria", "pos": ["stairs.x0", "stairs.y0", 0.0], "size": ["stairs.w", "stairs.h", 6.0], "overlaps": "dorm-corridor", "classes": "circulation stair-flight", "walls": ["top", "right", "left"] },
         { "id": "bedroom-n",     "label": "Quarto N",  "pos": ["dorm.x0", "dorm.y0"], "size": [3.9, 4.0]},
         { "id": "bedroom-e",     "label": "Quarto E",  "pos": ["stairs.x1", "dorm.y0"], "size": [3.9, "bedroom-n.l"]},
         { "id": "bedroom-w",     "label": "Quarto W",  "pos": ["dorm.x0", "bedroom-n.y1"], "size": ["bedroom-n.w", "bedroom-n.l"]},
