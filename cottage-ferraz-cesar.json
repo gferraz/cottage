@@ -124,7 +124,7 @@
         { "from": "bedroom-e.left",  "type": "door", "dy": 1.2 },
         { "from": "bedroom-w.right", "type": "door", "dy": 2.6 },
         { "from": "bathroom.left",   "type": "door", "dy": 2.6 },
-        { "from": "upper", "to": "ground", "type": "opening", "pos": ["stairs.x0", "stairs.y0"], "size": ["stairs.w", 3.0] }
+        { "from": "upper", "to": "ground", "type": "opening", "pos": ["stairs.x0", "stairs.y0 + 1.5"], "size": ["stairs.w", 3.0] }
       ]
     }
   ]

@@ -1173,10 +1173,12 @@ class FloorPlan {
     const element = this.add({ pos: [x, y, fromHeight], size: [width, length, 0], classes: "floor-opening vertical-opening", title: `Abertura vertical: ${passage.id}` });
     element.dataset.from = fromId;
     element.dataset.to = toId;
-    this.root.querySelectorAll("[data-spanning-stair]").forEach((stair) => {
-      this.clipProjection(stair, { x: stair.x0(), y: stair.y0(), w: stair.w(), l: stair.l() }, passage);
-    });
-    this.renderLowerFloorProjection(floors, fromFloor, fromHeight, passage);
+    if ((floorConfig?.id ?? this.currentFloorId) === fromId) {
+      this.root.querySelectorAll("[data-spanning-stair]").forEach((stair) => {
+        this.clipProjection(stair, { x: stair.x0(), y: stair.y0(), w: stair.w(), l: stair.l() }, passage);
+      });
+      this.renderLowerFloorProjection(floors, fromFloor, fromHeight, passage);
+    }
     return passage;
   }
 
@@ -1244,7 +1246,9 @@ class FloorPlan {
       (sourceFloor.openings ?? []).forEach((opening) => {
         if (!this.isVerticalOpening(opening)) return;
         const targetId = String(opening.to ?? "").trim();
-        if (String(opening.from ?? "").trim() !== currentFloorId) return;
+        const sourceFloorId = String(opening.from ?? "").trim();
+        const targetFloorId = String(opening.to ?? "").trim();
+        if (currentFloorId !== sourceFloorId && currentFloorId !== targetFloorId) return;
         try {
           this.addVerticalOpening(opening, floorConfig);
         } catch (error) {
@@ -2185,6 +2189,15 @@ class FloorPlan {
 
   async downloadHtml(filename = "planta-terrea-gerada.html") {
     const exportedDocument = document.cloneNode(true);
+    const livePlan = document.querySelector("#floor-plan");
+    const exportedPlan = exportedDocument.querySelector("#floor-plan");
+
+    // Snapshot the currently selected floor after all dynamic rendering and
+    // projection layers have been updated.
+    if (livePlan && exportedPlan) {
+      exportedPlan.replaceWith(livePlan.cloneNode(true));
+    }
+
     exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #download-markdown, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
       .forEach((element) => element.remove());
     exportedDocument.querySelectorAll("script").forEach((script) => script.remove());
