@@ -52,6 +52,9 @@ class FloorPlan {
     this.viewport = { size: [20, 20], origin: [-4.25, -4.25] };
     this.viewportScale = scale;
     this.pointerPan = null;
+    this.projectionLayer = document.createElement("div");
+    this.projectionLayer.className = "floor-projection-layer";
+    root.prepend(this.projectionLayer);
 
     root.style.setProperty("--m", `${scale}px`);
     root.addEventListener("pointerdown", (event) => this.beginViewportPan(event));
@@ -178,7 +181,7 @@ class FloorPlan {
   }
 
   add(data) {
-    const { label = "", classes = "", title = "", room = false, showLabel = false } = data;
+    const { label = "", classes = "", title = "", room = false, showLabel = false, container = this.root } = data;
     const { x, y, w, l, z0, z1, h } = this.normalizeGeometry(data);
     const element = document.createElement("div");
     element.className = `plan-item plan-generated${room ? " room" : ""}${classes ? ` ${classes}` : ""}`;
@@ -195,6 +198,8 @@ class FloorPlan {
     if (classes.split(/\s+/).includes("stair-flight")) {
       element.dataset.stairAxis = w >= l ? "horizontal" : "vertical";
       element.dataset.stairRise = h > 0 ? "up" : "flat";
+      const elevationTolerance = 1e-9;
+      element.dataset.stairFace = this.currentFloorHeight >= z1 - elevationTolerance ? "top" : "bottom";
       if (h > 0) {
         element.style.setProperty("--stair-clearance-stop", `${Math.min(100, (2 / h) * 100)}%`);
       }
@@ -247,11 +252,12 @@ class FloorPlan {
       element.append(area);
     }
 
-    FloorPlanRenderer.append(this.root, element);
+    FloorPlanRenderer.append(container, element);
     return element;
   }
 
   addRoom(room) {
+    const derived = room.derived === true;
     const parts = room.parts?.map((part, index) => ({
       ...this.normalizeGeometry(part),
       id: part.id || `part-${index + 1}`
@@ -268,6 +274,10 @@ class FloorPlan {
       ? { ...room, pos: [geometry.x, geometry.y], size: [geometry.w, geometry.l] }
       : room;
     const element = this.add({ ...roomData, room: true });
+    if (derived) {
+      element.dataset.derived = "true";
+      if (room.classes?.split(/\s+/).includes("stair-flight")) element.dataset.spanningStair = "true";
+    }
     element.allowedOverlaps = room.overlaps === undefined
       ? []
       : (Array.isArray(room.overlaps) ? room.overlaps : [room.overlaps]).map(String);
@@ -303,16 +313,60 @@ class FloorPlan {
       });
       element.area = () => parts.reduce((total, part) => total + part.w * part.l, 0);
     }
-    this.roomElements.push(element);
-    if (room.id) {
+    if (!derived) this.roomElements.push(element);
+    if (room.id && !derived) {
       this.rooms.set(room.id, element);
       this.references.set(room.id, element);
     }
-    this.updateOverlaps();
-    this.roomArea += element.area();
-    this.roomCount += 1;
-    this.updateSummary();
+    if (!derived) {
+      this.updateOverlaps();
+      this.roomArea += element.area();
+      this.roomCount += 1;
+      this.updateSummary();
+    }
     return element;
+  }
+
+  normalizeGeometryAtFloor(data, floorConfig) {
+    const previousHeight = this.currentFloorHeight;
+    this.currentFloorHeight = Number(floorConfig?.h ?? 0);
+    try {
+      return this.normalizeGeometry(data);
+    } finally {
+      this.currentFloorHeight = previousHeight;
+    }
+  }
+
+  addSpanningStairs(config, floorConfig) {
+    const floors = config.floors ?? [config];
+    const existingStairs = (floorConfig.rooms ?? [])
+      .filter((room) => room.classes?.split(/\s+/).includes("stair-flight"))
+      .map((room) => this.normalizeGeometry(room));
+    const currentHeight = this.currentFloorHeight;
+
+    floors.forEach((sourceFloor) => {
+      (sourceFloor.rooms ?? [])
+        .filter((room) => room.classes?.split(/\s+/).includes("stair-flight"))
+        .forEach((stair) => {
+          const geometry = this.normalizeGeometryAtFloor(stair, sourceFloor);
+          if (geometry.h <= 0 || currentHeight < geometry.z0 || currentHeight > geometry.z1) return;
+          const alreadyVisible = existingStairs.some((existing) => {
+            const overlapWidth = Math.max(0, Math.min(existing.x + existing.w, geometry.x + geometry.w) - Math.max(existing.x, geometry.x));
+            const overlapLength = Math.max(0, Math.min(existing.y + existing.l, geometry.y + geometry.l) - Math.max(existing.y, geometry.y));
+            const overlapArea = overlapWidth * overlapLength;
+            const smallerArea = Math.min(existing.w * existing.l, geometry.w * geometry.l);
+            return smallerArea > 0 && overlapArea / smallerArea >= 0.95;
+          });
+          if (alreadyVisible) return;
+
+          this.addRoom({
+            ...stair,
+            derived: true,
+            pos: [geometry.x, geometry.y, geometry.z0],
+            size: [geometry.w, geometry.l, geometry.h]
+          });
+        });
+    });
   }
 
   addRooms(rooms) {
@@ -472,6 +526,7 @@ class FloorPlan {
         }
       });
       (floorConfig.openings ?? []).forEach((opening, index) => {
+        if (this.isVerticalOpening(opening)) return;
         try {
           this.normalizeOpening(opening);
         } catch (error) {
@@ -508,6 +563,7 @@ class FloorPlan {
         }
       });
       (floorConfig.openings ?? []).forEach((opening) => {
+        if (this.isVerticalOpening(opening)) return;
         try {
           const feature = this.normalizeOpening(opening);
           const target = feature.type === "window" ? this.allWindows : this.allOpenings;
@@ -1062,6 +1118,9 @@ class FloorPlan {
   }
 
   addOpening(opening) {
+    if (this.isVerticalOpening(opening)) {
+      return this.addVerticalOpening(opening);
+    }
     const passage = this.normalizeOpening(opening);
     if (passage.type === "window") {
       this.windows.push(passage);
@@ -1072,6 +1131,127 @@ class FloorPlan {
 
     this.renderWallFeature(passage, "plan-opening");
     return passage;
+  }
+
+  isVerticalOpening(opening) {
+    const floors = this.currentConfig?.floors ?? [];
+    const from = String(opening?.from ?? "").trim();
+    const to = String(opening?.to ?? "").trim();
+    return Array.isArray(opening?.size)
+      && floors.some((floor) => floor.id === from)
+      && floors.some((floor) => floor.id === to);
+  }
+
+  addVerticalOpening(opening, floorConfig = null) {
+    const floors = this.currentConfig?.floors ?? [this.currentConfig];
+    const fromId = String(opening.from ?? "").trim();
+    const toId = String(opening.to ?? "").trim();
+    const fromFloor = floors.find((floor) => floor.id === fromId);
+    const toFloor = floors.find((floor) => floor.id === toId);
+    if (!fromFloor) throw new Error(`Unknown vertical opening source floor: ${fromId}`);
+    if (!toFloor) throw new Error(`Unknown vertical opening target floor: ${toId}`);
+    if (fromId === toId) throw new Error("Abertura vertical precisa conectar pisos diferentes");
+    const fromHeight = Number(fromFloor.h ?? 0);
+    const toHeight = Number(toFloor.h ?? 0);
+    if (![fromHeight, toHeight].every(Number.isFinite) || fromHeight === toHeight) {
+      throw new Error("Os pisos da abertura vertical precisam ter elevações diferentes");
+    }
+
+    const size = opening.size;
+    if (size.length !== 2) throw new Error("Abertura vertical precisa de size [w, l]");
+    const width = this.resolve(size[0]);
+    const length = this.resolve(size[1]);
+    if (![width, length].every(Number.isFinite) || width <= 0 || length <= 0) {
+      throw new Error("Abertura vertical precisa de dimensões válidas");
+    }
+    const epsilon = 1e-9;
+    const x = this.resolve(opening.pos?.[0]);
+    const y = this.resolve(opening.pos?.[1]);
+    if (![x, y].every(Number.isFinite)) throw new Error("Abertura vertical precisa de pos [x, y]");
+
+    const passage = { ...opening, id: opening.id || `${fromId}-${toId}-vertical`, x, y, w: width, l: length, z0: fromHeight, h: 0, from: fromId, to: toId };
+    const element = this.add({ pos: [x, y, fromHeight], size: [width, length, 0], classes: "floor-opening vertical-opening", title: `Abertura vertical: ${passage.id}` });
+    element.dataset.from = fromId;
+    element.dataset.to = toId;
+    this.root.querySelectorAll("[data-spanning-stair]").forEach((stair) => {
+      this.clipProjection(stair, { x: stair.x0(), y: stair.y0(), w: stair.w(), l: stair.l() }, passage);
+    });
+    this.renderLowerFloorProjection(floors, fromFloor, fromHeight, passage);
+    return passage;
+  }
+
+  clipProjection(element, geometry, opening) {
+    const top = Math.max(0, opening.y - geometry.y);
+    const right = Math.max(0, geometry.x + geometry.w - (opening.x + opening.w));
+    const bottom = Math.max(0, geometry.y + geometry.l - (opening.y + opening.l));
+    const left = Math.max(0, opening.x - geometry.x);
+    element.style.clipPath = `inset(calc(${top} * var(--m)) calc(${right} * var(--m)) calc(${bottom} * var(--m)) calc(${left} * var(--m)))`;
+  }
+
+  renderLowerFloorProjection(floors, fromFloor, fromHeight, opening) {
+    const lowerFloors = floors
+      .filter((floor) => Number(floor.h ?? 0) < fromHeight)
+      .sort((first, second) => Number(second.h ?? 0) - Number(first.h ?? 0));
+    const lowerFloor = lowerFloors[0];
+    if (!lowerFloor) return;
+
+    const addProjection = (definition, geometry, room = false) => {
+      const overlaps = geometry.x < opening.x + opening.w
+        && geometry.x + geometry.w > opening.x
+        && geometry.y < opening.y + opening.l
+        && geometry.y + geometry.l > opening.y;
+      if (!overlaps || geometry.z1 < fromHeight && geometry.z0 < fromHeight) return;
+      const projected = room
+        ? this.addRoom({
+          ...definition,
+          derived: true,
+          container: this.projectionLayer,
+          pos: [geometry.x, geometry.y, geometry.z0],
+          size: [geometry.w, geometry.l, geometry.h],
+          classes: `${definition.classes || ""} floor-projection`.trim()
+        })
+        : this.add({
+          ...definition,
+          container: this.projectionLayer,
+          pos: [geometry.x, geometry.y, geometry.z0],
+          size: [geometry.w, geometry.l, geometry.h],
+          classes: `${definition.classes || ""} floor-projection`.trim(),
+          showLabel: false
+        });
+      this.clipProjection(projected, geometry, opening);
+    };
+
+    (lowerFloor.rooms ?? []).forEach((room) => {
+      try {
+        addProjection(room, this.normalizeGeometryAtFloor(room, lowerFloor), true);
+      } catch (error) {
+        this.errors.push({ opening: room, category: "projection", message: error.message });
+      }
+    });
+    (lowerFloor.items ?? []).forEach((item) => {
+      try {
+        addProjection(item, this.normalizeGeometryAtFloor(item, lowerFloor));
+      } catch (error) {
+        this.errors.push({ opening: item, category: "projection", message: error.message });
+      }
+    });
+  }
+
+  addVisibleVerticalOpenings(config, floorConfig) {
+    const floors = config.floors ?? [config];
+    const currentFloorId = floorConfig.id;
+    floors.forEach((sourceFloor) => {
+      (sourceFloor.openings ?? []).forEach((opening) => {
+        if (!this.isVerticalOpening(opening)) return;
+        const targetId = String(opening.to ?? "").trim();
+        if (String(opening.from ?? "").trim() !== currentFloorId) return;
+        try {
+          this.addVerticalOpening(opening, floorConfig);
+        } catch (error) {
+          this.errors.push({ opening, category: "opening", message: error.message });
+        }
+      });
+    });
   }
 
   addWindow(window) {
@@ -1281,6 +1461,7 @@ class FloorPlan {
 
   clear() {
     FloorPlanRenderer.clearGenerated(this.root);
+    this.projectionLayer.replaceChildren();
     this.clearTerrain();
     this.rooms.clear();
     this.references.clear();
@@ -1347,6 +1528,8 @@ class FloorPlan {
       && this.roomDefinitions.get(room.id) === room
       && !this.invalidRoomIds.has(room.id));
     this.addRooms(validRooms);
+    this.addSpanningStairs(config, floorConfig);
+    this.addVisibleVerticalOpenings(config, floorConfig);
     this.addZones(this.visibleZones(config, floorConfig).filter((zone) => this.validZoneIds.has(zone.id)));
     (floorConfig.items ?? []).forEach((item, index) => {
       try {
@@ -1356,6 +1539,7 @@ class FloorPlan {
       }
     });
     (floorConfig.openings ?? []).forEach((opening, index) => {
+      if (this.isVerticalOpening(opening)) return;
       try {
         this.addOpening(opening);
       } catch (error) {

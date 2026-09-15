@@ -65,6 +65,14 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   overflow: visible;
 }
 
+.floor-projection-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  pointer-events: none;
+  overflow: hidden;
+}
+
 .guide-line {
   stroke-width: 0.03;
   stroke-dasharray: 0.20 0.12;
@@ -256,6 +264,14 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   pointer-events: none;
 }
 
+.plan-item.floor-opening {
+  z-index: 14;
+  border: 1px dotted #394b5d;
+  background: rgba(54, 70, 88, 0.05);
+  opacity: 1;
+  pointer-events: none;
+}
+
 .room {
   border: 2px solid transparent;
   background: rgba(255, 255, 255, 0.95);
@@ -268,6 +284,10 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   font-weight: 650;
   font-size: 13px;
   line-height: 1.15;
+  z-index: 3;
+}
+.floor-projection {
+  opacity: 0.72 !important;
 }
 
 .room.hidden .room-label,
@@ -318,6 +338,51 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
     var(--stair-clearance) var(--stair-clearance-stop),
     var(--stair-transparent) 100%
   );
+}
+.stair-flight[data-stair-face="top"][data-stair-axis="vertical"][data-stair-rise="up"] {
+  background: linear-gradient(
+    to top,
+    var(--stair-opaque) 0%,
+    var(--stair-clearance) var(--stair-clearance-stop),
+    var(--stair-transparent) 100%
+  );
+}
+.stair-flight[data-stair-face="top"][data-stair-axis="horizontal"][data-stair-rise="up"] {
+  background: linear-gradient(
+    to left,
+    var(--stair-opaque) 0%,
+    var(--stair-clearance) var(--stair-clearance-stop),
+    var(--stair-transparent) 100%
+  );
+}
+.stair-flight {
+  --stair-step: 0.28;
+}
+.stair-flight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(var(--stair-step) * var(--m) - 1px),
+    rgba(40, 50, 60, 0.42) calc(var(--stair-step) * var(--m) - 1px),
+    rgba(40, 50, 60, 0.42) calc(var(--stair-step) * var(--m))
+  );
+}
+.stair-flight[data-stair-axis="horizontal"]::after {
+  background: repeating-linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc(var(--stair-step) * var(--m) - 1px),
+    rgba(40, 50, 60, 0.42) calc(var(--stair-step) * var(--m) - 1px),
+    rgba(40, 50, 60, 0.42) calc(var(--stair-step) * var(--m))
+  );
+}
+.stair-flight > * {
+  position: relative;
+  z-index: 1;
 }
 .fireplace { background: #555; border: 2px solid #222; }
 .table { border: 2px solid #7a5b3a; background: #caa878; z-index: 5; }

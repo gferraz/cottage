@@ -90,6 +90,18 @@ Uma escada pode usar a terceira dimensão para indicar a elevação final. Quand
 
 Para uma escada vertical, a subida é inferida no eixo `y`; para uma escada horizontal, no eixo `x`. A representação considera `2 m` como altura confortável de passagem: a parte inferior fica mais escura, chega a aproximadamente `90%` de transparência aos `2 m` e permanece quase transparente até o topo.
 
+Uma escada com `h` positivo aparece automaticamente em todos os pisos cujo `floor.h` esteja entre `z0` e `z1`. Portanto, ela pode ser declarada apenas no piso inferior; suas representações nos demais pisos são visuais e não duplicam cômodos ou áreas.
+
+Uma abertura entre pisos usa os IDs dos pisos como origem e destino. Ela fica na laje do piso `from`, com `z = from.h` e `h = 0`; sua área continua independente da escada:
+
+```json
+{ "from": "upper", "to": "ground", "type": "opening", "pos": ["stairs.x0", "stairs.y0"], "size": ["stairs.w", 3.0] }
+```
+
+O renderer valida se os dois pisos existem, se têm elevações diferentes e se a posição e o tamanho do vão são válidos.
+
+As linhas dos degraus são geradas em CSS com espaçamento fixo de `0,30 m`.
+
 Cômodos compostos usam `parts`:
 
 ```json
