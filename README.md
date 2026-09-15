@@ -44,7 +44,7 @@ IDs são obrigatórios para cômodos e devem ser únicos em todo o arquivo, inde
 
 ## Cômodos e partes
 
-Use `pos: [x, y]` e `size: [largura (w), comprimento (l)]`, em metros. Também são aceitos `x`, `y`, `w` e `l`. Valores podem referenciar outro cômodo:
+Use `pos: [x, y]` e `size: [largura (w), comprimento (l)]`, em metros. Também é possível informar a elevação: `pos: [x, y, z0]` e `size: [w, l, h]`, em que `z1 = z0 + h`. Para geometrias 2D, `z0` recebe o `floor.h` e `h` vale `0` por padrão; `floor.h` também vale `0` por padrão. Valores podem referenciar outro cômodo:
 
 ```json
 {
@@ -76,6 +76,19 @@ Como alternativa a `pos` + `size`, use `rectangle: [x0, y0, x1, y1]`:
 ```
 
 O renderer calcula `w = x1 - x0` e `l = y1 - y0`. Os quatro valores também podem ser referências geométricas.
+
+Uma escada pode usar a terceira dimensão para indicar a elevação final. Quando recebe a classe `stair-flight`, o renderer usa `h` para desenhar um gradiente que fica progressivamente transparente na direção da subida:
+
+```json
+{
+  "id": "stairs",
+  "pos": [3.0, 6.0, 0.0],
+  "size": [1.5, 5.0, 6.0],
+  "classes": "circulation stair-flight"
+}
+```
+
+Para uma escada vertical, a subida é inferida no eixo `y`; para uma escada horizontal, no eixo `x`.
 
 Cômodos compostos usam `parts`:
 

@@ -34,6 +34,7 @@ class FloorPlan {
     this.naturalCommunications = [];
     this.currentConfig = null;
     this.currentFloorId = null;
+    this.currentFloorHeight = 0;
     this.currentSourceText = null;
     this.model = null;
     this.roomDefinitions = new Map();
@@ -178,13 +179,23 @@ class FloorPlan {
 
   add(data) {
     const { label = "", classes = "", title = "", room = false, showLabel = false } = data;
-    const { x, y, w, l } = this.normalizeGeometry(data);
+    const { x, y, w, l, z0, z1, h } = this.normalizeGeometry(data);
     const element = document.createElement("div");
     element.className = `plan-item plan-generated${room ? " room" : ""}${classes ? ` ${classes}` : ""}`;
     element.style.setProperty("--x", x);
     element.style.setProperty("--y", y);
     element.style.setProperty("--w", w);
     element.style.setProperty("--l", l);
+    element.style.setProperty("--z0", z0);
+    element.style.setProperty("--z1", z1);
+    element.style.setProperty("--h", h);
+    element.dataset.z0 = String(z0);
+    element.dataset.z1 = String(z1);
+    element.dataset.height = String(h);
+    if (classes.split(/\s+/).includes("stair-flight")) {
+      element.dataset.stairAxis = w >= l ? "horizontal" : "vertical";
+      element.dataset.stairRise = h > 0 ? "up" : "flat";
+    }
     if (title) element.title = title;
     if (!room && showLabel && (label || title)) {
       const dimensions = `${this.formatMeters(w)}m × ${this.formatMeters(l)}m`;
@@ -209,6 +220,9 @@ class FloorPlan {
     element.x1 = () => Number(x) + Number(w);
     element.y0 = () => Number(y);
     element.y1 = () => Number(y) + Number(l);
+    element.z0 = () => Number(z0);
+    element.z1 = () => Number(z1);
+    element.h = () => Number(h);
     element.w = () => Number(w);
     element.l = () => Number(l);
     element.area = () => Number(w) * Number(l);
@@ -264,6 +278,9 @@ class FloorPlan {
         x1: () => part.x + part.w,
         y0: () => part.y,
         y1: () => part.y + part.l,
+        z0: () => part.z0,
+        z1: () => part.z1,
+        h: () => part.h,
         w: () => part.w,
         l: () => part.l,
         area: () => part.w * part.l
@@ -515,6 +532,9 @@ class FloorPlan {
       x1: () => this.getRoomGeometry(id).x1(),
       y0: () => this.getRoomGeometry(id).y0(),
       y1: () => this.getRoomGeometry(id).y1(),
+      z0: () => this.getRoomGeometry(id).z0(),
+      z1: () => this.getRoomGeometry(id).z1(),
+      h: () => this.getRoomGeometry(id).h(),
       w: () => this.getRoomGeometry(id).w(),
       l: () => this.getRoomGeometry(id).l(),
       area: () => this.getRoomGeometry(id).area(),
@@ -551,6 +571,9 @@ class FloorPlan {
         x1: () => geometry.x + geometry.w,
         y0: () => geometry.y,
         y1: () => geometry.y + geometry.l,
+        z0: () => geometry.z0,
+        z1: () => geometry.z1,
+        h: () => geometry.h,
         w: () => geometry.w,
         l: () => geometry.l,
         area: () => parts?.length ? parts.reduce((total, part) => total + part.w * part.l, 0) : geometry.w * geometry.l,
@@ -564,6 +587,9 @@ class FloorPlan {
           x1: () => part.x + part.w,
           y0: () => part.y,
           y1: () => part.y + part.l,
+          z0: () => part.z0,
+          z1: () => part.z1,
+          h: () => part.h,
           w: () => part.w,
           l: () => part.l,
           area: () => part.w * part.l
@@ -593,12 +619,20 @@ class FloorPlan {
         throw new Error("Rectangle precisa ter x1 maior que x0 e y1 maior que y0");
       }
 
+      const z0 = this.resolve(data.z0 ?? this.currentFloorHeight);
+      const h = this.resolve(data.h ?? 0);
+      if (![z0, h].every(Number.isFinite) || h < 0) {
+        throw new Error("A elevação precisa ter z0 numérico e h não negativo");
+      }
       return {
         ...data,
         x: x0Value,
         y: y0Value,
         w: x1Value - x0Value,
-        l: y1Value - y0Value
+        l: y1Value - y0Value,
+        z0,
+        z1: z0 + h,
+        h
       };
     }
 
@@ -622,20 +656,31 @@ class FloorPlan {
         throw new Error(`Inset deve ser positivo e menor que metade das dimensões de ${referenceId}`);
       }
 
+      const z0 = reference.z0 ? reference.z0() : this.currentFloorHeight;
+      const h = reference.h ? reference.h() : 0;
       return {
         ...data,
         x: reference.x0() + xInset,
         y: reference.y0() + yInset,
         w: baseWidth - 2 * xInset,
-        l: baseLength - 2 * yInset
+        l: baseLength - 2 * yInset,
+        z0,
+        z1: z0 + h,
+        h
       };
     }
 
-    const [xValue, yValue] = data.pos ?? [data.x, data.y];
-    const [wValue, lValue] = data.size ?? [data.w, data.l];
+    const [xValue, yValue, zValue] = data.pos ?? [data.x, data.y, data.z0];
+    const [wValue, lValue, hValue] = data.size ?? [data.w, data.l, data.h];
 
     if ([xValue, yValue, wValue, lValue].some((value) => value === undefined)) {
       throw new Error("A figure needs pos/size or x/y/w/l values");
+    }
+
+    const z0 = this.resolve(zValue ?? this.currentFloorHeight);
+    const h = this.resolve(hValue ?? 0);
+    if (![z0, h].every(Number.isFinite) || h < 0) {
+      throw new Error("A elevação precisa ter z0 numérico e h não negativo");
     }
 
     return {
@@ -643,7 +688,10 @@ class FloorPlan {
       x: this.resolve(xValue),
       y: this.resolve(yValue),
       w: this.resolve(wValue),
-      l: this.resolve(lValue)
+      l: this.resolve(lValue),
+      z0,
+      z1: z0 + h,
+      h
     };
   }
 
@@ -1259,6 +1307,10 @@ class FloorPlan {
     const floorIndex = configuredFloorIndex >= 0 ? configuredFloorIndex : 0;
     const floorConfig = config.floors?.[floorIndex] || config;
     this.currentFloorId = floorConfig.id || null;
+    this.currentFloorHeight = Number(floorConfig.h ?? 0);
+    if (!Number.isFinite(this.currentFloorHeight)) {
+      throw new Error("floor.h precisa ser numérico");
+    }
     if (this.floorSelect) {
       this.floorSelect.replaceChildren();
       if (config.floors?.length) {
