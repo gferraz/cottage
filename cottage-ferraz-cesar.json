@@ -26,8 +26,8 @@
   "zones": [
     { "id": "main",    "label": "Área Principal",   "pos": [0, 2.5], "size": [11.5, 9.2], "color": "red" },
     { "id": "dorm",    "label": "Dormitórios",      "inset": ["main", 0.6, 0.6], "color": "blue" },
-    { "id": "confort", "label": "Zona de Conforto", "inset": ["dorm", 1.2, 1.2], "color": "blue" },
-    { "id": "attic",   "label": "Ático",            "inset": ["dorm", 3.9, 0.1], "color": "red" }
+    { "id": "confort", "label": "Zona de Conforto", "inset": ["main", 1.8, 1.8], "color": "blue" },
+    { "id": "attic",   "label": "Ático",            "inset": ["main", 3.0, 0.6], "color": "red" }
   ],
   "guides": [
     { "id": "main-left",   "label": "Parede esquerda",          "pos": ["main.x0", -2.5], "l": 20, "color": "green" },
