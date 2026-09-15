@@ -51,7 +51,7 @@
       "label": "Térreo",
       "rooms": [
         { "id": "porch", "label": "Varanda", "pos": [4.5, 0.0], "size": [6.4, 2.5], "classes": "outdoor porch" },
-        { "id": "office", "label": "Escritório", "pos": ["main.x0", "main.y0 - 1.9"], "size": [4.5, 2.5], "classes": "office" },
+        { "id": "office", "label": "Escritório", "pos": ["main.x0", "main.y0 - 1.5"], "size": [4.5, 2.5], "classes": "office" },
 
         { "id": "master", "label": "Suíte Master", "pos": ["main.x0", "office.y1"], "size": [4.5, 3.4], "classes": "master" },
         { "id": "closet", "label": "Closet", "pos": ["master.x0", "master.y1"], "size": ["master.w", 1.5], "classes": "closet" },

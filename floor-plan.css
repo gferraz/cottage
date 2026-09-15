@@ -283,6 +283,10 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .room[data-wall-right="virtual"] { border-right-color: #222; border-right-style: dotted; }
 .room[data-wall-bottom="virtual"] { border-bottom-color: #222; border-bottom-style: dotted; }
 .room[data-wall-left="virtual"] { border-left-color: #222; border-left-style: dotted; }
+.room[data-wall-top="open"] { border-top: 0; }
+.room[data-wall-right="open"] { border-right: 0; }
+.room[data-wall-bottom="open"] { border-bottom: 0; }
+.room[data-wall-left="open"] { border-left: 0; }
 
 .room small { margin-top: 4px; font-weight: 500; color: #555; }
 .room .area { margin-top: 2px; }
