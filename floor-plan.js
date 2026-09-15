@@ -447,14 +447,16 @@ class FloorPlan {
       const [xValue, yValue] = guide.pos ?? [];
       const widthValue = guide.w;
       const lengthValue = guide.l;
-      if ((widthValue === undefined) === (lengthValue === undefined)) return;
+      const [toXValue, toYValue] = guide.to ?? [];
+      const hasEndpoint = guide.to !== undefined;
+      if (!hasEndpoint && (widthValue === undefined) === (lengthValue === undefined)) return;
       this.references.set(guide.id, {
         x0: () => this.resolve(xValue),
-        x1: () => this.resolve(xValue) + (widthValue === undefined ? 0 : this.resolve(widthValue)),
+        x1: () => hasEndpoint ? this.resolve(toXValue) : this.resolve(xValue) + (widthValue === undefined ? 0 : this.resolve(widthValue)),
         y0: () => this.resolve(yValue),
-        y1: () => this.resolve(yValue) + (lengthValue === undefined ? 0 : this.resolve(lengthValue)),
-        w: () => widthValue === undefined ? 0 : this.resolve(widthValue),
-        l: () => lengthValue === undefined ? 0 : this.resolve(lengthValue),
+        y1: () => hasEndpoint ? this.resolve(toYValue) : this.resolve(yValue) + (lengthValue === undefined ? 0 : this.resolve(lengthValue)),
+        w: () => hasEndpoint ? Math.abs(this.resolve(toXValue) - this.resolve(xValue)) : (widthValue === undefined ? 0 : this.resolve(widthValue)),
+        l: () => hasEndpoint ? Math.abs(this.resolve(toYValue) - this.resolve(yValue)) : (lengthValue === undefined ? 0 : this.resolve(lengthValue)),
         area: () => 0
       });
     });
@@ -991,28 +993,37 @@ class FloorPlan {
       const [xValue, yValue] = guide.pos ?? [];
       const width = guide.w;
       const lengthValue = guide.l;
+      const [toXValue, toYValue] = guide.to ?? [];
+      const hasEndpoint = guide.to !== undefined;
       const hasWidth = width !== undefined;
       const hasLength = lengthValue !== undefined;
       let values;
       try {
-        values = [xValue, yValue, hasWidth ? width : lengthValue].map((value) => this.resolve(value));
+        values = [xValue, yValue].map((value) => this.resolve(value));
+        if (hasEndpoint) values.push(this.resolve(toXValue), this.resolve(toYValue));
+        else values.push(this.resolve(hasWidth ? width : lengthValue));
       } catch (error) {
         this.errors.push({ index, opening: guide, category: "guide", message: error.message });
         return;
       }
-      if (values.some((value) => !Number.isFinite(value)) || hasWidth === hasLength || values[2] <= 0) {
-        this.errors.push({ index, opening: guide, category: "guide", message: "Guia precisa de pos e exatamente um valor positivo w ou l" });
+      const validLength = !hasEndpoint && values[2] > 0;
+      const validEndpoint = hasEndpoint && values.slice(2).every(Number.isFinite)
+        && (values[2] !== values[0] || values[3] !== values[1]);
+      if (values.slice(0, hasEndpoint ? 4 : 3).some((value) => !Number.isFinite(value))
+        || (!hasEndpoint && hasWidth === hasLength)
+        || (!validLength && !validEndpoint)) {
+        this.errors.push({ index, opening: guide, category: "guide", message: "Guia precisa de pos e w, l ou to [x, y] válido" });
         return;
       }
 
       const offsetX = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--building-offset-x")) || 0;
       const offsetY = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--building-offset-y")) || 0;
-      const [localX, localY, length] = values;
+      const [localX, localY] = values;
       const x = localX + offsetX;
       const y = localY + offsetY;
-      const line = hasWidth
-        ? create("line", { x1: x, y1: y, x2: x + length, y2: y, class: "guide-line" })
-        : create("line", { x1: x, y1: y, x2: x, y2: y + length, class: "guide-line" });
+      const x2 = hasEndpoint ? values[2] + offsetX : (hasWidth ? x + values[2] : x);
+      const y2 = hasEndpoint ? values[3] + offsetY : (hasWidth ? y : y + values[2]);
+      const line = create("line", { x1: x, y1: y, x2, y2, class: "guide-line" });
       line.setAttribute("stroke", this.themeColor(guide.color));
       if (guide.id) line.dataset.id = guide.id;
       this.guidesLayer.append(line);
@@ -1025,7 +1036,12 @@ class FloorPlan {
           class: "guide-label",
           fill: this.themeColor(guide.color)
         });
-        if (hasWidth) {
+        if (hasEndpoint) {
+          let angle = Math.atan2(y2 - y, x2 - x) * 180 / Math.PI;
+          if (angle > 90 || angle < -90) angle += 180;
+          label.setAttribute("dy", -labelGap);
+          label.setAttribute("transform", `rotate(${angle} ${x} ${y})`);
+        } else if (hasWidth) {
           label.setAttribute("dy", -labelGap);
         } else {
           label.setAttribute("dy", -labelGap);
