@@ -1072,17 +1072,20 @@ class FloorPlan {
     const wallLength = horizontal ? room.w() : room.l();
     let sharedStart = null;
     let sharedEnd = null;
+    let targetRoom = null;
+    const sourceWall = this.wallSegment(room, wall);
     if (target !== "exterior") {
-      const targetRoom = this.rooms.get(target);
+      targetRoom = this.rooms.get(target);
       const oppositeWall = { top: "bottom", right: "left", bottom: "top", left: "right" }[wall];
       const targetWall = this.wallSegment(targetRoom, oppositeWall);
-      const sourceWall = this.wallSegment(room, wall);
-      if (Math.abs(sourceWall.coordinate - targetWall.coordinate) >= 1e-9) {
-        throw new Error(`Room ${target} is not connected to ${opening.from}`);
+      if (Math.abs(sourceWall.coordinate - targetWall.coordinate) < 1e-9) {
+        sharedStart = Math.max(sourceWall.start, targetWall.start);
+        sharedEnd = Math.min(sourceWall.end, targetWall.end);
+        if (sharedEnd <= sharedStart) {
+          sharedStart = null;
+          sharedEnd = null;
+        }
       }
-      sharedStart = Math.max(sourceWall.start, targetWall.start);
-      sharedEnd = Math.min(sourceWall.end, targetWall.end);
-      if (sharedEnd <= sharedStart) throw new Error(`Room ${target} is not connected to ${opening.from}`);
     }
 
     const sharedLength = sharedStart === null ? wallLength : sharedEnd - sharedStart;
@@ -1107,8 +1110,24 @@ class FloorPlan {
     if (target !== "exterior") {
       const openingStart = wallStart + position;
       const openingEnd = openingStart + width;
-      if (openingStart < sharedStart || openingEnd > sharedEnd) {
-        throw new Error(`Room ${target} is not connected to ${opening.from}`);
+      if (sharedStart !== null) {
+        if (openingStart < sharedStart || openingEnd > sharedEnd) {
+          throw new Error(`Room ${target} is not connected to ${opening.from}`);
+        }
+      } else {
+        const epsilon = 1e-9;
+        const targetContainsOpening = horizontal
+          ? sourceWall.coordinate >= targetRoom.y0() - epsilon
+            && sourceWall.coordinate <= targetRoom.y1() + epsilon
+            && openingStart >= targetRoom.x0() - epsilon
+            && openingEnd <= targetRoom.x1() + epsilon
+          : sourceWall.coordinate >= targetRoom.x0() - epsilon
+            && sourceWall.coordinate <= targetRoom.x1() + epsilon
+            && openingStart >= targetRoom.y0() - epsilon
+            && openingEnd <= targetRoom.y1() + epsilon;
+        if (!targetContainsOpening) {
+          throw new Error(`Room ${target} is not connected to or containing the opening from ${opening.from}`);
+        }
       }
     }
 
@@ -1202,49 +1221,11 @@ class FloorPlan {
   }
 
   calculateUnionArea(rectangles) {
-    if (rectangles.length === 0) return 0;
-
-    const xs = [...new Set(rectangles.flatMap(({ x, w }) => [x, x + w]))].sort((a, b) => a - b);
-    const ys = [...new Set(rectangles.flatMap(({ y, l }) => [y, y + l]))].sort((a, b) => a - b);
-    let area = 0;
-
-    for (let xIndex = 0; xIndex < xs.length - 1; xIndex += 1) {
-      for (let yIndex = 0; yIndex < ys.length - 1; yIndex += 1) {
-        const x0 = xs[xIndex];
-        const x1 = xs[xIndex + 1];
-        const y0 = ys[yIndex];
-        const y1 = ys[yIndex + 1];
-        const covered = rectangles.some((rectangle) =>
-          rectangle.x <= x0 && rectangle.x + rectangle.w >= x1
-          && rectangle.y <= y0 && rectangle.y + rectangle.l >= y1
-        );
-        if (covered) area += (x1 - x0) * (y1 - y0);
-      }
-    }
-
-    return area;
+    return FloorPlanModel.calculateUnionArea(rectangles);
   }
 
   calculateNetRoomArea(room) {
-    const coveredBy = this.roomElements
-      .filter((other) => other !== room && other.allowedOverlaps.includes(room.dataset.id))
-      .flatMap((other) => other.geometryParts);
-    const itemOverlaps = this.itemElements
-      .filter((item) => item.allowedOverlaps.includes(room.dataset.id))
-      .map((item) => ({ x: item.x0(), y: item.y0(), w: item.w(), l: item.l() }));
-    coveredBy.push(...itemOverlaps);
-    const deductions = [];
-    room.geometryParts.forEach((part) => {
-      coveredBy.forEach((other) => {
-        const x0 = Math.max(part.x, other.x);
-        const y0 = Math.max(part.y, other.y);
-        const x1 = Math.min(part.x + part.w, other.x + other.w);
-        const y1 = Math.min(part.y + part.l, other.y + other.l);
-        if (x1 > x0 && y1 > y0) deductions.push({ x: x0, y: y0, w: x1 - x0, l: y1 - y0 });
-      });
-    });
-    const grossArea = room.geometryParts.reduce((total, part) => total + part.w * part.l, 0);
-    return grossArea - this.calculateUnionArea(deductions);
+    return FloorPlanModel.calculateNetRoomArea(room, this.roomElements, this.itemElements);
   }
 
   clear() {
@@ -1470,11 +1451,10 @@ class FloorPlan {
   updateFloorSummary() {
     if (!this.floorSummary) return;
     const floors = this.model?.floors ?? [{ id: null, label: "Planta", rooms: [] }];
-    const rows = FloorPlanLegend.floorRows(
+    const rows = FloorPlanModel.floorRows(
       floors,
       this.roomDefinitions,
       this.rooms,
-      (rectangles) => this.calculateUnionArea(rectangles)
     );
     const total = {
       label: "Total geral",
@@ -1668,7 +1648,7 @@ class FloorPlan {
     const bounds = this.bounds();
     if (!bounds) return "(nenhum cômodo carregado)";
 
-    const step = 0.5;
+    const step = 0.25;
     const columns = Math.ceil(bounds.width / step) + 1;
     const rows = Math.ceil(bounds.height / step) + 1;
     const grid = Array.from({ length: rows }, () => Array.from({ length: columns }, () => ({ mask: 0, character: " " })));
@@ -1874,6 +1854,11 @@ class FloorPlan {
     const items = this.allItems.length ? this.allItems : this.itemElements;
     const openings = this.allOpenings.length ? this.allOpenings : this.openings;
     const windows = this.allWindows.length ? this.allWindows : this.windows;
+    const floorRows = FloorPlanModel.floorRows(
+      floors,
+      this.roomDefinitions,
+      this.rooms,
+    );
 
     floors.forEach((floor, floorIndex) => {
       const floorId = floor.id ?? null;
@@ -1897,8 +1882,8 @@ class FloorPlan {
           lines.push(`| ${index + 1} | ${this.markdownText(entry.id || room.dataset?.id || "—")} | ${this.markdownText(entry.label || room.dataset?.label || "Cômodo")} | ${this.formatMeters(room.x0())} | ${this.formatMeters(room.y0())} | ${this.formatMeters(room.w())} | ${this.formatMeters(room.l())} | ${this.formatMeters(room.area())} | ${this.formatMeters(activeRoom?.netArea ?? room.area())} | ${walls} |`);
         });
       }
-      const floorArea = floorRooms.reduce((sum, entry) => sum + (entry.reference || entry).area(), 0);
-      lines.push("", `**Total do piso:** ${floorRooms.length} cômodos · ${this.formatMeters(floorArea)} m²`);
+      const floorArea = floorRows[floorIndex]?.area ?? 0;
+      lines.push("", `**Total do piso:** ${floorRows[floorIndex]?.count ?? floorRooms.length} cômodos · ${this.formatMeters(floorArea)} m²`);
 
       lines.push("", "### Itens", "", "| # | Nome | x | y | Largura | Comprimento | Área | Classes | Sobrepõe |", "|---:|---|---:|---:|---:|---:|---:|---|---|");
       if (floorItems.length === 0) {

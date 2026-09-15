@@ -100,6 +100,12 @@ Por padrão, há quatro paredes sólidas. Use `walls` para alterar lados:
 
 `virtual` desenha uma separação pontilhada; `open` não desenha parede. Para cômodos intencionalmente sobrepostos, informe `"overlaps": "outro-id"`.
 
+Uma porta ou passagem pode ligar um cômodo contido em outro ambiente. Nesse caso, informe a parede sólida do cômodo menor e o ambiente envolvente em `to`; o renderer verifica se o segmento da abertura está dentro da geometria do destino, mesmo sem uma parede coincidente:
+
+```json
+{ "from": "powder.bottom", "to": "corridor", "type": "door" }
+```
+
 ## Itens, zonas e passagens
 
 Itens representam objetos concretos e não entram na lista de cômodos:
