@@ -195,6 +195,9 @@ class FloorPlan {
     if (classes.split(/\s+/).includes("stair-flight")) {
       element.dataset.stairAxis = w >= l ? "horizontal" : "vertical";
       element.dataset.stairRise = h > 0 ? "up" : "flat";
+      if (h > 0) {
+        element.style.setProperty("--stair-clearance-stop", `${Math.min(100, (2 / h) * 100)}%`);
+      }
     }
     if (title) element.title = title;
     if (!room && showLabel && (label || title)) {

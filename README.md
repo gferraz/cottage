@@ -88,7 +88,7 @@ Uma escada pode usar a terceira dimensão para indicar a elevação final. Quand
 }
 ```
 
-Para uma escada vertical, a subida é inferida no eixo `y`; para uma escada horizontal, no eixo `x`.
+Para uma escada vertical, a subida é inferida no eixo `y`; para uma escada horizontal, no eixo `x`. A representação considera `2 m` como altura confortável de passagem: a parte inferior fica mais escura, chega a aproximadamente `90%` de transparência aos `2 m` e permanece quase transparente até o topo.
 
 Cômodos compostos usam `parts`:
 

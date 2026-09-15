@@ -297,12 +297,23 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .service { background: rgba(235, 240, 245, 0.95); }
 .circulation { background: rgba(245, 238, 222, 0.95); }
 .stair-flight[data-stair-rise="up"] {
-  --stair-opaque: rgba(90, 120, 160, 0.58);
-  --stair-transparent: rgba(90, 120, 160, 0.06);
-  background: linear-gradient(to top, var(--stair-opaque), var(--stair-transparent));
+  --stair-opaque: rgba(54, 70, 88, 0.62);
+  --stair-clearance: rgba(54, 70, 88, 0.10);
+  --stair-transparent: rgba(54, 70, 88, 0.08);
+  background: linear-gradient(
+    to bottom,
+    var(--stair-opaque) 0%,
+    var(--stair-clearance) var(--stair-clearance-stop),
+    var(--stair-transparent) 100%
+  );
 }
 .stair-flight[data-stair-axis="horizontal"][data-stair-rise="up"] {
-  background: linear-gradient(to right, var(--stair-opaque), var(--stair-transparent));
+  background: linear-gradient(
+    to right,
+    var(--stair-opaque) 0%,
+    var(--stair-clearance) var(--stair-clearance-stop),
+    var(--stair-transparent) 100%
+  );
 }
 .fireplace { background: #555; border: 2px solid #222; }
 .table { border: 2px solid #7a5b3a; background: #caa878; z-index: 5; }
