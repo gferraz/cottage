@@ -277,6 +277,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .plan-item.floor-opening {
   z-index: 20 !important;
   border: 1px dotted #263746 !important;
+  border-radius: calc(var(--m) * 0.18);
   outline: 1px dotted #263746;
   background: rgba(54, 70, 88, 0.05);
   opacity: 1 !important;
@@ -366,20 +367,22 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
     rgba(40, 50, 60, 0.42) calc(var(--stair-step) * var(--m))
   );
 }
-.stair-flight::before {
-  content: "↓";
+.stair-arrow {
   position: absolute;
-  inset: 0;
   z-index: 2;
-  display: grid;
-  place-items: center;
+  display: block;
   color: rgba(35, 48, 62, 0.72);
   font-size: calc(var(--m) * 0.45);
   font-weight: 700;
   line-height: 1;
   pointer-events: none;
 }
-.stair-flight[data-stair-axis="horizontal"]::before { content: "→"; }
+.stair-arrow::before { content: "↓"; }
+.stair-arrow-base { top: 0.18em; left: 50%; transform: translateX(-50%); }
+.stair-arrow-top { bottom: 0.18em; left: 50%; transform: translateX(-50%); }
+.stair-flight[data-stair-axis="horizontal"] .stair-arrow::before { content: "→"; }
+.stair-flight[data-stair-axis="horizontal"] .stair-arrow-base { top: 50%; left: 0.18em; transform: translateY(-50%); }
+.stair-flight[data-stair-axis="horizontal"] .stair-arrow-top { top: 50%; right: 0.18em; bottom: auto; left: auto; transform: translateY(-50%); }
 .stair-flight[data-stair-axis="horizontal"]::after {
   background: repeating-linear-gradient(
     to right,
@@ -389,7 +392,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
     rgba(40, 50, 60, 0.42) calc(var(--stair-step) * var(--m))
   );
 }
-.stair-flight > * {
+.stair-flight > *:not(.stair-arrow) {
   position: relative;
   z-index: 1;
 }

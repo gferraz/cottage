@@ -203,6 +203,13 @@ class FloorPlan {
       if (h > 0) {
         element.style.setProperty("--stair-clearance-stop", `${Math.min(100, (2 / h) * 100)}%`);
       }
+      const baseArrow = document.createElement("span");
+      baseArrow.className = "stair-arrow stair-arrow-base";
+      baseArrow.setAttribute("aria-hidden", "true");
+      const topArrow = document.createElement("span");
+      topArrow.className = "stair-arrow stair-arrow-top";
+      topArrow.setAttribute("aria-hidden", "true");
+      element.append(baseArrow, topArrow);
     }
     if (title) element.title = title;
     if (!room && showLabel && (label || title)) {
