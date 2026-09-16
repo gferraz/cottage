@@ -38,6 +38,7 @@ class FloorPlan {
     this.currentFloorHeight = 0;
     this.currentSourceText = null;
     this.model = null;
+    this.itemTypes = {};
     this.roomDefinitions = new Map();
     this.roomGeometryCache = new Map();
     this.roomGeometryStack = new Set();
@@ -578,7 +579,7 @@ class FloorPlan {
       });
       (floorConfig.items ?? []).forEach((item, index) => {
         try {
-          this.normalizeGeometry(item);
+          this.normalizeGeometry(this.resolveItemType(item));
         } catch (error) {
           this.errors.push({ index, opening: item, category: "item", message: error.message });
         }
@@ -614,8 +615,9 @@ class FloorPlan {
     floors.forEach((floorConfig) => {
       (floorConfig.items ?? []).forEach((item) => {
         try {
-          const geometry = this.normalizeGeometry(item);
-          this.allItems.push({ ...item, ...geometry, floorId: floorConfig.id, floorLabel: floorConfig.label });
+          const resolvedItem = this.resolveItemType(item);
+          const geometry = this.normalizeGeometry(resolvedItem);
+          this.allItems.push({ ...resolvedItem, ...geometry, floorId: floorConfig.id, floorLabel: floorConfig.label });
         } catch {
           // The active-floor render path records the detailed error.
         }
@@ -1214,16 +1216,32 @@ class FloorPlan {
   }
 
   addItem(item) {
-    const element = this.add({ ...item, showLabel: true });
-    element.allowedOverlaps = item.overlaps === undefined
+    const resolvedItem = this.resolveItemType(item);
+    const element = this.add({ ...resolvedItem, showLabel: true });
+    element.allowedOverlaps = resolvedItem.overlaps === undefined
       ? []
-      : (Array.isArray(item.overlaps) ? item.overlaps : [item.overlaps]).map(String);
+      : (Array.isArray(resolvedItem.overlaps) ? resolvedItem.overlaps : [resolvedItem.overlaps]).map(String);
     this.itemElements.push(element);
-    if (item.id) {
-      element.dataset.id = item.id;
-      this.references.set(item.id, element);
+    if (resolvedItem.id) {
+      element.dataset.id = resolvedItem.id;
+      this.references.set(resolvedItem.id, element);
     }
     return element;
+  }
+
+  resolveItemType(item) {
+    if (!item.type) return item;
+    const definition = this.itemTypes?.[item.type];
+    if (!definition) throw new Error(`Unknown item type: ${item.type}`);
+    return {
+      ...definition,
+      ...item,
+      type: item.type,
+      size: item.size ?? definition.size,
+      classes: item.classes ?? definition.classes,
+      label: item.label ?? definition.label,
+      title: item.title ?? definition.title ?? definition.label
+    };
   }
 
   addZone(zone) {
@@ -1633,6 +1651,7 @@ class FloorPlan {
   load(config) {
     this.model = FloorPlanModel.fromConfig(config);
     this.currentConfig = config;
+    this.itemTypes = config["item-types"] || {};
     this.theme = {
       ...this.theme,
       ...(config.theme || {}),
