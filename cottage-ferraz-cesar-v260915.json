@@ -1,0 +1,139 @@
+{
+  "title": "Cottage Ferraz-César",
+  "viewport": {
+    "size": [24.0, 32.0],
+    "origin": [1.0, 1.0]
+  },
+  "terrain": {
+    "front": { "edge": ["P1", "P2"], "position": "top", "label": "RUA/FRENTE" },
+    "rear":  { "edge": ["P18", "P19"], "position": "bottom", "label": "JARDIM" },
+    "north": { "label": "N" },
+    "unit": "m",
+    "boundary_order": ["P2", "P1", "P19", "P18"],
+    "corners": {
+      "P1":  { "easting": 674802.650, "northing": 7150515.678 },
+      "P2":  { "easting": 674787.417, "northing": 7150525.268 },
+      "P18": { "easting": 674768.743, "northing": 7150486.108 },
+      "P19": { "easting": 674787.138, "northing": 7150477.614 }
+    },
+    "segments": [
+      { "from": "P1",  "to": "P2",  "distance": 18.000, "azimuth_deg": 302.192641, "azimuth_dms": "302° 11' 34\"" },
+      { "from": "P2",  "to": "P18", "distance": 43.385, "azimuth_deg": 205.494801, "azimuth_dms": "205° 29' 41\"" },
+      { "from": "P18", "to": "P19", "distance": 20.261, "azimuth_deg": 114.785411, "azimuth_dms": "114° 47' 07\"" },
+      { "from": "P19", "to": "P1",  "distance": 41.103, "azimuth_deg": 22.1720830, "azimuth_dms": " 22° 10' 19\"" }
+    ]
+  },
+  "zones": [
+    { "id": "main",    "label": "Área Principal",   "pos": [0, 2.5], "size": [11.5, 9.2], "color": "red" },
+    { "id": "dorm",    "label": "Dormitórios",      "inset": ["main", 0.6, 0.6], "color": "blue" },
+    { "id": "confort", "label": "Zona de Conforto", "inset": ["main", 1.8, 1.8], "color": "blue" },
+    { "id": "attic",   "label": "Ático",            "inset": ["main", 3.0, 0.6], "color": "red" }
+  ],
+  "guides": [
+    { "id": "main-left",   "label": "Parede esquerda",          "pos": ["main.x0", -2.5], "l": 20, "color": "green" },
+    { "id": "dorm-left",   "label": "Meia parede esquerda",     "pos": ["dorm.x0", -2.5], "l": 20, "color": "green" },
+    { "id": "corr-left",   "label": "Corredor parede esquerda", "pos": ["main.x0 + 4.5", -2.5], "l": 20, "color": "green" },
+    { "id": "corr-right",  "label": "Corredor parede direita",  "pos": ["main.x0 + 7.0", -2.5], "l": 20, "color": "green" },
+    { "id": "dorm-right",  "label": "Meia parede direita",      "pos": ["dorm.x1", -2.5], "l": 20, "color": "green" },
+    { "id": "main-right",  "label": "Parede direita",           "pos": ["main.x1", -2.5], "l": 20, "color": "green" },
+    { "id": "main-top",    "label": "Parede frontal",           "pos": [-4.0,  "main.y0"], "w": 20, "color": "green" },
+    { "id": "dorm-top",    "label": "Meia parede frontal",      "pos": [-4.0,  "dorm.y0"], "w": 20, "color": "green" },
+    { "id": "dorm-bottom", "label": "Meia parede traseira",     "pos": [-4.0,  "dorm.y1"], "w": 20, "color": "green" },
+    { "id": "main-bottom", "label": "Parede traseira",          "pos": [-4.0,  "main.y1"], "w": 20, "color": "green" },
+
+    { "id": "h-center", "label": "linha central", "pos": [-4.0, "main.y0 + 4.75"], "w": 20, "color": "green" },
+    { "id": "v-center", "label": "linha central", "pos": ["main.x0 + 5.75", -2.5], "l": 20, "color": "green" },
+
+    { "id": "roof-right", "label": "Telhado direitor", "pos": ["main.x1", "main.y1"], "to": ["main.x1 - 5.8", "main.y1 - 5.8"] , "color": "red" },
+    { "id": "roof-left",  "label": "Telhado esquerdo", "pos": ["main.x0", "main.y1"], "to": ["main.x0 + 5.8", "main.y1 - 5.8"] , "color": "red" }
+  ],
+
+  "building": {
+    "anchor": "terrain.front-start",
+    "position": { "x": 4, "y": 3 }
+  },
+  "floors": [
+    {
+      "id": "ground",
+      "label": "Térreo",
+      "rooms": [
+        { "id": "porch",  "label": "Varanda", "pos": [4.5, 0.0], "size": [6.4, 2.5], "classes": "outdoor porch" },
+        { "id": "office", "label": "Escritório", "pos": ["main.x0", "main.y0 - 1.0"], "size": [4.5, 2.5], "classes": "office" },
+
+        { "id": "master",     "label": "Suíte Master", "pos": ["main.x0", "office.y1"], "size": [4.5, 3.4], "classes": "master" },
+        { "id": "closet",     "label": "Closet", "pos": ["master.x0", "master.y1"], "size": ["master.w", 1.5], "classes": "closet" },
+        { "id": "masterbath", "label": "Banheiro Master", "pos": ["master.x0", "closet.y1"], "size": ["master.w", 1.8], "classes": "masterbath wet" },
+
+        { "id": "entry",    "label": "Entrada", "pos": ["master.x1", "porch.y1"], "size": [2.5, 2.3], "classes": "circulation entry", "walls": ["top", "left"] },
+        { "id": "corridor", "label": "Corr.", "rectangle": ["entry.x0", "entry.y1", "entry.x1", "masterbath.y1"], "classes": "corridor", "walls": ["right", "left"] },
+
+        { "id": "stairs",   "label": "Escadaria", "pos": ["corridor.x1 - 1.4", "corridor.y0"], "size": [1.4, 4.5, 3.0], "overlaps": ["entry", "corridor"], "classes": "circulation stair-flight", "walls": [] },
+
+        { "id": "powder", "label": "Lavabo", "rectangle": ["masterbath.x1", "masterbath.y0", "masterbath.x1 + 1.3", "masterbath.y1"], "classes": "powder wet", "overlaps": ["corridor", "stairs"] },
+
+        { "id": "living", "label": "Estar", "pos": ["entry.x1", "porch.y1"], "size": [4.5, 3.4], "classes": "living", "walls": ["top", "right", "left"] },
+        { "id": "dining", "label": "Jantar", "pos": ["living.x0", "living.y1"], "size": ["living.w", 3.4], "classes": "dining", "walls": ["right", "bottom", "left"] },
+
+        { "id": "kitchen", "label": "Cozinha", "pos": ["master.x0 + 2", "masterbath.y1"], "size": [5.0, 3.7], "classes": "kitchen wet", "walls": ["left", "bottom"] },
+
+        { "id": "laundry", "label": "Lavanderia", "pos": ["corridor.x1", "dining.y1"], "size": [4.5, 1.4], "classes": "service laundry wet", "walls": ["top", "left"] },
+        { "id": "circulation", "label": "Circulação", "pos": ["corridor.x1", "laundry.y1"], "size": [4.4, 1], "classes": "circulation", "walls": [] },
+        { "id": "pantry", "label": "Despensa", "pos": ["corridor.x1", "circulation.y1"], "size": [2.3, 1.8], "classes": "service pantry" },
+        { "id": "mudroom", "label": "Mudroom", "pos": ["pantry.x1", "circulation.y1"], "size": [2.2, 1.8], "classes": "service mudroom", "walls": ["right", "bottom"] },
+        { "id": "garage", "label": "Garagem", "pos": ["dining.x1", "laundry.y0 - 0.9"], "size": [4.0, 6.5], "classes": "service garage" },
+        { "id": "terrace", "label": "Terraço Traseiro", "pos": ["kitchen.x0", "kitchen.y1"], "size": [6.0, 3.0], "classes": "outdoor terrace" }
+      ],
+      "items": [
+        { "title": "Mesa",    "pos": ["dining.x0 + 1.2", "dining.y1 - 1.8"], "size": [2.7, 1.1], "classes": "table" },
+        { "title": "Lareira", "pos": ["living.x1 - 0.2", "living.y0 + 1"], "size": [0.5, 1.8], "classes": "fireplace" },
+        { "title": "Carro",   "pos": ["garage.x0 + 1", "garage.y0 + 1"], "size": [1.8, 4.0], "classes": "car" }
+      ],
+      "openings": [
+        { "from": "porch.top", "to": "exterior", "type": "opening", "w": 1.8 },
+        { "from": "entry.top", "to": "porch", "type": "door" },
+        { "from": "office.right", "to": "entry", "type": "door" },
+        { "from": "office.top", "to": "exterior", "type": "window", "dx": 0.0 },
+        { "from": "office.top", "to": "exterior", "type": "window", "dx": 2.5 },
+        { "from": "office.left", "to": "exterior", "type": "window", "dy": 0.0 },
+
+        { "from": "master.right", "to": "corridor", "type": "door" },
+        { "from": "master.left", "to": "exterior", "type": "window", "dy": 0.6 },
+        { "from": "master.left", "to": "exterior", "type": "window", "dy": 2.1 },
+        { "from": "closet.top", "to": "master", "type": "opening" },
+        { "from": "masterbath.top", "to": "closet", "type": "door" },
+        { "from": "masterbath.left", "to": "exterior", "type": "window" },
+
+        { "from": "living.left", "to": "entry", "type": "opening", "w": 1.1 },
+        { "from": "dining.left", "to": "corridor", "type": "opening", "w": 2.2  },
+
+        { "from": "kitchen.left",   "to": "exterior", "type": "window", "w": 2.4 },
+        { "from": "pantry.top",     "to": "circulation", "type": "opening" },
+        { "from": "powder.top",     "to": "corridor", "type": "door" },
+        { "from": "mudroom.right",  "to": "garage", "type": "door" },
+        { "from": "garage.top",     "to": "exterior", "type": "door", "w": 3.2 },
+        { "from": "garage.bottom",  "to": "exterior", "type": "door", "w": 3.2 },
+        { "from": "kitchen.bottom", "to": "terrace", "type": "door" }
+      ]
+    },
+    {
+      "id": "upper",
+      "label": "Dormitórios",
+      "h": 3.0,
+      "rooms": [
+        { "id": "dorm-corridor", "label": "Corredor",  "pos": ["corridor.x0", "dorm.y0"], "size": ["corridor.w",  "dorm.l"], "classes": "circulation" },
+        { "id": "bedroom-n",     "label": "Quarto N",  "pos": ["dorm.x0", "dorm.y0"], "size": [3.9, 4.0]},
+        { "id": "bedroom-e",     "label": "Quarto E",  "pos": ["stairs.x1", "dorm.y0"], "size": [3.9, "bedroom-n.l"]},
+        { "id": "bedroom-w",     "label": "Quarto W",  "pos": ["dorm.x0", "bedroom-n.y1"], "size": ["bedroom-n.w", "bedroom-n.l"]},
+        { "id": "bathroom",      "label": "Banheiro",  "pos": ["stairs.x1", "bedroom-e.y1"], "size": ["bedroom-e.w", "bedroom-e.l"], "classes": "wet" }
+      ],
+      "items": [],
+      "openings": [
+        { "from": "bedroom-n.right", "type": "door", "dy": 1.2 },
+        { "from": "bedroom-e.left",  "type": "door", "dy": 1.2 },
+        { "from": "bedroom-w.right", "type": "door", "dy": 2.6 },
+        { "from": "bathroom.left",   "type": "door", "dy": 2.6 },
+        { "from": "upper", "to": "ground", "type": "opening", "pos": ["stairs.x0", "stairs.y0 + 1.5"], "size": ["stairs.w", 3.0] }
+      ]
+    }
+  ]
+}

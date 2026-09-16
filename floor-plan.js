@@ -182,7 +182,7 @@ class FloorPlan {
 
   add(data) {
     const { label = "", classes = "", title = "", room = false, showLabel = false, container = this.root } = data;
-    const { x, y, w, l, z0, z1, h } = this.normalizeGeometry(data);
+    const { x, y, w, l, z0, z1, h, stairDirection = "forward" } = this.normalizeGeometry(data);
     const element = document.createElement("div");
     element.className = `plan-item plan-generated${room ? " room" : ""}${classes ? ` ${classes}` : ""}`;
     element.style.setProperty("--x", x);
@@ -197,6 +197,7 @@ class FloorPlan {
     element.dataset.height = String(h);
     if (classes.split(/\s+/).includes("stair-flight")) {
       element.dataset.stairAxis = w >= l ? "horizontal" : "vertical";
+      element.dataset.stairDirection = stairDirection;
       element.dataset.stairRise = h > 0 ? "up" : "flat";
       const elevationTolerance = 1e-9;
       element.dataset.stairFace = this.currentFloorHeight >= z1 - elevationTolerance ? "top" : "bottom";
@@ -426,6 +427,7 @@ class FloorPlan {
       this.rooms.set(id, reference);
       this.references.set(id, reference);
     });
+    this.registerFloorReferences(config);
     this.registerStaticGuideReferences(config);
     this.registerStaticZoneReferences(config);
     this.roomDefinitions.forEach((_room, id) => {
@@ -437,6 +439,21 @@ class FloorPlan {
       }
     });
     this.validateGlobalObjectIds(config);
+  }
+
+  registerFloorReferences(config) {
+    (config.floors ?? [config]).forEach((floorConfig) => {
+      if (!floorConfig.id || this.references.has(floorConfig.id)) return;
+      const height = Number(floorConfig.h ?? 0);
+      this.references.set(floorConfig.id, {
+        z0: () => height,
+        z1: () => height,
+        h: () => height,
+        w: () => 0,
+        l: () => 0,
+        area: () => 0
+      });
+    });
   }
 
   registerStaticGuideReferences(config) {
@@ -671,6 +688,41 @@ class FloorPlan {
   }
 
   normalizeGeometry(data) {
+    const isStair = data.classes?.split(/\s+/).includes("stair-flight");
+    if (isStair && (data.from !== undefined || data.to !== undefined)) {
+      if (!Array.isArray(data.from) || !Array.isArray(data.to)
+        || (data.from.length !== 2 && data.from.length !== 3)
+        || (data.to.length !== 2 && data.to.length !== 3)) {
+        throw new Error("Escada precisa ter from e to como [x, y] ou [x, y, z]");
+      }
+
+      const fromValues = data.from.map((value) => this.resolve(value));
+      const toValues = data.to.map((value) => this.resolve(value));
+      const [fromX, fromY] = fromValues;
+      const [toX, toY] = toValues;
+      const z0 = this.resolve(fromValues[2] ?? this.currentFloorHeight);
+      const z1 = this.resolve(toValues[2] ?? z0);
+      const w = Math.abs(toX - fromX);
+      const l = Math.abs(toY - fromY);
+      if (![fromX, fromY, toX, toY, z0, z1].every(Number.isFinite) || (w === 0 && l === 0)) {
+        throw new Error("Escada precisa usar coordenadas numéricas diferentes");
+      }
+      if (z1 < z0) throw new Error("A escada precisa terminar em uma cota igual ou superior à inicial");
+
+      const horizontal = w >= l;
+      return {
+        ...data,
+        x: Math.min(fromX, toX),
+        y: Math.min(fromY, toY),
+        w,
+        l,
+        z0,
+        z1,
+        h: z1 - z0,
+        stairDirection: (horizontal ? toX < fromX : toY < fromY) ? "reverse" : "forward"
+      };
+    }
+
     if (data.rectangle !== undefined) {
       if (!Array.isArray(data.rectangle) || data.rectangle.length !== 4) {
         throw new Error("Rectangle precisa ter [x0, y0, x1, y1]");
@@ -720,8 +772,8 @@ class FloorPlan {
       if (![xInset, yInset, baseWidth, baseLength].every(Number.isFinite)) {
         throw new Error(`Inset precisa usar valores numéricos: ${referenceId}`);
       }
-      if (!(xInset > 0 && xInset < baseWidth / 2 && yInset > 0 && yInset < baseLength / 2)) {
-        throw new Error(`Inset deve ser positivo e menor que metade das dimensões de ${referenceId}`);
+      if (!(xInset >= 0 && xInset < baseWidth / 2 && yInset >= 0 && yInset < baseLength / 2)) {
+        throw new Error(`Inset deve ser não negativo e menor que metade das dimensões de ${referenceId}`);
       }
 
       const z0 = reference.z0 ? reference.z0() : this.currentFloorHeight;

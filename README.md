@@ -44,7 +44,7 @@ IDs são obrigatórios para cômodos e devem ser únicos em todo o arquivo, inde
 
 ## Cômodos e partes
 
-Use `pos: [x, y]` e `size: [largura (w), comprimento (l)]`, em metros. Também é possível informar a elevação: `pos: [x, y, z0]` e `size: [w, l, h]`, em que `z1 = z0 + h`. Para geometrias 2D, `z0` recebe o `floor.h` e `h` vale `0` por padrão; `floor.h` também vale `0` por padrão. Valores podem referenciar outro cômodo:
+Use `pos: [x, y]` e `size: [largura (w), comprimento (l)]`, em metros. Também é possível informar a elevação: `pos: [x, y, z0]` e `size: [w, l, h]`, em que `z1 = z0 + h`. Para geometrias 2D, `z0` recebe o `floor.h` e `h` vale `0` por padrão; `floor.h` também vale `0` por padrão. Referências como `upper.h` podem acessar a elevação declarada no piso:
 
 ```json
 {
@@ -64,7 +64,7 @@ Para criar um retângulo interno a partir de outra geometria, use `inset`:
 }
 ```
 
-Os valores são recuos positivos nos eixos `x` e `y`, aplicados nos dois lados. Cada valor deve ser menor que metade da dimensão correspondente da geometria de referência.
+Os valores são recuos não negativos nos eixos `x` e `y`, aplicados nos dois lados. Cada valor deve ser menor que metade da dimensão correspondente da geometria de referência; portanto, `0` também é permitido.
 
 Como alternativa a `pos` + `size`, use `rectangle: [x0, y0, x1, y1]`:
 
@@ -89,6 +89,19 @@ Uma escada pode usar a terceira dimensão para indicar a elevação final. Quand
 ```
 
 Para uma escada vertical, a subida é inferida no eixo `y`; para uma escada horizontal, no eixo `x`. A representação considera `2 m` como altura confortável de passagem: a parte inferior fica mais escura, chega a aproximadamente `90%` de transparência aos `2 m` e permanece quase transparente até o topo.
+
+Como alternativa, uma escada pode usar `from` e `to` como cantos opostos da sua área. O terceiro valor indica as cotas inicial e final; a direção da subida é deduzida automaticamente:
+
+```json
+{
+  "id": "stairs",
+  "from": [8.0, 6.0, 0.0],
+  "to": [3.5, 7.5, 3.0],
+  "classes": "circulation stair-flight"
+}
+```
+
+Nesse formato, a largura já está implícita na diferença entre `from` e `to`; a escada começa em `from` e termina em `to`.
 
 Uma escada com `h` positivo aparece automaticamente em todos os pisos cujo `floor.h` esteja entre `z0` e `z1`. Portanto, ela pode ser declarada apenas no piso inferior; suas representações nos demais pisos são visuais e não duplicam cômodos ou áreas.
 

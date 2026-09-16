@@ -341,7 +341,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
     var(--stair-opaque) 0%,
     var(--stair-clearance) var(--stair-clearance-stop),
     var(--stair-transparent) 100%
-  );
+  ) !important;
 }
 .stair-flight[data-stair-axis="horizontal"][data-stair-rise="up"] {
   background: linear-gradient(
@@ -349,7 +349,23 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
     var(--stair-opaque) 0%,
     var(--stair-clearance) var(--stair-clearance-stop),
     var(--stair-transparent) 100%
-  );
+  ) !important;
+}
+.stair-flight[data-stair-axis="vertical"][data-stair-direction="reverse"][data-stair-rise="up"] {
+  background: linear-gradient(
+    to top,
+    var(--stair-opaque) 0%,
+    var(--stair-clearance) var(--stair-clearance-stop),
+    var(--stair-transparent) 100%
+  ) !important;
+}
+.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"][data-stair-rise="up"] {
+  background: linear-gradient(
+    to left,
+    var(--stair-opaque) 0%,
+    var(--stair-clearance) var(--stair-clearance-stop),
+    var(--stair-transparent) 100%
+  ) !important;
 }
 .stair-flight {
   --stair-step: 0.28;
@@ -378,11 +394,17 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   pointer-events: none;
 }
 .stair-arrow::before { content: "↓"; }
+.stair-flight[data-stair-direction="reverse"] .stair-arrow::before { content: "↑"; }
 .stair-arrow-base { top: 0.18em; left: 50%; transform: translateX(-50%); }
 .stair-arrow-top { bottom: 0.18em; left: 50%; transform: translateX(-50%); }
 .stair-flight[data-stair-axis="horizontal"] .stair-arrow::before { content: "→"; }
+.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"] .stair-arrow::before { content: "←"; }
 .stair-flight[data-stair-axis="horizontal"] .stair-arrow-base { top: 50%; left: 0.18em; transform: translateY(-50%); }
 .stair-flight[data-stair-axis="horizontal"] .stair-arrow-top { top: 50%; right: 0.18em; bottom: auto; left: auto; transform: translateY(-50%); }
+.stair-flight[data-stair-axis="vertical"][data-stair-direction="reverse"] .stair-arrow-base { top: auto; bottom: 0.18em; }
+.stair-flight[data-stair-axis="vertical"][data-stair-direction="reverse"] .stair-arrow-top { top: 0.18em; bottom: auto; }
+.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"] .stair-arrow-base { right: 0.18em; left: auto; }
+.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"] .stair-arrow-top { right: auto; left: 0.18em; }
 .stair-flight[data-stair-axis="horizontal"]::after {
   background: repeating-linear-gradient(
     to right,
