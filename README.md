@@ -79,6 +79,8 @@ Como alternativa a `pos` + `size`, use `rectangle: [x0, y0, x1, y1]`:
 
 O renderer calcula `w = x1 - x0` e `l = y1 - y0`. Os quatro valores também podem ser referências geométricas.
 
+Essa mesma geometria retangular pode ser usada por zonas, itens e aberturas verticais. Nestas últimas, `from` e `to` continuam indicando os pisos conectados; a área pode ser definida com `pos` + `size`, `rectangle` ou `inset`.
+
 Uma escada pode usar a terceira dimensão para indicar a elevação final. Quando recebe a classe `stair-flight`, o renderer usa `h` para desenhar um gradiente que fica progressivamente transparente na direção da subida:
 
 ```json

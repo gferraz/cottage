@@ -1218,7 +1218,7 @@ class FloorPlan {
     const floors = this.currentConfig?.floors ?? [];
     const from = String(opening?.from ?? "").trim();
     const to = String(opening?.to ?? "").trim();
-    return Array.isArray(opening?.size)
+    return (Array.isArray(opening?.size) || opening?.rectangle !== undefined || opening?.inset !== undefined)
       && floors.some((floor) => floor.id === from)
       && floors.some((floor) => floor.id === to);
   }
@@ -1238,17 +1238,11 @@ class FloorPlan {
       throw new Error("Os pisos da abertura vertical precisam ter elevações diferentes");
     }
 
-    const size = opening.size;
-    if (size.length !== 2) throw new Error("Abertura vertical precisa de size [w, l]");
-    const width = this.resolve(size[0]);
-    const length = this.resolve(size[1]);
-    if (![width, length].every(Number.isFinite) || width <= 0 || length <= 0) {
+    const geometry = this.normalizeGeometryAtFloor(opening, fromFloor);
+    const { x, y, w: width, l: length } = geometry;
+    if (![x, y, width, length].every(Number.isFinite) || width <= 0 || length <= 0) {
       throw new Error("Abertura vertical precisa de dimensões válidas");
     }
-    const epsilon = 1e-9;
-    const x = this.resolve(opening.pos?.[0]);
-    const y = this.resolve(opening.pos?.[1]);
-    if (![x, y].every(Number.isFinite)) throw new Error("Abertura vertical precisa de pos [x, y]");
 
     const passage = { ...opening, id: opening.id || `${fromId}-${toId}-vertical`, x, y, w: width, l: length, z0: fromHeight, h: 0, from: fromId, to: toId };
     const element = this.add({ pos: [x, y, fromHeight], size: [width, length, 0], classes: "floor-opening vertical-opening", title: `Abertura vertical: ${passage.id}` });
