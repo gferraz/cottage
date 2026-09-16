@@ -333,9 +333,9 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .service { background: rgba(235, 240, 245, 0.95); }
 .circulation { background: rgba(245, 238, 222, 0.95); }
 .stair-flight[data-stair-rise="up"] {
-  --stair-opaque: rgba(54, 70, 88, 0.62);
-  --stair-clearance: rgba(54, 70, 88, 0.10);
-  --stair-transparent: rgba(54, 70, 88, 0.08);
+  --stair-opaque: rgba(180, 145, 88, 0.62);
+  --stair-clearance: rgba(205, 177, 125, 0.16);
+  --stair-transparent: rgba(245, 238, 222, 0.08);
   background: linear-gradient(
     to bottom,
     var(--stair-opaque) 0%,
@@ -366,6 +366,11 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
     var(--stair-clearance) var(--stair-clearance-stop),
     var(--stair-transparent) 100%
   ) !important;
+}
+.room-overlap.stair-flight {
+  --stair-opaque: rgba(179, 74, 74, 0.62);
+  --stair-clearance: rgba(179, 74, 74, 0.16);
+  --stair-transparent: rgba(179, 74, 74, 0.08);
 }
 .stair-flight {
   --stair-step: 0.28;

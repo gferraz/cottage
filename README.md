@@ -66,6 +66,8 @@ Para criar um retângulo interno a partir de outra geometria, use `inset`:
 
 Os valores são recuos não negativos nos eixos `x` e `y`, aplicados nos dois lados. Cada valor deve ser menor que metade da dimensão correspondente da geometria de referência; portanto, `0` também é permitido.
 
+A paleta global inclui as cores `red`, `blue`, `green`, `gray` e `circulation`. Elas podem ser usadas, por exemplo, em `color: "circulation"` para uma guia ou zona, e sobrescritas em `theme.colors`.
+
 Como alternativa a `pos` + `size`, use `rectangle: [x0, y0, x1, y1]`:
 
 ```json
@@ -90,7 +92,7 @@ Uma escada pode usar a terceira dimensão para indicar a elevação final. Quand
 
 Para uma escada vertical, a subida é inferida no eixo `y`; para uma escada horizontal, no eixo `x`. A representação considera `2 m` como altura confortável de passagem: a parte inferior fica mais escura, chega a aproximadamente `90%` de transparência aos `2 m` e permanece quase transparente até o topo.
 
-Como alternativa, uma escada pode usar `from` e `to` como cantos opostos da sua área. O terceiro valor indica as cotas inicial e final; a direção da subida é deduzida automaticamente:
+Como alternativa, qualquer geometria retangular pode usar `from` e `to` como cantos opostos da sua área. O terceiro valor, quando informado, indica as cotas inicial e final. Para escadas, a direção da subida também é deduzida automaticamente:
 
 ```json
 {

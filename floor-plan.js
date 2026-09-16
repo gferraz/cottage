@@ -27,6 +27,7 @@ class FloorPlan {
     this.rooms = new Map();
     this.references = new Map();
     this.roomElements = [];
+    this.stairElements = [];
     this.itemElements = [];
     this.zoneElements = [];
     this.openings = [];
@@ -48,7 +49,7 @@ class FloorPlan {
     this.terrainArea = 0;
     this.terrainDimensions = null;
     this.terrainReference = null;
-    this.theme = { colors: { red: "#c94c4c", blue: "#4d7899", green: "#628b5a", gray: "#777" } };
+    this.theme = { colors: { red: "#c94c4c", blue: "#4d7899", green: "#628b5a", gray: "#777", circulation: "#f5eede" } };
     this.viewport = { size: [20, 20], origin: [-4.25, -4.25] };
     this.viewportScale = scale;
     this.pointerPan = null;
@@ -266,6 +267,7 @@ class FloorPlan {
 
   addRoom(room) {
     const derived = room.derived === true;
+    const { container = this.root } = room;
     const parts = room.parts?.map((part, index) => ({
       ...this.normalizeGeometry(part),
       id: part.id || `part-${index + 1}`
@@ -281,7 +283,7 @@ class FloorPlan {
     const roomData = parts?.length
       ? { ...room, pos: [geometry.x, geometry.y], size: [geometry.w, geometry.l] }
       : room;
-    const element = this.add({ ...roomData, room: true });
+    const element = this.add({ ...roomData, room: true, container });
     if (derived) {
       element.dataset.derived = "true";
       if (room.classes?.split(/\s+/).includes("stair-flight")) element.dataset.spanningStair = "true";
@@ -322,6 +324,8 @@ class FloorPlan {
       element.area = () => parts.reduce((total, part) => total + part.w * part.l, 0);
     }
     if (!derived) this.roomElements.push(element);
+    else if (room.classes?.split(/\s+/).includes("stair-flight") && container === this.root) this.stairElements.push(element);
+    if (room.id) element.dataset.id = room.id;
     if (room.id && !derived) {
       this.rooms.set(room.id, element);
       this.references.set(room.id, element);
@@ -689,11 +693,11 @@ class FloorPlan {
 
   normalizeGeometry(data) {
     const isStair = data.classes?.split(/\s+/).includes("stair-flight");
-    if (isStair && (data.from !== undefined || data.to !== undefined)) {
+    if (Array.isArray(data.from) || Array.isArray(data.to)) {
       if (!Array.isArray(data.from) || !Array.isArray(data.to)
         || (data.from.length !== 2 && data.from.length !== 3)
         || (data.to.length !== 2 && data.to.length !== 3)) {
-        throw new Error("Escada precisa ter from e to como [x, y] ou [x, y, z]");
+        throw new Error("A geometria precisa ter from e to como [x, y] ou [x, y, z]");
       }
 
       const fromValues = data.from.map((value) => this.resolve(value));
@@ -705,9 +709,9 @@ class FloorPlan {
       const w = Math.abs(toX - fromX);
       const l = Math.abs(toY - fromY);
       if (![fromX, fromY, toX, toY, z0, z1].every(Number.isFinite) || (w === 0 && l === 0)) {
-        throw new Error("Escada precisa usar coordenadas numéricas diferentes");
+        throw new Error("A geometria precisa usar coordenadas numéricas diferentes");
       }
-      if (z1 < z0) throw new Error("A escada precisa terminar em uma cota igual ou superior à inicial");
+      if (z1 < z0) throw new Error("A geometria precisa terminar em uma cota igual ou superior à inicial");
 
       const horizontal = w >= l;
       return {
@@ -719,7 +723,7 @@ class FloorPlan {
         z0,
         z1,
         h: z1 - z0,
-        stairDirection: (horizontal ? toX < fromX : toY < fromY) ? "reverse" : "forward"
+        ...(isStair ? { stairDirection: (horizontal ? toX < fromX : toY < fromY) ? "reverse" : "forward" } : {})
       };
     }
 
@@ -1090,8 +1094,10 @@ class FloorPlan {
         });
         if (hasEndpoint) {
           let angle = Math.atan2(y2 - y, x2 - x) * 180 / Math.PI;
-          if (angle > 90 || angle < -90) angle += 180;
+          const reverseLabel = angle > 90 || angle < -90;
+          if (reverseLabel) angle += 180;
           label.setAttribute("dy", -labelGap);
+          label.setAttribute("text-anchor", reverseLabel ? "end" : "start");
           label.setAttribute("transform", `rotate(${angle} ${x} ${y})`);
         } else if (hasWidth) {
           label.setAttribute("dy", -labelGap);
@@ -1501,10 +1507,12 @@ class FloorPlan {
   }
 
   updateOverlaps() {
-    const rooms = this.roomElements;
+    const rooms = [...this.roomElements, ...this.stairElements];
+    this.errors = this.errors.filter((error) => error.category !== "collision");
     rooms.forEach((room) => room.classList.remove("room-overlap"));
 
     const pieces = rooms.flatMap((room) => room.geometryParts.map((part) => ({ room, part })));
+    const collisionKeys = new Set();
     const epsilon = 1e-9;
     for (let index = 0; index < pieces.length; index += 1) {
       for (let otherIndex = index + 1; otherIndex < pieces.length; otherIndex += 1) {
@@ -1521,6 +1529,17 @@ class FloorPlan {
         if (overlaps && !allowed) {
           first.room.classList.add("room-overlap");
           second.room.classList.add("room-overlap");
+          const firstId = first.room.dataset.id || first.room.dataset.label || "elemento";
+          const secondId = second.room.dataset.id || second.room.dataset.label || "elemento";
+          const collisionKey = [firstId, secondId].sort().join(" / ");
+          if (!collisionKeys.has(collisionKey)) {
+            collisionKeys.add(collisionKey);
+            this.errors.push({
+              category: "collision",
+              id: collisionKey,
+              message: `Sobreposição entre ${firstId} e ${secondId}`
+            });
+          }
         }
       }
     }
@@ -1543,6 +1562,7 @@ class FloorPlan {
     this.projectionLayer.replaceChildren();
     this.clearTerrain();
     this.rooms.clear();
+    this.stairElements = [];
     this.references.clear();
     this.roomElements = [];
     this.itemElements = [];
@@ -1608,6 +1628,7 @@ class FloorPlan {
       && !this.invalidRoomIds.has(room.id));
     this.addRooms(validRooms);
     this.addSpanningStairs(config, floorConfig);
+    this.updateOverlaps();
     this.addVisibleVerticalOpenings(config, floorConfig);
     this.addZones(this.visibleZones(config, floorConfig).filter((zone) => this.validZoneIds.has(zone.id)));
     (floorConfig.items ?? []).forEach((item, index) => {
@@ -1952,7 +1973,7 @@ class FloorPlan {
     this.errors.forEach(({ index, id, opening, category = "opening", message }) => {
       const item = document.createElement("div");
       item.className = "error-list-item";
-      const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem" };
+      const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem", collision: "Colisão" };
       const name = id || (index === undefined ? "" : ` ${index + 1}`);
       item.textContent = `${labels[category] || "Erro"}${name ? ` ${name}` : ""}: ${message} `;
       const source = document.createElement("code");
@@ -2146,7 +2167,7 @@ class FloorPlan {
 
     if (this.errors.length > 0) {
       lines.push("", "## Elementos com erro", "", ...this.errors.map(({ opening, id, category = "opening", message }) => {
-        const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem" };
+        const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem", collision: "Colisão" };
         const label = `${labels[category] || "Erro"}${id ? ` ${id}` : ""}`;
         const source = opening === undefined ? "" : ` \`${this.markdownText(JSON.stringify(opening))}\``;
         return `- **${label}:**${source} ${this.markdownText(message)}`;
@@ -2251,7 +2272,7 @@ class FloorPlan {
 
     if (this.errors.length > 0) {
       lines.push("", "## Elementos com erro", "", ...this.errors.map(({ opening, id, category = "opening", message }) => {
-        const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem" };
+        const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem", collision: "Colisão" };
         const label = `${labels[category] || "Erro"}${id ? ` ${id}` : ""}`;
         const source = opening === undefined ? "" : ` \`${this.markdownText(JSON.stringify(opening))}\``;
         return `- **${label}:**${source} ${this.markdownText(message)}`;
