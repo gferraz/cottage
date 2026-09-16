@@ -41,6 +41,7 @@ class FloorPlan {
     this.roomDefinitions = new Map();
     this.roomGeometryCache = new Map();
     this.roomGeometryStack = new Set();
+    this.partReferenceStack = [];
     this.invalidRoomIds = new Set();
     this.allRooms = [];
     this.allItems = [];
@@ -268,10 +269,7 @@ class FloorPlan {
   addRoom(room) {
     const derived = room.derived === true;
     const { container = this.root } = room;
-    const parts = room.parts?.map((part, index) => ({
-      ...this.normalizeGeometry(part),
-      id: part.id || `part-${index + 1}`
-    }));
+    const parts = room.parts?.length ? this.normalizeParts(room.parts) : undefined;
     const geometry = parts?.length
       ? {
         x: Math.min(...parts.map((part) => part.x)),
@@ -310,11 +308,41 @@ class FloorPlan {
       }]));
       parts.forEach((part) => {
         const partElement = document.createElement("div");
-        partElement.className = `room-part${room.classes ? ` ${room.classes}` : ""}`;
+        const partClasses = part.classes || room.classes || "";
+        partElement.className = `room-part${partClasses ? ` ${partClasses}` : ""}`;
+        if (part.label) {
+          const partLabel = document.createElement("span");
+          partLabel.className = "room-label";
+          partLabel.textContent = part.label;
+          partElement.append(partLabel);
+          const partDimensions = document.createElement("small");
+          partDimensions.className = "part-dimensions";
+          partDimensions.textContent = `${this.formatMeters(part.w)}m × ${this.formatMeters(part.l)}m`;
+          partElement.append(partDimensions);
+        }
         partElement.style.left = `calc((${part.x} - var(--x)) * var(--m))`;
         partElement.style.top = `calc((${part.y} - var(--y)) * var(--m))`;
         partElement.style.width = `calc(${part.w} * var(--m))`;
         partElement.style.height = `calc(${part.l} * var(--m))`;
+        partElement.style.setProperty("--z0", part.z0);
+        partElement.style.setProperty("--z1", part.z1);
+        partElement.style.setProperty("--h", part.h);
+        if (partClasses.split(/\s+/).includes("stair-flight")) {
+          partElement.dataset.stairAxis = part.w >= part.l ? "horizontal" : "vertical";
+          partElement.dataset.stairDirection = part.stairDirection || "forward";
+          partElement.dataset.stairRise = part.h > 0 ? "up" : "flat";
+          const elevationTolerance = 1e-9;
+          partElement.dataset.stairFace = this.currentFloorHeight >= part.z1 - elevationTolerance ? "top" : "bottom";
+          if (part.h > 0) {
+            partElement.style.setProperty("--stair-clearance-stop", `${Math.min(100, (2 / part.h) * 100)}%`);
+          }
+          ["base", "top"].forEach((position) => {
+            const arrow = document.createElement("span");
+            arrow.className = `stair-arrow stair-arrow-${position}`;
+            arrow.setAttribute("aria-hidden", "true");
+            partElement.append(arrow);
+          });
+        }
         const walls = this.normalizeWalls(part.walls ?? room.walls);
         ["top", "right", "bottom", "left"].forEach((side) => {
           partElement.dataset[`wall${side[0].toUpperCase()}${side.slice(1)}`] = walls[side];
@@ -634,6 +662,34 @@ class FloorPlan {
     };
   }
 
+  normalizeParts(parts) {
+    const localReferences = new Map();
+    this.partReferenceStack.push(localReferences);
+    try {
+      return parts.map((part, index) => {
+        const geometry = {
+          ...this.normalizeGeometry(part),
+          id: part.id || `part-${index + 1}`
+        };
+        localReferences.set(geometry.id, {
+          x0: () => geometry.x,
+          x1: () => geometry.x + geometry.w,
+          y0: () => geometry.y,
+          y1: () => geometry.y + geometry.l,
+          z0: () => geometry.z0,
+          z1: () => geometry.z1,
+          h: () => geometry.h,
+          w: () => geometry.w,
+          l: () => geometry.l,
+          area: () => geometry.w * geometry.l
+        });
+        return geometry;
+      });
+    } finally {
+      this.partReferenceStack.pop();
+    }
+  }
+
   getRoomGeometry(id) {
     if (this.roomGeometryCache.has(id)) return this.roomGeometryCache.get(id);
     if (!this.roomDefinitions.has(id)) throw new Error(`Unknown room reference: ${id}`);
@@ -642,10 +698,7 @@ class FloorPlan {
     this.roomGeometryStack.add(id);
     try {
       const room = this.roomDefinitions.get(id);
-      const parts = room.parts?.map((part, index) => ({
-        ...this.normalizeGeometry(part),
-        id: part.id || `part-${index + 1}`
-      }));
+      const parts = room.parts?.length ? this.normalizeParts(room.parts) : undefined;
       const geometry = parts?.length
         ? {
           x: Math.min(...parts.map((part) => part.x)),
@@ -1123,12 +1176,20 @@ class FloorPlan {
     }
 
     const reference = String(value).trim();
+    const expressionMatch = reference.match(/^(.+?)\s+([+-])\s+(.+)$/);
+    if (expressionMatch) {
+      const [, baseReference, operator, offsetReference] = expressionMatch;
+      const base = this.resolve(baseReference);
+      const offset = this.resolve(offsetReference);
+      return base + (operator === "-" ? -offset : offset);
+    }
+
     const partMatch = reference.match(
       /^([\w-]+)\.([\w-]+)\.(x|x0|x1|y|y0|y1|z0|z1|w|l|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
     );
     if (partMatch) {
       const [, roomId, partId, method, operator, amount] = partMatch;
-      const room = this.references.get(roomId);
+      const room = this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId);
       if (!room) throw new Error(`Unknown room reference: ${roomId}`);
       const part = room.partReferences?.get(partId);
       if (!part) throw new Error(`Unknown part reference: ${roomId}.${partId}`);
@@ -1144,7 +1205,7 @@ class FloorPlan {
     if (!match) throw new Error(`Invalid geometric reference: ${value}`);
 
     const [, roomId, method, operator, amount] = match;
-    const room = this.references.get(roomId);
+    const room = this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId);
     if (!room) throw new Error(`Unknown room reference: ${roomId}`);
 
     const offset = amount ? Number(amount) : 0;

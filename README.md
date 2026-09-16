@@ -132,6 +132,8 @@ Cômodos compostos usam `parts`:
 }
 ```
 
+As partes podem referenciar partes anteriores pelo ID local, como `flight-1.x1` ou `flight-1.z1`. Também é possível usar a forma qualificada `l-shaped.flight-1.x1` fora do objeto composto.
+
 ## Paredes e sobreposição
 
 Por padrão, há quatro paredes sólidas. Use `walls` para alterar lados:

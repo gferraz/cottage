@@ -66,7 +66,15 @@
         { "id": "corridor", "label": "Corr.", "rectangle": ["entry.x0", "entry.y1", "entry.x0 + 1.2", "masterbath.y1"], "classes": "circulation", "walls": ["right", "left"] },
 
         { "id": "stairs",   "label": "Escadaria", "from": ["corridor.x1 + 4.5", "living.y1 + 1.4"], "to": ["corridor.x1", "living.y1", "upper.h"], "classes": "stair-flight", "walls": [] },
-
+        {
+          "id": "u-stairs",
+          "label": "Escada",
+          "parts": [
+            { "id": "flight-1", "pos": ["living.x1",   "terrace.y1"],  "size": [2.2, 1.4, 1.5], "classes": "stair-flight" },
+            { "id": "landing",  "pos": ["flight-1.x1", "flight-1.y0 - flight-1.l", "flight-1.z1"], "size": ["flight-1.l", 2.8, 0], "classes": "stair-landing" },
+            { "id": "flight-2", "from": ["landing.x0", "landing.y0", "landing.z1"], "to": ["flight-1.x0", "flight-1.y0", 3.0], "classes": "stair-flight" }
+          ]
+        },
         { "id": "powder", "label": "Lavabo", "rectangle": ["stairs.x0", "stairs.y0", "stairs.x0 + 1.3", "stairs.y1"], "classes": "powder wet", "overlaps": ["stairs"] },
 
         { "id": "dining", "label": "Jantar", "pos": ["entry.x1", "porch.y1"], "size": [4.5, 3.4], "classes": "living", "walls": ["top", "right", "bottom", "left"] },
@@ -74,7 +82,7 @@
 
         { "id": "kitchen", "label": "Cozinha", "pos": ["dorm.x0", "corridor.y1"], "size": [4.9, 4.2], "classes": "kitchen wet", "walls": ["left", "bottom"] },
 
-        { "id": "laundry", "label": "Lavanderia", "pos": ["corridor.x1", "stairs.y1"], "size": [4.5, 1.4], "classes": "service laundry wet", "walls": ["top", "left"] },
+        { "id": "laundry", "label": "Lavanderia", "pos": ["corridor.x1", "u-stairs.y1"], "size": [4.5, 1.4], "classes": "service laundry wet", "walls": ["top", "left"] },
         { "id": "circulation", "label": "Circulação", "pos": ["corridor.x1", "laundry.y1"], "size": [4.4, 1], "classes": "circulation", "walls": [] },
         { "id": "pantry", "label": "Despensa", "pos": ["corridor.x1", "circulation.y1"], "size": [2.3, 1.8], "classes": "service pantry" },
         { "id": "mudroom", "label": "Mudroom", "pos": ["pantry.x1", "circulation.y1"], "size": [2.2, 1.8], "classes": "service mudroom", "walls": ["right", "bottom"] },

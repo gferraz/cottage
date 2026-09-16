@@ -322,6 +322,16 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 
 .room small { margin-top: 4px; font-weight: 500; color: #555; }
 .room .area { margin-top: 2px; }
+.room-label,
+.room > small,
+.part-dimensions {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(40, 50, 60, 0.18);
+  border-radius: 3px;
+  padding: 2px 4px;
+  color: #263746;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.7);
+}
 .room-overlap {
   background: rgba(220, 80, 80, 0.18) !important;
 }
@@ -332,6 +342,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .outdoor { background: rgba(230, 220, 190, 0.78); }
 .service { background: rgba(235, 240, 245, 0.95); }
 .circulation { background: rgba(245, 238, 222, 0.95); }
+.stair-landing { background: rgba(245, 238, 222, 0.95); }
 .stair-flight[data-stair-rise="up"] {
   --stair-opaque: rgba(180, 145, 88, 0.62);
   --stair-clearance: rgba(205, 177, 125, 0.16);
@@ -430,12 +441,39 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .compound-room {
   border: none !important;
   background: transparent !important;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   padding: 0;
+}
+.compound-room > .room-label,
+.compound-room > small {
+  position: relative;
+  z-index: 10;
+  pointer-events: none;
 }
 .room-part {
   position: absolute;
   border: 2px solid transparent;
+}
+.room-part .room-label {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.room-part .part-dimensions {
+  position: absolute;
+  top: calc(50% + 14px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+  color: #555;
+  pointer-events: none;
 }
 .room-part[data-wall-top="solid"] { border-top-color: #222; border-top-style: solid; }
 .room-part[data-wall-right="solid"] { border-right-color: #222; border-right-style: solid; }
@@ -656,7 +694,7 @@ code { background: #f2f2f2; padding: 2px 5px; border-radius: 4px; }
     <script src="floor-plan-renderer.js?v=modules-1" defer></script>
     <script src="floor-plan-legend.js?v=modules-1" defer></script>
     <script src="floor-plan-export.js?v=modules-1" defer></script>
-    <script src="floor-plan.js?v=modules-1" defer></script>
+    <script src="floor-plan.js?v=modules-2" defer></script>
     <script src="floor-plan-config.js?v=cli-2" defer></script>
   </body>
 </html>
