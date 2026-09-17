@@ -138,7 +138,7 @@
       "rooms": [
         { "id": "dorm-corridor", "label": "Corredor",  "pos": ["corridor.x0", "dorm.y0"], "size": ["corridor.w",  "dorm.l"], "walls": ["top", "bottom"], "classes": "circulation" },
 
-        { "id": "bedroom-n", "label": "Quarto N",      "from": ["dorm.x0", "dorm.y0"],      "to": ["corridor.x0", "dorm.y0 + 3.6"]},
+        { "id": "bedroom-n", "label": "Quarto N",      "from": ["dorm.x0", "dorm.y0"],      "to": ["corridor.x0", "dorm.y0 + 3.4"]},
         { "id": "bathroom",  "label": "Banheiro",      "from": ["dorm.x0", "bedroom-n.y1"], "to": ["corridor.x0", "bedroom-n.y1 + 1.6"], "classes": "wet" },
         { "id": "playroom",  "label": "Sala de Jogos", "from": ["dorm.x0", "bathroom.y1"],  "to": ["corridor.x0", "dorm.y1"], "walls": ["bottom", "left"] },
 
@@ -152,7 +152,7 @@
         { "from": "bedroom-e.left",  "to": "dorm-corridor", "type": "door" },
         { "from": "bathroom.right",  "to": "dorm-corridor", "type": "door" },
         { "from": "bedroom-s.left",  "to": "dorm-corridor", "type": "door" },
-        { "from": "upper",           "to": "ground",        "type": "opening", "pos": ["stairs.x0", "stairs.y0"], "size": ["stairs.w - 3", "stairs.l"] }
+        { "from": "upper",           "to": "ground",        "type": "opening", "pos": ["stairs.x0", "stairs.y0"], "size": ["stairs.w - 0.8", "stairs.l / 2"] }
       ]
     }
   ]
