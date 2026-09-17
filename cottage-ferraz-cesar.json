@@ -6,7 +6,7 @@
   },
   "item-types": {
     "washing-machine": {
-      "label": "Máquina de lavar",
+      "label": "Lavadora",
       "size": [0.6, 0.6, 0.85],
       "classes": "appliance washing-machine"
     }
@@ -49,10 +49,13 @@
     { "id": "h-center", "label": "linha central", "pos": [-4.0, "main.y0 + main.l / 2"], "w": 20, "color": "green" },
     { "id": "v-center", "label": "linha central", "pos": ["main.x0 + main.w / 2", -2.5], "l": 20, "color": "green" },
 
-    { "id": "roof-right",  "label": "Telhado direitor", "pos": ["main.x1", "h-center.y0"], "to": ["main.x1 - 5.8", "h-center.y0 - 5.8"] , "color": "red" },
-    { "id": "roof-bottom", "pos": ["main.x1", "main.y1"], "to": ["main.x1 - 5.8", "main.y1 - 5.8"] , "color": "red" },
-    { "id": "roof-left",   "label": "Telhado esquerdo", "pos": ["main.x0", "h-center.y1"], "to": ["main.x0 + 5.8", "h-center.y1 - 5.8"] , "color": "red" },
-    { "id": "roof-left",   "pos": ["main.x0", "main.y1"], "to": ["main.x0 + 5.8", "main.y1 - 5.8"] , "color": "red" }
+    { "id": "roof-right", "label": "Telhado direitor", "pos": ["main.x1", "h-center.y0"], "to": ["main.x1 - 5.8", "h-center.y0 - 5.8"] , "color": "red" },
+    { "id": "roof-right-top",    "pos": ["main.x1", "main.y0"], "to": ["main.x1 - 5.8", "main.y0 - 5.8"] , "color": "red" },
+    { "id": "roof-right-bottom", "pos": ["main.x1", "main.y1"], "to": ["main.x1 - 5.8", "main.y1 - 5.8"] , "color": "red" },
+
+    { "id": "roof-left", "label": "Telhado esquerdo", "pos": ["main.x0", "h-center.y1"], "to": ["main.x0 + 5.8", "h-center.y1 - 5.8"] , "color": "red" },
+    { "id": "roof-left-top",    "pos": ["main.x0", "main.y0"], "to": ["main.x0 + 5.8", "main.y0 - 5.8"] , "color": "red" },
+    { "id": "roof-left-bottom", "pos": ["main.x0", "main.y1"], "to": ["main.x0 + 5.8", "main.y1 - 5.8"] , "color": "red" }
   ],
 
   "building": {

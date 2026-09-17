@@ -1399,6 +1399,18 @@ class FloorPlan {
       .sort((first, second) => Number(second.h ?? 0) - Number(first.h ?? 0));
     const lowerFloor = lowerFloors[0];
     if (!lowerFloor) return;
+    const lowerFloorHeight = Number(lowerFloor.h ?? 0);
+
+    const compoundGeometry = (definition) => {
+      const parts = this.normalizeParts(definition.parts);
+      const x = Math.min(...parts.map((part) => part.x));
+      const y = Math.min(...parts.map((part) => part.y));
+      const x1 = Math.max(...parts.map((part) => part.x + part.w));
+      const y1 = Math.max(...parts.map((part) => part.y + part.l));
+      const z0 = Math.min(...parts.map((part) => part.z0));
+      const z1 = Math.max(...parts.map((part) => part.z1));
+      return { x, y, w: x1 - x, l: y1 - y, z0, z1, h: z1 - z0 };
+    };
 
     const addProjection = (definition, geometry, room = false) => {
       const overlaps = geometry.x < opening.x + opening.w
@@ -1427,10 +1439,17 @@ class FloorPlan {
     };
 
     (lowerFloor.rooms ?? []).forEach((room) => {
+      const previousHeight = this.currentFloorHeight;
+      this.currentFloorHeight = lowerFloorHeight;
       try {
-        addProjection(room, this.normalizeGeometryAtFloor(room, lowerFloor), true);
+        const geometry = room.parts?.length
+          ? compoundGeometry(room)
+          : this.normalizeGeometry(room);
+        addProjection(room, geometry, true);
       } catch (error) {
         this.errors.push({ opening: room, category: "projection", message: error.message });
+      } finally {
+        this.currentFloorHeight = previousHeight;
       }
     });
     (lowerFloor.items ?? []).forEach((item) => {
