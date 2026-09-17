@@ -1,182 +1,84 @@
 # Floor Plan
 
-Aplicação estática para desenhar plantas baixas usando HTML, CSS e JSON. Não há banco de dados, servidor ou processo de build obrigatório.
+Aplicação estática para desenhar plantas baixas com HTML, CSS e JSON. Não exige banco de dados, servidor, Python ou processo de build.
 
-## Abrir a aplicação
+## Abrir e carregar uma planta
 
-Abra [`floor-plan.html`](floor-plan.html) no navegador e use **Carregar JSON**. Para abrir uma planta diretamente pelo terminal, no macOS:
+Abra [`floor-plan.html`](floor-plan.html) no navegador e clique em **Carregar JSON**. A página inicia vazia; o projeto só é carregado quando um arquivo é escolhido. **Recarregar JSON atual** relê o último arquivo selecionado.
+
+No macOS, o comando abaixo abre a página já com o JSON embutido na URL e funciona no `zsh`:
 
 ```sh
 ./floor cottage-ferraz-cesar.json
 ```
 
-O comando funciona no `zsh`, não exige Python e abre a planta no navegador padrão. A página aberta normalmente não carrega nenhum JSON automaticamente.
+O seletor de piso muda apenas o desenho. As listas, totais e erros são consolidados entre todos os pisos.
 
-## Criar uma planta
-
-Crie um arquivo JSON com um título e um ou mais pisos:
+## Estrutura mínima do JSON
 
 ```json
 {
   "title": "Minha casa",
-  "floors": [
-    {
-      "id": "ground",
-      "label": "Térreo",
-      "rooms": [],
-      "items": [],
-      "openings": []
-    }
-  ]
+  "floors": [{
+    "id": "ground",
+    "label": "Térreo",
+    "h": 0,
+    "rooms": [],
+    "items": [],
+    "openings": []
+  }]
 }
 ```
 
-IDs são obrigatórios para cômodos e devem ser únicos em todo o arquivo, independentemente do piso ou categoria. Eles podem ser usados em referências geométricas:
+Os IDs dos cômodos são obrigatórios, globais e únicos. IDs de zonas, itens, janelas, passagens e guias também devem ser únicos quando informados. Objetos geométricos com ID podem ser referenciados globalmente quando o tipo oferece referências.
 
-```json
-{
-  "id": "living",
-  "label": "Sala",
-  "pos": [1, 1],
-  "size": [5, 4]
-}
-```
+## Geometria e referências
 
-## Cômodos e partes
+Para retângulos, use `pos: [x, y]` e `size: [w, l]`, em metros. `x/y/w/l` também são aceitos diretamente. `h` é a altura vertical; `z0` é a cota inicial. `rectangle: [x0, y0, x1, y1]` é uma alternativa. `from` e `to` definem cantos opostos. `inset: ["id", dx, dy]` cria um retângulo interno.
 
-Use `pos: [x, y]` e `size: [largura (w), comprimento (l)]`, em metros. Também é possível informar a elevação: `pos: [x, y, z0]` e `size: [w, l, h]`, em que `z1 = z0 + h`. Para geometrias 2D, `z0` recebe o `floor.h` e `h` vale `0` por padrão; `floor.h` também vale `0` por padrão. Referências como `upper.h` podem acessar a elevação declarada no piso:
+Expressões podem combinar referências e operações: `"living.x1 - 0.3"`, `"room.w / 2"` e `"part.z1"`. Cada referência oferece `x0()`, `x1()`, `y0()`, `y1()`, `w()`, `l()`, `h()` e `area()`.
 
-```json
-{
-  "id": "dining",
-  "label": "Jantar",
-  "pos": ["living.x1", "living.y0"],
-  "size": ["living.w", 3]
-}
-```
+Cômodos compostos usam `parts`; cada parte tem sua própria geometria e pode referenciar partes anteriores. A regra de não sobreposição também é aplicada às partes.
 
-Para criar um retângulo interno a partir de outra geometria, use `inset`:
+Também é possível criar cômodos diretamente no console do navegador: `const porch = floor.addRoom({ pos: [3.4, 2], size: [4.3, 2.3], label: "Varanda" })`. O objeto retornado expõe `x0()`, `x1()`, `y0()`, `y1()`, `w()`, `l()`, `h()` e `area()`.
 
-```json
-{
-  "id": "confort",
-  "inset": ["dorm", 1.0, 1.1]
-}
-```
+## Cômodos, paredes e sobreposições
 
-Os valores são recuos não negativos nos eixos `x` e `y`, aplicados nos dois lados. Cada valor deve ser menor que metade da dimensão correspondente da geometria de referência; portanto, `0` também é permitido.
-
-A paleta global inclui as cores `red`, `blue`, `green`, `gray` e `circulation`. Elas podem ser usadas, por exemplo, em `color: "circulation"` para uma guia ou zona, e sobrescritas em `theme.colors`.
-
-Como alternativa a `pos` + `size`, use `rectangle: [x0, y0, x1, y1]`:
-
-```json
-{
-  "id": "master-room",
-  "rectangle": [3.4, 4.5, 8.0, 9.0]
-}
-```
-
-O renderer calcula `w = x1 - x0` e `l = y1 - y0`. Os quatro valores também podem ser referências geométricas.
-
-Essa mesma geometria retangular pode ser usada por zonas, itens e aberturas verticais. Nestas últimas, `from` e `to` continuam indicando os pisos conectados; a área pode ser definida com `pos` + `size`, `rectangle` ou `inset`.
-
-Uma escada pode usar a terceira dimensão para indicar a elevação final. Quando recebe a classe `stair-flight`, o renderer usa `h` para desenhar um gradiente que fica progressivamente transparente na direção da subida:
-
-```json
-{
-  "id": "stairs",
-  "pos": [3.0, 6.0, 0.0],
-  "size": [1.5, 5.0, 6.0],
-  "classes": "circulation stair-flight"
-}
-```
-
-Para uma escada vertical, a subida é inferida no eixo `y`; para uma escada horizontal, no eixo `x`. A representação considera `2 m` como altura confortável de passagem: a parte inferior fica mais escura, chega a aproximadamente `90%` de transparência aos `2 m` e permanece quase transparente até o topo.
-
-Como alternativa, qualquer geometria retangular pode usar `from` e `to` como cantos opostos da sua área. O terceiro valor, quando informado, indica as cotas inicial e final. Para escadas, a direção da subida também é deduzida automaticamente:
-
-```json
-{
-  "id": "stairs",
-  "from": [8.0, 6.0, 0.0],
-  "to": [3.5, 7.5, 3.0],
-  "classes": "circulation stair-flight"
-}
-```
-
-Nesse formato, a largura já está implícita na diferença entre `from` e `to`; a escada começa em `from` e termina em `to`.
-
-Uma escada com `h` positivo aparece automaticamente em todos os pisos cujo `floor.h` esteja entre `z0` e `z1`. Portanto, ela pode ser declarada apenas no piso inferior; suas representações nos demais pisos são visuais e não duplicam cômodos ou áreas.
-
-Uma abertura entre pisos usa os IDs dos pisos como origem e destino. Ela fica na laje do piso `from`, com `z = from.h` e `h = 0`; sua área continua independente da escada:
-
-```json
-{ "from": "upper", "to": "ground", "type": "opening", "pos": ["stairs.x0", "stairs.y0"], "size": ["stairs.w", 3.0] }
-```
-
-O renderer valida se os dois pisos existem, se têm elevações diferentes e se a posição e o tamanho do vão são válidos.
-
-As linhas dos degraus são geradas em CSS com espaçamento fixo de `0,30 m`.
-
-Cômodos compostos usam `parts`:
-
-```json
-{
-  "id": "l-shaped",
-  "label": "Ambiente em L",
-  "parts": [
-    { "id": "main", "pos": [0, 0], "size": [4, 2] },
-    { "id": "wing", "pos": [0, 2], "size": [2, 3] }
-  ]
-}
-```
-
-As partes podem referenciar partes anteriores pelo ID local, como `flight-1.x1` ou `flight-1.z1`. Também é possível usar a forma qualificada `l-shaped.flight-1.x1` fora do objeto composto.
-
-## Paredes e sobreposição
-
-Por padrão, há quatro paredes sólidas. Use `walls` para alterar lados:
+O padrão é quatro paredes sólidas. Use `walls` com `solid`, `open` ou `virtual`:
 
 ```json
 "walls": { "top": "solid", "right": "open", "bottom": "virtual", "left": "solid" }
 ```
 
-`virtual` desenha uma separação pontilhada; `open` não desenha parede. Para cômodos intencionalmente sobrepostos, informe `"overlaps": "outro-id"`.
+Como atalho, `walls: ["top", "bottom"]` torna somente esses lados sólidos; `walls: "virtual"` torna todos pontilhados. `virtual` é separação visual, não parede sólida. Sobreposição intencional é declarada com `"overlaps": "corridor"` ou uma lista. Ela é descontada da área útil do elemento que recebe a autorização; itens também podem descontar área de cômodos.
 
-Uma porta ou passagem pode ligar um cômodo contido em outro ambiente. Nesse caso, informe a parede sólida do cômodo menor e o ambiente envolvente em `to`; o renderer verifica se o segmento da abertura está dentro da geometria do destino, mesmo sem uma parede coincidente:
+## Passagens, janelas e itens
 
-```json
-{ "from": "powder.bottom", "to": "corridor", "type": "door" }
-```
-
-## Itens, zonas e passagens
-
-Itens representam objetos concretos e não entram na lista de cômodos:
+Passagens usam a parede de origem e um destino opcional:
 
 ```json
-{ "title": "Mesa", "pos": ["dining.x0 + 1", "dining.y0 + 1"], "size": [2.7, 1.1], "classes": "table" }
+{ "from": "office.left", "to": "entry", "type": "door" }
 ```
 
-Zonas são áreas virtuais de referência. Não entram em áreas, listas ou conflitos:
+`type` pode ser `door`, `opening` ou `window`. `to` omitido significa exterior. Sem `dx`/`dy` e `w`, a aplicação encontra o segmento comum, centraliza a abertura e usa os padrões: porta `0.8 m`, abertura `1.0 m`, janela `0.9 m`. O ID é gerado como `from-to-deslocamento-em-cm`. Portas e janelas são desenhadas com quatro bordas; passagens abertas mostram apenas as bordas laterais.
 
-```json
-{ "id": "future-extension", "label": "Ampliação", "pos": ["living.x1", 1], "size": [3, 4] }
-```
+Itens são objetos concretos, aparecem em lista própria e podem usar `overlaps`. Use `title` para o texto exibido ao passar o mouse e `label` para a legenda. Tipos reutilizáveis podem ser declarados em `item-types`. Janelas também podem ser declaradas em `openings` com `type: "window"` ou na coleção `windows`; em ambos os casos ficam separadas da lista de passagens. Zonas virtuais (`zones`) servem para referências e marcações, sem entrar em áreas ou conflitos.
 
-Passagens usam `from`, `to` opcional, `type` (`door`, `opening` ou `window`) e, opcionalmente, `dx`, `dy` e `w`. Sem posição ou largura, a aplicação centraliza e usa o padrão do tipo:
+## Terreno, guias e apresentação
 
-```json
-{ "from": "living.right", "to": "dining", "type": "door" }
-```
+`terrain` aceita frente/fundo, `boundary_order`, cantos e segmentos topográficos. A frente é inferida do segmento indicado no JSON; a casa permanece ortogonal, enquanto o terreno, o Norte e a rosa dos ventos refletem sua orientação. `building.anchor` e `building.position` posicionam a casa em relação ao terreno. `viewport.size` e `viewport.origin` definem a área visível; é possível arrastar a grade com o mouse.
 
-## Legendas e exportação
+`guides` desenha linhas ou segmentos auxiliares. `theme.colors` personaliza a paleta. Escadas podem ter `h` positivo, `stair-flight` e `parts`, projetando-se visualmente entre pisos; aberturas verticais conectam dois IDs de pisos.
 
-O seletor de piso altera apenas o desenho. As listas, totais, passagens, itens e erros permanecem consolidados entre todos os pisos. Os botões permitem baixar um HTML portátil com CSS embutido ou um arquivo Markdown com tabelas e ASCII art.
+## Legendas, validação e exportação
 
-Erros de IDs, referências, geometria, paredes, passagens e renderização aparecem na seção **Itens com erro**.
+A interface mostra cômodos com dimensões e áreas bruta/útil, resumo por piso e terreno, itens, passagens, janelas, comunicações naturais e todos os erros de cálculo ou apresentação. O botão **Baixar HTML gerado** cria um arquivo portátil com CSS embutido; **Baixar layout em Markdown** inclui tabelas, itens, passagens, janelas, erros e ASCII art. A impressão oculta os controles e ajusta a escala para papel.
 
 ## Arquivos principais
 
-- `floor-plan.html`: shell da aplicação e CSS portátil.
-- `cottage-ferraz-cesar.json`: exemplo com térreo e primeiro andar.
+- `floor-plan.html`: shell, interface e template de CSS portátil.
+- `floor-plan.css`: estilos da aplicação.
+- `floor-plan.js`: fachada pública `FloorPlan` e execução no navegador.
+- `floor-plan-model.js`, `floor-plan-validation.js`, `floor-plan-renderer.js`, `floor-plan-legend.js`, `floor-plan-export.js`: módulos auxiliares.
+- `floor-plan-config.js`: inicialização, carregamento por arquivo e comando `floor`.
+- `cottage-ferraz-cesar.json`: exemplo com terreno e múltiplos pisos.
