@@ -1166,6 +1166,59 @@ class FloorPlan {
     });
   }
 
+  resolveExpression(expression) {
+    const tokens = [];
+    const tokenPattern = /\s*(?:(\d+(?:\.\d+)?(?:e[+-]?\d+)?|[A-Za-z_][\w.-]*)|([()+\-*/]))/i;
+    let source = expression;
+    while (source.length > 0) {
+      const match = source.match(tokenPattern);
+      if (!match) throw new Error(`Invalid geometric expression: ${expression}`);
+      tokens.push(match[1] ?? match[2]);
+      source = source.slice(match[0].length);
+    }
+
+    let index = 0;
+    const primary = () => {
+      const token = tokens[index++];
+      if (token === "+") return primary();
+      if (token === "-") return -primary();
+      if (token === "(") {
+        const result = addSubtract();
+        if (tokens[index++] !== ")") throw new Error(`Invalid geometric expression: ${expression}`);
+        return result;
+      }
+      if (!token || ["+", "-", "*", "/", ")"].includes(token)) {
+        throw new Error(`Invalid geometric expression: ${expression}`);
+      }
+      return this.resolve(token);
+    };
+    const multiplyDivide = () => {
+      let result = primary();
+      while (["*", "/"].includes(tokens[index])) {
+        const operator = tokens[index++];
+        const operand = primary();
+        if (operator === "/" && operand === 0) throw new Error("Division by zero in geometric expression");
+        result = operator === "*" ? result * operand : result / operand;
+      }
+      return result;
+    };
+    const addSubtract = () => {
+      let result = multiplyDivide();
+      while (["+", "-"].includes(tokens[index])) {
+        const operator = tokens[index++];
+        const operand = multiplyDivide();
+        result += operator === "+" ? operand : -operand;
+      }
+      return result;
+    };
+
+    const result = addSubtract();
+    if (index !== tokens.length || !Number.isFinite(result)) {
+      throw new Error(`Invalid geometric expression: ${expression}`);
+    }
+    return result;
+  }
+
   resolve(value) {
     if (typeof value === "number") return value;
 
@@ -1178,12 +1231,8 @@ class FloorPlan {
     }
 
     const reference = String(value).trim();
-    const expressionMatch = reference.match(/^(.+?)\s+([+-])\s+(.+)$/);
-    if (expressionMatch) {
-      const [, baseReference, operator, offsetReference] = expressionMatch;
-      const base = this.resolve(baseReference);
-      const offset = this.resolve(offsetReference);
-      return base + (operator === "-" ? -offset : offset);
+    if (reference.includes("*") || reference.includes("/") || /\s[+-]\s/.test(reference)) {
+      return this.resolveExpression(reference);
     }
 
     const partMatch = reference.match(
