@@ -83,6 +83,15 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   overflow: hidden;
 }
 
+.multi-floor-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: visible;
+}
+.multi-floor-underlay { opacity: 0.28 !important; }
+
 .guide-line {
   stroke-width: 0.03;
   stroke-dasharray: 0.20 0.12;
@@ -490,7 +499,8 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 #layer-button,
 #download-html,
 #download-markdown,
-#download-dxf {
+#download-dxf,
+#multi-floor-button {
   margin: 0 0 16px;
   padding: 8px 12px;
   border: 1px solid #888;
@@ -523,9 +533,11 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 #layer-button:hover:not(:disabled),
 #download-html:hover,
 #download-markdown:hover,
-#download-dxf:hover { background: #e6e6e6; }
+#download-dxf:hover,
+#multi-floor-button:hover:not(:disabled) { background: #e6e6e6; }
 #reload-json:disabled { cursor: not-allowed; opacity: 0.55; }
 #dxf-button:disabled { cursor: not-allowed; opacity: 0.55; }
+#multi-floor-button:disabled { cursor: not-allowed; opacity: 0.55; }
 .legend { flex: 1 1 auto; min-width: 0; font-size: 13px; color: #444; }
 .opening-legend,
 .window-legend,
@@ -563,6 +575,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   #download-html,
   #download-markdown,
   #download-dxf,
+  #multi-floor-button,
   .floor-selector,
   #plan-status,
   #viewport-summary { display: none !important; }
@@ -649,6 +662,7 @@ code { background: #f2f2f2; padding: 2px 5px; border-radius: 4px; }
     <button id="download-html" type="button">Baixar HTML gerado</button>
     <button id="download-markdown" type="button">Baixar layout em Markdown</button>
     <button id="download-dxf" type="button">Baixar DXF</button>
+    <button id="multi-floor-button" type="button">Visão: Piso atual</button>
     <h1>Planta térrea — separada por módulos</h1>
     <p id="plan-status">Nenhuma planta é carregada automaticamente. Selecione um JSON para desenhar a planta.</p>
     <p id="viewport-summary" class="viewport-summary">Viewport não carregado.</p>

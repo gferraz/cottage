@@ -1,5 +1,5 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, jsonInput = null, reloadButton = null, layerButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorButton = null, jsonInput = null, reloadButton = null, layerButton = null, scale = 56 }) {
     this.root = root;
     this.terrainLayer = terrainLayer;
     this.guidesLayer = guidesLayer;
@@ -21,6 +21,7 @@ class FloorPlan {
     this.downloadButton = downloadButton;
     this.markdownButton = markdownButton;
     this.dxfButton = dxfButton;
+    this.multiFloorButton = multiFloorButton;
     this.jsonInput = jsonInput;
     this.reloadButton = reloadButton;
     this.layerButton = layerButton;
@@ -62,6 +63,10 @@ class FloorPlan {
     this.projectionLayer = document.createElement("div");
     this.projectionLayer.className = "floor-projection-layer";
     root.prepend(this.projectionLayer);
+    this.multiFloorLayer = document.createElement("div");
+    this.multiFloorLayer.className = "multi-floor-layer";
+    root.prepend(this.multiFloorLayer);
+    this.multiFloorMode = false;
 
     root.style.setProperty("--m", `${scale}px`);
     root.addEventListener("pointerdown", (event) => this.beginViewportPan(event));
@@ -79,6 +84,13 @@ class FloorPlan {
     if (markdownButton) markdownButton.addEventListener("click", () => this.downloadMarkdown());
     if (dxfButton) dxfButton.addEventListener("click", () => FloorPlanExport.downloadDxf(this));
     if (dxfButton) dxfButton.disabled = true;
+    if (multiFloorButton) {
+      multiFloorButton.disabled = true;
+      multiFloorButton.addEventListener("click", () => {
+        this.multiFloorMode = !this.multiFloorMode;
+        this.renderMultiFloorUnderlay();
+      });
+    }
     if (layerButton) {
       layerButton.disabled = true;
       layerButton.addEventListener("click", () => this.cycleLayer());
@@ -1924,9 +1936,112 @@ class FloorPlan {
     return FloorPlanModel.calculateNetRoomArea(room, this.roomElements, this.itemElements);
   }
 
+  subtractRectangles(rectangle, cutters) {
+    let fragments = [{ x: rectangle.x, y: rectangle.y, w: rectangle.w, l: rectangle.l }];
+    cutters.forEach((cutter) => {
+      fragments = fragments.flatMap((fragment) => {
+        const x0 = Math.max(fragment.x, cutter.x);
+        const y0 = Math.max(fragment.y, cutter.y);
+        const x1 = Math.min(fragment.x + fragment.w, cutter.x + cutter.w);
+        const y1 = Math.min(fragment.y + fragment.l, cutter.y + cutter.l);
+        if (x1 <= x0 || y1 <= y0) return [fragment];
+        return [
+          { x: fragment.x, y: fragment.y, w: fragment.w, l: y0 - fragment.y },
+          { x: fragment.x, y: y1, w: fragment.w, l: fragment.y + fragment.l - y1 },
+          { x: fragment.x, y: y0, w: x0 - fragment.x, l: y1 - y0 },
+          { x: x1, y: y0, w: fragment.x + fragment.w - x1, l: y1 - y0 }
+        ].filter((part) => part.w > 1e-9 && part.l > 1e-9);
+      });
+    });
+    return fragments;
+  }
+
+  renderMultiFloorUnderlay(floorConfig = null) {
+    if (!this.multiFloorLayer) return;
+    this.multiFloorLayer.replaceChildren();
+    const config = this.currentConfig;
+    const activeFloor = floorConfig || config?.floors?.find((floor) => floor.id === this.currentFloorId) || config;
+    const floors = config?.floors ?? [config];
+    const activeHeight = Number(activeFloor?.h ?? 0);
+    const lowerFloors = floors
+      .filter((floor) => floor && Number(floor.h ?? 0) < activeHeight)
+      .sort((first, second) => Number(second.h ?? 0) - Number(first.h ?? 0));
+    const canShow = this.multiFloorMode && lowerFloors.length > 0;
+    if (canShow) {
+      let covered = this.roomElements.flatMap((room) => room.geometryParts);
+      const activeFloorId = activeFloor?.id;
+      const verticalOpenings = (activeFloor?.openings ?? [])
+        .filter((opening) => this.isVerticalOpening(opening))
+        .filter((opening) => [opening.from, opening.to].includes(activeFloorId));
+      verticalOpenings.forEach((opening) => {
+        try {
+          const geometry = this.normalizeGeometryAtFloor(opening, activeFloor);
+          covered = covered.flatMap((rectangle) => this.subtractRectangles(rectangle, [geometry]));
+        } catch (error) {
+          this.errors.push({ opening, category: "projection", message: `Multi-pisos: ${error.message}` });
+        }
+      });
+      lowerFloors.forEach((floor) => {
+        const previousHeight = this.currentFloorHeight;
+        this.currentFloorHeight = Number(floor.h ?? 0);
+        try {
+          (floor.rooms ?? []).forEach((definition) => {
+            const geometries = definition.parts?.length
+              ? this.normalizeParts(definition.parts)
+              : [this.normalizeGeometry(definition)];
+            const { from, to, rectangle, inset, x, y, w, l, parts, ...fragmentDefinition } = definition;
+            geometries.forEach((geometry) => {
+              this.subtractRectangles(geometry, covered).forEach((fragment) => {
+                const projected = this.add({
+                  ...fragmentDefinition,
+                  id: undefined,
+                  label: "",
+                  room: true,
+                  pos: [fragment.x, fragment.y, geometry.z0],
+                  size: [fragment.w, fragment.l, geometry.h],
+                  walls: geometry.walls ?? definition.walls,
+                  classes: `${definition.classes || ""} floor-projection multi-floor-underlay`.trim(),
+                  container: this.multiFloorLayer
+                });
+                projected.querySelectorAll(":scope > .room-label, :scope > small").forEach((label) => label.remove());
+              });
+            });
+          });
+
+          (floor.items ?? []).forEach((item) => {
+            const definition = this.resolveItemType(item);
+            const geometry = this.normalizeGeometry(definition);
+            const { from, to, rectangle, inset, x, y, w, l, ...fragmentDefinition } = definition;
+            this.subtractRectangles(geometry, covered).forEach((fragment) => {
+              this.add({
+                ...fragmentDefinition,
+                pos: [fragment.x, fragment.y, geometry.z0],
+                size: [fragment.w, fragment.l, geometry.h],
+                classes: `${definition.classes || ""} floor-projection multi-floor-underlay`.trim(),
+                container: this.multiFloorLayer,
+                showLabel: false
+              });
+            });
+          });
+        } catch (error) {
+          this.errors.push({ category: "projection", message: `Multi-pisos: ${error.message}` });
+        } finally {
+          this.currentFloorHeight = previousHeight;
+        }
+      });
+    }
+    if (this.multiFloorButton) {
+      this.multiFloorButton.disabled = !lowerFloors.length;
+      this.multiFloorButton.textContent = this.multiFloorMode && lowerFloors.length
+        ? "Visão: Multi-pisos"
+        : "Visão: Piso atual";
+    }
+  }
+
   clear() {
     FloorPlanRenderer.clearGenerated(this.root);
     this.projectionLayer.replaceChildren();
+    this.multiFloorLayer.replaceChildren();
     this.clearTerrain();
     this.rooms.clear();
     this.stairElements = [];
@@ -2025,6 +2140,7 @@ class FloorPlan {
       }
     });
     this.updateLayerVisibility();
+    this.renderMultiFloorUnderlay(floorConfig);
     try {
       this.applyBuildingPlacement(config.building);
     } catch (error) {
@@ -2667,7 +2783,7 @@ class FloorPlan {
       exportedPlan.replaceWith(livePlan.cloneNode(true));
     }
 
-    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #download-markdown, #download-dxf, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
+    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #download-markdown, #download-dxf, #multi-floor-button, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
       .forEach((element) => element.remove());
     exportedDocument.querySelectorAll("script").forEach((script) => script.remove());
 
