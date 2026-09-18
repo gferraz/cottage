@@ -30,7 +30,7 @@
     ]
   },
   "zones": [
-    { "id": "main",    "pos": [0, 2.5], "size": [10.2, 8.2], "visible": false },
+    { "id": "main",    "pos": [0, 2.5], "size": ["stairs.w - 0.8", 8.2], "visible": false },
     { "id": "central", "from": ["main.x0 + main.w / 2 - 0.7", "main.y0"], "to": ["x0 + 1.4", "main.y1"], "visible": false },
     { "id": "left",    "rectangle": ["main.x0", "main.y0", "central.x0", "central.y1"], "visible": false },
     { "id": "right",   "rectangle": ["central.x1", "central.y0", "main.x1", "main.y1"], "visible": false },
@@ -262,8 +262,8 @@
         {
           "id": "terrace",
           "label": "Terraço Traseiro",
-          "pos": ["kitchen.x0", "kitchen.y1"],
-          "size": [4.9, 3.0],
+          "from": ["kitchen.x0", "kitchen.y1"],
+          "to": ["kitchen.x1", "y0 +  3"],
           "classes": "outdoor terrace"
         }
       ],

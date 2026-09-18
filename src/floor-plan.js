@@ -864,6 +864,17 @@ class FloorPlan {
   }
 
   normalizeGeometry(data) {
+    if (data?.type && data.size === undefined && this.itemTypes?.[data.type]) {
+      const itemType = this.itemTypes[data.type];
+      data = {
+        ...itemType,
+        ...data,
+        size: data.size ?? itemType.size,
+        classes: data.classes ?? itemType.classes,
+        label: data.label ?? itemType.label,
+        title: data.title ?? itemType.title ?? itemType.label
+      };
+    }
     const isStair = data.classes?.split(/\s+/).includes("stair-flight");
     if (Array.isArray(data.from) || Array.isArray(data.to)) {
       if (!Array.isArray(data.from) || !Array.isArray(data.to)
