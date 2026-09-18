@@ -55,7 +55,7 @@ class FloorPlan {
     this.terrainArea = 0;
     this.terrainDimensions = null;
     this.terrainReference = null;
-    this.theme = { colors: { red: "#c94c4c", blue: "#4d7899", green: "#628b5a", gray: "#777", circulation: "#f5eede", hazel: "rgba(205, 177, 125, 0.45)" } };
+    this.theme = { colors: { red: "#c94c4c", blue: "#4d7899", green: "#628b5a", gray: "#777", circulation: "#f5eede", hazel: "var(--theme-hazel)" } };
     this.viewport = { size: [20, 20], origin: [-4.25, -4.25] };
     this.viewportScale = scale;
     this.pointerPan = null;
@@ -2777,7 +2777,11 @@ class FloorPlan {
     const stylesheetLinks = [...document.querySelectorAll('link[rel="stylesheet"]')];
     const fallbackLinks = [];
     const embeddedCss = document.querySelector("#portable-export-css")?.content.textContent.trim();
-    const styles = embeddedCss ? [embeddedCss] : [];
+    const themeLink = document.querySelector('link[href*="floor-plan-theme.css"]');
+    const themeCss = themeLink?.sheet
+      ? [...themeLink.sheet.cssRules].map((rule) => rule.cssText).join("\n")
+      : "";
+    const styles = embeddedCss ? [embeddedCss, themeCss] : [];
     if (!embeddedCss) {
       for (const link of stylesheetLinks) {
         const sheet = link.sheet;
