@@ -38,7 +38,7 @@ Para retângulos, use `pos: [x, y]` e `size: [w, l]`, em metros. `x/y/w/l` tamb�
 
 Expressões podem combinar referências e operações: `"living.x1 - 0.3"`, `"room.w / 2"` e `"part.z1"`. Cada referência oferece `x0()`, `x1()`, `y0()`, `y1()`, `w()`, `l()`, `h()` e `area()`.
 
-Cômodos compostos usam `parts`; cada parte tem sua própria geometria e pode referenciar partes anteriores. A regra de não sobreposição também é aplicada às partes.
+Cômodos compostos usam `parts`; cada parte tem sua própria geometria e pode referenciar partes anteriores. As partes também podem ser referenciadas globalmente por ID, por exemplo `flight-1.y0`, a partir de qualquer cômodo. A regra de não sobreposição também é aplicada às partes.
 
 Também é possível criar cômodos diretamente no console do navegador: `const porch = floor.addRoom({ pos: [3.4, 2], size: [4.3, 2.3], label: "Varanda" })`. O objeto retornado expõe `x0()`, `x1()`, `y0()`, `y1()`, `w()`, `l()`, `h()` e `area()`.
 

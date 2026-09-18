@@ -495,6 +495,7 @@ class FloorPlan {
       this.rooms.set(id, reference);
       this.references.set(id, reference);
     });
+    this.registerGlobalPartReferences();
     this.registerFloorReferences(config);
     this.registerStaticGuideReferences(config);
     this.registerStaticZoneReferences(config);
@@ -507,6 +508,39 @@ class FloorPlan {
       }
     });
     this.validateGlobalObjectIds(config);
+  }
+
+  registerGlobalPartReferences() {
+    this.partOwners = new Map();
+    this.roomDefinitions.forEach((room, roomId) => {
+      (room.parts ?? []).forEach((part, index) => {
+        const partId = part.id || `part-${index + 1}`;
+        if (this.partOwners.has(partId)) {
+          this.errors.push({
+            category: "room",
+            id: partId,
+            opening: room,
+            message: `ID de parte duplicado: ${partId}`
+          });
+          return;
+        }
+        if (this.references.has(partId)) {
+          this.errors.push({
+            category: "room",
+            id: partId,
+            opening: room,
+            message: `ID global duplicado: ${partId}`
+          });
+          return;
+        }
+        this.partOwners.set(partId, roomId);
+        const reference = {};
+        ["x0", "x1", "y0", "y1", "z0", "z1", "h", "w", "l", "area"].forEach((method) => {
+          reference[method] = () => this.getRoomGeometry(roomId).partReferences.get(partId)[method]();
+        });
+        this.references.set(partId, reference);
+      });
+    });
   }
 
   registerFloorReferences(config) {
@@ -566,7 +600,10 @@ class FloorPlan {
   }
 
   validateGlobalObjectIds(config) {
-    this.globalObjectIds = new Set(this.roomDefinitions.keys());
+    this.globalObjectIds = new Set([
+      ...this.roomDefinitions.keys(),
+      ...(this.partOwners?.keys() ?? [])
+    ]);
     this.validZoneIds = new Set();
     const floorConfigs = config.floors ?? [config];
     const globalGuides = config.floors ? (config.guides ?? []) : [];
