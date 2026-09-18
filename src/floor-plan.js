@@ -55,7 +55,7 @@ class FloorPlan {
     this.terrainArea = 0;
     this.terrainDimensions = null;
     this.terrainReference = null;
-    this.theme = { colors: { red: "#c94c4c", blue: "#4d7899", green: "#628b5a", gray: "#777", circulation: "#f5eede" } };
+    this.theme = { colors: { red: "#c94c4c", blue: "#4d7899", green: "#628b5a", gray: "#777", circulation: "#f5eede", hazel: "rgba(205, 177, 125, 0.45)" } };
     this.viewport = { size: [20, 20], origin: [-4.25, -4.25] };
     this.viewportScale = scale;
     this.pointerPan = null;
@@ -205,6 +205,11 @@ class FloorPlan {
     return typeof value === "string" ? value : (value?.line || color || "#777");
   }
 
+  themeFillColor(color) {
+    const value = this.theme.colors?.[color];
+    return typeof value === "string" ? value : (value?.fill || value?.line || color || "transparent");
+  }
+
   normalizeOverlapTargets(value) {
     if (value === undefined) return [];
     const values = Array.isArray(value) ? value : [value];
@@ -223,6 +228,7 @@ class FloorPlan {
     const { x, y, w, l, z0, z1, h, stairDirection = "forward" } = this.normalizeGeometry(data);
     const element = document.createElement("div");
     element.className = `plan-item plan-generated${room ? " room" : ""}${classes ? ` ${classes}` : ""}${visible === false ? " plan-hidden" : ""}`;
+    if (data.color) element.style.backgroundColor = this.themeFillColor(data.color);
     element.style.setProperty("--x", x);
     element.style.setProperty("--y", y);
     element.style.setProperty("--w", w);
@@ -369,6 +375,8 @@ class FloorPlan {
         partElement.style.setProperty("--z0", part.z0);
         partElement.style.setProperty("--z1", part.z1);
         partElement.style.setProperty("--h", part.h);
+        const partColor = part.color ?? room.color;
+        if (partColor) partElement.style.backgroundColor = this.themeFillColor(partColor);
         if (partClasses.split(/\s+/).includes("stair-flight")) {
           partElement.dataset.stairAxis = part.w >= part.l ? "horizontal" : "vertical";
           partElement.dataset.stairDirection = part.stairDirection || "forward";

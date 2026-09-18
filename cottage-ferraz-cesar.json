@@ -181,10 +181,10 @@
             },
             {
               "id": "landing",
-              "pos": ["flight-1.x1", "flight-1.y0 - flight-1.l", "flight-1.z1"],
-              "size": ["flight-1.l", 2.8, 0],
+              "from": ["flight-1.x1", "flight-1.y0 - flight-1.l", "flight-1.z1"],
+              "to": ["x0 + flight-1.l", "y0 + 2.8"],
               "walls": ["top", "right", "bottom"],
-              "classes": "stair-landing hazel"
+              "color": "hazel"
             },
             {
               "id": "flight-2",
@@ -280,7 +280,7 @@
         { "from": "entry.top", "to": "porch", "type": "door" },
         { "from": "office.right", "to": "hall", "type": "door" },
         { "from": "office.top", "to": "exterior", "type": "window", "dx": 0.0 },
-        { "from": "office.top", "to": "exterior", "type": "window", "dx": 2.5 },
+        { "from": "office.top", "to": "exterior", "type": "window", "dx": 2.2 },
         { "from": "office.left", "to": "exterior", "type": "window", "dy": 0.0 },
 
         { "from": "closet.right", "to": "vestibule", "type": "opening" },
