@@ -20,6 +20,7 @@ const floor = new FloorPlan({
   markdownButton: document.querySelector("#download-markdown"),
   jsonInput: document.querySelector("#json-file"),
   reloadButton: document.querySelector("#reload-json"),
+  layerButton: document.querySelector("#layer-button"),
   scale: 56
 });
 

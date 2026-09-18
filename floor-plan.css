@@ -223,13 +223,16 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 }
 
 .plan-item:not(.room) {
-  z-index: 5;
+  z-index: calc(5 + var(--layer, 0));
   opacity: 0.45;
 }
+.layer-hidden { display: none !important; }
+.plan-hidden { display: none !important; }
 .reference-zone {
   z-index: 1;
   background: rgba(90, 120, 160, 0.08);
   border: 1px dashed var(--zone-line-color, rgba(90, 120, 160, 0.65));
+  border-style: dashed !important;
   pointer-events: none;
 }
 
@@ -287,7 +290,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   font-weight: 650;
   font-size: 13px;
   line-height: 1.15;
-  z-index: 3;
+  z-index: calc(3 + var(--layer, 0));
 }
 .floor-projection {
   opacity: 0.72 !important;
@@ -317,7 +320,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .room > small,
 .part-dimensions {
   background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(40, 50, 60, 0.18);
+  border: none;
   border-radius: 3px;
   padding: 2px 4px;
   color: #263746;
@@ -471,6 +474,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 
 #load-json,
 #reload-json,
+#layer-button,
 #download-html,
 #download-markdown {
   margin: 0 0 16px;
@@ -502,6 +506,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 
 #load-json:hover,
 #reload-json:hover:not(:disabled),
+#layer-button:hover:not(:disabled),
 #download-html:hover,
 #download-markdown:hover { background: #e6e6e6; }
 #reload-json:disabled { cursor: not-allowed; opacity: 0.55; }

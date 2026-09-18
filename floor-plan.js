@@ -1,5 +1,5 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, layerButton = null, scale = 56 }) {
     this.root = root;
     this.terrainLayer = terrainLayer;
     this.guidesLayer = guidesLayer;
@@ -22,6 +22,7 @@ class FloorPlan {
     this.markdownButton = markdownButton;
     this.jsonInput = jsonInput;
     this.reloadButton = reloadButton;
+    this.layerButton = layerButton;
     this.roomArea = 0;
     this.roomCount = 0;
     this.rooms = new Map();
@@ -33,6 +34,7 @@ class FloorPlan {
     this.openings = [];
     this.windows = [];
     this.naturalCommunications = [];
+    this.errors = [];
     this.currentConfig = null;
     this.currentFloorId = null;
     this.currentFloorHeight = 0;
@@ -55,6 +57,7 @@ class FloorPlan {
     this.viewport = { size: [20, 20], origin: [-4.25, -4.25] };
     this.viewportScale = scale;
     this.pointerPan = null;
+    this.layerCutoff = null;
     this.projectionLayer = document.createElement("div");
     this.projectionLayer.className = "floor-projection-layer";
     root.prepend(this.projectionLayer);
@@ -73,6 +76,10 @@ class FloorPlan {
     }
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
     if (markdownButton) markdownButton.addEventListener("click", () => this.downloadMarkdown());
+    if (layerButton) {
+      layerButton.disabled = true;
+      layerButton.addEventListener("click", () => this.cycleLayer());
+    }
     if (floorSelect) {
       floorSelect.disabled = true;
       floorSelect.addEventListener("change", () => {
@@ -183,11 +190,24 @@ class FloorPlan {
     return typeof value === "string" ? value : (value?.line || color || "#777");
   }
 
+  normalizeOverlapTargets(value) {
+    if (value === undefined) return [];
+    const values = Array.isArray(value) ? value : [value];
+    return values.map((target) => {
+      if (target && typeof target === "object") return String(target.with ?? target.target ?? "").trim();
+      return String(target).trim();
+    }).filter(Boolean);
+  }
+
+  shouldRenderLabel(w, l) {
+    return Number(w) >= 1 && Number(l) >= 1;
+  }
+
   add(data) {
-    const { label = "", classes = "", title = "", room = false, showLabel = false, container = this.root } = data;
+    const { label = "", classes = "", title = "", room = false, showLabel = false, visible = true, container = this.root } = data;
     const { x, y, w, l, z0, z1, h, stairDirection = "forward" } = this.normalizeGeometry(data);
     const element = document.createElement("div");
-    element.className = `plan-item plan-generated${room ? " room" : ""}${classes ? ` ${classes}` : ""}`;
+    element.className = `plan-item plan-generated${room ? " room" : ""}${classes ? ` ${classes}` : ""}${visible === false ? " plan-hidden" : ""}`;
     element.style.setProperty("--x", x);
     element.style.setProperty("--y", y);
     element.style.setProperty("--w", w);
@@ -249,18 +269,20 @@ class FloorPlan {
     if (room) {
       if (data.id) element.dataset.id = data.id;
       element.dataset.label = label;
-      const roomLabel = document.createElement("span");
-      roomLabel.className = "room-label";
-      roomLabel.textContent = label;
-      element.append(roomLabel);
-      const dimensions = document.createElement("small");
-      dimensions.textContent = `${this.formatMeters(w)}m × ${this.formatMeters(l)}m`;
-      element.append(dimensions);
+      if (this.shouldRenderLabel(w, l)) {
+        const roomLabel = document.createElement("span");
+        roomLabel.className = "room-label";
+        roomLabel.textContent = label;
+        element.append(roomLabel);
+        const dimensions = document.createElement("small");
+        dimensions.textContent = `${this.formatMeters(w)}m × ${this.formatMeters(l)}m`;
+        element.append(dimensions);
 
-      const area = document.createElement("small");
-      area.className = "area";
-      area.textContent = `Área: ${this.formatMeters(element.area())}m²`;
-      element.append(area);
+        const area = document.createElement("small");
+        area.className = "area";
+        area.textContent = `Área: ${this.formatMeters(element.area())}m²`;
+        element.append(area);
+      }
     }
 
     FloorPlanRenderer.append(container, element);
@@ -287,12 +309,17 @@ class FloorPlan {
       element.dataset.derived = "true";
       if (room.classes?.split(/\s+/).includes("stair-flight")) element.dataset.spanningStair = "true";
     }
-    element.allowedOverlaps = room.overlaps === undefined
-      ? []
-      : (Array.isArray(room.overlaps) ? room.overlaps : [room.overlaps]).map(String);
+    element.allowedOverlaps = this.normalizeOverlapTargets(room.overlaps);
     element.geometryParts = parts?.length
-      ? parts.map(({ x, y, w, l }) => ({ x, y, w, l }))
-      : [{ x: element.x0(), y: element.y0(), w: element.w(), l: element.l() }];
+      ? parts.map((part) => ({
+        x: part.x,
+        y: part.y,
+        w: part.w,
+        l: part.l,
+        id: part.id,
+        overlapTargets: this.normalizeOverlapTargets(part.overlaps ?? room.overlaps)
+      }))
+      : [{ x: element.x0(), y: element.y0(), w: element.w(), l: element.l(), id: room.id, overlapTargets: element.allowedOverlaps }];
     if (parts?.length) {
       element.classList.add("compound-room");
       element.partReferences = new Map(parts.map((part) => [part.id, {
@@ -311,7 +338,7 @@ class FloorPlan {
         const partElement = document.createElement("div");
         const partClasses = part.classes || room.classes || "";
         partElement.className = `room-part${partClasses ? ` ${partClasses}` : ""}`;
-        if (part.label) {
+        if (part.label && this.shouldRenderLabel(part.w, part.l)) {
           const partLabel = document.createElement("span");
           partLabel.className = "room-label";
           partLabel.textContent = part.label;
@@ -348,10 +375,18 @@ class FloorPlan {
         ["top", "right", "bottom", "left"].forEach((side) => {
           partElement.dataset[`wall${side[0].toUpperCase()}${side.slice(1)}`] = walls[side];
         });
+        partElement.dataset.overlapTargets = JSON.stringify(this.normalizeOverlapTargets(part.overlaps ?? room.overlaps));
+        partElement.dataset.partId = part.id;
+        element.geometryParts.find((geometryPart) => geometryPart.id === part.id).element = partElement;
         element.prepend(partElement);
       });
       element.area = () => parts.reduce((total, part) => total + part.w * part.l, 0);
     }
+    const roomDimensions = `${this.formatMeters(element.w())}m × ${this.formatMeters(element.l())}m`;
+    const roomArea = `Área: ${this.formatMeters(element.area())}m²`;
+    element.title = `${room.label || room.id || "Cômodo"} — ${roomDimensions} — ${roomArea}`;
+    const displayedArea = element.querySelector(":scope > .area");
+    if (displayedArea) displayedArea.textContent = roomArea;
     if (!derived) this.roomElements.push(element);
     else if (room.classes?.split(/\s+/).includes("stair-flight") && container === this.root) this.stairElements.push(element);
     if (room.id) element.dataset.id = room.id;
@@ -476,7 +511,7 @@ class FloorPlan {
 
   registerFloorReferences(config) {
     (config.floors ?? [config]).forEach((floorConfig) => {
-      if (!floorConfig.id || this.references.has(floorConfig.id)) return;
+      if (!floorConfig.id || FloorPlanValidation.isReservedId(floorConfig.id) || this.references.has(floorConfig.id)) return;
       const height = Number(floorConfig.h ?? 0);
       this.references.set(floorConfig.id, {
         z0: () => height,
@@ -493,7 +528,7 @@ class FloorPlan {
     const floorGuides = (config.floors ?? [config]).flatMap((floorConfig) => floorConfig.guides ?? []);
     const guides = config.floors ? [...(config.guides ?? []), ...floorGuides] : floorGuides;
     guides.forEach((guide) => {
-      if (!guide.id || this.references.has(guide.id)) return;
+      if (!guide.id || FloorPlanValidation.isReservedId(guide.id) || this.references.has(guide.id)) return;
       const [xValue, yValue] = guide.pos ?? [];
       const widthValue = guide.w;
       const lengthValue = guide.l;
@@ -534,10 +569,28 @@ class FloorPlan {
     this.globalObjectIds = new Set(this.roomDefinitions.keys());
     this.validZoneIds = new Set();
     const floorConfigs = config.floors ?? [config];
+    const globalGuides = config.floors ? (config.guides ?? []) : [];
+    globalGuides.forEach((guide) => {
+      if (guide.id && FloorPlanValidation.isReservedId(guide.id)) {
+        this.errors.push({ category: "guide", id: guide.id, opening: guide, message: `ID reservado: ${guide.id}` });
+      }
+    });
+    floorConfigs.forEach((floorConfig) => {
+      if (floorConfig.id && FloorPlanValidation.isReservedId(floorConfig.id)) {
+        this.errors.push({ category: "floor", id: floorConfig.id, opening: floorConfig, message: `ID reservado: ${floorConfig.id}` });
+      }
+      (floorConfig.guides ?? []).forEach((guide) => {
+        if (guide.id && FloorPlanValidation.isReservedId(guide.id)) {
+          this.errors.push({ category: "guide", id: guide.id, opening: guide, message: `ID reservado: ${guide.id}` });
+        }
+      });
+    });
     const globalZones = config.floors ? (config.zones ?? []) : [];
     [...globalZones, ...floorConfigs.flatMap((floorConfig) => floorConfig.zones ?? [])].forEach((zone) => {
         if (!zone.id) {
           this.errors.push({ category: "zone", opening: zone, message: "Zona sem id global" });
+        } else if (FloorPlanValidation.isReservedId(zone.id)) {
+          this.errors.push({ category: "zone", id: zone.id, opening: zone, message: `ID reservado: ${zone.id}` });
         } else if (this.globalObjectIds.has(zone.id)) {
           this.errors.push({ category: "zone", id: zone.id, opening: zone, message: `ID global duplicado: ${zone.id}` });
         } else {
@@ -548,7 +601,9 @@ class FloorPlan {
     floorConfigs.forEach((floorConfig) => {
       [...(floorConfig.items ?? []), ...(floorConfig.openings ?? []), ...(floorConfig.windows ?? [])].forEach((object) => {
         if (!object.id) return;
-        if (this.globalObjectIds.has(object.id)) {
+        if (FloorPlanValidation.isReservedId(object.id)) {
+          this.errors.push({ category: "object", id: object.id, opening: object, message: `ID reservado: ${object.id}` });
+        } else if (this.globalObjectIds.has(object.id)) {
           this.errors.push({ category: "object", id: object.id, opening: object, message: `ID global duplicado: ${object.id}` });
         } else {
           this.globalObjectIds.add(object.id);
@@ -756,7 +811,12 @@ class FloorPlan {
       }
 
       const fromValues = data.from.map((value) => this.resolve(value));
-      const toValues = data.to.map((value) => this.resolve(value));
+      const localOrigin = {
+        x0: fromValues[0],
+        y0: fromValues[1],
+        z0: fromValues[2] ?? this.currentFloorHeight
+      };
+      const toValues = data.to.map((value) => this.resolve(value, localOrigin));
       const [fromX, fromY] = fromValues;
       const [toX, toY] = toValues;
       const z0 = this.resolve(fromValues[2] ?? this.currentFloorHeight);
@@ -790,7 +850,15 @@ class FloorPlan {
         throw new Error("Rectangle não pode ser combinado com outra definição geométrica");
       }
 
-      const [x0Value, y0Value, x1Value, y1Value] = data.rectangle.map((value) => this.resolve(value));
+      const x0Value = this.resolve(data.rectangle[0]);
+      const y0Value = this.resolve(data.rectangle[1]);
+      const rectangleOrigin = {
+        x0: x0Value,
+        y0: y0Value,
+        z0: this.resolve(data.z0 ?? this.currentFloorHeight)
+      };
+      const x1Value = this.resolve(data.rectangle[2], rectangleOrigin);
+      const y1Value = this.resolve(data.rectangle[3], rectangleOrigin);
       if (![x0Value, y0Value, x1Value, y1Value].every(Number.isFinite)) {
         throw new Error("Rectangle precisa usar valores numéricos");
       }
@@ -798,7 +866,7 @@ class FloorPlan {
         throw new Error("Rectangle precisa ter x1 maior que x0 e y1 maior que y0");
       }
 
-      const z0 = this.resolve(data.z0 ?? this.currentFloorHeight);
+      const z0 = rectangleOrigin.z0;
       const h = this.resolve(data.h ?? 0);
       if (![z0, h].every(Number.isFinite) || h < 0) {
         throw new Error("A elevação precisa ter z0 numérico e h não negativo");
@@ -1166,7 +1234,7 @@ class FloorPlan {
     });
   }
 
-  resolveExpression(expression) {
+  resolveExpression(expression, localOrigin = null) {
     const tokens = [];
     const tokenPattern = /\s*(?:(\d+(?:\.\d+)?(?:e[+-]?\d+)?|[A-Za-z_][\w.-]*)|([()+\-*/]))/i;
     let source = expression;
@@ -1190,7 +1258,7 @@ class FloorPlan {
       if (!token || ["+", "-", "*", "/", ")"].includes(token)) {
         throw new Error(`Invalid geometric expression: ${expression}`);
       }
-      return this.resolve(token);
+      return this.resolve(token, localOrigin);
     };
     const multiplyDivide = () => {
       let result = primary();
@@ -1219,7 +1287,7 @@ class FloorPlan {
     return result;
   }
 
-  resolve(value) {
+  resolve(value, localOrigin = null) {
     if (typeof value === "number") return value;
 
     if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
@@ -1227,12 +1295,16 @@ class FloorPlan {
     }
 
     if (typeof value === "object" && value !== null) {
-      return this.resolve(value.from) + Number(value.delta ?? 0);
+      return this.resolve(value.from, localOrigin) + Number(value.delta ?? 0);
     }
 
     const reference = String(value).trim();
-    if (reference.includes("*") || reference.includes("/") || /\s[+-]\s/.test(reference)) {
-      return this.resolveExpression(reference);
+    if (localOrigin && ["x0", "y0", "z0"].includes(reference)) {
+      return localOrigin[reference];
+    }
+    if (reference.includes("*") || reference.includes("/") || /\s[+-]\s/.test(reference)
+      || /^(?:x0|y0|z0)\s*[+-]/.test(reference)) {
+      return this.resolveExpression(reference, localOrigin);
     }
 
     const partMatch = reference.match(
@@ -1267,11 +1339,9 @@ class FloorPlan {
   addItem(item) {
     const resolvedItem = this.resolveItemType(item);
     const element = this.add({ ...resolvedItem, showLabel: true });
-    element.allowedOverlaps = resolvedItem.overlaps === undefined
-      ? []
-      : (Array.isArray(resolvedItem.overlaps) ? resolvedItem.overlaps : [resolvedItem.overlaps]).map(String);
+    element.allowedOverlaps = this.normalizeOverlapTargets(resolvedItem.overlaps);
     this.itemElements.push(element);
-    if (resolvedItem.id) {
+    if (resolvedItem.id && !FloorPlanValidation.isReservedId(resolvedItem.id)) {
       element.dataset.id = resolvedItem.id;
       this.references.set(resolvedItem.id, element);
     }
@@ -1499,6 +1569,7 @@ class FloorPlan {
       classes: `${baseClass} opening-${feature.type} opening-${feature.horizontal ? "horizontal" : "vertical"}`,
       title: `${feature.type}: ${feature.id}`
     });
+    element.dataset.openingRoomId = feature.roomId;
     if (feature.type === "opening") {
       const sourceRoom = this.rooms.get(feature.roomId);
       const sourceBackground = sourceRoom ? getComputedStyle(sourceRoom).backgroundColor : "";
@@ -1649,10 +1720,81 @@ class FloorPlan {
 
   updateOverlaps() {
     const rooms = [...this.roomElements, ...this.stairElements];
-    this.errors = this.errors.filter((error) => error.category !== "collision");
-    rooms.forEach((room) => room.classList.remove("room-overlap"));
+    this.errors = this.errors.filter((error) => !["collision", "overlap"].includes(error.category));
+    rooms.forEach((room) => room.classList.remove("room-overlap", "room-overlap-above", "room-overlap-below"));
 
-    const pieces = rooms.flatMap((room) => room.geometryParts.map((part) => ({ room, part })));
+    const pieces = rooms.flatMap((room) => room.geometryParts.map((part) => ({
+      room,
+      part,
+      key: part.id && room.dataset.id ? `${room.dataset.id}.${part.id}` : room.dataset.id,
+      targets: part.overlapTargets ?? room.allowedOverlaps
+    })));
+    const itemPieces = this.itemElements.map((item) => ({
+      item,
+      key: item.dataset.id,
+      targets: item.allowedOverlaps ?? [],
+      part: { x: item.x0(), y: item.y0(), w: item.w(), l: item.l() }
+    }));
+    const nodes = [...pieces, ...itemPieces].filter((piece) => piece.key);
+    const nodesByKey = new Map(nodes.map((node) => [node.key, node]));
+    const nodesByRoom = new Map();
+    pieces.forEach((piece) => {
+      const roomId = piece.room.dataset.id;
+      if (!nodesByRoom.has(roomId)) nodesByRoom.set(roomId, []);
+      nodesByRoom.get(roomId).push(piece);
+    });
+
+    const targetNodes = (target) => nodesByKey.has(target)
+      ? [nodesByKey.get(target)]
+      : (nodesByRoom.get(target) ?? []);
+    const targetMatches = (targets, targetPiece) => targets.includes(targetPiece.key)
+      || targets.includes(targetPiece.room?.dataset.id);
+
+    const edges = new Map(nodes.map((node) => [node.key, []]));
+    nodes.forEach((node) => {
+      node.targets.forEach((target) => {
+        const matches = targetNodes(target);
+        if (matches.length === 0) {
+          this.errors.push({ category: "overlap", id: node.key, message: `Referência de sobreposição inexistente: ${target}` });
+          return;
+        }
+        matches.forEach((targetNode) => edges.get(node.key).push(targetNode.key));
+      });
+    });
+
+    const layers = new Map();
+    const visiting = new Set();
+    const visited = new Set();
+    const calculateLayer = (key) => {
+      if (layers.has(key)) return layers.get(key);
+      if (visiting.has(key)) {
+        this.errors.push({ category: "overlap", id: key, message: `Ciclo de camadas detectado envolvendo ${key}` });
+        return 0;
+      }
+      visiting.add(key);
+      const layer = edges.get(key).reduce((highest, target) => Math.max(highest, calculateLayer(target) + 1), 0);
+      visiting.delete(key);
+      visited.add(key);
+      layers.set(key, layer);
+      return layer;
+    };
+    nodes.forEach((node) => calculateLayer(node.key));
+    const maxLayer = Math.max(0, ...layers.values());
+    nodes.forEach((node) => {
+      const layer = layers.get(node.key) ?? 0;
+      node.layer = layer;
+      const element = node.item || node.part.element || node.room;
+      element.dataset.layer = String(layer);
+      element.style.setProperty("--layer", layer);
+    });
+    rooms.forEach((room) => {
+      room.dataset.layer = String(Math.max(...room.geometryParts.map((part) => layers.get(
+        part.id && room.dataset.id ? `${room.dataset.id}.${part.id}` : room.dataset.id
+      ) ?? 0)));
+    });
+    this.maxLayer = maxLayer;
+    this.updateLayerVisibility();
+
     const collisionKeys = new Set();
     const epsilon = 1e-9;
     for (let index = 0; index < pieces.length; index += 1) {
@@ -1664,8 +1806,9 @@ class FloorPlan {
         const overlapHeight = Math.min(first.part.y + first.part.l, second.part.y + second.part.l)
           - Math.max(first.part.y, second.part.y);
         const overlaps = overlapWidth > epsilon && overlapHeight > epsilon;
-        const allowed = first.room.allowedOverlaps.includes(second.room.dataset.id)
-          || second.room.allowedOverlaps.includes(first.room.dataset.id);
+        const firstAbove = targetMatches(first.targets, second);
+        const secondAbove = targetMatches(second.targets, first);
+        const allowed = firstAbove || secondAbove;
 
         if (overlaps && !allowed) {
           first.room.classList.add("room-overlap");
@@ -1681,8 +1824,36 @@ class FloorPlan {
               message: `Sobreposição entre ${firstId} e ${secondId}`
             });
           }
+        } else if (overlaps) {
+          // Declarative overlaps are intentional: keep both elements with
+          // their normal appearance. The layer graph still records which
+          // element is above the other for visibility and area calculations.
         }
       }
+    }
+  }
+
+  cycleLayer() {
+    if (!(this.maxLayer > 0)) return;
+    this.layerCutoff = this.layerCutoff === null ? this.maxLayer - 1 : this.layerCutoff - 1;
+    if (this.layerCutoff < 0) this.layerCutoff = null;
+    this.updateLayerVisibility();
+  }
+
+  updateLayerVisibility() {
+    const cutoff = this.layerCutoff;
+    this.root.querySelectorAll(".plan-generated").forEach((element) => {
+      const sourceRoom = element.dataset.openingRoomId
+        ? this.roomElements.find((room) => room.dataset.id === element.dataset.openingRoomId)
+        : null;
+      const layer = Number(sourceRoom?.dataset.layer ?? element.dataset.layer ?? 0);
+      element.classList.toggle("layer-hidden", cutoff !== null && layer > cutoff);
+    });
+    if (this.layerButton) {
+      this.layerButton.textContent = cutoff === null
+        ? "Todas as camadas"
+        : `Mostrar até camada ${cutoff}`;
+      this.layerButton.disabled = !(this.maxLayer > 0);
     }
   }
 
@@ -1713,6 +1884,8 @@ class FloorPlan {
     this.errors = [];
     this.roomArea = 0;
     this.roomCount = 0;
+    this.layerCutoff = null;
+    this.maxLayer = 0;
     this.updateSummary();
   }
 
@@ -1780,6 +1953,7 @@ class FloorPlan {
         this.errors.push({ index, opening: item, category: "item", message: error.message });
       }
     });
+    this.updateOverlaps();
     (floorConfig.openings ?? []).forEach((opening, index) => {
       if (this.isVerticalOpening(opening)) return;
       try {
@@ -1795,6 +1969,7 @@ class FloorPlan {
         this.errors.push({ index, opening: window, category: "window", message: error.message });
       }
     });
+    this.updateLayerVisibility();
     try {
       this.applyBuildingPlacement(config.building);
     } catch (error) {
@@ -2115,7 +2290,7 @@ class FloorPlan {
     this.errors.forEach(({ index, id, opening, category = "opening", message }) => {
       const item = document.createElement("div");
       item.className = "error-list-item";
-      const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem", collision: "Colisão" };
+      const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem", collision: "Colisão", overlap: "Sobreposição", zone: "Zona", object: "Objeto", guide: "Guia", floor: "Piso" };
       const name = id || (index === undefined ? "" : ` ${index + 1}`);
       item.textContent = `${labels[category] || "Erro"}${name ? ` ${name}` : ""}: ${message} `;
       const source = document.createElement("code");
@@ -2309,7 +2484,7 @@ class FloorPlan {
 
     if (this.errors.length > 0) {
       lines.push("", "## Elementos com erro", "", ...this.errors.map(({ opening, id, category = "opening", message }) => {
-        const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem", collision: "Colisão" };
+        const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem", collision: "Colisão", overlap: "Sobreposição", zone: "Zona", object: "Objeto", guide: "Guia", floor: "Piso" };
         const label = `${labels[category] || "Erro"}${id ? ` ${id}` : ""}`;
         const source = opening === undefined ? "" : ` \`${this.markdownText(JSON.stringify(opening))}\``;
         return `- **${label}:**${source} ${this.markdownText(message)}`;
@@ -2414,7 +2589,7 @@ class FloorPlan {
 
     if (this.errors.length > 0) {
       lines.push("", "## Elementos com erro", "", ...this.errors.map(({ opening, id, category = "opening", message }) => {
-        const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem", collision: "Colisão" };
+        const labels = { window: "Janela", item: "Item", room: "Cômodo", presentation: "Apresentação", opening: "Passagem", collision: "Colisão", overlap: "Sobreposição", zone: "Zona", object: "Objeto", guide: "Guia", floor: "Piso" };
         const label = `${labels[category] || "Erro"}${id ? ` ${id}` : ""}`;
         const source = opening === undefined ? "" : ` \`${this.markdownText(JSON.stringify(opening))}\``;
         return `- **${label}:**${source} ${this.markdownText(message)}`;

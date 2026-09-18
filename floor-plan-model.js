@@ -43,11 +43,17 @@ class FloorPlanModel {
   }
 
   static calculateNetRoomArea(room, rooms, items) {
+    const targetIds = new Set([room.dataset.id]);
+    room.geometryParts.forEach((part) => {
+      if (part.id) targetIds.add(`${room.dataset.id}.${part.id}`);
+    });
     const coveredBy = rooms
-      .filter((other) => other !== room && other.allowedOverlaps.includes(room.dataset.id))
-      .flatMap((other) => other.geometryParts);
+      .filter((other) => other !== room)
+      .flatMap((other) => other.geometryParts.filter((part) =>
+        (part.overlapTargets ?? other.allowedOverlaps ?? []).some((target) => targetIds.has(target))
+      ));
     const itemOverlaps = items
-      .filter((item) => item.allowedOverlaps.includes(room.dataset.id))
+      .filter((item) => (item.allowedOverlaps ?? []).some((target) => targetIds.has(target)))
       .map((item) => ({ x: item.x0(), y: item.y0(), w: item.w(), l: item.l() }));
     const deductions = [];
     room.geometryParts.forEach((part) => {
