@@ -310,6 +310,7 @@ class FloorPlan {
       if (room.classes?.split(/\s+/).includes("stair-flight")) element.dataset.spanningStair = "true";
     }
     element.allowedOverlaps = this.normalizeOverlapTargets(room.overlaps);
+    element.allowedOverlays = this.normalizeOverlapTargets(room.overlays);
     element.geometryParts = parts?.length
       ? parts.map((part) => ({
         x: part.x,
@@ -317,9 +318,10 @@ class FloorPlan {
         w: part.w,
         l: part.l,
         id: part.id,
-        overlapTargets: this.normalizeOverlapTargets(part.overlaps ?? room.overlaps)
+        overlapTargets: this.normalizeOverlapTargets(part.overlaps ?? room.overlaps),
+        overlayTargets: this.normalizeOverlapTargets(part.overlays ?? room.overlays)
       }))
-      : [{ x: element.x0(), y: element.y0(), w: element.w(), l: element.l(), id: room.id, overlapTargets: element.allowedOverlaps }];
+      : [{ x: element.x0(), y: element.y0(), w: element.w(), l: element.l(), id: room.id, overlapTargets: element.allowedOverlaps, overlayTargets: element.allowedOverlays }];
     if (parts?.length) {
       element.classList.add("compound-room");
       element.partReferences = new Map(parts.map((part) => [part.id, {
@@ -376,6 +378,7 @@ class FloorPlan {
           partElement.dataset[`wall${side[0].toUpperCase()}${side.slice(1)}`] = walls[side];
         });
         partElement.dataset.overlapTargets = JSON.stringify(this.normalizeOverlapTargets(part.overlaps ?? room.overlaps));
+        partElement.dataset.overlayTargets = JSON.stringify(this.normalizeOverlapTargets(part.overlays ?? room.overlays));
         partElement.dataset.partId = part.id;
         element.geometryParts.find((geometryPart) => geometryPart.id === part.id).element = partElement;
         element.prepend(partElement);
@@ -1377,6 +1380,7 @@ class FloorPlan {
     const resolvedItem = this.resolveItemType(item);
     const element = this.add({ ...resolvedItem, showLabel: true });
     element.allowedOverlaps = this.normalizeOverlapTargets(resolvedItem.overlaps);
+    element.allowedOverlays = this.normalizeOverlapTargets(resolvedItem.overlays);
     this.itemElements.push(element);
     if (resolvedItem.id && !FloorPlanValidation.isReservedId(resolvedItem.id)) {
       element.dataset.id = resolvedItem.id;
@@ -1764,12 +1768,14 @@ class FloorPlan {
       room,
       part,
       key: part.id && room.dataset.id ? `${room.dataset.id}.${part.id}` : room.dataset.id,
-      targets: part.overlapTargets ?? room.allowedOverlaps
+      overlapTargets: part.overlapTargets ?? room.allowedOverlaps,
+      overlayTargets: part.overlayTargets ?? room.allowedOverlays
     })));
     const itemPieces = this.itemElements.map((item) => ({
       item,
       key: item.dataset.id,
-      targets: item.allowedOverlaps ?? [],
+      overlapTargets: item.allowedOverlaps ?? [],
+      overlayTargets: item.allowedOverlays ?? [],
       part: { x: item.x0(), y: item.y0(), w: item.w(), l: item.l() }
     }));
     const nodes = [...pieces, ...itemPieces].filter((piece) => piece.key);
@@ -1789,7 +1795,7 @@ class FloorPlan {
 
     const edges = new Map(nodes.map((node) => [node.key, []]));
     nodes.forEach((node) => {
-      node.targets.forEach((target) => {
+      node.overlayTargets.forEach((target) => {
         const matches = targetNodes(target);
         if (matches.length === 0) {
           this.errors.push({ category: "overlap", id: node.key, message: `Referência de sobreposição inexistente: ${target}` });
@@ -1843,9 +1849,11 @@ class FloorPlan {
         const overlapHeight = Math.min(first.part.y + first.part.l, second.part.y + second.part.l)
           - Math.max(first.part.y, second.part.y);
         const overlaps = overlapWidth > epsilon && overlapHeight > epsilon;
-        const firstAbove = targetMatches(first.targets, second);
-        const secondAbove = targetMatches(second.targets, first);
-        const allowed = firstAbove || secondAbove;
+        const firstAbove = targetMatches(first.overlayTargets, second);
+        const secondAbove = targetMatches(second.overlayTargets, first);
+        const firstAllowed = targetMatches(first.overlapTargets, second);
+        const secondAllowed = targetMatches(second.overlapTargets, first);
+        const allowed = firstAllowed || secondAllowed;
 
         if (overlaps && !allowed) {
           first.room.classList.add("room-overlap");

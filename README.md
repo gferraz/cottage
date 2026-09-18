@@ -52,7 +52,7 @@ O padrão é quatro paredes sólidas. Use `walls` com `solid`, `open` ou `virtua
 
 Como atalho, `walls: ["top", "bottom"]` torna somente esses lados sólidos; `walls: "virtual"` torna todos pontilhados. `virtual` é separação visual, não parede sólida. Sobreposição intencional é declarada com `"overlaps": "corridor"` ou uma lista. Ela é descontada da área útil do elemento que recebe a autorização; itens também podem descontar área de cômodos.
 
-`overlaps` é direcional: o elemento que declara a propriedade está acima do elemento referenciado. A regra vale para cômodos, itens e partes. Uma parte pode apontar para outra parte usando seu ID qualificado, por exemplo `"overlaps": "stairs.landing"`. A aplicação calcula automaticamente a camada, acusa ciclos e mostra relações válidas com destaques distintos.
+`overlaps` autoriza a interseção e ajusta a área útil. `overlays` é separado e indica que o elemento atual deve ficar visualmente acima do elemento referenciado; somente essa propriedade participa das camadas. A regra vale para cômodos, itens e partes. Uma parte pode apontar para outra parte usando seu ID qualificado, por exemplo `"overlays": "stairs.landing"`. A aplicação calcula automaticamente a camada e acusa ciclos.
 
 ## Passagens, janelas e itens
 
