@@ -1297,105 +1297,11 @@ class FloorPlan {
   }
 
   resolveExpression(expression, localOrigin = null) {
-    const tokens = [];
-    const tokenPattern = /\s*(?:(\d+(?:\.\d+)?(?:e[+-]?\d+)?|[A-Za-z_][\w.-]*)|([()+\-*/]))/i;
-    let source = expression;
-    while (source.length > 0) {
-      const match = source.match(tokenPattern);
-      if (!match) throw new Error(`Invalid geometric expression: ${expression}`);
-      tokens.push(match[1] ?? match[2]);
-      source = source.slice(match[0].length);
-    }
-
-    let index = 0;
-    const primary = () => {
-      const token = tokens[index++];
-      if (token === "+") return primary();
-      if (token === "-") return -primary();
-      if (token === "(") {
-        const result = addSubtract();
-        if (tokens[index++] !== ")") throw new Error(`Invalid geometric expression: ${expression}`);
-        return result;
-      }
-      if (!token || ["+", "-", "*", "/", ")"].includes(token)) {
-        throw new Error(`Invalid geometric expression: ${expression}`);
-      }
-      return this.resolve(token, localOrigin);
-    };
-    const multiplyDivide = () => {
-      let result = primary();
-      while (["*", "/"].includes(tokens[index])) {
-        const operator = tokens[index++];
-        const operand = primary();
-        if (operator === "/" && operand === 0) throw new Error("Division by zero in geometric expression");
-        result = operator === "*" ? result * operand : result / operand;
-      }
-      return result;
-    };
-    const addSubtract = () => {
-      let result = multiplyDivide();
-      while (["+", "-"].includes(tokens[index])) {
-        const operator = tokens[index++];
-        const operand = multiplyDivide();
-        result += operator === "+" ? operand : -operand;
-      }
-      return result;
-    };
-
-    const result = addSubtract();
-    if (index !== tokens.length || !Number.isFinite(result)) {
-      throw new Error(`Invalid geometric expression: ${expression}`);
-    }
-    return result;
+    return FloorPlanGeometry.resolveExpression.call(this, expression, localOrigin);
   }
 
   resolve(value, localOrigin = null) {
-    if (typeof value === "number") return value;
-
-    if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
-      return Number(value);
-    }
-
-    if (typeof value === "object" && value !== null) {
-      return this.resolve(value.from, localOrigin) + Number(value.delta ?? 0);
-    }
-
-    const reference = String(value).trim();
-    if (localOrigin && ["x0", "y0", "z0"].includes(reference)) {
-      return localOrigin[reference];
-    }
-    if (reference.includes("*") || reference.includes("/") || /\s[+-]\s/.test(reference)
-      || /^(?:x0|y0|z0)\s*[+-]/.test(reference)) {
-      return this.resolveExpression(reference, localOrigin);
-    }
-
-    const partMatch = reference.match(
-      /^([\w-]+)\.([\w-]+)\.(x|x0|x1|y|y0|y1|z0|z1|w|l|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
-    );
-    if (partMatch) {
-      const [, roomId, partId, method, operator, amount] = partMatch;
-      const room = this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId);
-      if (!room) throw new Error(`Unknown room reference: ${roomId}`);
-      const part = room.partReferences?.get(partId);
-      if (!part) throw new Error(`Unknown part reference: ${roomId}.${partId}`);
-      const offset = amount ? Number(amount) : 0;
-      const resolvedMethod = { x: "x0", y: "y0" }[method] || method;
-      return part[resolvedMethod]() + (operator === "-" ? -offset : offset);
-    }
-
-    const match = reference.match(
-      /^([\w-]+)\.(x|x0|x1|y|y0|y1|z0|z1|w|l|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
-    );
-
-    if (!match) throw new Error(`Invalid geometric reference: ${value}`);
-
-    const [, roomId, method, operator, amount] = match;
-    const room = this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId);
-    if (!room) throw new Error(`Unknown room reference: ${roomId}`);
-
-    const offset = amount ? Number(amount) : 0;
-    const resolvedMethod = { x: "x0", y: "y0" }[method] || method;
-    return room[resolvedMethod]() + (operator === "-" ? -offset : offset);
+    return FloorPlanGeometry.resolve.call(this, value, localOrigin);
   }
 
   addItem(item) {
@@ -1956,6 +1862,27 @@ class FloorPlan {
     return fragments;
   }
 
+  intersectRectangles(first, second) {
+    const x0 = Math.max(first.x, second.x);
+    const y0 = Math.max(first.y, second.y);
+    const x1 = Math.min(first.x + first.w, second.x + second.w);
+    const y1 = Math.min(first.y + first.l, second.y + second.l);
+    return x1 > x0 && y1 > y0
+      ? [{ x: x0, y: y0, w: x1 - x0, l: y1 - y0 }]
+      : [];
+  }
+
+  fragmentWalls(fragment, source, sourceWalls) {
+    const epsilon = 1e-9;
+    const same = (first, second) => Math.abs(first - second) <= epsilon;
+    return {
+      top: same(fragment.y, source.y) ? sourceWalls.top : "open",
+      right: same(fragment.x + fragment.w, source.x + source.w) ? sourceWalls.right : "open",
+      bottom: same(fragment.y + fragment.l, source.y + source.l) ? sourceWalls.bottom : "open",
+      left: same(fragment.x, source.x) ? sourceWalls.left : "open"
+    };
+  }
+
   renderMultiFloorUnderlay(floorConfig = null) {
     if (!this.multiFloorLayer) return;
     this.multiFloorLayer.replaceChildren();
@@ -1991,7 +1918,21 @@ class FloorPlan {
               : [this.normalizeGeometry(definition)];
             const { from, to, rectangle, inset, x, y, w, l, parts, ...fragmentDefinition } = definition;
             geometries.forEach((geometry) => {
-              this.subtractRectangles(geometry, covered).forEach((fragment) => {
+              const sourceWalls = this.normalizeWalls(geometry.walls ?? definition.walls);
+              const isStairFlight = String(geometry.classes ?? definition.classes ?? "")
+                .split(/\s+/)
+                .includes("stair-flight");
+              const fragments = isStairFlight && verticalOpenings.length
+                ? verticalOpenings.flatMap((opening) => {
+                  try {
+                    return this.intersectRectangles(geometry, this.normalizeGeometryAtFloor(opening, activeFloor));
+                  } catch (error) {
+                    this.errors.push({ opening, category: "projection", message: `Multi-pisos: ${error.message}` });
+                    return [];
+                  }
+                })
+                : this.subtractRectangles(geometry, covered);
+              fragments.forEach((fragment) => {
                 const projected = this.add({
                   ...fragmentDefinition,
                   id: undefined,
@@ -1999,8 +1940,8 @@ class FloorPlan {
                   room: true,
                   pos: [fragment.x, fragment.y, geometry.z0],
                   size: [fragment.w, fragment.l, geometry.h],
-                  walls: geometry.walls ?? definition.walls,
-                  classes: `${definition.classes || ""} floor-projection multi-floor-underlay`.trim(),
+                  walls: this.fragmentWalls(fragment, geometry, sourceWalls),
+                  classes: `${geometry.classes || definition.classes || ""} floor-projection multi-floor-underlay`.trim(),
                   container: this.multiFloorLayer
                 });
                 projected.querySelectorAll(":scope > .room-label, :scope > small").forEach((label) => label.remove());

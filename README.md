@@ -89,6 +89,7 @@ O exportador reutiliza o resolvedor de geometria da aplicação e cria as layers
 - `floor-plan.html`: shell, interface e template de CSS portátil.
 - `src/floor-plan.css`: estilos da aplicação.
 - `src/floor-plan.js`: fachada pública `FloorPlan` e execução no navegador.
+- `src/floor-plan-geometry.js`: avaliação de expressões, aliases locais e referências geométricas.
 - `src/floor-plan-model.js`, `src/floor-plan-validation.js`, `src/floor-plan-renderer.js`, `src/floor-plan-legend.js`, `src/floor-plan-export.js`: módulos auxiliares.
 - `src/floor-plan-config.js`: inicialização, carregamento por arquivo e comando `floor`.
 - `cottage-ferraz-cesar.json`: exemplo com terreno e múltiplos pisos.

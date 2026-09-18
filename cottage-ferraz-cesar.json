@@ -358,7 +358,7 @@
           "from": "upper",
           "to": "ground",
           "type": "opening",
-          "pos": ["stairs.x0", "stairs.y0"],
+          "pos": ["stairs.x0", "stairs.y0 + stairs.l / 2"],
           "size": ["stairs.w - 0.8", "stairs.l / 2"]
         }
       ]
