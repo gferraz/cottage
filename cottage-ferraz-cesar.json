@@ -85,8 +85,8 @@
         {
           "id": "office",
           "label": "Escritório",
-          "from": ["left.x0", "left.y0  - 2.5"],
-          "to": ["corr-left.x0 - 1", "main.y0 + 1.5"],
+          "from": ["left.x0 - 0.6", "left.y0  - 2.5"],
+          "to": ["left.x1 - 1.6", "left.y0 + 1.5"],
           "classes": "office"
         },
         {
@@ -99,8 +99,7 @@
         {
           "id": "entry",
           "label": "Entrada",
-          "from": ["l-axis.x0 - 0.7 ", "main.y0 - 0.4"],
-          "to": ["l-axis.x0 + 0.7", "main.y0"],
+          "rectangle": ["left.x1", "main.y0 - 0.4", "right.x0", "main.y0"],
           "overlaps": "porch",
           "classes": "circulation",
           "walls": ["top", "right", "left"]
@@ -358,7 +357,7 @@
           "from": "upper",
           "to": "ground",
           "type": "opening",
-          "pos": ["stairs.x0", "stairs.y0 + stairs.l / 2"],
+          "pos": ["stairs.x0", "stairs.y0"],
           "size": ["stairs.w - 0.8", "stairs.l / 2"]
         }
       ]

@@ -1862,16 +1862,6 @@ class FloorPlan {
     return fragments;
   }
 
-  intersectRectangles(first, second) {
-    const x0 = Math.max(first.x, second.x);
-    const y0 = Math.max(first.y, second.y);
-    const x1 = Math.min(first.x + first.w, second.x + second.w);
-    const y1 = Math.min(first.y + first.l, second.y + second.l);
-    return x1 > x0 && y1 > y0
-      ? [{ x: x0, y: y0, w: x1 - x0, l: y1 - y0 }]
-      : [];
-  }
-
   fragmentWalls(fragment, source, sourceWalls) {
     const epsilon = 1e-9;
     const same = (first, second) => Math.abs(first - second) <= epsilon;
@@ -1922,15 +1912,8 @@ class FloorPlan {
               const isStairFlight = String(geometry.classes ?? definition.classes ?? "")
                 .split(/\s+/)
                 .includes("stair-flight");
-              const fragments = isStairFlight && verticalOpenings.length
-                ? verticalOpenings.flatMap((opening) => {
-                  try {
-                    return this.intersectRectangles(geometry, this.normalizeGeometryAtFloor(opening, activeFloor));
-                  } catch (error) {
-                    this.errors.push({ opening, category: "projection", message: `Multi-pisos: ${error.message}` });
-                    return [];
-                  }
-                })
+              const fragments = isStairFlight
+                ? [{ x: geometry.x, y: geometry.y, w: geometry.w, l: geometry.l }]
                 : this.subtractRectangles(geometry, covered);
               fragments.forEach((fragment) => {
                 const projected = this.add({
