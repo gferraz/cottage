@@ -6,12 +6,6 @@ Aplicação estática para desenhar plantas baixas com HTML, CSS e JSON. Não ex
 
 Abra [`floor-plan.html`](floor-plan.html) no navegador e clique em **Carregar JSON**. A página inicia vazia; o projeto só é carregado quando um arquivo é escolhido. **Recarregar JSON atual** relê o último arquivo selecionado.
 
-No macOS, o comando abaixo abre a página já com o JSON embutido na URL e funciona no `zsh`:
-
-```sh
-./floor cottage-ferraz-cesar.json
-```
-
 O seletor de piso muda apenas o desenho. As listas, totais e erros são consolidados entre todos os pisos.
 
 ## Estrutura mínima do JSON
@@ -88,20 +82,13 @@ O botão **Todas as camadas** alterna o limite visual das camadas. Ao selecionar
 
 O JSON continua sendo a fonte da verdade. Na página, carregue a planta e clique em **Baixar DXF** para gerar o arquivo diretamente no navegador, sem Python, Node ou servidor. O arquivo usa escala 1:1 (1 unidade CAD = 1 metro).
 
-Para automação por linha de comando, a alternativa Node continua disponível:
-
-```sh
-node scripts/export-dxf.js cottage-ferraz-cesar.json cottage-ferraz-cesar.dxf
-```
-
 O exportador reutiliza o resolvedor de geometria da aplicação e cria as layers `WALLS`, `WALLS_VIRTUAL`, `DOORS`, `WINDOWS`, `OPENINGS` e `ROOM_LABELS`. Paredes são interrompidas nos vãos; portas recebem folha e arco, janelas recebem duas linhas paralelas e os cômodos recebem textos quando têm espaço suficiente para a legenda.
 
 ## Arquivos principais
 
 - `floor-plan.html`: shell, interface e template de CSS portátil.
-- `floor-plan.css`: estilos da aplicação.
-- `floor-plan.js`: fachada pública `FloorPlan` e execução no navegador.
-- `floor-plan-model.js`, `floor-plan-validation.js`, `floor-plan-renderer.js`, `floor-plan-legend.js`, `floor-plan-export.js`: módulos auxiliares.
-- `floor-plan-config.js`: inicialização, carregamento por arquivo e comando `floor`.
-- `scripts/export-dxf.js`: comando Node para gerar DXF a partir do JSON.
+- `src/floor-plan.css`: estilos da aplicação.
+- `src/floor-plan.js`: fachada pública `FloorPlan` e execução no navegador.
+- `src/floor-plan-model.js`, `src/floor-plan-validation.js`, `src/floor-plan-renderer.js`, `src/floor-plan-legend.js`, `src/floor-plan-export.js`: módulos auxiliares.
+- `src/floor-plan-config.js`: inicialização, carregamento por arquivo e comando `floor`.
 - `cottage-ferraz-cesar.json`: exemplo com terreno e múltiplos pisos.

@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This repository is a self-contained static floor-plan study. The main deliverable is [`planta_terreo_estudo.html`](planta_terreo_estudo.html), which contains the page markup, inline CSS, room layout, furniture references, legend, and explanatory text. There are currently no separate source, test, asset, or build directories. Keep small, project-specific changes in this file unless the page grows enough to justify extracting `styles.css`, scripts, or image assets.
+This repository is a self-contained static floor-plan study. The main deliverable is [`floor-plan.html`](floor-plan.html), which contains the page shell, embedded export CSS template, controls, and legend. Application JavaScript and CSS modules live in [`src/`](src/); floor definitions remain in JSON files at the repository root. There is no separate test or build directory.
 
 ## Build, Test, and Development Commands
 
@@ -12,11 +12,11 @@ No package manager or build system is configured. Use a local static server when
 python3 -m http.server 8000
 ```
 
-Then open `http://localhost:8000/planta_terreo_estudo.html` in a browser. For a quick static check, open the HTML file directly. Before submitting changes, reload the page and verify the plan at desktop and narrow viewport sizes; the layout is driven by CSS custom properties such as `--m`, `--left`, and `--top`.
+Then open `http://localhost:8000/floor-plan.html` in a browser. For a quick static check, open the HTML file directly. Before submitting changes, reload the page and verify the plan at desktop and narrow viewport sizes; the layout is driven by CSS custom properties such as `--m`, `--viewport-origin-x`, and `--viewport-origin-y`.
 
 ## Coding Style & Naming Conventions
 
-Use two-space indentation, UTF-8 encoding, semantic HTML where practical, and lowercase kebab-case class names (`master-bath`, `mudroom`). Keep item geometry in the HTML through `--x`, `--y`, `--w`, and `--h`; the shared `.plan-item` rule converts those meter values using `--m`. Reserve room-specific classes for identity or appearance. Use Portuguese user-facing labels consistently with the current page (`lang="pt-BR"`).
+Use two-space indentation, UTF-8 encoding, semantic HTML where practical, and lowercase kebab-case class names (`master-bath`, `mudroom`). Keep geometry in JSON and use the shared `.plan-item` rule to convert meter values using `--m`. Reserve room-specific classes for identity or appearance. Use Portuguese user-facing labels consistently with the current page (`lang="pt-BR"`).
 
 ## Testing Guidelines
 
