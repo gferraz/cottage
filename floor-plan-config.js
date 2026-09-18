@@ -18,6 +18,7 @@ const floor = new FloorPlan({
   errorList: document.querySelector("#item-errors"),
   downloadButton: document.querySelector("#download-html"),
   markdownButton: document.querySelector("#download-markdown"),
+  dxfButton: document.querySelector("#download-dxf"),
   jsonInput: document.querySelector("#json-file"),
   reloadButton: document.querySelector("#reload-json"),
   layerButton: document.querySelector("#layer-button"),

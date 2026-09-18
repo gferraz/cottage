@@ -31,7 +31,7 @@
   },
   "zones": [
     { "id": "main",    "pos": [0, 2.5], "size": [10.6, 8.2], "visible": false },
-    { "id": "central", "from": ["main.x0 + main.w / 2 - 0.7", "main.y0"], "to": ["x0 + 1.4", "main.l"], "visible": false },
+    { "id": "central", "from": ["main.x0 + main.w / 2 - 0.7", "main.y0"], "to": ["x0 + 1.4", "main.y1"], "visible": false },
     { "id": "left",    "rectangle": ["main.x0", "main.y0", "central.x0", "central.y1"], "visible": false },
     { "id": "right",   "rectangle": ["central.x1", "central.y0", "main.x1", "main.y1"], "visible": false },
     { "id": "dorm",    "inset": ["main", 0.8, 0.0], "color": "blue", "visible": false },
@@ -57,41 +57,23 @@
       "l": 20,
       "color": "green"
     },
-    { "id": "dorm-right", "label": "Meia parede direita", "pos": ["dorm.x1", -2.5], "l": 20, "color": "green" },
-    { "id": "main-right", "label": "Parede direita", "pos": ["right.x1", -2.5], "l": 20, "color": "green" },
-    { "id": "main-top", "label": "Parede frontal", "pos": [-4.0, "main.y0"], "w": 20, "color": "green" },
+    { "id": "dorm-right",  "label": "Meia parede direita", "pos": ["dorm.x1", -2.5], "l": 20, "color": "green" },
+    { "id": "main-right",  "label": "Parede direita", "pos": ["right.x1", -2.5], "l": 20, "color": "green" },
+    { "id": "main-top",    "label": "Parede frontal", "pos": [-4.0, "main.y0"], "w": 20, "color": "green" },
     { "id": "main-bottom", "label": "Parede traseira", "pos": [-4.0, "main.y1"], "w": 20, "color": "green" },
 
-    {
-      "id": "roof-right",
-      "label": "Telhado direito",
-      "pos": ["main.x1", "h-center.y0"],
-      "to": ["main.x1 - 5.8", "h-center.y0 - 5.8"],
-      "color": "red"
-    },
-    { "id": "roof-right-top", "pos": ["main.x1", "main.y0"], "to": ["main.x1 - 5.8", "main.y0 - 5.8"], "color": "red" },
-    {
-      "id": "roof-right-bottom",
-      "pos": ["main.x1", "main.y1"],
-      "to": ["main.x1 - 5.8", "main.y1 - 5.8"],
-      "color": "red"
-    },
+    { "id": "roof-right", "label": "Telhado direito", "from": ["right.x1", "h-center.y0"], "to": ["l-axis.x0", "y0 - 6.54"], "color": "blue" },
+    { "id": "roof-right-top",                         "from": ["right.x1", "right.y0"],    "to": ["l-axis.x0", "y0 - 6.54"], "color": "blue" },
+    { "id": "roof-right-bottom",                      "from": ["right.x1", "right.y1"],    "to": ["l-axis.x0", "y0 - 6.54"], "color": "blue" },
 
-    {
-      "id": "roof-left",
-      "label": "Telhado esquerdo",
-      "pos": ["main.x0", "h-center.y1"],
-      "to": ["main.x0 + 5.8", "h-center.y1 - 5.8"],
-      "color": "red"
-    },
-    { "id": "roof-left-top", "pos": ["main.x0", "main.y0"], "to": ["main.x0 + 5.8", "main.y0 - 5.8"], "color": "red" },
-    {
-      "id": "roof-left-bottom",
-      "pos": ["main.x0", "main.y1"],
-      "to": ["main.x0 + 5.8", "main.y1 - 5.8"],
-      "color": "red"
-    }
-  ],
+    { "id": "roof-left", "label": "Telhado esquerdo", "from": ["left.x0", "h-center.y0"], "to": ["l-axis.x0", "y0 - 6.54"], "color": "blue" },
+    { "id": "roof-left-top",                          "from": ["left.x0", "left.y0"],     "to": ["l-axis.x0", "y0 - 6.54"], "color": "blue" },
+    { "id": "roof-left-bottom",                       "from": ["left.x0", "left.y1"],     "to": ["l-axis.x0", "y0 - 6.54"], "color": "blue" },
+
+    { "id": "roof-left-office",  "from": ["office.x0", "main.y0"],                "to": ["office.x0 + office.w / 2", "main.y0 -2.22"], "color": "blue" },
+    { "id": "roof-right-office", "from": ["roof-left-office.x1", "main.y0 - 2.22"], "to": ["office.x1", "main.y0"], "color": "blue" }
+],
+
 
   "building": { "anchor": "terrain.front-start", "position": { "x": 4, "y": 3 } },
 

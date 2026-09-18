@@ -479,7 +479,8 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 #reload-json,
 #layer-button,
 #download-html,
-#download-markdown {
+#download-markdown,
+#download-dxf {
   margin: 0 0 16px;
   padding: 8px 12px;
   border: 1px solid #888;
@@ -511,8 +512,10 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 #reload-json:hover:not(:disabled),
 #layer-button:hover:not(:disabled),
 #download-html:hover,
-#download-markdown:hover { background: #e6e6e6; }
+#download-markdown:hover,
+#download-dxf:hover { background: #e6e6e6; }
 #reload-json:disabled { cursor: not-allowed; opacity: 0.55; }
+#dxf-button:disabled { cursor: not-allowed; opacity: 0.55; }
 .legend { flex: 1 1 auto; min-width: 0; font-size: 13px; color: #444; }
 .opening-legend,
 .window-legend,
@@ -549,6 +552,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   #reload-json,
   #download-html,
   #download-markdown,
+  #download-dxf,
   .floor-selector,
   #plan-status,
   #viewport-summary { display: none !important; }

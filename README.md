@@ -70,7 +70,7 @@ Itens são objetos concretos, aparecem em lista própria e podem usar `overlaps`
 
 `terrain` aceita frente/fundo, `boundary_order`, cantos e segmentos topográficos. A frente é inferida do segmento indicado no JSON; a casa permanece ortogonal, enquanto o terreno, o Norte e a rosa dos ventos refletem sua orientação. `building.anchor` e `building.position` posicionam a casa em relação ao terreno. `viewport.size` e `viewport.origin` definem a área visível; é possível arrastar a grade com o mouse.
 
-`guides` desenha linhas ou segmentos auxiliares. `theme.colors` personaliza a paleta. Escadas podem ter `h` positivo, `stair-flight` e `parts`, projetando-se visualmente entre pisos; aberturas verticais conectam dois IDs de pisos. O catálogo atual inclui `washing-machine`, `queen-bed`, `three-seat-sofa` e `armchair`; cada tipo pode ser usado com `type` e ter sua posição e tamanho sobrescritos.
+`guides` desenha linhas ou segmentos auxiliares. Use `pos` ou `from` para o ponto inicial e `to` para o ponto final; em `to`, `x0`, `y0` e `z0` representam o ponto inicial da guia. `theme.colors` personaliza a paleta. Escadas podem ter `h` positivo, `stair-flight` e `parts`, projetando-se visualmente entre pisos; aberturas verticais conectam dois IDs de pisos. O catálogo atual inclui `washing-machine`, `queen-bed`, `three-seat-sofa` e `armchair`; cada tipo pode ser usado com `type` e ter sua posição e tamanho sobrescritos.
 
 Use `visible: false` em uma zona, item ou outro elemento visual para ocultá-lo sem removê-lo das referências geométricas:
 
@@ -84,6 +84,18 @@ A interface mostra cômodos com dimensões e áreas bruta/útil, resumo por piso
 
 O botão **Todas as camadas** alterna o limite visual das camadas. Ao selecionar uma camada, elementos acima dela são ocultados temporariamente; cálculos, listas e exportações continuam considerando a planta completa.
 
+## Exportar DXF 2D
+
+O JSON continua sendo a fonte da verdade. Na página, carregue a planta e clique em **Baixar DXF** para gerar o arquivo diretamente no navegador, sem Python, Node ou servidor. O arquivo usa escala 1:1 (1 unidade CAD = 1 metro).
+
+Para automação por linha de comando, a alternativa Node continua disponível:
+
+```sh
+node scripts/export-dxf.js cottage-ferraz-cesar.json cottage-ferraz-cesar.dxf
+```
+
+O exportador reutiliza o resolvedor de geometria da aplicação e cria as layers `WALLS`, `WALLS_VIRTUAL`, `DOORS`, `WINDOWS`, `OPENINGS` e `ROOM_LABELS`. Paredes são interrompidas nos vãos; portas recebem folha e arco, janelas recebem duas linhas paralelas e os cômodos recebem textos quando têm espaço suficiente para a legenda.
+
 ## Arquivos principais
 
 - `floor-plan.html`: shell, interface e template de CSS portátil.
@@ -91,4 +103,5 @@ O botão **Todas as camadas** alterna o limite visual das camadas. Ao selecionar
 - `floor-plan.js`: fachada pública `FloorPlan` e execução no navegador.
 - `floor-plan-model.js`, `floor-plan-validation.js`, `floor-plan-renderer.js`, `floor-plan-legend.js`, `floor-plan-export.js`: módulos auxiliares.
 - `floor-plan-config.js`: inicialização, carregamento por arquivo e comando `floor`.
+- `scripts/export-dxf.js`: comando Node para gerar DXF a partir do JSON.
 - `cottage-ferraz-cesar.json`: exemplo com terreno e múltiplos pisos.

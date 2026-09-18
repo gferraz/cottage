@@ -1,5 +1,5 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, jsonInput = null, reloadButton = null, layerButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, jsonInput = null, reloadButton = null, layerButton = null, scale = 56 }) {
     this.root = root;
     this.terrainLayer = terrainLayer;
     this.guidesLayer = guidesLayer;
@@ -20,6 +20,7 @@ class FloorPlan {
     this.errorList = errorList;
     this.downloadButton = downloadButton;
     this.markdownButton = markdownButton;
+    this.dxfButton = dxfButton;
     this.jsonInput = jsonInput;
     this.reloadButton = reloadButton;
     this.layerButton = layerButton;
@@ -76,6 +77,8 @@ class FloorPlan {
     }
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
     if (markdownButton) markdownButton.addEventListener("click", () => this.downloadMarkdown());
+    if (dxfButton) dxfButton.addEventListener("click", () => FloorPlanExport.downloadDxf(this));
+    if (dxfButton) dxfButton.disabled = true;
     if (layerButton) {
       layerButton.disabled = true;
       layerButton.addEventListener("click", () => this.cycleLayer());
@@ -566,19 +569,23 @@ class FloorPlan {
     const guides = config.floors ? [...(config.guides ?? []), ...floorGuides] : floorGuides;
     guides.forEach((guide) => {
       if (!guide.id || FloorPlanValidation.isReservedId(guide.id) || this.references.has(guide.id)) return;
-      const [xValue, yValue] = guide.pos ?? [];
+      const [xValue, yValue] = guide.pos ?? guide.from ?? [];
       const widthValue = guide.w;
       const lengthValue = guide.l;
       const [toXValue, toYValue] = guide.to ?? [];
       const hasEndpoint = guide.to !== undefined;
       if (!hasEndpoint && (widthValue === undefined) === (lengthValue === undefined)) return;
+      const startX = () => this.resolve(xValue);
+      const startY = () => this.resolve(yValue);
+      const endpointX = () => this.resolve(toXValue, { x0: startX(), y0: startY(), z0: this.currentFloorHeight });
+      const endpointY = () => this.resolve(toYValue, { x0: startX(), y0: startY(), z0: this.currentFloorHeight });
       this.references.set(guide.id, {
-        x0: () => this.resolve(xValue),
-        x1: () => hasEndpoint ? this.resolve(toXValue) : this.resolve(xValue) + (widthValue === undefined ? 0 : this.resolve(widthValue)),
-        y0: () => this.resolve(yValue),
-        y1: () => hasEndpoint ? this.resolve(toYValue) : this.resolve(yValue) + (lengthValue === undefined ? 0 : this.resolve(lengthValue)),
-        w: () => hasEndpoint ? Math.abs(this.resolve(toXValue) - this.resolve(xValue)) : (widthValue === undefined ? 0 : this.resolve(widthValue)),
-        l: () => hasEndpoint ? Math.abs(this.resolve(toYValue) - this.resolve(yValue)) : (lengthValue === undefined ? 0 : this.resolve(lengthValue)),
+        x0: startX,
+        x1: () => hasEndpoint ? endpointX() : startX() + (widthValue === undefined ? 0 : this.resolve(widthValue)),
+        y0: startY,
+        y1: () => hasEndpoint ? endpointY() : startY() + (lengthValue === undefined ? 0 : this.resolve(lengthValue)),
+        w: () => hasEndpoint ? Math.abs(endpointX() - startX()) : (widthValue === undefined ? 0 : this.resolve(widthValue)),
+        l: () => hasEndpoint ? Math.abs(endpointY() - startY()) : (lengthValue === undefined ? 0 : this.resolve(lengthValue)),
         area: () => 0
       });
     });
@@ -1209,7 +1216,7 @@ class FloorPlan {
     };
 
     guides.forEach((guide, index) => {
-      const [xValue, yValue] = guide.pos ?? [];
+      const [xValue, yValue] = guide.pos ?? guide.from ?? [];
       const width = guide.w;
       const lengthValue = guide.l;
       const [toXValue, toYValue] = guide.to ?? [];
@@ -1219,7 +1226,10 @@ class FloorPlan {
       let values;
       try {
         values = [xValue, yValue].map((value) => this.resolve(value));
-        if (hasEndpoint) values.push(this.resolve(toXValue), this.resolve(toYValue));
+        if (hasEndpoint) {
+          const localOrigin = { x0: values[0], y0: values[1], z0: this.currentFloorHeight };
+          values.push(this.resolve(toXValue, localOrigin), this.resolve(toYValue, localOrigin));
+        }
         else values.push(this.resolve(hasWidth ? width : lengthValue));
       } catch (error) {
         this.errors.push({ index, opening: guide, category: "guide", message: error.message });
@@ -2023,6 +2033,7 @@ class FloorPlan {
     this.renderGuides(this.visibleGuides(config, floorConfig));
     this.updateSummary();
     if (this.reloadButton) this.reloadButton.disabled = false;
+    if (this.dxfButton) this.dxfButton.disabled = false;
     return this;
   }
 
@@ -2656,7 +2667,7 @@ class FloorPlan {
       exportedPlan.replaceWith(livePlan.cloneNode(true));
     }
 
-    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #download-markdown, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
+    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #download-markdown, #download-dxf, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
       .forEach((element) => element.remove());
     exportedDocument.querySelectorAll("script").forEach((script) => script.remove());
 
