@@ -40,6 +40,17 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 
 .site.is-panning { cursor: grabbing; }
 
+.floor-export-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.floor-export-section > h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
 .viewport-summary {
   margin: -8px 0 18px;
   color: #555;
@@ -345,6 +356,7 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
 .outdoor { background: rgba(230, 220, 190, 0.78); }
 .service { background: rgba(235, 240, 245, 0.95); }
 .circulation, .stair-landing { background: rgba(245, 238, 222, 0.95); }
+.hazel { background: rgba(205, 177, 125, 0.45); }
 .stair-flight[data-stair-rise="up"] {
   --stair-opaque: rgba(180, 145, 88, 0.62);
   --stair-clearance: rgba(205, 177, 125, 0.16);
@@ -410,19 +422,14 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
   font-weight: 700;
   line-height: 1;
   pointer-events: none;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
 .stair-arrow::before { content: "↓"; }
 .stair-flight[data-stair-direction="reverse"] .stair-arrow::before { content: "↑"; }
-.stair-arrow-base { top: 0.18em; left: 50%; transform: translateX(-50%); }
-.stair-arrow-top { bottom: 0.18em; left: 50%; transform: translateX(-50%); }
 .stair-flight[data-stair-axis="horizontal"] .stair-arrow::before { content: "→"; }
 .stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"] .stair-arrow::before { content: "←"; }
-.stair-flight[data-stair-axis="horizontal"] .stair-arrow-base { top: 50%; left: 0.18em; transform: translateY(-50%); }
-.stair-flight[data-stair-axis="horizontal"] .stair-arrow-top { top: 50%; right: 0.18em; bottom: auto; left: auto; transform: translateY(-50%); }
-.stair-flight[data-stair-axis="vertical"][data-stair-direction="reverse"] .stair-arrow-base { top: auto; bottom: 0.18em; }
-.stair-flight[data-stair-axis="vertical"][data-stair-direction="reverse"] .stair-arrow-top { top: 0.18em; bottom: auto; }
-.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"] .stair-arrow-base { right: 0.18em; left: auto; }
-.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"] .stair-arrow-top { right: auto; left: 0.18em; }
 .stair-flight[data-stair-axis="horizontal"]::after {
   background: repeating-linear-gradient(
     to right,
@@ -598,6 +605,11 @@ p { margin: 0 0 18px; color: #555; font-size: 13px; }
     print-color-adjust: exact;
     break-after: page;
     page-break-after: always;
+  }
+  .floor-export-stack { gap: 0; }
+  .floor-export-section > h2 {
+    margin: 0 0 3mm;
+    font-size: 14pt;
   }
   .room,
   .room-part {

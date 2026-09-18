@@ -242,13 +242,10 @@ class FloorPlan {
       if (h > 0) {
         element.style.setProperty("--stair-clearance-stop", `${Math.min(100, (2 / h) * 100)}%`);
       }
-      const baseArrow = document.createElement("span");
-      baseArrow.className = "stair-arrow stair-arrow-base";
-      baseArrow.setAttribute("aria-hidden", "true");
-      const topArrow = document.createElement("span");
-      topArrow.className = "stair-arrow stair-arrow-top";
-      topArrow.setAttribute("aria-hidden", "true");
-      element.append(baseArrow, topArrow);
+      const arrow = document.createElement("span");
+      arrow.className = "stair-arrow";
+      arrow.setAttribute("aria-hidden", "true");
+      element.append(arrow);
     }
     if (title) element.title = title;
     if (!room && showLabel && (label || title)) {
@@ -381,12 +378,10 @@ class FloorPlan {
           if (part.h > 0) {
             partElement.style.setProperty("--stair-clearance-stop", `${Math.min(100, (2 / part.h) * 100)}%`);
           }
-          ["base", "top"].forEach((position) => {
-            const arrow = document.createElement("span");
-            arrow.className = `stair-arrow stair-arrow-${position}`;
-            arrow.setAttribute("aria-hidden", "true");
-            partElement.append(arrow);
-          });
+          const arrow = document.createElement("span");
+          arrow.className = "stair-arrow";
+          arrow.setAttribute("aria-hidden", "true");
+          partElement.append(arrow);
         }
         const walls = this.normalizeWalls(part.walls ?? room.walls);
         ["top", "right", "bottom", "left"].forEach((side) => {
@@ -1886,13 +1881,16 @@ class FloorPlan {
     const canShow = this.multiFloorMode && lowerFloors.length > 0;
     if (canShow) {
       let covered = this.roomElements.flatMap((room) => room.geometryParts);
+      const stairAlreadyProjected = Boolean(this.projectionLayer?.querySelector(".stair-flight"));
       const activeFloorId = activeFloor?.id;
+      const verticalOpeningGeometries = [];
       const verticalOpenings = (activeFloor?.openings ?? [])
         .filter((opening) => this.isVerticalOpening(opening))
         .filter((opening) => [opening.from, opening.to].includes(activeFloorId));
       verticalOpenings.forEach((opening) => {
         try {
           const geometry = this.normalizeGeometryAtFloor(opening, activeFloor);
+          verticalOpeningGeometries.push(geometry);
           covered = covered.flatMap((rectangle) => this.subtractRectangles(rectangle, [geometry]));
         } catch (error) {
           this.errors.push({ opening, category: "projection", message: `Multi-pisos: ${error.message}` });
@@ -1913,7 +1911,12 @@ class FloorPlan {
                 .split(/\s+/)
                 .includes("stair-flight");
               const fragments = isStairFlight
-                ? [{ x: geometry.x, y: geometry.y, w: geometry.w, l: geometry.l }]
+                ? (stairAlreadyProjected && verticalOpeningGeometries.length
+                  ? verticalOpeningGeometries.reduce(
+                    (remaining, opening) => remaining.flatMap((fragment) => this.subtractRectangles(fragment, [opening])),
+                    [{ x: geometry.x, y: geometry.y, w: geometry.w, l: geometry.l }]
+                  )
+                  : [{ x: geometry.x, y: geometry.y, w: geometry.w, l: geometry.l }])
                 : this.subtractRectangles(geometry, covered);
               fragments.forEach((fragment) => {
                 const projected = this.add({
@@ -2697,17 +2700,58 @@ class FloorPlan {
   }
 
   async downloadHtml(filename = "planta-terrea-gerada.html") {
-    const exportedDocument = document.cloneNode(true);
-    const livePlan = document.querySelector("#floor-plan");
-    const exportedPlan = exportedDocument.querySelector("#floor-plan");
-
-    // Snapshot the currently selected floor after all dynamic rendering and
-    // projection layers have been updated.
-    if (livePlan && exportedPlan) {
-      exportedPlan.replaceWith(livePlan.cloneNode(true));
+    if (!this.currentConfig) {
+      alert("Carregue uma planta antes de exportar o HTML.");
+      return;
     }
 
-    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #download-html, #download-markdown, #download-dxf, #multi-floor-button, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
+    const sourceConfig = this.currentConfig;
+    const floors = sourceConfig.floors ?? [sourceConfig];
+    const originalFloorIndex = Math.max(0, floors.findIndex((floor) => floor.id === this.currentFloorId));
+    const originalMultiFloorMode = this.multiFloorMode;
+    const floorSnapshots = [];
+
+    // Capture one rendered diagram per floor. The exported file is static, so
+    // the snapshots are assembled without carrying the application scripts.
+    try {
+      this.multiFloorMode = false;
+      for (let floorIndex = 0; floorIndex < floors.length; floorIndex += 1) {
+        this.load({ ...sourceConfig, activeFloor: floorIndex });
+        const livePlan = document.querySelector("#floor-plan");
+        if (!livePlan) throw new Error("A área da planta não foi encontrada.");
+        floorSnapshots.push({
+          label: floors[floorIndex].label || floors[floorIndex].id || `Piso ${floorIndex + 1}`,
+          element: livePlan.cloneNode(true)
+        });
+      }
+    } finally {
+      this.multiFloorMode = originalMultiFloorMode;
+      this.load({ ...sourceConfig, activeFloor: originalFloorIndex });
+      this.multiFloorMode = originalMultiFloorMode;
+      this.renderMultiFloorUnderlay();
+    }
+
+    const exportedDocument = document.cloneNode(true);
+    const exportedPlan = exportedDocument.querySelector("#floor-plan");
+
+    if (exportedPlan) {
+      const stack = exportedDocument.createElement("div");
+      stack.className = "floor-export-stack";
+      floorSnapshots.forEach(({ label, element }, index) => {
+        const section = exportedDocument.createElement("section");
+        section.className = "floor-export-section";
+        const heading = exportedDocument.createElement("h2");
+        heading.textContent = label;
+        section.append(heading);
+        const snapshot = exportedDocument.importNode(element, true);
+        snapshot.id = `floor-plan-export-${index + 1}`;
+        section.append(snapshot);
+        stack.append(section);
+      });
+      exportedPlan.replaceWith(stack);
+    }
+
+    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #layer-button, #download-html, #download-markdown, #download-dxf, #multi-floor-button, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
       .forEach((element) => element.remove());
     exportedDocument.querySelectorAll("script").forEach((script) => script.remove());
 
