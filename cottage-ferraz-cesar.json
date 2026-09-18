@@ -5,7 +5,10 @@
     "origin": [1.0, 1.0]
   },
   "item-types": {
-    "washing-machine": { "label": "Lavadora", "size": [0.6, 0.6, 0.85], "classes": "appliance washing-machine" }
+    "washing-machine": { "label": "Lavadora", "size": [0.6, 0.6, 0.85], "classes": "appliance washing-machine" },
+    "queen-bed": { "label": "Cama Queen", "size": [1.6, 2.0, 0.55], "classes": "furniture queen-bed" },
+    "three-seat-sofa": { "label": "Sofá de 3 lugares", "size": [2.1, 0.9, 0.85], "classes": "furniture three-seat-sofa" },
+    "armchair": { "label": "Poltrona", "size": [0.8, 0.85, 0.85], "classes": "furniture armchair" }
   },
   "terrain": {
     "front": { "edge": ["P1", "P2"], "position": "top", "label": "RUA/FRENTE" },
@@ -27,41 +30,17 @@
     ]
   },
   "zones": [
-    { "id": "main", "label": "Área Principal", "pos": [0, 2.5], "size": [10.6, 8.2], "visible": false },
-    {
-      "id": "central",
-      "label": "Área Central",
-      "from": ["main.x0 + main.w / 2 - 0.7", "main.y0"],
-      "to": ["x0 + 1.4", "main.l"],
-      "visible": false
-    },
-    {
-      "id": "left",
-      "label": "Área Esquerda",
-      "rectangle": ["main.x0", "main.y0", "central.x0", "central.y1"],
-      "visible": false
-    },
-    {
-      "id": "right",
-      "label": "Área Direita",
-      "from": ["central.x1", "central.y0"],
-      "to": ["main.x1", "main.y1"],
-      "visible": false
-    },
-    { "id": "dorm",    "label": "Dormitórios", "inset": ["main", 0.8, 0.0], "color": "blue", "visible": false },
-    { "id": "confort", "label": "Zona de Conforto", "inset": ["main", 1.8, 0.0], "color": "blue", "visible": false },
-    { "id": "attic",   "label": "Ático", "inset": ["main", 3, 0], "color": "red", "visible": false }
+    { "id": "main",    "pos": [0, 2.5], "size": [10.6, 8.2], "visible": false },
+    { "id": "central", "from": ["main.x0 + main.w / 2 - 0.7", "main.y0"], "to": ["x0 + 1.4", "main.l"], "visible": false },
+    { "id": "left",    "rectangle": ["main.x0", "main.y0", "central.x0", "central.y1"], "visible": false },
+    { "id": "right",   "rectangle": ["central.x1", "central.y0", "main.x1", "main.y1"], "visible": false },
+    { "id": "dorm",    "inset": ["main", 0.8, 0.0], "color": "blue", "visible": false },
+    { "id": "confort", "inset": ["main", 1.8, 0.0], "color": "blue", "visible": false },
+    { "id": "attic",   "inset": ["main", 3.0, 0.0], "color": "red",  "visible": false }
   ],
   "guides": [
     { "id": "h-center", "label": "linha central", "pos": [-4.0, "main.y0 + main.l / 2"], "w": 20, "color": "green" },
-    {
-      "id": "l-axis",
-      "label": "eixo longitudinal",
-      "pos": ["central.x0 + central.w / 2", -2.5],
-      "l": 20,
-      "color": "green"
-    },
-
+    { "id": "l-axis", "label": "eixo longitudinal", "pos": ["central.x0 + central.w / 2", -2.5], "l": 20, "color": "green" },
     { "id": "main-left", "label": "Parede esquerda", "pos": ["left.x0", -2.5], "l": 20, "color": "green" },
     { "id": "dorm-left", "label": "Meia parede esquerda", "pos": ["dorm.x0", -2.5], "l": 20, "color": "green" },
     {
@@ -309,14 +288,11 @@
       ],
       "items": [
         { "title": "Mesa", "pos": ["dining.x0 + 1.2", "dining.y0 + 1.2"], "size": [2.7, 1.1], "classes": "table" },
-        {
-          "title": "Lareira",
-          "pos": ["living.x1 - 0.2", "living.y0 + 0.5"],
-          "size": [0.5, 1.8],
-          "classes": "fireplace"
-        },
+        { "title": "Lareira", "pos": ["living.x1 - 0.2", "living.y0 + 0.5"], "size": [0.5, 1.8], "classes": "fireplace" },
         { "title": "Carro", "pos": ["garage.x0 + 1", "garage.y0 + 1"], "size": [1.8, 4.0], "classes": "car" },
-        { "type": "washing-machine", "pos": ["laundry.x1 - 0.7", "laundry.y0 - 0.7"] }
+        { "type": "washing-machine", "pos": ["laundry.x1 - 0.7", "laundry.y0 - 0.7"] },
+        { "type": "queen-bed", "pos": ["master.x0 + 1", "master.y0"]
+        }
       ],
       "openings": [
         { "from": "porch.top", "to": "exterior", "type": "opening", "w": 1.8 },
