@@ -1,5 +1,5 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorButton = null, jsonInput = null, reloadButton = null, layerButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorButton = null, jsonInput = null, layerButton = null, scale = 56 }) {
     this.root = root;
     this.terrainLayer = terrainLayer;
     this.guidesLayer = guidesLayer;
@@ -23,7 +23,6 @@ class FloorPlan {
     this.dxfButton = dxfButton;
     this.multiFloorButton = multiFloorButton;
     this.jsonInput = jsonInput;
-    this.reloadButton = reloadButton;
     this.layerButton = layerButton;
     this.roomArea = 0;
     this.roomCount = 0;
@@ -114,16 +113,6 @@ class FloorPlan {
           alert(`Não foi possível carregar a planta: ${error.message}`);
         } finally {
           event.target.value = "";
-        }
-      });
-    }
-    if (reloadButton) {
-      reloadButton.disabled = true;
-      reloadButton.addEventListener("click", async () => {
-        try {
-          await this.reload();
-        } catch (error) {
-          alert(`Não foi possível recarregar a planta: ${error.message}`);
         }
       });
     }
@@ -2094,7 +2083,6 @@ class FloorPlan {
     }
     this.renderGuides(this.visibleGuides(config, floorConfig));
     this.updateSummary();
-    if (this.reloadButton) this.reloadButton.disabled = false;
     if (this.dxfButton) this.dxfButton.disabled = false;
     return this;
   }
@@ -2103,21 +2091,6 @@ class FloorPlan {
     const sourceText = await file.text();
     const config = JSON.parse(sourceText);
     this.currentSourceText = sourceText;
-    return this.load(config);
-  }
-
-  async reload() {
-    let config;
-    if (this.currentSourceText !== null) {
-      config = JSON.parse(this.currentSourceText);
-    } else {
-      config = this.currentConfig;
-    }
-    if (!config) return this;
-    if (config.floors) {
-      const activeFloor = config.floors.findIndex((floorConfig) => floorConfig.id === this.currentFloorId);
-      if (activeFloor >= 0) config = { ...config, activeFloor };
-    }
     return this.load(config);
   }
 
@@ -2770,7 +2743,7 @@ class FloorPlan {
       exportedPlan.replaceWith(stack);
     }
 
-    exportedDocument.querySelectorAll("#json-file, #load-json, #reload-json, #layer-button, #download-html, #download-markdown, #download-dxf, #multi-floor-button, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
+    exportedDocument.querySelectorAll("#json-file, #load-json, #layer-button, #download-html, #download-markdown, #download-dxf, #multi-floor-button, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
       .forEach((element) => element.remove());
     exportedDocument.querySelectorAll("script").forEach((script) => script.remove());
 

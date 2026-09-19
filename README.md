@@ -4,7 +4,7 @@ Aplicação estática para desenhar plantas baixas com HTML, CSS e JSON. Não ex
 
 ## Abrir e carregar uma planta
 
-Abra [`floor-plan.html`](floor-plan.html) no navegador e clique em **Carregar JSON**. A página inicia vazia; o projeto só é carregado quando um arquivo é escolhido. **Recarregar JSON atual** relê o último arquivo selecionado.
+Abra [`floor-plan.html`](floor-plan.html) no navegador e clique em **Carregar JSON**. A página inicia vazia; o projeto só é carregado quando um arquivo é escolhido. Para trocar a planta, selecione outro arquivo JSON.
 
 O seletor de piso muda apenas o desenho. As listas, totais e erros são consolidados entre todos os pisos.
 

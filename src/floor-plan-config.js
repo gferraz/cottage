@@ -21,7 +21,6 @@ const floor = new FloorPlan({
   dxfButton: document.querySelector("#download-dxf"),
   multiFloorButton: document.querySelector("#multi-floor-button"),
   jsonInput: document.querySelector("#json-file"),
-  reloadButton: document.querySelector("#reload-json"),
   layerButton: document.querySelector("#layer-button"),
   scale: 56
 });

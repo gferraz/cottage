@@ -1,0 +1,27 @@
+:root {
+  --theme-text: #111;
+  --theme-muted: #555;
+  --theme-subtle: #666;
+  --theme-border: #bbb;
+  --theme-border-light: #e2e2e2;
+  --theme-surface: #fafafa;
+  --theme-site: #f5f3ee;
+  --theme-grid: rgba(0, 0, 0, 0.08);
+  --theme-wall: #222;
+  --theme-label: #263746;
+  --theme-wall-virtual: #222;
+  --theme-overlap: rgba(220, 80, 80, 0.18);
+  --theme-overlap-line: #b34a4a;
+  --theme-circulation: rgba(245, 238, 222, 0.95);
+  --theme-hazel: rgba(205, 177, 125, 0.45);
+  --theme-outdoor: rgba(230, 220, 190, 0.78);
+  --theme-service: rgba(235, 240, 245, 0.95);
+  --theme-opening: #e8c99c;
+  --theme-opening-line: #6b4b2a;
+  --theme-window: #eefaff;
+  --theme-window-line: #a7adb3;
+  --theme-button: #f2f2f2;
+  --theme-button-hover: #e6e6e6;
+  --theme-danger: #9b2c2c;
+  --theme-danger-dark: #6b2020;
+}
