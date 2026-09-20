@@ -99,7 +99,7 @@ O HTML de desenvolvimento referencia os módulos em `src/`. Para gerar uma vers�
 autônoma, com JavaScript e CSS incorporados em um único arquivo, execute:
 
 ```sh
-node scripts/build-portable.mjs
+bin/build
 ```
 
 O resultado será salvo em `dist/floor-plan.html`. Esse arquivo pode ser copiado

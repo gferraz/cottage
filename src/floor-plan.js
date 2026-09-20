@@ -126,70 +126,31 @@ class FloorPlan {
   }
 
   configureViewport(viewport) {
-    const size = Array.isArray(viewport?.size) ? viewport.size.map(Number) : [20, 20];
-    const origin = Array.isArray(viewport?.origin) ? viewport.origin.map(Number) : [-4.25, -4.25];
-    if (size.length !== 2 || size.some((value) => !(value > 0))) {
-      throw new Error("Viewport size must contain two positive metre values");
-    }
-    if (origin.length !== 2 || origin.some((value) => !Number.isFinite(value))) {
-      throw new Error("Viewport origin must contain two numeric metre values");
-    }
-    this.viewport = { size, origin };
-    this.root.style.setProperty("--viewport-width", size[0]);
-    this.root.style.setProperty("--viewport-height", size[1]);
-    this.root.style.setProperty("--viewport-origin-x", origin[0]);
-    this.root.style.setProperty("--viewport-origin-y", origin[1]);
-    this.resizeViewport();
+    return FloorPlanViewport.configure(this, viewport);
   }
 
   resizeViewport() {
-    const [width] = this.viewport.size;
-    const availableWidth = this.root.parentElement?.clientWidth || width * this.viewportScale;
-    const scale = Math.max(1, availableWidth / width);
-    this.viewportScale = scale;
-    this.root.style.setProperty("--m", `${scale}px`);
-    this.updateViewportSummary();
+    return FloorPlanViewport.resize(this);
   }
 
   updateViewportSummary() {
-    if (!this.viewportSummary) return;
-    const [width, height] = this.viewport.size;
-    const [originX, originY] = this.viewport.origin;
-    this.viewportSummary.textContent = `Viewport: ${this.formatMeters(width)}m × ${this.formatMeters(height)}m · origem (${this.formatMeters(originX)}, ${this.formatMeters(originY)})m · escala ${this.viewportScale.toFixed(2)} px/m`;
+    return FloorPlanViewport.updateSummary(this);
   }
 
   beginViewportPan(event) {
-    if (event.button !== 0 || event.target.closest("button, select, input, a")) return;
-    this.pointerPan = { id: event.pointerId, x: event.clientX, y: event.clientY, origin: [...this.viewport.origin] };
-    this.root.setPointerCapture(event.pointerId);
-    this.root.classList.add("is-panning");
+    return FloorPlanViewport.beginPan(this, event);
   }
 
   updateViewportPan(event) {
-    if (!this.pointerPan || event.pointerId !== this.pointerPan.id) return;
-    const dx = (event.clientX - this.pointerPan.x) / this.viewportScale;
-    const dy = (event.clientY - this.pointerPan.y) / this.viewportScale;
-    this.viewport.origin[0] = this.pointerPan.origin[0] - dx;
-    this.viewport.origin[1] = this.pointerPan.origin[1] - dy;
-    this.root.style.setProperty("--viewport-origin-x", this.viewport.origin[0]);
-    this.root.style.setProperty("--viewport-origin-y", this.viewport.origin[1]);
-    this.updateTerrainViewport();
-    this.updateViewportSummary();
+    return FloorPlanViewport.updatePan(this, event);
   }
 
   endViewportPan(event) {
-    if (this.pointerPan && (!event || event.pointerId === this.pointerPan.id)) {
-      this.pointerPan = null;
-      this.root.classList.remove("is-panning");
-    }
+    return FloorPlanViewport.endPan(this, event);
   }
 
   updateTerrainViewport() {
-    const [width, height] = this.viewport.size;
-    const [originX, originY] = this.viewport.origin;
-    const viewBox = `${originX} ${originY} ${width} ${height}`;
-    this.terrainLayer?.setAttribute("viewBox", viewBox);
-    this.guidesLayer?.setAttribute("viewBox", viewBox);
+    return FloorPlanViewport.updateTerrain(this);
   }
 
   themeColor(color) {
@@ -1916,32 +1877,11 @@ class FloorPlan {
   }
 
   bounds({ includeItems = false } = {}) {
-    const elements = includeItems
-      ? [...this.roomElements, ...this.itemElements]
-      : this.roomElements;
-
-    if (elements.length === 0) return null;
-
-    const x0 = Math.min(...elements.map((element) => element.x0()));
-    const y0 = Math.min(...elements.map((element) => element.y0()));
-    const x1 = Math.max(...elements.map((element) => element.x1()));
-    const y1 = Math.max(...elements.map((element) => element.y1()));
-
-    return { x0, y0, x1, y1, width: x1 - x0, height: y1 - y0 };
+    return FloorPlanMetrics.bounds(this, { includeItems });
   }
 
   buildingReferenceBounds() {
-    const referenceRooms = this.model?.floors?.[0]?.rooms ?? [];
-    const geometries = referenceRooms
-      .map((room) => room.id && this.roomDefinitions.has(room.id) ? this.getRoomGeometry(room.id) : null)
-      .filter(Boolean);
-    if (!geometries.length) return this.bounds();
-
-    const x0 = Math.min(...geometries.map((geometry) => geometry.x0()));
-    const y0 = Math.min(...geometries.map((geometry) => geometry.y0()));
-    const x1 = Math.max(...geometries.map((geometry) => geometry.x1()));
-    const y1 = Math.max(...geometries.map((geometry) => geometry.y1()));
-    return { x0, y0, x1, y1, width: x1 - x0, height: y1 - y0 };
+    return FloorPlanMetrics.buildingReferenceBounds(this);
   }
 
   updateOverlaps() {
@@ -2094,46 +2034,23 @@ class FloorPlan {
   }
 
   calculateRoomArea() {
-    return this.calculateUnionArea(this.roomElements.flatMap((room) => room.geometryParts));
+    return FloorPlanMetrics.calculateRoomArea(this);
   }
 
   calculateUnionArea(rectangles) {
-    return FloorPlanModel.calculateUnionArea(rectangles);
+    return FloorPlanMetrics.calculateUnionArea(rectangles);
   }
 
   calculateNetRoomArea(room) {
-    return FloorPlanModel.calculateNetRoomArea(room, this.roomElements, this.itemElements);
+    return FloorPlanMetrics.calculateNetRoomArea(this, room);
   }
 
   subtractRectangles(rectangle, cutters) {
-    let fragments = [{ x: rectangle.x, y: rectangle.y, w: rectangle.w, l: rectangle.l }];
-    cutters.forEach((cutter) => {
-      fragments = fragments.flatMap((fragment) => {
-        const x0 = Math.max(fragment.x, cutter.x);
-        const y0 = Math.max(fragment.y, cutter.y);
-        const x1 = Math.min(fragment.x + fragment.w, cutter.x + cutter.w);
-        const y1 = Math.min(fragment.y + fragment.l, cutter.y + cutter.l);
-        if (x1 <= x0 || y1 <= y0) return [fragment];
-        return [
-          { x: fragment.x, y: fragment.y, w: fragment.w, l: y0 - fragment.y },
-          { x: fragment.x, y: y1, w: fragment.w, l: fragment.y + fragment.l - y1 },
-          { x: fragment.x, y: y0, w: x0 - fragment.x, l: y1 - y0 },
-          { x: x1, y: y0, w: fragment.x + fragment.w - x1, l: y1 - y0 }
-        ].filter((part) => part.w > 1e-9 && part.l > 1e-9);
-      });
-    });
-    return fragments;
+    return FloorPlanMetrics.subtractRectangles(rectangle, cutters);
   }
 
   fragmentWalls(fragment, source, sourceWalls) {
-    const epsilon = 1e-9;
-    const same = (first, second) => Math.abs(first - second) <= epsilon;
-    return {
-      top: same(fragment.y, source.y) ? sourceWalls.top : "open",
-      right: same(fragment.x + fragment.w, source.x + source.w) ? sourceWalls.right : "open",
-      bottom: same(fragment.y + fragment.l, source.y + source.l) ? sourceWalls.bottom : "open",
-      left: same(fragment.x, source.x) ? sourceWalls.left : "open"
-    };
+    return FloorPlanMetrics.fragmentWalls(fragment, source, sourceWalls);
   }
 
   renderMultiFloorUnderlay(floorConfig = null) {
@@ -2359,38 +2276,27 @@ class FloorPlan {
   }
 
   formatMeters(value) {
-    return Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+    return FloorPlanMetrics.formatMeters(value);
   }
 
   roofTypeLabel(type) {
-    return { gable: "duas águas" }[type] || type || "—";
+    return FloorPlanMetrics.roofTypeLabel(type);
   }
 
   roofOrientationLabel(orientation) {
-    return { longitudinal: "longitudinal", transverse: "transversal" }[orientation] || orientation || "—";
+    return FloorPlanMetrics.roofOrientationLabel(orientation);
   }
 
   formatFixed(value) {
-    return Number(value).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return FloorPlanMetrics.formatFixed(value);
   }
 
   preparePrint() {
-    const [siteWidth, siteHeight] = this.viewport.size;
-    if (!(siteWidth > 0) || !(siteHeight > 0)) return;
-
-    const mmToPx = 96 / 25.4;
-    const printableWidth = 200 * mmToPx;
-    // Reserve space for the printed title and its scale note above the plan.
-    const printableHeight = (287 - 24) * mmToPx;
-    const maxScale = Math.min(printableWidth / siteWidth, printableHeight / siteHeight);
-    const printScale = Math.max(1, Math.floor(maxScale * 10) / 10);
-    this.root.style.setProperty("--print-m", `${printScale}px`);
-    this.root.dataset.printSplitRequired = "false";
+    return FloorPlanViewport.preparePrint(this);
   }
 
   clearPrintScale() {
-    this.root.style.removeProperty("--print-m");
-    delete this.root.dataset.printSplitRequired;
+    return FloorPlanViewport.clearPrintScale(this);
   }
 
   updateSummary() {
