@@ -125,16 +125,30 @@ const FloorPlanFacades = {
         rect.dataset.id = room.dataset.id || "";
         svg.append(rect);
 
-        const roomLabel = room.querySelector(".room-label")?.textContent?.trim();
+        const roomLabel =
+          room.querySelector(".room-label")?.textContent?.trim() ||
+          room.dataset.label?.trim();
         if (roomLabel) {
           const label = document.createElementNS(svgNamespace, "text");
-          label.setAttribute("x", `${((start + end) / 2 - min + padding) * scale}`);
-          label.setAttribute("y", `${(floorHeight - z0 - height / 2 + padding) * scale}`);
-          label.setAttribute("text-anchor", "middle");
+          const labelX = (start - min + padding + 0.12) * scale;
+          const labelY = (floorHeight - z0 - height + padding + 0.22) * scale;
+          label.setAttribute("x", `${labelX}`);
+          label.setAttribute("y", `${labelY}`);
+          label.setAttribute("text-anchor", "start");
           label.classList.add("facade-room-label");
-          label.textContent = roomLabel;
+          const title = document.createElementNS(svgNamespace, "tspan");
+          title.textContent = roomLabel;
+          title.setAttribute("x", `${labelX}`);
+          title.classList.add("facade-room-label-title");
+          const dimensions = document.createElementNS(svgNamespace, "tspan");
+          dimensions.textContent = `${plan.formatMeters(end - start)}m × ${plan.formatMeters(height)}m`;
+          dimensions.setAttribute("x", `${labelX}`);
+          dimensions.setAttribute("dy", "1.2em");
+          dimensions.classList.add("facade-room-label-details");
+          label.append(title, dimensions);
           svg.append(label);
         }
+
       });
 
       const facadeWalls = [facadeWall];
