@@ -98,7 +98,8 @@
           "label": "Varanda",
           "from": ["office.x1", "right.y0 - 2.5"],
           "to": ["right.x1", "right.y0"],
-          "classes": "outdoor porch"
+          "classes": "outdoor porch",
+          "walls": []
         },
         {
           "id": "hall",
@@ -271,6 +272,21 @@
         { "type": "washing-machine", "pos": ["laundry.x1 - 0.7", "laundry.y0"] },
         { "type": "washing-machine", "pos": ["laundry.x1 - 1.4", "laundry.y0"] },
         { "type": "queen-bed", "pos": ["master.x0 + 1", "master.y0"]
+        },
+        {
+          "type": "railing",
+          "pos": ["porch.x0", "porch.y0"],
+          "size": ["porch.xc - 0.9 - porch.x0", 0.08, 1.1]
+        },
+        {
+          "type": "railing",
+          "pos": ["porch.xc + 0.9", "porch.y0"],
+          "size": ["porch.x1 - porch.xc - 0.9", 0.08, 1.1]
+        },
+        {
+          "type": "railing",
+          "pos": ["porch.x1 - 0.08", "porch.y0"],
+          "size": [0.08, "porch.l", 1.1]
         }
       ],
       "openings": [

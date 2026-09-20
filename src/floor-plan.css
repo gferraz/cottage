@@ -325,6 +325,12 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   z-index: calc(5 + var(--layer, 0));
   opacity: 0.45;
 }
+.plan-item.railing {
+  z-index: 18;
+  opacity: 1;
+  border: 2px solid #777;
+  background: #d8d8d8;
+}
 .layer-hidden { display: none !important; }
 .plan-hidden { display: none !important; }
 .reference-zone {

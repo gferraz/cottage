@@ -22,6 +22,14 @@ const FloorPlanFacades = {
     facades.forEach((facade, index) => {
       const direction = facade.direction || "front";
       const side = ["left", "right"].includes(direction);
+      const facadeWall =
+        direction === "front"
+          ? "top"
+          : direction === "rear"
+            ? "bottom"
+            : direction === "left"
+              ? "left"
+              : "right";
       const facadeAxis = side ? "x" : "y";
       const facadeEdge =
         direction === "front" || direction === "left" ? "min" : "max";
@@ -53,6 +61,10 @@ const FloorPlanFacades = {
         return facadeEdge === "min"
           ? near <= edge + facadeDepth
           : far >= edge - facadeDepth;
+      });
+      const surfaceRooms = projectedRooms.filter((room) => {
+        const state = room.wallState?.(facadeWall) ?? "solid";
+        return state === "solid" || state === "virtual";
       });
       const depthDirection = facadeEdge === "min" ? 1 : -1;
       projectedRooms.sort((first, second) => {
@@ -99,7 +111,7 @@ const FloorPlanFacades = {
       grid.classList.add("facade-grid");
       svg.append(grid);
 
-      projectedRooms.forEach((room) => {
+      surfaceRooms.forEach((room) => {
         const start = side ? room.y0() : room.x0();
         const end = side ? room.y1() : room.x1();
         const z0 = room.z0();
@@ -125,14 +137,7 @@ const FloorPlanFacades = {
         }
       });
 
-      const facadeWalls =
-        direction === "front"
-          ? ["top"]
-          : direction === "rear"
-            ? ["bottom"]
-            : direction === "left"
-              ? ["left"]
-              : ["right"];
+      const facadeWalls = [facadeWall];
       const facadeRoomIds = new Set(
         projectedRooms.map((room) => String(room.dataset.id || "")),
       );

@@ -32,6 +32,12 @@ window.FloorPlanCatalog = {
       classes: "furniture armchair",
       color: "furniture",
     },
+    railing: {
+      label: "Cerca da varanda",
+      size: [1.0, 0.08, 1.1],
+      classes: "architectural railing",
+      color: "neutral",
+    },
   },
   openings: {
     door: { w: 0.8, z0: 0, h: 2.1 },
