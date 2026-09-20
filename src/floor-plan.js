@@ -741,7 +741,9 @@ class FloorPlan {
     this.allWindows = [];
     this.allRoofs = [];
     const globalRoofs = config.floors ? (config.roofs ?? []) : [];
-    globalRoofs.forEach((roof) => this.allRoofs.push({ ...roof, floorId: null, floorLabel: null }));
+    globalRoofs.forEach((roof) => {
+      this.allRoofs.push({ ...roof, floorId: null, floorLabel: null });
+    });
     floors.forEach((floorConfig) => {
       (floorConfig.roofs ?? []).forEach((roof) => {
         this.allRoofs.push({ ...roof, floorId: floorConfig.id, floorLabel: floorConfig.label });
@@ -1229,7 +1231,9 @@ class FloorPlan {
     const svg = "http://www.w3.org/2000/svg";
     const create = (name, attributes = {}) => {
       const element = document.createElementNS(svg, name);
-      Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+      Object.entries(attributes).forEach(([key, value]) => {
+        element.setAttribute(key, value);
+      });
       return element;
     };
     const pointString = localCorners.map((point) => `${point.x},${point.y}`).join(" ");
@@ -1307,7 +1311,9 @@ class FloorPlan {
     const svg = "http://www.w3.org/2000/svg";
     const create = (name, attributes = {}) => {
       const element = document.createElementNS(svg, name);
-      Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+      Object.entries(attributes).forEach(([key, value]) => {
+        element.setAttribute(key, value);
+      });
       return element;
     };
 
@@ -1385,7 +1391,9 @@ class FloorPlan {
     const svg = "http://www.w3.org/2000/svg";
     const create = (name, attributes = {}) => {
       const element = document.createElementNS(svg, name);
-      Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+      Object.entries(attributes).forEach(([key, value]) => {
+        element.setAttribute(key, value);
+      });
       return element;
     };
 
@@ -1590,7 +1598,9 @@ class FloorPlan {
         }
       });
       if (!added) {
-        next.forEach((zone) => this.errors.push({ id: zone.id, opening: zone, category: "zone", message: "Não foi possível resolver as referências geométricas da zona" }));
+        next.forEach((zone) => {
+          this.errors.push({ id: zone.id, opening: zone, category: "zone", message: "Não foi possível resolver as referências geométricas da zona" });
+        });
         break;
       }
       pending = next;
@@ -1937,7 +1947,9 @@ class FloorPlan {
   updateOverlaps() {
     const rooms = [...this.roomElements, ...this.stairElements];
     this.errors = this.errors.filter((error) => !["collision", "overlap"].includes(error.category));
-    rooms.forEach((room) => room.classList.remove("room-overlap", "room-overlap-above", "room-overlap-below"));
+    rooms.forEach((room) => {
+      room.classList.remove("room-overlap", "room-overlap-above", "room-overlap-below");
+    });
 
     const pieces = rooms.flatMap((room) => room.geometryParts.map((part) => ({
       room,
@@ -1976,7 +1988,9 @@ class FloorPlan {
           this.errors.push({ category: "overlap", id: node.key, message: `Referência de sobreposição inexistente: ${target}` });
           return;
         }
-        matches.forEach((targetNode) => edges.get(node.key).push(targetNode.key));
+        matches.forEach((targetNode) => {
+          edges.get(node.key).push(targetNode.key);
+        });
       });
     });
 
@@ -1996,7 +2010,9 @@ class FloorPlan {
       layers.set(key, layer);
       return layer;
     };
-    nodes.forEach((node) => calculateLayer(node.key));
+    nodes.forEach((node) => {
+      calculateLayer(node.key);
+    });
     const maxLayer = Math.max(0, ...layers.values());
     nodes.forEach((node) => {
       const layer = layers.get(node.key) ?? 0;
@@ -2182,7 +2198,9 @@ class FloorPlan {
                   classes: `${geometry.classes || definition.classes || ""} floor-projection multi-floor-underlay`.trim(),
                   container: this.multiFloorLayer
                 });
-                projected.querySelectorAll(":scope > .room-label, :scope > small").forEach((label) => label.remove());
+                projected.querySelectorAll(":scope > .room-label, :scope > small").forEach((label) => {
+                  label.remove();
+                });
               });
             });
           });
@@ -3058,8 +3076,12 @@ class FloorPlan {
     }
 
     exportedDocument.querySelectorAll("#json-file, #load-json, #layer-button, #download-html, #download-markdown, #download-dxf, #multi-floor-button, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data")
-      .forEach((element) => element.remove());
-    exportedDocument.querySelectorAll("script").forEach((script) => script.remove());
+      .forEach((element) => {
+        element.remove();
+      });
+    exportedDocument.querySelectorAll("script").forEach((script) => {
+      script.remove();
+    });
 
     const stylesheetLinks = [...document.querySelectorAll('link[rel="stylesheet"]')];
     const fallbackLinks = [];
@@ -3090,7 +3112,9 @@ class FloorPlan {
       }
     }
     exportedDocument.querySelector("#portable-export-css")?.remove();
-    exportedDocument.querySelectorAll('link[rel="stylesheet"]').forEach((link) => link.remove());
+    exportedDocument.querySelectorAll('link[rel="stylesheet"]').forEach((link) => {
+      link.remove();
+    });
     if (styles.length > 0) {
       const style = exportedDocument.createElement("style");
       style.textContent = styles.join("\n");

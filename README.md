@@ -93,6 +93,19 @@ O JSON continua sendo a fonte da verdade. Na página, carregue a planta e clique
 
 O exportador reutiliza o resolvedor de geometria da aplicação e cria as layers `WALLS`, `WALLS_VIRTUAL`, `DOORS`, `WINDOWS`, `OPENINGS` e `ROOM_LABELS`. Paredes são interrompidas nos vãos; portas recebem folha e arco, janelas recebem duas linhas paralelas e os cômodos recebem textos quando têm espaço suficiente para a legenda.
 
+## Gerar HTML portátil
+
+O HTML de desenvolvimento referencia os módulos em `src/`. Para gerar uma versão
+autônoma, com JavaScript e CSS incorporados em um único arquivo, execute:
+
+```sh
+node scripts/build-portable.mjs
+```
+
+O resultado será salvo em `dist/floor-plan.html`. Esse arquivo pode ser copiado
+ou aberto diretamente, sem servidor local e sem dependências externas. O JSON da
+planta continua sendo escolhido pelo botão “Carregar JSON”.
+
 ## Arquivos principais
 
 - `floor-plan.html`: shell, interface e template de CSS portátil.
