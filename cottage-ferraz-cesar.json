@@ -215,7 +215,7 @@
           "id": "kitchen",
           "label": "Cozinha",
           "from": ["dorm.x0", "masterbath.y1"],
-          "to": ["right.x0", "y0 + 3.8"],
+          "to": ["right.x0", "y0 + 3.9"],
           "classes": "wet",
           "walls": ["left", "bottom"]
         },
