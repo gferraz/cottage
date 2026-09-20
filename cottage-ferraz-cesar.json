@@ -30,48 +30,51 @@
     ]
   },
   "zones": [
-    { "id": "main",    "pos": [0, 2.5], "size": [10.2, 8.2], "visible": false },
-    { "id": "central", "from": ["main.x0 + main.w / 2 - 0.7", "main.y0"], "to": ["x0 + 1.4", "main.y1"], "visible": false },
+    { "id": "main",    "pos": [0, 2.5], "size": [9.6, 8.2], "visible": false },
+    { "id": "central", "from": ["main.xc - 0.7", "main.y0"], "to": ["x0 + 1.4", "main.y1"], "visible": false },
     { "id": "left",    "rectangle": ["main.x0", "main.y0", "central.x0", "central.y1"], "visible": false },
     { "id": "right",   "rectangle": ["central.x1", "central.y0", "main.x1", "main.y1"], "visible": false },
     { "id": "dorm",    "inset": ["main", 0.8, 0.0], "color": "blue", "visible": false },
     { "id": "confort", "inset": ["main", 1.8, 0.0], "color": "blue", "visible": false },
-    { "id": "attic",   "inset": ["main", 3.0, 0.0], "color": "red",  "visible": false }
+    { "id": "attic",   "inset": ["main", 3.0, 0.0], "color": "red",  "visible": false },
+    {	"id": "office-roof-base",	"from": ["office.x0", "office.y0"],	"to":   ["right.x0", "office.y1"], "visible": false  }
+  ],
+  "roofs": [
+    {
+      "id": "main-roof",
+      "label": "Telhado principal",
+      "type": "gable",
+      "base": "dorm",
+      "orientation": "longitudinal",
+      "pitch": 51,
+      "eave": 1.3,
+      "rake": 0.5
+    },
+    {
+      "id": "office-roof",
+      "label": "Telhado escritório",
+      "type": "gable",
+      "base": "office-roof-base",
+      "orientation": "longitudinal",
+      "pitch": 51,
+      "eave": 0.5,
+      "rake": 0.5
+    }
   ],
   "guides": [
-    { "id": "h-center", "label": "linha central", "pos": [-4.0, "main.y0 + main.l / 2"], "w": 20, "color": "green" },
-    { "id": "l-axis", "label": "eixo longitudinal", "pos": ["central.x0 + central.w / 2", -2.5], "l": 20, "color": "green" },
+    { "id": "h-center", "label": "linha central", "pos": [-4.0, "main.yc"], "w": 20, "color": "green" },
+    { "id": "l-axis", "label": "eixo longitudinal", "pos": ["central.xc", -2.5], "l": 20, "color": "green" },
     { "id": "main-left", "label": "Parede esquerda", "pos": ["left.x0", -2.5], "l": 20, "color": "green" },
     { "id": "dorm-left", "label": "Meia parede esquerda", "pos": ["dorm.x0", -2.5], "l": 20, "color": "green" },
-    {
-      "id": "corr-left",
-      "label": "Corredor parede esquerda",
-      "pos": ["l-axis.x0 - 0.7", -2.5],
-      "l": 20,
-      "color": "green"
-    },
-    {
-      "id": "corr-right",
-      "label": "Corredor parede direita",
-      "pos": ["l-axis.x0 + 0.7", -2.5],
-      "l": 20,
-      "color": "green"
-    },
+    { "id": "central-left", "label": "central esquerda", "pos": ["l-axis.x0 - 0.7", -2.5], "l": 20, "color": "green" },
+    { "id": "central-right", "label": "central direita", "pos": ["l-axis.x0 + 0.7", -2.5], "l": 20, "color": "green" },
     { "id": "dorm-right",  "label": "Meia parede direita", "pos": ["dorm.x1", -2.5], "l": 20, "color": "green" },
     { "id": "main-right",  "label": "Parede direita", "pos": ["right.x1", -2.5], "l": 20, "color": "green" },
     { "id": "main-top",    "label": "Parede frontal", "pos": [-4.0, "main.y0"], "w": 20, "color": "green" },
     { "id": "main-bottom", "label": "Parede traseira", "pos": [-4.0, "main.y1"], "w": 20, "color": "green" },
 
-    { "id": "roof-right", "label": "Telhado direito", "from": ["right.x1", "h-center.y0"], "to": ["l-axis.x0", "y0 - 6.54"], "color": "blue" },
-    { "id": "roof-right-top",                         "from": ["right.x1", "right.y0"],    "to": ["l-axis.x0", "y0 - 6.54"], "color": "blue" },
-    { "id": "roof-right-bottom",                      "from": ["right.x1", "right.y1"],    "to": ["l-axis.x0", "y0 - 6.54"], "color": "blue" },
-
-    { "id": "roof-left", "label": "Telhado esquerdo", "from": ["left.x0", "h-center.y0"], "to": ["l-axis.x0", "y0 - 6.54"], "color": "blue" },
-    { "id": "roof-left-top",                          "from": ["left.x0", "left.y0"],     "to": ["l-axis.x0", "y0 - 6.54"], "color": "blue" },
-    { "id": "roof-left-bottom",                       "from": ["left.x0", "left.y1"],     "to": ["l-axis.x0", "y0 - 6.54"], "color": "blue" },
-
-    { "id": "roof-left-office",  "from": ["office.x0", "main.y0"],                "to": ["office.x0 + office.w / 2", "main.y0 -2.22"], "color": "blue" },
-    { "id": "roof-right-office", "from": ["roof-left-office.x1", "main.y0 - 2.22"], "to": ["office.x1", "main.y0"], "color": "blue" }
+    { "id": "roof-left-office",  "from": ["office.x0", "main.y0"],        "to": ["office.x0 + (right.x0 - office.x0) / 2", "main.y0 -4"], "color": "blue" },
+    { "id": "roof-right-office", "from": ["roof-left-office.x1", "main.y0 - 4"], "to": ["right.x0", "main.y0"], "color": "blue" }
 ],
 
 
@@ -85,7 +88,7 @@
         {
           "id": "office",
           "label": "Escritório",
-          "from": ["left.x0 - 0.6", "left.y0  - 2.5"],
+          "from": ["left.x0 - 0.5", "left.y0  - 2.5"],
           "to": ["left.x1 - 1.6", "left.y0 + 1.5"],
           "classes": "office"
         },
@@ -97,37 +100,34 @@
           "classes": "outdoor porch"
         },
         {
-          "id": "entry",
+          "id": "hall",
+          "label": "Hall",
+          "from": ["office.x1", "main.y0"],
+          "to": ["right.x0", "office.y1"],
+          "classes": "circulation",
+          "walls": ["top", "left"]
+        },
+        {
+          "id":"entry",
           "label": "Entrada",
-          "rectangle": ["left.x1", "main.y0 - 0.4", "right.x0", "main.y0"],
+          "rectangle": ["hall.xc - 0.7", "hall.y0 - 0.4", "x0 + 1.4", "hall.y0"],
           "overlaps": "porch",
           "classes": "circulation",
           "walls": ["top", "right", "left"]
         },
-
-        {
-          "id": "hall",
-          "label": "Hall",
-          "from": ["office.x1", "entry.y1"],
-          "to": ["corr-right.x0", "office.y1"],
-          "classes": "circulation entry",
-          "walls": ["top", "left"]
-        },
-
         {
           "id": "master",
           "label": "Suíte Master",
-          "from": ["left.x0", "office.y1"],
-          "to": ["left.x1", "y0 + 3.2"],
+          "rectangle": ["left.x0", "office.y1", "left.x1 + 0.3", "y0 + 3.2"],
           "walls": ["top", "right", "left"]
         },
         { "id": "closet", "label": "Closet", "from": ["left.x0", "master.y1"], "to": ["x0 + 3.2", "y0 + 2.4"] },
         {
           "id": "vestibule",
           "label": "Vest.",
-          "from": ["closet.x1", "closet.y0"],
-          "to": ["left.x1", "closet.y1"],
-          "walls": ["right", "bottom", "left"]
+          "rectangle": ["closet.x1", "closet.y0", "master.x1", "closet.y1"],
+          "walls": ["right", "bottom", "left"],
+          "overlaps": "corridor-2"
         },
 
         {
@@ -140,7 +140,7 @@
         {
           "id": "corridor-1",
           "label": "C-1.",
-          "rectangle": ["central.x0", "hall.y1", "central.x1", "living.y0"],
+          "rectangle": ["master.x1", "hall.y1", "central.x1", "living.y0"],
           "classes": "circulation",
           "walls": ["left"]
         },
@@ -152,45 +152,51 @@
           "walls": ["left"]
         },
         {
-          "id": "corridor-3",
-          "label": "C-3.",
-          "rectangle": ["right.x0", "flight-1.y0", "flight-1.x0", "flight-1.y1"],
-          "classes": "circulation",
-          "walls": ["left"]
-        },
-
-        {
           "id": "powder",
           "label": "Lavabo",
           "rectangle": ["right.x0", "living.y1", "x0 + 2.4", "y0 + 1.4"],
           "classes": "powder wet"
         },
+        {
+          "id": "laundry",
+          "label": "Lavanderia",
+          "rectangle": ["right.x0", "stairs.y1 - 1.2", "right.x1", "y0 + 1.6"],
+          "classes": "service laundry wet",
+          "walls": ["left", "right"]
+        },
 
         {
           "id": "stairs",
           "label": "Escada",
-          "overlaps": ["powder"],
-          "overlays": ["powder"],
+          "overlaps": ["powder", "laundry"],
+          "overlays": ["powder", "laundry"],
           "parts": [
             {
-              "id": "flight-1",
-              "pos": ["right.x0 + 0.7", "living.y1 + 1.4", 0],
-              "size": [2.3, 1.4, 1.5],
-              "walls": ["top"],
+              "id": "upper-flight",
+              "from": ["right.x0",       "living.y1", 3.0],
+              "to":   ["right.x0 + 2.1", "y0 + 1.4",  "z0 - 1.33"],
+              "walls": [],
               "classes": "stair-flight"
             },
             {
-              "id": "landing",
-              "from": ["flight-1.x1", "flight-1.y0 - flight-1.l", "flight-1.z1"],
-              "to": ["x0 + flight-1.l", "y0 + 2.8"],
-              "walls": ["top", "right", "bottom"],
+              "id": "upper-landing",
+              "from": ["upper-flight.x1", "upper-flight.y0", "upper-flight.z1"],
+              "to":   ["right.x1",        "upper-flight.y1", "z0"],
+              "walls": ["top", "right"],
               "color": "hazel"
             },
             {
-              "id": "flight-2",
-              "from": ["landing.x0", "landing.y0", "landing.z1"],
-              "to": ["right.x0", "flight-1.y0", 3.0],
-              "walls": [],
+              "id": "lower-landing",
+              "from": ["right.x1", "upper-landing.y1", "upper-flight.z1"],
+              "to":   ["x0 - 1.4", "y0 + upper-flight.l", "z0"],
+              "walls": ["right", "bottom"],
+              "color": "hazel"
+            },
+            {
+              "id": "flight-down",
+              "from": ["lower-landing.x0", "lower-landing.y0", "lower-landing.z0"],
+              "to": ["x0 - 2.7", "lower-landing.y1", 0],
+              "walls": ["top", "bottom"],
               "classes": "stair-flight"
             }
           ]
@@ -206,7 +212,7 @@
         {
           "id": "living",
           "label": "Estar",
-          "from": ["central.x0", "dining.y1"],
+          "from": ["master.x1", "dining.y1"],
           "to": ["right.x1", "y0 + 3.4"],
           "walls": ["right"]
         },
@@ -220,34 +226,24 @@
           "walls": ["left", "bottom"]
         },
 
-        {
-          "id": "laundry",
-          "label": "Lavanderia",
-          "pos": ["right.x0", "stairs.y1"],
-          "size": [4.5, 1.4],
-          "classes": "service laundry wet",
-          "walls": ["left"]
-        },
+
         {
           "id": "circulation",
           "label": "Circulação",
-          "pos": ["right.x0", "laundry.y1"],
-          "size": [4.4, 1],
+          "rectangle": ["right.x0", "laundry.y1", "right.x1", "y0 + 1"],
           "classes": "circulation",
           "walls": []
         },
         {
           "id": "pantry",
           "label": "Despensa",
-          "pos": ["right.x0", "circulation.y1"],
-          "size": [2.3, 1.8],
+          "rectangle": ["right.x0", "circulation.y1", "x0 + 2", "y0 + 1.8"],
           "classes": "service pantry"
         },
         {
           "id": "mudroom",
           "label": "Mudroom",
-          "pos": ["pantry.x1", "circulation.y1"],
-          "size": [2.2, 1.8],
+          "rectangle": ["pantry.x1", "circulation.y1", "right.x1", "y0 + 1.8"],
           "classes": "service mudroom",
           "walls": ["right", "bottom"]
         },
@@ -255,7 +251,7 @@
         {
           "id": "garage",
           "label": "Garagem",
-          "pos": ["laundry.x1", "laundry.y0"],
+          "pos": ["laundry.x1", "laundry.y1"],
           "size": [4.0, 6.5],
           "classes": "service garage"
         },
@@ -271,7 +267,8 @@
         { "title": "Mesa", "pos": ["dining.x0 + 1.2", "dining.y0 + 1.2"], "size": [2.7, 1.1], "classes": "table" },
         { "title": "Lareira", "pos": ["living.x1 - 0.2", "living.y0 + 0.5"], "size": [0.5, 1.8], "classes": "fireplace" },
         { "title": "Carro", "pos": ["garage.x0 + 1", "garage.y0 + 1"], "size": [1.8, 4.0], "classes": "car" },
-        { "type": "washing-machine", "pos": ["laundry.x1 - 0.7", "laundry.y0 - 0.7"] },
+        { "type": "washing-machine", "pos": ["laundry.x1 - 0.7", "laundry.y0"] },
+        { "type": "washing-machine", "pos": ["laundry.x1 - 1.4", "laundry.y0"] },
         { "type": "queen-bed", "pos": ["master.x0 + 1", "master.y0"]
         }
       ],
@@ -349,16 +346,12 @@
       ],
       "items": [],
       "openings": [
-        { "from": "bedroom-n.right", "to": "dorm-corridor", "type": "door" },
-        { "from": "bedroom-e.left", "to": "dorm-corridor", "type": "door" },
-        { "from": "bathroom.right", "to": "dorm-corridor", "type": "door" },
-        { "from": "bedroom-s.left", "to": "dorm-corridor", "type": "door" },
-        {
-          "from": "upper",
-          "to": "ground",
-          "type": "opening",
-          "pos": ["stairs.x0", "stairs.y0"],
-          "size": ["stairs.w - 0.8", "stairs.l / 2"]
+        { "type": "door", "from": "bedroom-n.right", "to": "dorm-corridor" },
+        { "type": "door", "from": "bedroom-e.left",  "to": "dorm-corridor" },
+        { "type": "door", "from": "bathroom.right",  "to": "dorm-corridor" },
+        { "type": "door", "from": "bedroom-s.left",  "to": "dorm-corridor" },
+
+        { "type": "opening", "from": "upper", "to": "ground", "pos": ["stairs.x0", "stairs.y0"], "size": ["bedroom-s.w", "stairs.l / 2"]
         }
       ]
     }

@@ -76,6 +76,35 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   overflow: visible;
 }
 
+.roof-plan {
+  pointer-events: none;
+}
+.roof-surface {
+  fill: var(--theme-roof-fill, rgba(130, 105, 75, 0.16));
+  stroke: var(--theme-roof-line, rgba(90, 70, 45, 0.62));
+  stroke-width: 0.04;
+}
+.roof-ridge {
+  stroke: var(--theme-roof-line, rgba(75, 55, 35, 0.9));
+  stroke-width: 0.08;
+  stroke-dasharray: 0.18 0.12;
+}
+.roof-slope-triangle {
+  fill: none;
+  stroke: var(--theme-roof-line, rgba(75, 55, 35, 0.9));
+  stroke-width: 0.05;
+  stroke-dasharray: 0.14 0.10;
+}
+.roof-label {
+  fill: var(--theme-roof-line, rgba(75, 55, 35, 0.9));
+  font-size: 0.22px;
+  paint-order: stroke;
+  stroke: var(--theme-roof-fill, rgba(255, 255, 255, 0.8));
+  stroke-width: 0.08px;
+}
+.roof-label-title { font-weight: 650; }
+.roof-label-details { font-weight: 500; }
+
 .floor-projection-layer {
   position: absolute;
   inset: 0;
@@ -356,7 +385,8 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .outdoor { background: var(--theme-outdoor); }
 .service { background: var(--theme-service); }
 .circulation, .stair-landing { background: var(--theme-circulation); }
-.stair-flight[data-stair-rise="up"] {
+.stair-flight[data-stair-rise="up"],
+.stair-flight[data-stair-rise="down"] {
   --stair-opaque: rgba(180, 145, 88, 0.62);
   --stair-clearance: rgba(205, 177, 125, 0.16);
   --stair-transparent: rgba(245, 238, 222, 0.08);
@@ -367,7 +397,8 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
     var(--stair-transparent) 100%
   ) !important;
 }
-.stair-flight[data-stair-axis="horizontal"][data-stair-rise="up"] {
+.stair-flight[data-stair-axis="horizontal"][data-stair-rise="up"],
+.stair-flight[data-stair-axis="horizontal"][data-stair-rise="down"] {
   background: linear-gradient(
     to right,
     var(--stair-opaque) 0%,
@@ -375,7 +406,8 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
     var(--stair-transparent) 100%
   ) !important;
 }
-.stair-flight[data-stair-axis="vertical"][data-stair-direction="reverse"][data-stair-rise="up"] {
+.stair-flight[data-stair-axis="vertical"][data-stair-direction="reverse"][data-stair-rise="up"],
+.stair-flight[data-stair-axis="vertical"][data-stair-direction="reverse"][data-stair-rise="down"] {
   background: linear-gradient(
     to top,
     var(--stair-opaque) 0%,
@@ -383,7 +415,8 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
     var(--stair-transparent) 100%
   ) !important;
 }
-.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"][data-stair-rise="up"] {
+.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"][data-stair-rise="up"],
+.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"][data-stair-rise="down"] {
   background: linear-gradient(
     to left,
     var(--stair-opaque) 0%,
@@ -533,10 +566,12 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 #multi-floor-button:disabled { cursor: not-allowed; opacity: 0.55; }
 .legend { flex: 1 1 auto; min-width: 0; font-size: 13px; color: #444; }
 .opening-legend,
+.roof-legend,
 .window-legend,
 .natural-legend,
 .error-legend { margin-top: 16px; }
 .opening-legend h2,
+.roof-legend h2,
 .window-legend h2,
 .natural-legend h2,
 .error-legend h2 { margin: 0 0 8px; font-size: 16px; }

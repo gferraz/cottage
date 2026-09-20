@@ -7,6 +7,7 @@ const floor = new FloorPlan({
   floorSelect: document.querySelector("#floor-select"),
   roomList: document.querySelector("#room-list"),
   itemList: document.querySelector("#item-list"),
+  roofList: document.querySelector("#roof-list"),
   floorSummary: document.querySelector("#floor-summary"),
   roomCountSummary: document.querySelector("#room-count-summary"),
   summary: document.querySelector("#area-summary"),

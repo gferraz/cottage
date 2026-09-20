@@ -73,7 +73,7 @@ const FloorPlanGeometry = {
     }
 
     const partMatch = reference.match(
-      /^([\w-]+)\.([\w-]+)\.(x|x0|x1|y|y0|y1|z0|z1|w|l|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
+      /^([\w-]+)\.([\w-]+)\.(x|x0|x1|xc|y|y0|y1|yc|z0|z1|zc|w|l|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
     );
     if (partMatch) {
       const [, roomId, partId, method, operator, amount] = partMatch;
@@ -87,7 +87,7 @@ const FloorPlanGeometry = {
     }
 
     const match = reference.match(
-      /^([\w-]+)\.(x|x0|x1|y|y0|y1|z0|z1|w|l|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
+      /^([\w-]+)\.(x|x0|x1|xc|y|y0|y1|yc|z0|z1|zc|w|l|h|area)(?:\s*([+-])\s*(\d+(?:\.\d+)?))?$/
     );
     if (!match) throw new Error(`Invalid geometric reference: ${value}`);
 

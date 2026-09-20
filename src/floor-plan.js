@@ -1,5 +1,5 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorButton = null, jsonInput = null, layerButton = null, scale = 56 }) {
+  constructor({ root, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorButton = null, jsonInput = null, layerButton = null, scale = 56 }) {
     this.root = root;
     this.terrainLayer = terrainLayer;
     this.guidesLayer = guidesLayer;
@@ -8,6 +8,7 @@ class FloorPlan {
     this.floorSelect = floorSelect;
     this.roomList = roomList;
     this.itemList = itemList;
+    this.roofList = roofList;
     this.floorSummary = floorSummary;
     this.roomCountSummary = roomCountSummary;
     this.summary = summary;
@@ -51,6 +52,7 @@ class FloorPlan {
     this.allItems = [];
     this.allOpenings = [];
     this.allWindows = [];
+    this.allRoofs = [];
     this.terrainArea = 0;
     this.terrainDimensions = null;
     this.terrainReference = null;
@@ -214,7 +216,8 @@ class FloorPlan {
 
   add(data) {
     const { label = "", classes = "", title = "", room = false, showLabel = false, visible = true, container = this.root } = data;
-    const { x, y, w, l, z0, z1, h, stairDirection = "forward" } = this.normalizeGeometry(data);
+    const normalized = this.normalizeGeometry(data);
+    const { x, y, w, l, z0, z1, h, stairDirection = "forward", stairRise = h > 0 ? "up" : "flat" } = normalized;
     const element = document.createElement("div");
     element.className = `plan-item plan-generated${room ? " room" : ""}${classes ? ` ${classes}` : ""}${visible === false ? " plan-hidden" : ""}`;
     if (data.color) element.style.backgroundColor = this.themeFillColor(data.color);
@@ -231,7 +234,7 @@ class FloorPlan {
     if (classes.split(/\s+/).includes("stair-flight")) {
       element.dataset.stairAxis = w >= l ? "horizontal" : "vertical";
       element.dataset.stairDirection = stairDirection;
-      element.dataset.stairRise = h > 0 ? "up" : "flat";
+      element.dataset.stairRise = stairRise;
       const elevationTolerance = 1e-9;
       element.dataset.stairFace = this.currentFloorHeight >= z1 - elevationTolerance ? "top" : "bottom";
       if (h > 0) {
@@ -264,10 +267,13 @@ class FloorPlan {
 
     element.x0 = () => Number(x);
     element.x1 = () => Number(x) + Number(w);
+    element.xc = () => (element.x0() + element.x1()) / 2;
     element.y0 = () => Number(y);
     element.y1 = () => Number(y) + Number(l);
+    element.yc = () => (element.y0() + element.y1()) / 2;
     element.z0 = () => Number(z0);
     element.z1 = () => Number(z1);
+    element.zc = () => (element.z0() + element.z1()) / 2;
     element.h = () => Number(h);
     element.w = () => Number(w);
     element.l = () => Number(l);
@@ -334,10 +340,13 @@ class FloorPlan {
       element.partReferences = new Map(parts.map((part) => [part.id, {
         x0: () => part.x,
         x1: () => part.x + part.w,
+        xc: () => part.x + part.w / 2,
         y0: () => part.y,
         y1: () => part.y + part.l,
+        yc: () => part.y + part.l / 2,
         z0: () => part.z0,
         z1: () => part.z1,
+        zc: () => (part.z0 + part.z1) / 2,
         h: () => part.h,
         w: () => part.w,
         l: () => part.l,
@@ -369,7 +378,7 @@ class FloorPlan {
         if (partClasses.split(/\s+/).includes("stair-flight")) {
           partElement.dataset.stairAxis = part.w >= part.l ? "horizontal" : "vertical";
           partElement.dataset.stairDirection = part.stairDirection || "forward";
-          partElement.dataset.stairRise = part.h > 0 ? "up" : "flat";
+          partElement.dataset.stairRise = part.stairRise || (part.h > 0 ? "up" : "flat");
           const elevationTolerance = 1e-9;
           partElement.dataset.stairFace = this.currentFloorHeight >= part.z1 - elevationTolerance ? "top" : "bottom";
           if (part.h > 0) {
@@ -545,7 +554,7 @@ class FloorPlan {
         }
         this.partOwners.set(partId, roomId);
         const reference = {};
-        ["x0", "x1", "y0", "y1", "z0", "z1", "h", "w", "l", "area"].forEach((method) => {
+        ["x0", "x1", "xc", "y0", "y1", "yc", "z0", "z1", "zc", "h", "w", "l", "area"].forEach((method) => {
           reference[method] = () => this.getRoomGeometry(roomId).partReferences.get(partId)[method]();
         });
         this.references.set(partId, reference);
@@ -560,6 +569,7 @@ class FloorPlan {
       this.references.set(floorConfig.id, {
         z0: () => height,
         z1: () => height,
+        zc: () => height,
         h: () => height,
         w: () => 0,
         l: () => 0,
@@ -586,8 +596,10 @@ class FloorPlan {
       this.references.set(guide.id, {
         x0: startX,
         x1: () => hasEndpoint ? endpointX() : startX() + (widthValue === undefined ? 0 : this.resolve(widthValue)),
+        xc: () => (startX() + (hasEndpoint ? endpointX() : startX() + (widthValue === undefined ? 0 : this.resolve(widthValue)))) / 2,
         y0: startY,
         y1: () => hasEndpoint ? endpointY() : startY() + (lengthValue === undefined ? 0 : this.resolve(lengthValue)),
+        yc: () => (startY() + (hasEndpoint ? endpointY() : startY() + (lengthValue === undefined ? 0 : this.resolve(lengthValue)))) / 2,
         w: () => hasEndpoint ? Math.abs(endpointX() - startX()) : (widthValue === undefined ? 0 : this.resolve(widthValue)),
         l: () => hasEndpoint ? Math.abs(endpointY() - startY()) : (lengthValue === undefined ? 0 : this.resolve(lengthValue)),
         area: () => 0
@@ -604,8 +616,11 @@ class FloorPlan {
       this.references.set(zone.id, {
         x0: () => geometry().x,
         x1: () => geometry().x + geometry().w,
+        xc: () => geometry().x + geometry().w / 2,
         y0: () => geometry().y,
         y1: () => geometry().y + geometry().l,
+        yc: () => geometry().y + geometry().l / 2,
+        zc: () => (geometry().z0 + geometry().z1) / 2,
         w: () => geometry().w,
         l: () => geometry().l,
         area: () => geometry().w * geometry().l
@@ -668,6 +683,11 @@ class FloorPlan {
     return [...globalZones, ...(floorConfig.zones ?? [])];
   }
 
+  visibleRoofs(config, floorConfig) {
+    const globalRoofs = config.floors ? (config.roofs ?? []) : [];
+    return [...globalRoofs, ...(floorConfig.roofs ?? [])];
+  }
+
   visibleGuides(config, floorConfig) {
     const globalGuides = config.floors ? (config.guides ?? []) : [];
     return [...globalGuides, ...(floorConfig.guides ?? [])];
@@ -718,7 +738,13 @@ class FloorPlan {
     this.allItems = [];
     this.allOpenings = [];
     this.allWindows = [];
+    this.allRoofs = [];
+    const globalRoofs = config.floors ? (config.roofs ?? []) : [];
+    globalRoofs.forEach((roof) => this.allRoofs.push({ ...roof, floorId: null, floorLabel: null }));
     floors.forEach((floorConfig) => {
+      (floorConfig.roofs ?? []).forEach((roof) => {
+        this.allRoofs.push({ ...roof, floorId: floorConfig.id, floorLabel: floorConfig.label });
+      });
       (floorConfig.items ?? []).forEach((item) => {
         try {
           const resolvedItem = this.resolveItemType(item);
@@ -755,10 +781,13 @@ class FloorPlan {
       dataset: { id, label: this.roomDefinitions.get(id)?.label || id },
       x0: () => this.getRoomGeometry(id).x0(),
       x1: () => this.getRoomGeometry(id).x1(),
+      xc: () => this.getRoomGeometry(id).xc(),
       y0: () => this.getRoomGeometry(id).y0(),
       y1: () => this.getRoomGeometry(id).y1(),
+      yc: () => this.getRoomGeometry(id).yc(),
       z0: () => this.getRoomGeometry(id).z0(),
       z1: () => this.getRoomGeometry(id).z1(),
+      zc: () => this.getRoomGeometry(id).zc(),
       h: () => this.getRoomGeometry(id).h(),
       w: () => this.getRoomGeometry(id).w(),
       l: () => this.getRoomGeometry(id).l(),
@@ -782,10 +811,13 @@ class FloorPlan {
         localReferences.set(geometry.id, {
           x0: () => geometry.x,
           x1: () => geometry.x + geometry.w,
+          xc: () => geometry.x + geometry.w / 2,
           y0: () => geometry.y,
           y1: () => geometry.y + geometry.l,
+          yc: () => geometry.y + geometry.l / 2,
           z0: () => geometry.z0,
           z1: () => geometry.z1,
+          zc: () => (geometry.z0 + geometry.z1) / 2,
           h: () => geometry.h,
           w: () => geometry.w,
           l: () => geometry.l,
@@ -819,10 +851,13 @@ class FloorPlan {
       const reference = {
         x0: () => geometry.x,
         x1: () => geometry.x + geometry.w,
+        xc: () => geometry.x + geometry.w / 2,
         y0: () => geometry.y,
         y1: () => geometry.y + geometry.l,
+        yc: () => geometry.y + geometry.l / 2,
         z0: () => geometry.z0,
         z1: () => geometry.z1,
+        zc: () => (geometry.z0 + geometry.z1) / 2,
         h: () => geometry.h,
         w: () => geometry.w,
         l: () => geometry.l,
@@ -835,10 +870,13 @@ class FloorPlan {
         partReferences: new Map((parts ?? []).map((part) => [part.id, {
           x0: () => part.x,
           x1: () => part.x + part.w,
+          xc: () => part.x + part.w / 2,
           y0: () => part.y,
           y1: () => part.y + part.l,
+          yc: () => part.y + part.l / 2,
           z0: () => part.z0,
           z1: () => part.z1,
+          zc: () => (part.z0 + part.z1) / 2,
           h: () => part.h,
           w: () => part.w,
           l: () => part.l,
@@ -865,7 +903,13 @@ class FloorPlan {
       };
     }
     const isStair = data.classes?.split(/\s+/).includes("stair-flight");
+    if (data.inset !== undefined && data.outset !== undefined) {
+      throw new Error("Uma geometria não pode combinar inset e outset");
+    }
     if (Array.isArray(data.from) || Array.isArray(data.to)) {
+      if (data.inset !== undefined || data.outset !== undefined) {
+        throw new Error("Inset/outset não pode ser combinado com from/to");
+      }
       if (!Array.isArray(data.from) || !Array.isArray(data.to)
         || (data.from.length !== 2 && data.from.length !== 3)
         || (data.to.length !== 2 && data.to.length !== 3)) {
@@ -881,14 +925,13 @@ class FloorPlan {
       const toValues = data.to.map((value) => this.resolve(value, localOrigin));
       const [fromX, fromY] = fromValues;
       const [toX, toY] = toValues;
-      const z0 = this.resolve(fromValues[2] ?? this.currentFloorHeight);
-      const z1 = this.resolve(toValues[2] ?? z0);
+      const fromZ = this.resolve(fromValues[2] ?? this.currentFloorHeight);
+      const toZ = this.resolve(toValues[2] ?? fromZ);
       const w = Math.abs(toX - fromX);
       const l = Math.abs(toY - fromY);
-      if (![fromX, fromY, toX, toY, z0, z1].every(Number.isFinite) || (w === 0 && l === 0)) {
+      if (![fromX, fromY, toX, toY, fromZ, toZ].every(Number.isFinite) || (w === 0 && l === 0)) {
         throw new Error("A geometria precisa usar coordenadas numéricas diferentes");
       }
-      if (z1 < z0) throw new Error("A geometria precisa terminar em uma cota igual ou superior à inicial");
 
       const horizontal = w >= l;
       return {
@@ -897,10 +940,13 @@ class FloorPlan {
         y: Math.min(fromY, toY),
         w,
         l,
-        z0,
-        z1,
-        h: z1 - z0,
-        ...(isStair ? { stairDirection: (horizontal ? toX < fromX : toY < fromY) ? "reverse" : "forward" } : {})
+        z0: Math.min(fromZ, toZ),
+        z1: Math.max(fromZ, toZ),
+        h: Math.abs(toZ - fromZ),
+        ...(isStair ? {
+          stairDirection: (horizontal ? toX < fromX : toY < fromY) ? "reverse" : "forward",
+          stairRise: toZ > fromZ ? "up" : toZ < fromZ ? "down" : "flat"
+        } : {})
       };
     }
 
@@ -908,7 +954,7 @@ class FloorPlan {
       if (!Array.isArray(data.rectangle) || data.rectangle.length !== 4) {
         throw new Error("Rectangle precisa ter [x0, y0, x1, y1]");
       }
-      if (data.inset !== undefined || data.pos !== undefined || data.size !== undefined || data.x !== undefined || data.y !== undefined || data.w !== undefined || data.l !== undefined) {
+      if (data.inset !== undefined || data.outset !== undefined || data.pos !== undefined || data.size !== undefined || data.x !== undefined || data.y !== undefined || data.w !== undefined || data.l !== undefined) {
         throw new Error("Rectangle não pode ser combinado com outra definição geométrica");
       }
 
@@ -924,8 +970,8 @@ class FloorPlan {
       if (![x0Value, y0Value, x1Value, y1Value].every(Number.isFinite)) {
         throw new Error("Rectangle precisa usar valores numéricos");
       }
-      if (!(x1Value > x0Value && y1Value > y0Value)) {
-        throw new Error("Rectangle precisa ter x1 maior que x0 e y1 maior que y0");
+      if (x1Value === x0Value || y1Value === y0Value) {
+        throw new Error("Rectangle precisa ter largura e altura diferentes de zero");
       }
 
       const z0 = rectangleOrigin.z0;
@@ -935,10 +981,10 @@ class FloorPlan {
       }
       return {
         ...data,
-        x: x0Value,
-        y: y0Value,
-        w: x1Value - x0Value,
-        l: y1Value - y0Value,
+        x: Math.min(x0Value, x1Value),
+        y: Math.min(y0Value, y1Value),
+        w: Math.abs(x1Value - x0Value),
+        l: Math.abs(y1Value - y0Value),
         z0,
         z1: z0 + h,
         h
@@ -973,6 +1019,40 @@ class FloorPlan {
         y: reference.y0() + yInset,
         w: baseWidth - 2 * xInset,
         l: baseLength - 2 * yInset,
+        z0,
+        z1: z0 + h,
+        h
+      };
+    }
+
+    if (data.outset !== undefined) {
+      if (!Array.isArray(data.outset) || data.outset.length !== 3) {
+        throw new Error("Outset precisa ter [id, dx, dy]");
+      }
+
+      const [referenceId, xOutsetValue, yOutsetValue] = data.outset;
+      const reference = this.references.get(String(referenceId));
+      if (!reference) throw new Error(`Unknown geometric reference: ${referenceId}`);
+
+      const xOutset = this.resolve(xOutsetValue);
+      const yOutset = this.resolve(yOutsetValue);
+      const baseWidth = reference.w();
+      const baseLength = reference.l();
+      if (![xOutset, yOutset, baseWidth, baseLength].every(Number.isFinite)) {
+        throw new Error(`Outset precisa usar valores numéricos: ${referenceId}`);
+      }
+      if (xOutset < 0 || yOutset < 0) {
+        throw new Error("Outset deve ser não negativo");
+      }
+
+      const z0 = reference.z0 ? reference.z0() : this.currentFloorHeight;
+      const h = reference.h ? reference.h() : 0;
+      return {
+        ...data,
+        x: reference.x0() - xOutset,
+        y: reference.y0() - yOutset,
+        w: baseWidth + 2 * xOutset,
+        l: baseLength + 2 * yOutset,
         z0,
         z1: z0 + h,
         h
@@ -1299,6 +1379,151 @@ class FloorPlan {
     });
   }
 
+  renderRoofs(roofs = []) {
+    if (!this.guidesLayer) return;
+    const svg = "http://www.w3.org/2000/svg";
+    const create = (name, attributes = {}) => {
+      const element = document.createElementNS(svg, name);
+      Object.entries(attributes).forEach(([key, value]) => element.setAttribute(key, value));
+      return element;
+    };
+
+    roofs.forEach((roof, index) => {
+      try {
+        if (roof.type !== "gable") throw new Error(`Unsupported roof type: ${roof.type || "undefined"}`);
+        if (!roof.base) throw new Error("A gable roof needs a base reference");
+        if (!["longitudinal", "transverse"].includes(roof.orientation)) {
+          throw new Error('A gable roof orientation must be "longitudinal" or "transverse"');
+        }
+
+        const base = this.references.get(String(roof.base));
+        if (!base) throw new Error(`Unknown roof base reference: ${roof.base}`);
+        const pitch = Number(roof.pitch);
+        if (!(pitch > 0 && pitch < 90)) throw new Error("A gable roof pitch must be between 0 and 90 degrees");
+        const eave = Number(roof.eave ?? 0);
+        const rake = Number(roof.rake ?? 0);
+        if (![eave, rake].every(Number.isFinite) || eave < 0 || rake < 0) {
+          throw new Error("A roof eave and rake must be non-negative numbers");
+        }
+        const longitudinal = roof.orientation === "longitudinal";
+        const roofWidth = base.w() + 2 * (longitudinal ? eave : rake);
+        const roofLength = base.l() + 2 * (longitudinal ? rake : eave);
+        const x0 = base.x0() - (longitudinal ? eave : rake);
+        const x1 = base.x1() + (longitudinal ? eave : rake);
+        const y0 = base.y0() - (longitudinal ? rake : eave);
+        const y1 = base.y1() + (longitudinal ? rake : eave);
+        const z0 = base.z1 ? base.z1() : 0;
+        const radians = pitch * Math.PI / 180;
+        const baseSpan = longitudinal ? base.w() : base.l();
+        const ridgeX = longitudinal ? (x0 + x1) / 2 : x0;
+        const ridgeY = longitudinal ? y0 : (y0 + y1) / 2;
+        const ridgeEndX = longitudinal ? ridgeX : x1;
+        const ridgeEndY = longitudinal ? y1 : ridgeY;
+        const ridgeLength = Math.hypot(ridgeEndX - ridgeX, ridgeEndY - ridgeY);
+        const rise = (baseSpan / 2) * Math.tan(radians);
+        const slopeLength = Math.hypot(baseSpan / 2 + eave, rise);
+        const roofSurfaceArea = 2 * slopeLength * ridgeLength;
+        const projectionScale = 1;
+        const offsetX = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--building-offset-x")) || 0;
+        const offsetY = Number.parseFloat(getComputedStyle(this.root).getPropertyValue("--building-offset-y")) || 0;
+        const px0 = x0 + offsetX;
+        const px1 = x1 + offsetX;
+        const py0 = y0 + offsetY;
+        const py1 = y1 + offsetY;
+        const basePx0 = base.x0() + offsetX;
+        const basePx1 = base.x1() + offsetX;
+        const basePy0 = base.y0() + offsetY;
+        const basePy1 = base.y1() + offsetY;
+        const pridgex = ridgeX + offsetX;
+        const ridgey = ridgeY + offsetY;
+        const pridgex2 = ridgeEndX + offsetX;
+        const ridgey2 = ridgeEndY + offsetY;
+
+        const polygon = create("polygon", {
+          points: `${px0},${py0} ${px1},${py0} ${px1},${py1} ${px0},${py1}`,
+          class: "roof-surface"
+        });
+        const gradientId = `roof-gradient-${index + 1}`;
+        const roofStyle = getComputedStyle(this.root);
+        const gradientDark = roofStyle.getPropertyValue("--theme-roof-gradient-dark").trim() || "#a84f31";
+        const gradientLight = roofStyle.getPropertyValue("--theme-roof-gradient-light").trim() || "#f1c0a0";
+        const gradient = create("linearGradient", {
+          id: gradientId,
+          x1: longitudinal ? px0 : px0,
+          y1: longitudinal ? py0 : py0,
+          x2: longitudinal ? px1 : px0,
+          y2: longitudinal ? py0 : py1,
+          gradientUnits: "userSpaceOnUse"
+        });
+        [
+          ["0%", gradientDark, "0.34"],
+          ["50%", gradientLight, "0.10"],
+          ["100%", gradientDark, "0.34"]
+        ].forEach(([offset, color, opacity]) => {
+          gradient.append(create("stop", { offset, "stop-color": color, "stop-opacity": opacity }));
+        });
+        const defs = create("defs");
+        defs.append(gradient);
+        polygon.style.setProperty("fill", `url(#${gradientId})`);
+        const projectedRise = rise * projectionScale;
+        const endTriangles = longitudinal
+          ? [
+            `${basePx0},${basePy0} ${basePx1},${basePy0} ${pridgex},${basePy0 - projectedRise}`,
+            `${basePx0},${basePy1} ${basePx1},${basePy1} ${pridgex},${basePy1 - projectedRise}`
+          ]
+          : [
+            `${basePx0},${basePy0} ${basePx0},${basePy1} ${basePx0 - projectedRise},${ridgey}`,
+            `${basePx1},${basePy0} ${basePx1},${basePy1} ${basePx1 + projectedRise},${ridgey}`
+          ];
+        const triangleElements = endTriangles.map((points) => create("polygon", {
+          points,
+          class: "roof-slope-triangle"
+        }));
+        const ridge = create("line", {
+          x1: pridgex,
+          y1: ridgey,
+          x2: pridgex2,
+          y2: ridgey2,
+          class: "roof-ridge"
+        });
+        const group = create("g", { class: "roof-plan", "data-id": roof.id || `roof-${index + 1}` });
+        group.dataset.base = String(roof.base);
+        group.dataset.orientation = roof.orientation;
+        group.dataset.pitch = String(pitch);
+        group.dataset.eave = String(eave);
+        group.dataset.rake = String(rake);
+        group.dataset.baseZ = String(z0);
+        group.dataset.ridgeZ = String(z0 + rise);
+        group.dataset.projectionScale = String(projectionScale);
+        group.append(defs, polygon, ...triangleElements, ridge);
+        if (roof.label) {
+          const label = create("text", {
+            x: (pridgex + pridgex2) / 2,
+            y: (ridgey + ridgey2) / 2 - 0.18,
+            class: "roof-label",
+            "text-anchor": "middle"
+          });
+          const title = create("tspan", {
+            x: (pridgex + pridgex2) / 2,
+            class: "roof-label-title"
+          });
+          title.textContent = roof.label;
+          const details = create("tspan", {
+            x: (pridgex + pridgex2) / 2,
+            dy: "1.25em",
+            class: "roof-label-details"
+          });
+          details.textContent = `Cumeeira: ${this.formatMeters(ridgeLength)} m — Altura: ${this.formatMeters(rise)} m — Inclinação: ${this.formatMeters(pitch)}°`;
+          label.append(title, details);
+          group.append(label);
+        }
+        this.guidesLayer.append(group);
+      } catch (error) {
+        this.errors.push({ index, opening: roof, category: "roof", message: error.message });
+      }
+    });
+  }
+
   resolveExpression(expression, localOrigin = null) {
     return FloorPlanGeometry.resolveExpression.call(this, expression, localOrigin);
   }
@@ -1388,7 +1613,7 @@ class FloorPlan {
     const floors = this.currentConfig?.floors ?? [];
     const from = String(opening?.from ?? "").trim();
     const to = String(opening?.to ?? "").trim();
-    return (Array.isArray(opening?.size) || opening?.rectangle !== undefined || opening?.inset !== undefined)
+    return (Array.isArray(opening?.size) || opening?.rectangle !== undefined || opening?.inset !== undefined || opening?.outset !== undefined)
       && floors.some((floor) => floor.id === from)
       && floors.some((floor) => floor.id === to);
   }
@@ -1912,7 +2137,7 @@ class FloorPlan {
             const geometries = definition.parts?.length
               ? this.normalizeParts(definition.parts)
               : [this.normalizeGeometry(definition)];
-            const { from, to, rectangle, inset, x, y, w, l, parts, ...fragmentDefinition } = definition;
+            const { from, to, rectangle, inset, outset, x, y, w, l, parts, ...fragmentDefinition } = definition;
             geometries.forEach((geometry) => {
               const sourceWalls = this.normalizeWalls(geometry.walls ?? definition.walls);
               const isStairFlight = String(geometry.classes ?? definition.classes ?? "")
@@ -1946,7 +2171,7 @@ class FloorPlan {
           (floor.items ?? []).forEach((item) => {
             const definition = this.resolveItemType(item);
             const geometry = this.normalizeGeometry(definition);
-            const { from, to, rectangle, inset, x, y, w, l, ...fragmentDefinition } = definition;
+            const { from, to, rectangle, inset, outset, x, y, w, l, ...fragmentDefinition } = definition;
             this.subtractRectangles(geometry, covered).forEach((fragment) => {
               this.add({
                 ...fragmentDefinition,
@@ -1986,6 +2211,7 @@ class FloorPlan {
     this.zoneElements = [];
     this.openings = [];
     this.windows = [];
+    this.allRoofs = [];
     this.errors = [];
     this.roomArea = 0;
     this.roomCount = 0;
@@ -2081,6 +2307,7 @@ class FloorPlan {
     } catch (error) {
       this.errors.push({ category: "presentation", message: error.message });
     }
+    this.renderRoofs(this.visibleRoofs(config, floorConfig));
     this.renderGuides(this.visibleGuides(config, floorConfig));
     this.updateSummary();
     if (this.dxfButton) this.dxfButton.disabled = false;
@@ -2096,6 +2323,14 @@ class FloorPlan {
 
   formatMeters(value) {
     return Number(value).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
+  }
+
+  roofTypeLabel(type) {
+    return { gable: "duas águas" }[type] || type || "—";
+  }
+
+  roofOrientationLabel(orientation) {
+    return { longitudinal: "longitudinal", transverse: "transversal" }[orientation] || orientation || "—";
   }
 
   formatFixed(value) {
@@ -2146,6 +2381,7 @@ class FloorPlan {
     this.updateRoomList();
     this.updateFloorSummary();
     this.updateItemList();
+    this.updateRoofList();
     this.updateOpeningList();
     this.updateWindowList();
     this.updateNaturalList();
@@ -2248,6 +2484,45 @@ class FloorPlan {
       details.textContent = `${this.formatMeters(item.w)}m × ${this.formatMeters(item.l)}m${item.floorLabel ? ` — ${item.floorLabel}` : ""}`;
       entry.append(title, details);
       this.itemList.append(entry);
+    });
+  }
+
+  updateRoofList() {
+    if (!this.roofList) return;
+
+    this.roofList.replaceChildren();
+    if (this.allRoofs.length === 0) {
+      this.roofList.textContent = "Nenhum telhado carregado.";
+      return;
+    }
+
+    this.allRoofs.forEach((roof, index) => {
+      const item = document.createElement("div");
+      item.className = "opening-list-item";
+      const title = document.createElement("strong");
+      title.textContent = `${index + 1}. ${roof.label || roof.id || "Telhado"}`;
+      const details = document.createElement("span");
+      const base = this.references.get(String(roof.base));
+      const pitch = Number(roof.pitch);
+      const eave = Number(roof.eave ?? 0);
+      const rake = Number(roof.rake ?? 0);
+      if (!base || !Number.isFinite(pitch)) {
+        details.textContent = `base: ${roof.base || "—"}${roof.floorLabel ? ` — ${roof.floorLabel}` : ""}`;
+      } else {
+        const longitudinal = roof.orientation === "longitudinal";
+        const baseWidth = base.w();
+        const baseLength = base.l();
+        const roofWidth = baseWidth + 2 * (longitudinal ? eave : rake);
+        const roofLength = baseLength + 2 * (longitudinal ? rake : eave);
+        const ridgeLength = longitudinal ? roofLength : roofWidth;
+        const rise = (longitudinal ? baseWidth : baseLength) / 2 * Math.tan(pitch * Math.PI / 180);
+        const baseSpan = longitudinal ? baseWidth : baseLength;
+        const slopeLength = Math.hypot(baseSpan / 2 + eave, rise);
+        const roofSurfaceArea = 2 * slopeLength * ridgeLength;
+        details.textContent = `Tipo: ${this.roofTypeLabel(roof.type)} — Cumeeira: ${this.roofOrientationLabel(roof.orientation)} (${this.formatMeters(ridgeLength)}m) — ${this.formatMeters(roofWidth)}m × ${this.formatMeters(roofLength)}m — Altura: ${this.formatMeters(rise)}m — Superfície: ${this.formatMeters(roofSurfaceArea)}m² — Inclinação: ${this.formatMeters(pitch)}° — Beiral: ${this.formatMeters(eave)}m — Empena: ${this.formatMeters(rake)}m${roof.floorLabel ? ` — ${roof.floorLabel}` : ""}`;
+      }
+      item.append(title, details);
+      this.roofList.append(item);
     });
   }
 
