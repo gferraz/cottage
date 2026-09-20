@@ -1412,7 +1412,10 @@ class FloorPlan {
         const x1 = base.x1() + (longitudinal ? eave : rake);
         const y0 = base.y0() - (longitudinal ? rake : eave);
         const y1 = base.y1() + (longitudinal ? rake : eave);
-        const z0 = base.z1 ? base.z1() : 0;
+        const z0 = roof.z0 !== undefined
+          ? this.resolve(roof.z0)
+          : (base.z1 ? base.z1() : 0);
+        if (!Number.isFinite(z0)) throw new Error("A cota z0 do telhado precisa ser numérica");
         const radians = pitch * Math.PI / 180;
         const baseSpan = longitudinal ? base.w() : base.l();
         const ridgeX = longitudinal ? (x0 + x1) / 2 : x0;
@@ -2519,7 +2522,8 @@ class FloorPlan {
         const baseSpan = longitudinal ? baseWidth : baseLength;
         const slopeLength = Math.hypot(baseSpan / 2 + eave, rise);
         const roofSurfaceArea = 2 * slopeLength * ridgeLength;
-        details.textContent = `Tipo: ${this.roofTypeLabel(roof.type)} — Cumeeira: ${this.roofOrientationLabel(roof.orientation)} (${this.formatMeters(ridgeLength)}m) — ${this.formatMeters(roofWidth)}m × ${this.formatMeters(roofLength)}m — Altura: ${this.formatMeters(rise)}m — Superfície: ${this.formatMeters(roofSurfaceArea)}m² — Inclinação: ${this.formatMeters(pitch)}° — Beiral: ${this.formatMeters(eave)}m — Empena: ${this.formatMeters(rake)}m${roof.floorLabel ? ` — ${roof.floorLabel}` : ""}`;
+        const baseElevation = roof.z0 !== undefined ? this.resolve(roof.z0) : (base.z1 ? base.z1() : 0);
+        details.textContent = `Tipo: ${this.roofTypeLabel(roof.type)} — Cumeeira: ${this.roofOrientationLabel(roof.orientation)} (${this.formatMeters(ridgeLength)}m) — ${this.formatMeters(roofWidth)}m × ${this.formatMeters(roofLength)}m — Cota base: ${this.formatMeters(baseElevation)}m — Altura: ${this.formatMeters(rise)}m — Superfície: ${this.formatMeters(roofSurfaceArea)}m² — Inclinação: ${this.formatMeters(pitch)}° — Beiral: ${this.formatMeters(eave)}m — Empena: ${this.formatMeters(rake)}m${roof.floorLabel ? ` — ${roof.floorLabel}` : ""}`;
       }
       item.append(title, details);
       this.roofList.append(item);

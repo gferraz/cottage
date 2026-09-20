@@ -44,10 +44,10 @@
       "id": "main-roof",
       "label": "Telhado principal",
       "type": "gable",
-      "base": "dorm",
+      "base": "main",
       "orientation": "longitudinal",
       "pitch": 51,
-      "eave": 1.3,
+      "eave": 0.5,
       "rake": 0.5
     },
     {
