@@ -3,6 +3,7 @@ const floor = new FloorPlan({
   catalog: window.FloorPlanCatalog,
   terrainLayer: document.querySelector("#terrain-layer"),
   guidesLayer: document.querySelector("#guides-layer"),
+  facadeLayer: document.querySelector("#facade-list"),
   viewportSummary: document.querySelector("#viewport-summary"),
   titleElement: document.querySelector("h1"),
   floorSelect: document.querySelector("#floor-select"),

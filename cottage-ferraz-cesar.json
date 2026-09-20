@@ -55,6 +55,13 @@
       "rake": 0.5
     }
   ],
+  "facades": [
+    {
+      "id": "front",
+      "label": "Fachada frontal",
+      "direction": "front"
+    }
+  ],
   "guides": [
     { "id": "h-center", "label": "linha central", "pos": [-4.0, "main.yc"], "w": 20, "color": "green" },
     { "id": "l-axis", "label": "eixo longitudinal", "pos": ["central.xc", -2.5], "l": 20, "color": "green" },

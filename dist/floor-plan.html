@@ -127,6 +127,18 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   font-size: 16px;
 }
 
+.facade-section {
+  margin: 24px auto 0;
+  max-width: 1100px;
+}
+
+.facade-section[hidden] { display: none !important; }
+.facade-view-container { margin: 0 0 20px; }
+.facade-view-container figcaption { margin: 0 0 8px; font-weight: 650; }
+.facade-view { display: block; width: 100%; max-height: 460px; background: var(--theme-site); border: 1px solid var(--theme-border); }
+.facade-room { fill: var(--theme-surface); stroke: var(--theme-wall); stroke-width: 1.5; }
+.facade-room-label { fill: var(--theme-label); font-size: 13px; }
+
 .viewport-summary {
   margin: -8px 0 18px;
   color: var(--theme-muted);
@@ -1563,6 +1575,11 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
       </div>
     </div>
 
+    <section class="facade-section" id="facade-section" hidden aria-labelledby="facade-list-title">
+      <h2 id="facade-list-title">Fachadas</h2>
+      <div id="facade-list"></div>
+    </section>
+
     <div class="plan-details">
       <aside class="room-list" aria-labelledby="room-list-title">
         <h2 id="room-list-title">Cômodos</h2>
@@ -2996,6 +3013,105 @@ const FloorPlanGuides = {
 };
 
 window.FloorPlanGuides = FloorPlanGuides;
+
+
+const FloorPlanFacades = {
+  render(plan, facades = []) {
+    if (!plan.facadeLayer) return;
+    plan.facadeLayer.replaceChildren();
+    plan.facadeLayer.closest(".facade-section")?.toggleAttribute("hidden", facades.length === 0);
+    if (facades.length === 0) return;
+
+    const svgNamespace = "http://www.w3.org/2000/svg";
+    const scale = 56;
+    const rooms = plan.roomElements.filter(
+      (room) => typeof room.x0 === "function" && typeof room.z0 === "function",
+    );
+    const floorHeight = Math.max(
+      Number(plan.currentFloorHeight) || 0,
+      ...rooms.map((room) => room.z1()),
+      3,
+    );
+
+    facades.forEach((facade, index) => {
+      const direction = facade.direction || "front";
+      const side = ["left", "right"].includes(direction);
+      const facadeAxis = side ? "x" : "y";
+      const facadeEdge =
+        direction === "front" || direction === "left" ? "min" : "max";
+      const edgeValues = rooms.map((room) =>
+        facadeAxis === "x"
+          ? facadeEdge === "min"
+            ? room.x0()
+            : room.x1()
+          : facadeEdge === "min"
+            ? room.y0()
+            : room.y1(),
+      );
+      const edge = facadeEdge === "min" ? Math.min(...edgeValues) : Math.max(...edgeValues);
+      const facadeRooms = rooms.filter((room) => {
+        const roomEdge =
+          facadeAxis === "x"
+            ? facadeEdge === "min"
+              ? room.x0()
+              : room.x1()
+            : facadeEdge === "min"
+              ? room.y0()
+              : room.y1();
+        return Math.abs(roomEdge - edge) < 0.01;
+      });
+      const projectedRooms = facadeRooms.length > 0 ? facadeRooms : rooms;
+      const coordinates = projectedRooms.flatMap((room) =>
+        side ? [room.y0(), room.y1()] : [room.x0(), room.x1()],
+      );
+      if (coordinates.length === 0) return;
+      const min = Math.min(...coordinates);
+      const max = Math.max(...coordinates);
+      const width = Math.max(max - min, 1);
+      const padding = 0.5;
+      const svg = document.createElementNS(svgNamespace, "svg");
+      svg.classList.add("facade-view");
+      svg.setAttribute("viewBox", `0 0 ${(width + padding * 2) * scale} ${(floorHeight + padding * 2) * scale}`);
+      svg.setAttribute("role", "img");
+      svg.setAttribute("aria-label", facade.label || `Fachada ${index + 1}`);
+
+      projectedRooms.forEach((room) => {
+        const start = side ? room.y0() : room.x0();
+        const end = side ? room.y1() : room.x1();
+        const z0 = room.z0();
+        const height = Math.max(room.z1() - z0, floorHeight - z0);
+        const rect = document.createElementNS(svgNamespace, "rect");
+        rect.setAttribute("x", `${(start - min + padding) * scale}`);
+        rect.setAttribute("y", `${(floorHeight - z0 - height + padding) * scale}`);
+        rect.setAttribute("width", `${(end - start) * scale}`);
+        rect.setAttribute("height", `${height * scale}`);
+        rect.classList.add("facade-room");
+        rect.dataset.id = room.dataset.id || "";
+        svg.append(rect);
+
+        const roomLabel = room.querySelector(".room-label")?.textContent?.trim();
+        if (roomLabel) {
+          const label = document.createElementNS(svgNamespace, "text");
+          label.setAttribute("x", `${((start + end) / 2 - min + padding) * scale}`);
+          label.setAttribute("y", `${(floorHeight - z0 - height / 2 + padding) * scale}`);
+          label.setAttribute("text-anchor", "middle");
+          label.classList.add("facade-room-label");
+          label.textContent = roomLabel;
+          svg.append(label);
+        }
+      });
+
+      const figure = document.createElement("figure");
+      figure.className = "facade-view-container";
+      const title = document.createElement("figcaption");
+      title.textContent = facade.label || `Fachada ${direction}`;
+      figure.append(title, svg);
+      plan.facadeLayer.append(figure);
+    });
+  },
+};
+
+window.FloorPlanFacades = FloorPlanFacades;
 
 
 const FloorPlanRoofs = {
@@ -6537,11 +6653,12 @@ class FloorPlan {
    * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
    * @param {number} [options.scale=56] Escala inicial em pixels por metro.
    */
-  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerButton = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerButton = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
     this.guidesLayer = guidesLayer;
+    this.facadeLayer = facadeLayer;
     this.viewportSummary = viewportSummary;
     this.titleElement = titleElement;
     this.floorSelect = floorSelect;
@@ -6876,6 +6993,10 @@ class FloorPlan {
     return FloorPlanGuides.render(this, guides);
   }
 
+  renderFacades(facades = []) {
+    return FloorPlanFacades.render(this, facades);
+  }
+
   renderRoofs(roofs = []) {
     return FloorPlanRoofs.render(this, roofs);
   }
@@ -7165,6 +7286,8 @@ class FloorPlan {
     }
     this.updateRoofVisibility();
     this.renderGuides(this.visibleGuides(config, floorConfig));
+    const facades = floorConfig.facades ?? config.facades ?? [];
+    this.renderFacades(facades);
     this.updateSummary();
     [this.downloadButton, this.markdownButton, this.dxfButton].forEach(
       (button) => {
@@ -7335,6 +7458,7 @@ const floor = new FloorPlan({
   catalog: window.FloorPlanCatalog,
   terrainLayer: document.querySelector("#terrain-layer"),
   guidesLayer: document.querySelector("#guides-layer"),
+  facadeLayer: document.querySelector("#facade-list"),
   viewportSummary: document.querySelector("#viewport-summary"),
   titleElement: document.querySelector("h1"),
   floorSelect: document.querySelector("#floor-select"),

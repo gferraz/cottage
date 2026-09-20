@@ -85,6 +85,18 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   font-size: 16px;
 }
 
+.facade-section {
+  margin: 24px auto 0;
+  max-width: 1100px;
+}
+
+.facade-section[hidden] { display: none !important; }
+.facade-view-container { margin: 0 0 20px; }
+.facade-view-container figcaption { margin: 0 0 8px; font-weight: 650; }
+.facade-view { display: block; width: 100%; max-height: 460px; background: var(--theme-site); border: 1px solid var(--theme-border); }
+.facade-room { fill: var(--theme-surface); stroke: var(--theme-wall); stroke-width: 1.5; }
+.facade-room-label { fill: var(--theme-label); font-size: 13px; }
+
 .viewport-summary {
   margin: -8px 0 18px;
   color: var(--theme-muted);
