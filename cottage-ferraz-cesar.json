@@ -30,7 +30,7 @@
     ]
   },
   "zones": [
-    { "id": "main",    "pos": [0, 2.5], "size": [9.6, 8.2], "visible": false },
+    { "id": "main",    "pos": [0, 2.5, 0], "size": [9.6, 8.2, 3.0], "visible": false },
     { "id": "central", "from": ["main.xc - 0.7", "main.y0"], "to": ["x0 + 1.4", "main.y1"], "visible": false },
     { "id": "left",    "rectangle": ["main.x0", "main.y0", "central.x0", "central.y1"], "visible": false },
     { "id": "right",   "rectangle": ["central.x1", "central.y0", "main.x1", "main.y1"], "visible": false },
@@ -88,7 +88,7 @@
         {
           "id": "office",
           "label": "Escritório",
-          "from": ["left.x0 - 0.5", "left.y0  - 2.5"],
+          "from": ["left.x0 - 1.0", "left.y0  - 2.5"],
           "to": ["left.x1 - 1.6", "left.y0 + 1.5"],
           "classes": "office"
         },

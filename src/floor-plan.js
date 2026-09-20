@@ -2880,11 +2880,27 @@ class FloorPlan {
     const items = this.allItems.length ? this.allItems : this.itemElements;
     const openings = this.allOpenings.length ? this.allOpenings : this.openings;
     const windows = this.allWindows.length ? this.allWindows : this.windows;
+    const roofs = this.allRoofs ?? [];
     const floorRows = FloorPlanModel.floorRows(
       floors,
       this.roomDefinitions,
       this.rooms,
     );
+
+    const appendRoofSection = (heading, roofEntries) => {
+      if (roofEntries.length === 0) return;
+      lines.push("", `### ${heading}`, "", "| ID | Tipo | Orientação da cumeeira | Largura | Comprimento | Cumeeira | Cota base | Altura | Superfície | Inclinação | Beiral | Empena |", "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|");
+      roofEntries.forEach((roof) => {
+        const metrics = FloorPlanExport.roofMetrics(this, roof);
+        if (!metrics) {
+          lines.push(`| ${this.markdownText(roof.id || "—")} | geometria inválida |  |  |  |  |  |  |  |  |  |  |`);
+          return;
+        }
+        lines.push(`| ${this.markdownText(roof.id || "—")} | ${this.markdownText(this.roofTypeLabel(roof.type))} | ${this.markdownText(this.roofOrientationLabel(roof.orientation))} | ${this.formatMeters(metrics.roofWidth)} | ${this.formatMeters(metrics.roofLength)} | ${this.formatMeters(metrics.ridgeLength)} | ${this.formatMeters(metrics.baseElevation)} | ${this.formatMeters(metrics.rise)} | ${this.formatMeters(metrics.surfaceArea)} | ${this.formatMeters(metrics.pitch)}° | ${this.formatMeters(metrics.eave)} | ${this.formatMeters(metrics.rake)} |`);
+      });
+    };
+
+    appendRoofSection("Telhados globais", roofs.filter((roof) => (roof.floorId ?? null) === null && floors.length > 1));
 
     floors.forEach((floor, floorIndex) => {
       const floorId = floor.id ?? null;
@@ -2893,6 +2909,7 @@ class FloorPlan {
       const floorItems = items.filter((item) => (item.floorId ?? null) === floorId);
       const floorOpenings = openings.filter((opening) => (opening.floorId ?? null) === floorId);
       const floorWindows = windows.filter((window) => (window.floorId ?? null) === floorId);
+      const floorRoofs = roofs.filter((roof) => (roof.floorId ?? null) === floorId);
 
       lines.push("", `## ${this.markdownText(floorName)}`);
       lines.push("", "### Cômodos", "", "| # | ID | Nome | x | y | Largura | Comprimento | Área bruta | Área útil | Paredes |", "|---:|---|---|---:|---:|---:|---:|---:|---:|---|");
@@ -2928,6 +2945,8 @@ class FloorPlan {
           lines.push(`| ${index + 1} | ${this.markdownText(item.label || item.dataset?.label || item.title || "Item")} | ${this.formatMeters(x)} | ${this.formatMeters(y)} | ${this.formatMeters(w)} | ${this.formatMeters(l)} | ${this.formatMeters(area)} | ${this.markdownText(classes)} | ${this.markdownText(overlaps)} |`);
         });
       }
+
+      appendRoofSection("Telhados", floorRoofs);
 
       lines.push("", "### Passagens", "", "| ID | De | Para | Tipo | Parede | Posição | Largura |", "|---|---|---|---|---|---:|---:|");
       if (floorOpenings.length === 0) {
