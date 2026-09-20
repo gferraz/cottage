@@ -110,8 +110,14 @@ planta continua sendo escolhido pelo botão “Carregar JSON”.
 
 - `floor-plan.html`: shell, interface e template de CSS portátil.
 - `src/floor-plan.css`: estilos da aplicação.
-- `src/floor-plan.js`: fachada pública `FloorPlan` e execução no navegador.
+- `src/floor-plan.js`: fachada pública `FloorPlan` e orquestração no navegador.
 - `src/floor-plan-geometry.js`: avaliação de expressões, aliases locais e referências geométricas.
-- `src/floor-plan-model.js`, `src/floor-plan-validation.js`, `src/floor-plan-renderer.js`, `src/floor-plan-legend.js`, `src/floor-plan-export.js`: módulos auxiliares.
+- `src/floor-plan-dom.js`: criação de elementos HTML e cômodos.
+- `src/floor-plan-geometry-domain.js`: normalização geométrica, paredes e escadas.
+- `src/floor-plan-terrain.js`, `src/floor-plan-guides.js`, `src/floor-plan-roofs.js`: terreno e desenhos SVG.
+- `src/floor-plan-openings.js`, `src/floor-plan-elements.js`: aberturas, itens e zonas.
+- `src/floor-plan-references.js`, `src/floor-plan-layers.js`: referências globais, camadas e sobreposições.
+- `src/floor-plan-lists.js`, `src/floor-plan-text-export.js`, `src/floor-plan-html-export.js`: listas e exportações.
+- `src/floor-plan-model.js`, `src/floor-plan-validation.js`, `src/floor-plan-renderer.js`, `src/floor-plan-legend.js`, `src/floor-plan-export.js`: serviços auxiliares.
 - `src/floor-plan-config.js`: inicialização, carregamento por arquivo e comando `floor`.
 - `cottage-ferraz-cesar.json`: exemplo com terreno e múltiplos pisos.
