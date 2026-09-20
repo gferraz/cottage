@@ -136,8 +136,11 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .facade-view-container { margin: 0 0 20px; }
 .facade-view-container figcaption { margin: 0 0 8px; font-weight: 650; }
 .facade-view { display: block; width: 100%; max-height: 460px; background: var(--theme-site); border: 1px solid var(--theme-border); }
-.facade-room { fill: var(--theme-surface); stroke: var(--theme-wall); stroke-width: 1.5; }
+.facade-room { fill: var(--theme-surface); fill-opacity: 0.45; stroke: var(--theme-wall); stroke-width: 1.5; }
 .facade-room-label { fill: var(--theme-label); font-size: 13px; }
+.facade-opening { fill: var(--theme-opening); stroke: var(--theme-opening-line); stroke-width: 2; }
+.facade-window { fill: var(--theme-window); stroke: var(--theme-window-line); stroke-width: 2; }
+.facade-window-divider { stroke: var(--theme-window-line); stroke-width: 1; }
 
 .viewport-summary {
   margin: -8px 0 18px;
@@ -3023,7 +3026,10 @@ const FloorPlanFacades = {
     if (facades.length === 0) return;
 
     const svgNamespace = "http://www.w3.org/2000/svg";
-    const scale = 56;
+    const scale =
+      Number.parseFloat(
+        getComputedStyle(plan.root).getPropertyValue("--m"),
+      ) || 56;
     const rooms = plan.roomElements.filter(
       (room) => typeof room.x0 === "function" && typeof room.z0 === "function",
     );
@@ -3060,7 +3066,20 @@ const FloorPlanFacades = {
               : room.y1();
         return Math.abs(roomEdge - edge) < 0.01;
       });
-      const projectedRooms = facadeRooms.length > 0 ? facadeRooms : rooms;
+      const facadeDepth = Number(facade.depth ?? 3);
+      const projectedRooms = rooms.filter((room) => {
+        const near = side ? room.x0() : room.y0();
+        const far = side ? room.x1() : room.y1();
+        return facadeEdge === "min"
+          ? near <= edge + facadeDepth
+          : far >= edge - facadeDepth;
+      });
+      const depthDirection = facadeEdge === "min" ? 1 : -1;
+      projectedRooms.sort((first, second) => {
+        const firstDepth = side ? first.x0() : first.y0();
+        const secondDepth = side ? second.x0() : second.y0();
+        return depthDirection * (secondDepth - firstDepth);
+      });
       const coordinates = projectedRooms.flatMap((room) =>
         side ? [room.y0(), room.y1()] : [room.x0(), room.x1()],
       );
@@ -3074,6 +3093,31 @@ const FloorPlanFacades = {
       svg.setAttribute("viewBox", `0 0 ${(width + padding * 2) * scale} ${(floorHeight + padding * 2) * scale}`);
       svg.setAttribute("role", "img");
       svg.setAttribute("aria-label", facade.label || `Fachada ${index + 1}`);
+
+      const defs = document.createElementNS(svgNamespace, "defs");
+      const pattern = document.createElementNS(svgNamespace, "pattern");
+      pattern.setAttribute("id", `facade-grid-${index + 1}`);
+      pattern.setAttribute("width", `${scale / 2}`);
+      pattern.setAttribute("height", `${scale / 2}`);
+      pattern.setAttribute("patternUnits", "userSpaceOnUse");
+      const gridPath = document.createElementNS(svgNamespace, "path");
+      gridPath.setAttribute("d", `M ${scale / 2} 0 L 0 0 0 ${scale / 2}`);
+      gridPath.setAttribute(
+        "stroke",
+        getComputedStyle(plan.root).getPropertyValue("--theme-grid").trim() ||
+          "rgba(0, 0, 0, 0.08)",
+      );
+      gridPath.setAttribute("stroke-width", "1");
+      gridPath.setAttribute("fill", "none");
+      pattern.append(gridPath);
+      defs.append(pattern);
+      svg.append(defs);
+      const grid = document.createElementNS(svgNamespace, "rect");
+      grid.setAttribute("width", "100%");
+      grid.setAttribute("height", "100%");
+      grid.setAttribute("fill", `url(#facade-grid-${index + 1})`);
+      grid.classList.add("facade-grid");
+      svg.append(grid);
 
       projectedRooms.forEach((room) => {
         const start = side ? room.y0() : room.x0();
@@ -3100,6 +3144,54 @@ const FloorPlanFacades = {
           svg.append(label);
         }
       });
+
+      const facadeWalls =
+        direction === "front"
+          ? ["top"]
+          : direction === "rear"
+            ? ["bottom"]
+            : direction === "left"
+              ? ["left"]
+              : ["right"];
+      const facadeRoomIds = new Set(
+        projectedRooms.map((room) => String(room.dataset.id || "")),
+      );
+      [...plan.openings, ...plan.windows]
+        .filter(
+          (opening) =>
+            facadeWalls.includes(opening.wall) &&
+            facadeRoomIds.has(String(opening.roomId || "")),
+        )
+        .forEach((opening) => {
+          const start = side ? opening.y : opening.x;
+          const z0 = Number(opening.z0 ?? 0);
+          const height = Number(opening.h ?? opening.z1 - z0);
+          const featureWidth = Number(opening.w ?? 0.8);
+          if (![start, z0, height, featureWidth].every(Number.isFinite)) return;
+          const rect = document.createElementNS(svgNamespace, "rect");
+          rect.setAttribute("x", `${(start - min + padding) * scale}`);
+          rect.setAttribute("y", `${(floorHeight - z0 - height + padding) * scale}`);
+          rect.setAttribute("width", `${featureWidth * scale}`);
+          rect.setAttribute("height", `${height * scale}`);
+          rect.classList.add(
+            opening.type === "window" ? "facade-window" : "facade-opening",
+          );
+          rect.dataset.id = opening.id || "";
+          rect.setAttribute("aria-label", opening.type || "opening");
+          const title = document.createElementNS(svgNamespace, "title");
+          title.textContent = `${opening.type || "Abertura"}: ${opening.id || "sem id"}`;
+          rect.append(title);
+          svg.append(rect);
+          if (opening.type === "window") {
+            const divider = document.createElementNS(svgNamespace, "line");
+            divider.setAttribute("x1", `${(start - min + padding) * scale}`);
+            divider.setAttribute("x2", `${(start - min + padding + featureWidth) * scale}`);
+            divider.setAttribute("y1", `${(floorHeight - z0 - height / 2 + padding) * scale}`);
+            divider.setAttribute("y2", divider.getAttribute("y1"));
+            divider.classList.add("facade-window-divider");
+            svg.append(divider);
+          }
+        });
 
       const figure = document.createElement("figure");
       figure.className = "facade-view-container";
