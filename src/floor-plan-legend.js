@@ -1,5 +1,5 @@
-class FloorPlanLegend {
-  static floorRows(floors, roomDefinitions, roomReferences, unionArea) {
+const FloorPlanLegend = {
+  floorRows(floors, roomDefinitions, roomReferences, unionArea) {
     return FloorPlanModel.floorRows(floors, roomDefinitions, roomReferences, unionArea);
-  }
-}
+  },
+};

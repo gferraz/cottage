@@ -1,5 +1,6 @@
 const floor = new FloorPlan({
   root: document.querySelector("#floor-plan"),
+  catalog: window.FloorPlanCatalog,
   terrainLayer: document.querySelector("#terrain-layer"),
   guidesLayer: document.querySelector("#guides-layer"),
   viewportSummary: document.querySelector("#viewport-summary"),
@@ -23,7 +24,7 @@ const floor = new FloorPlan({
   multiFloorButton: document.querySelector("#multi-floor-button"),
   jsonInput: document.querySelector("#json-file"),
   layerButton: document.querySelector("#layer-button"),
-  scale: 56
+  scale: 56,
 });
 
 window.floor = floor;
@@ -36,7 +37,9 @@ function loadJsonFromCommandLine() {
 
   try {
     const binary = atob(encoded);
-    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    const bytes = Uint8Array.from(binary, (character) =>
+      character.charCodeAt(0),
+    );
     floor.load(JSON.parse(new TextDecoder().decode(bytes)));
   } catch (error) {
     alert(`Não foi possível carregar a planta: ${error.message}`);

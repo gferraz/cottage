@@ -1,9 +1,9 @@
-class FloorPlanModel {
-  static fromText(sourceText) {
-    return this.fromConfig(JSON.parse(sourceText));
-  }
+const FloorPlanModel = {
+  fromText(sourceText) {
+    return FloorPlanModel.fromConfig(JSON.parse(sourceText));
+  },
 
-  static fromConfig(config) {
+  fromConfig(config) {
     const floors = config.floors ?? [config];
     const viewport = config.viewport ?? { size: [20, 20], origin: [-4.25, -4.25] };
     return {
@@ -16,9 +16,9 @@ class FloorPlanModel {
         floorLabel: floor.label ?? null
       })))
     };
-  }
+  },
 
-  static calculateUnionArea(rectangles) {
+  calculateUnionArea(rectangles) {
     if (rectangles.length === 0) return 0;
 
     const xs = [...new Set(rectangles.flatMap(({ x, w }) => [x, x + w]))].sort((a, b) => a - b);
@@ -40,9 +40,9 @@ class FloorPlanModel {
     }
 
     return area;
-  }
+  },
 
-  static calculateNetRoomArea(room, rooms, items) {
+  calculateNetRoomArea(room, rooms, items) {
     const targetIds = new Set([room.dataset.id]);
     room.geometryParts.forEach((part) => {
       if (part.id) targetIds.add(`${room.dataset.id}.${part.id}`);
@@ -67,9 +67,9 @@ class FloorPlanModel {
     });
     const grossArea = room.geometryParts.reduce((total, part) => total + part.w * part.l, 0);
     return grossArea - FloorPlanModel.calculateUnionArea(deductions);
-  }
+  },
 
-  static floorRows(floors, roomDefinitions, roomReferences) {
+  floorRows(floors, roomDefinitions, roomReferences) {
     return floors.map((floor) => {
       const rooms = (floor.rooms ?? [])
         .filter((room) => roomDefinitions.get(room.id) === room)
@@ -90,4 +90,4 @@ class FloorPlanModel {
       };
     });
   }
-}
+};

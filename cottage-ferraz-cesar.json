@@ -4,12 +4,6 @@
     "size": [24.0, 32.0],
     "origin": [1.0, 1.0]
   },
-  "item-types": {
-    "washing-machine": { "label": "Lavadora", "size": [0.6, 0.6, 0.85], "classes": "appliance washing-machine" },
-    "queen-bed": { "label": "Cama Queen", "size": [1.6, 2.0, 0.55], "classes": "furniture queen-bed" },
-    "three-seat-sofa": { "label": "Sofá de 3 lugares", "size": [2.1, 0.9, 0.85], "classes": "furniture three-seat-sofa" },
-    "armchair": { "label": "Poltrona", "size": [0.8, 0.85, 0.85], "classes": "furniture armchair" }
-  },
   "terrain": {
     "front": { "edge": ["P1", "P2"], "position": "top", "label": "RUA/FRENTE" },
     "rear": { "edge": ["P18", "P19"], "position": "bottom", "label": "JARDIM" },

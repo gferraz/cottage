@@ -1,6 +1,7 @@
 class FloorPlan {
-  constructor({ root, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorButton = null, jsonInput = null, layerButton = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorButton = null, jsonInput = null, layerButton = null, scale = 56 }) {
     this.root = root;
+    this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
     this.guidesLayer = guidesLayer;
     this.viewportSummary = viewportSummary;
@@ -1791,7 +1792,13 @@ class FloorPlan {
       throw new Error(`Unknown opening target: ${target}`);
     }
 
-    const defaults = { door: 0.8, opening: 1.0, window: 0.9 };
+    const verticalDefaults = {
+      door: { w: 0.8, z0: 0, h: 2.1 },
+      opening: { w: 1.0, z0: 0, h: 2.1 },
+      window: { w: 0.9, z0: 0.9, h: 1.2 },
+      ...(this.catalog.openings || {})
+    };
+    const defaults = Object.fromEntries(Object.entries(verticalDefaults).map(([key, definition]) => [key, definition.w]));
     const type = String(opening.type ?? "door").trim();
     if (!(type in defaults)) throw new Error(`Unsupported opening type: ${type}`);
 
@@ -1861,6 +1868,12 @@ class FloorPlan {
 
     const shift = hasPosition ? Math.round(position * 100) : 0;
     const id = `${roomId}-${target}-${shift}`;
+    const openingDefaults = verticalDefaults[type] || {};
+    const z0 = this.resolve(opening.z0 ?? openingDefaults.z0 ?? 0);
+    const height = this.resolve(opening.h ?? openingDefaults.h ?? 2.1);
+    if (![z0, height].every(Number.isFinite) || z0 < 0 || height <= 0) {
+      throw new Error("Opening z0 must be non-negative and h must be greater than zero");
+    }
     return {
       ...opening,
       id,
@@ -1874,7 +1887,10 @@ class FloorPlan {
       wallLength,
       x: horizontal ? wallStart + position : (wall === "left" ? room.x0() : room.x1()),
       y: horizontal ? (wall === "top" ? room.y0() : room.y1()) : wallStart + position,
-      horizontal
+      horizontal,
+      z0,
+      z1: z0 + height,
+      h: height
     };
   }
 
@@ -2226,11 +2242,11 @@ class FloorPlan {
   load(config) {
     this.model = FloorPlanModel.fromConfig(config);
     this.currentConfig = config;
-    this.itemTypes = config["item-types"] || {};
+    this.itemTypes = { ...(this.catalog.items || {}), ...(config["item-types"] || {}) };
     this.theme = {
       ...this.theme,
       ...(config.theme || {}),
-      colors: { ...this.theme.colors, ...(config.theme?.colors || {}) }
+      colors: { ...this.theme.colors, ...(this.catalog.colors || {}), ...(config.theme?.colors || {}) }
     };
     this.configureViewport(this.model.viewport);
     const configuredFloorIndex = Number.isInteger(config.activeFloor)
@@ -2823,23 +2839,23 @@ class FloorPlan {
         lines.push(`| ${index + 1} | ${this.markdownText(item.label || item.dataset?.label || item.title || "Item")}${item.floorLabel ? ` (${this.markdownText(item.floorLabel)})` : ""} | ${this.formatMeters(x)} | ${this.formatMeters(y)} | ${this.formatMeters(w)} | ${this.formatMeters(l)} | ${this.formatMeters(area)} | ${this.markdownText(classes)} | ${this.markdownText(overlaps)} |`);
       });
     }
-    lines.push("", "## Passagens", "", "| ID | De | Para | Tipo | Parede | Posição | Largura |", "|---|---|---|---|---|---:|---:|");
+    lines.push("", "## Passagens", "", "| ID | De | Para | Tipo | Parede | Posição | Largura | z0 | Altura |", "|---|---|---|---|---|---:|---:|---:|---:|");
     const openings = this.allOpenings.length ? this.allOpenings : this.openings;
     if (openings.length === 0) {
       lines.push("| — | Nenhuma passagem definida |  |  |  |  |  |");
     } else {
       openings.forEach((opening) => {
-        lines.push(`| ${this.markdownText(opening.id)} | ${this.markdownText(opening.roomId)} | ${this.markdownText(opening.to)} | ${this.markdownText(opening.type)} | ${opening.wall} | ${this.formatMeters(opening.position)} | ${this.formatMeters(opening.w)} |`);
+        lines.push(`| ${this.markdownText(opening.id)} | ${this.markdownText(opening.roomId)} | ${this.markdownText(opening.to)} | ${this.markdownText(opening.type)} | ${opening.wall} | ${this.formatMeters(opening.position)} | ${this.formatMeters(opening.w)} | ${this.formatMeters(opening.z0)} | ${this.formatMeters(opening.h)} |`);
       });
     }
 
-    lines.push("", "## Janelas", "", "| ID | De | Para | Parede | Posição | Largura |", "|---|---|---|---|---:|---:|");
+    lines.push("", "## Janelas", "", "| ID | De | Para | Parede | Posição | Largura | z0 | Altura |", "|---|---|---|---|---:|---:|---:|---:|");
     const windows = this.allWindows.length ? this.allWindows : this.windows;
     if (windows.length === 0) {
       lines.push("| — | Nenhuma janela definida |  |  |  |  |");
     } else {
       windows.forEach((window) => {
-        lines.push(`| ${this.markdownText(window.id)} | ${this.markdownText(window.roomId)} | ${this.markdownText(window.to)} | ${window.wall} | ${this.formatMeters(window.position)} | ${this.formatMeters(window.w)} |`);
+        lines.push(`| ${this.markdownText(window.id)} | ${this.markdownText(window.roomId)} | ${this.markdownText(window.to)} | ${window.wall} | ${this.formatMeters(window.position)} | ${this.formatMeters(window.w)} | ${this.formatMeters(window.z0)} | ${this.formatMeters(window.h)} |`);
       });
     }
 
@@ -2948,21 +2964,21 @@ class FloorPlan {
 
       appendRoofSection("Telhados", floorRoofs);
 
-      lines.push("", "### Passagens", "", "| ID | De | Para | Tipo | Parede | Posição | Largura |", "|---|---|---|---|---|---:|---:|");
+      lines.push("", "### Passagens", "", "| ID | De | Para | Tipo | Parede | Posição | Largura | z0 | Altura |", "|---|---|---|---|---|---:|---:|---:|---:|");
       if (floorOpenings.length === 0) {
         lines.push("| — | Nenhuma passagem definida |  |  |  |  |  |");
       } else {
         floorOpenings.forEach((opening) => {
-          lines.push(`| ${this.markdownText(opening.id)} | ${this.markdownText(opening.roomId)} | ${this.markdownText(opening.to)} | ${this.markdownText(opening.type)} | ${opening.wall} | ${this.formatMeters(opening.position)} | ${this.formatMeters(opening.w)} |`);
+          lines.push(`| ${this.markdownText(opening.id)} | ${this.markdownText(opening.roomId)} | ${this.markdownText(opening.to)} | ${this.markdownText(opening.type)} | ${opening.wall} | ${this.formatMeters(opening.position)} | ${this.formatMeters(opening.w)} | ${this.formatMeters(opening.z0)} | ${this.formatMeters(opening.h)} |`);
         });
       }
 
-      lines.push("", "### Janelas", "", "| ID | De | Para | Parede | Posição | Largura |", "|---|---|---|---|---:|---:|");
+      lines.push("", "### Janelas", "", "| ID | De | Para | Parede | Posição | Largura | z0 | Altura |", "|---|---|---|---|---:|---:|---:|---:|");
       if (floorWindows.length === 0) {
         lines.push("| — | Nenhuma janela definida |  |  |  |  |");
       } else {
         floorWindows.forEach((window) => {
-          lines.push(`| ${this.markdownText(window.id)} | ${this.markdownText(window.roomId)} | ${this.markdownText(window.to)} | ${window.wall} | ${this.formatMeters(window.position)} | ${this.formatMeters(window.w)} |`);
+          lines.push(`| ${this.markdownText(window.id)} | ${this.markdownText(window.roomId)} | ${this.markdownText(window.to)} | ${window.wall} | ${this.formatMeters(window.position)} | ${this.formatMeters(window.w)} | ${this.formatMeters(window.z0)} | ${this.formatMeters(window.h)} |`);
         });
       }
     });
