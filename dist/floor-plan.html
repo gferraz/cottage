@@ -6191,6 +6191,13 @@ window.FloorPlanHtmlExport = FloorPlanHtmlExport;
 
 
 class FloorPlan {
+  /**
+   * Cria a fachada da planta e conecta os elementos da interface.
+   * @param {Object} options Opções e referências aos elementos HTML da aplicação.
+   * @param {HTMLElement} options.root Elemento que recebe o desenho da planta.
+   * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
+   * @param {number} [options.scale=56] Escala inicial em pixels por metro.
+   */
   constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorButton = null, jsonInput = null, layerButton = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
@@ -6368,10 +6375,20 @@ class FloorPlan {
     return Number(w) >= 1 && Number(l) >= 1;
   }
 
+  /**
+   * Adiciona uma definição ao modelo e à representação visual.
+   * @param {Object} data Definição de cômodo, item, zona ou abertura.
+   * @returns {Object|null} Elemento criado, quando a definição produz um elemento.
+   */
   add(data) {
     return FloorPlanDom.add(this, data);
   }
 
+  /**
+   * Adiciona um cômodo retangular ou composto por partes.
+   * @param {Object} room Definição com `id` e geometria (`pos`/`size` ou `parts`).
+   * @returns {Object|null} Elemento visual do cômodo.
+   */
   addRoom(room) {
     return FloorPlanDom.addRoom(this, room);
   }
@@ -6505,6 +6522,11 @@ class FloorPlan {
     return FloorPlanGeometry.resolve.call(this, value, localOrigin);
   }
 
+  /**
+   * Adiciona um item físico, como escada, cama ou lareira.
+   * @param {Object} item Definição do item e sua geometria.
+   * @returns {Object|null} Elemento visual criado.
+   */
   addItem(item) {
     return FloorPlanElements.addItem(this, item);
   }
@@ -6513,6 +6535,11 @@ class FloorPlan {
     return FloorPlanElements.resolveItemType(this, item);
   }
 
+  /**
+   * Adiciona uma zona de referência, que pode ser virtual.
+   * @param {Object} zone Definição da zona.
+   * @returns {Object|null} Elemento visual criado.
+   */
   addZone(zone) {
     return FloorPlanElements.addZone(this, zone);
   }
@@ -6521,6 +6548,11 @@ class FloorPlan {
     return FloorPlanElements.addZones(this, zones);
   }
 
+  /**
+   * Adiciona uma passagem entre uma parede e outro cômodo ou o exterior.
+   * @param {Object} opening Definição com `from`, `to`, `type` e dimensões opcionais.
+   * @returns {Object|null} Elemento visual da passagem.
+   */
   addOpening(opening) {
     return FloorPlanOpenings.addOpening(this, opening);
   }
@@ -6545,6 +6577,11 @@ class FloorPlan {
     return FloorPlanOpenings.addVisibleVerticalOpenings(this, config, floorConfig);
   }
 
+  /**
+   * Adiciona uma janela. O destino é opcional quando a janela dá para o exterior.
+   * @param {Object} window Definição da janela, incluindo `from` e, opcionalmente, `to`.
+   * @returns {Object|null} Elemento visual da janela.
+   */
   addWindow(window) {
     return FloorPlanOpenings.addWindow(this, window);
   }
@@ -6560,10 +6597,20 @@ class FloorPlan {
   wallSegment(room, wall) {
     return FloorPlanOpenings.wallSegment(room, wall);
   }
+  /**
+   * Calcula os limites geométricos dos elementos da planta corrente.
+   * @param {Object} [options] Opções do cálculo.
+   * @param {boolean} [options.includeItems=false] Inclui itens nos limites.
+   * @returns {{x0:number,y0:number,x1:number,y1:number,w:number,h:number}} Limites calculados.
+   */
   bounds({ includeItems = false } = {}) {
     return FloorPlanMetrics.bounds(this, { includeItems });
   }
 
+  /**
+   * Calcula os limites da construção, sem incluir terreno e referências auxiliares.
+   * @returns {{x0:number,y0:number,x1:number,y1:number,w:number,h:number}|null} Limites ou `null`.
+   */
   buildingReferenceBounds() {
     return FloorPlanMetrics.buildingReferenceBounds(this);
   }
@@ -6605,6 +6652,11 @@ class FloorPlan {
     this.updateSummary();
   }
 
+  /**
+   * Carrega uma configuração JSON e renderiza todos os seus dados.
+   * @param {Object} config Configuração da planta, incluindo pisos e objetos.
+   * @returns {FloorPlan} A própria instância, para encadeamento.
+   */
   load(config) {
     this.model = FloorPlanModel.fromConfig(config);
     this.currentConfig = config;
@@ -6699,6 +6751,11 @@ class FloorPlan {
     return this;
   }
 
+  /**
+   * Lê um arquivo JSON selecionado pelo usuário e carrega sua configuração.
+   * @param {File} file Arquivo JSON local.
+   * @returns {Promise<FloorPlan>} A instância após o carregamento.
+   */
   async loadFile(file) {
     const sourceText = await file.text();
     const config = JSON.parse(sourceText);
@@ -6769,6 +6826,10 @@ class FloorPlan {
   updateErrorList() {
     return FloorPlanLists.updateErrorList(this);
   }
+  /**
+   * Gera a representação ASCII do piso corrente.
+   * @returns {string} Layout textual da planta.
+   */
   asciiLayout() {
     return FloorPlanTextExport.asciiLayout(this);
   }
@@ -6781,9 +6842,19 @@ class FloorPlan {
     return FloorPlanTextExport.downloadMarkdownLegacy(this, filename);
   }
 
+  /**
+   * Gera e baixa o layout textual em Markdown.
+   * @param {string} [filename="planta-layout.md"] Nome do arquivo baixado.
+   * @returns {void} Inicia o download no navegador.
+   */
   downloadMarkdown(filename = "planta-layout.md") {
     return FloorPlanTextExport.downloadMarkdown(this, filename);
   }
+  /**
+   * Gera e baixa uma cópia HTML portátil da planta atual.
+   * @param {string} [filename="planta-terrea-gerada.html"] Nome do arquivo baixado.
+   * @returns {Promise<void>} Conclusão da preparação e do download.
+   */
   async downloadHtml(filename = "planta-terrea-gerada.html") {
     return FloorPlanHtmlExport.downloadHtml(this, filename);
   }
