@@ -1,10 +1,23 @@
 const FloorPlanReferences = {
   prepareRoomReferences(plan, config) {
+    // These collections are part of the plan state even before the first
+    // configuration is prepared. Keep the preparation safe for a fresh plan
+    // and for callers that reload a configuration more than once.
+    plan.references ??= new Map();
+    plan.rooms ??= new Map();
+    plan.roomReferences ??= new Map();
+    plan.roomDefinitions ??= new Map();
+    plan.roomGeometryCache ??= new Map();
+    plan.roomGeometryStack ??= new Set();
+    plan.partOwners ??= new Map();
+    plan.globalObjectIds ??= new Set();
+    plan.validZoneIds ??= new Set();
     plan.roomDefinitions.clear();
     plan.roomGeometryCache.clear();
     plan.roomGeometryStack.clear();
     plan.invalidRoomIds.clear();
     plan.rooms.clear();
+    plan.roomReferences.clear();
     plan.references.clear();
     const collected = FloorPlanValidation.collectRoomDefinitions(
       plan.model || FloorPlanModel.fromConfig(config),
@@ -15,6 +28,7 @@ const FloorPlanReferences = {
     plan.roomDefinitions.forEach((_room, id) => {
       const reference = plan.createRoomReference(id);
       plan.rooms.set(id, reference);
+      plan.roomReferences.set(id, reference);
       plan.references.set(id, reference);
     });
     plan.registerGlobalPartReferences();
@@ -42,7 +56,7 @@ const FloorPlanReferences = {
     plan.roomDefinitions.forEach((room, roomId) => {
       (room.parts ?? []).forEach((part, index) => {
         const partId = part.id || `part-${index + 1}`;
-        if (plan.partOwners.has(partId)) {
+        if (plan.partOwners?.has(partId)) {
           plan.errors.push({
             category: "room",
             id: partId,
@@ -51,7 +65,7 @@ const FloorPlanReferences = {
           });
           return;
         }
-        if (plan.references.has(partId)) {
+        if (plan.references?.has(partId)) {
           plan.errors.push({
             category: "room",
             id: partId,
@@ -80,6 +94,7 @@ const FloorPlanReferences = {
           reference[method] = () =>
             plan.getRoomGeometry(roomId).partReferences.get(partId)[method]();
         });
+        FloorPlanGeometryBox.attach(reference, { label: partId });
         plan.references.set(partId, reference);
       });
     });
@@ -90,7 +105,7 @@ const FloorPlanReferences = {
       if (
         !floorConfig.id ||
         FloorPlanValidation.isReservedId(floorConfig.id) ||
-        plan.references.has(floorConfig.id)
+        plan.references?.has(floorConfig.id)
       )
         return;
       const height = Number(floorConfig.h ?? 0);
@@ -117,7 +132,7 @@ const FloorPlanReferences = {
       if (
         !guide.id ||
         FloorPlanValidation.isReservedId(guide.id) ||
-        plan.references.has(guide.id)
+        plan.references?.has(guide.id)
       )
         return;
       const [xValue, yValue] = guide.pos ?? guide.from ?? [];
@@ -196,7 +211,7 @@ const FloorPlanReferences = {
       ? [...(config.zones ?? []), ...floorZones]
       : floorZones;
     zones.forEach((zone) => {
-      if (!zone.id || plan.references.has(zone.id)) return;
+      if (!zone.id || plan.references?.has(zone.id)) return;
       const geometry = () => plan.normalizeGeometry(zone);
       plan.references.set(zone.id, {
         x0: () => geometry().x,
@@ -269,7 +284,7 @@ const FloorPlanReferences = {
           opening: zone,
           message: `ID reservado: ${zone.id}`,
         });
-      } else if (plan.globalObjectIds.has(zone.id)) {
+      } else if (plan.globalObjectIds?.has(zone.id)) {
         plan.errors.push({
           category: "zone",
           id: zone.id,
@@ -295,7 +310,7 @@ const FloorPlanReferences = {
             opening: object,
             message: `ID reservado: ${object.id}`,
           });
-        } else if (plan.globalObjectIds.has(object.id)) {
+        } else if (plan.globalObjectIds?.has(object.id)) {
           plan.errors.push({
             category: "object",
             id: object.id,
@@ -385,7 +400,7 @@ const FloorPlanReferences = {
       const floor = floors.find((floorConfig) =>
         (floorConfig.rooms ?? []).includes(room),
       );
-      const reference = plan.rooms.get(id);
+      const reference = plan.roomReferences.get(id);
       return {
         id,
         label: room.label || id,
@@ -455,8 +470,7 @@ const FloorPlanReferences = {
   },
 
   createRoomReference(plan, id) {
-    const floorPlan = this;
-    return {
+    const reference = {
       dataset: { id, label: plan.roomDefinitions.get(id)?.label || id },
       x0: () => plan.getRoomGeometry(id).x0(),
       x1: () => plan.getRoomGeometry(id).x1(),
@@ -474,12 +488,17 @@ const FloorPlanReferences = {
       wallState: (side) => plan.getRoomGeometry(id).wallState(side),
       hasWall: (side) => plan.getRoomGeometry(id).hasWall(side),
       get geometryParts() {
-        return floorPlan.getRoomGeometry(id).geometryParts;
+        return plan.getRoomGeometry(id).geometryParts;
       },
       get partReferences() {
-        return floorPlan.getRoomGeometry(id).partReferences;
+        return plan.getRoomGeometry(id).partReferences;
       },
     };
+    FloorPlanGeometryBox.attach(reference, {
+      compound: Boolean(plan.roomDefinitions.get(id)?.parts?.length),
+      label: id,
+    });
+    return reference;
   },
 
   normalizeParts(plan, parts) {
@@ -491,7 +510,7 @@ const FloorPlanReferences = {
           ...plan.normalizeGeometry(part),
           id: part.id || `part-${index + 1}`,
         };
-        localReferences.set(geometry.id, {
+        const reference = {
           x0: () => geometry.x,
           x1: () => geometry.x + geometry.w,
           xc: () => geometry.x + geometry.w / 2,
@@ -505,7 +524,9 @@ const FloorPlanReferences = {
           w: () => geometry.w,
           l: () => geometry.l,
           area: () => geometry.w * geometry.l,
-        });
+        };
+        FloorPlanGeometryBox.attach(reference, { label: geometry.id });
+        localReferences.set(geometry.id, reference);
         return geometry;
       });
     } finally {
@@ -514,10 +535,20 @@ const FloorPlanReferences = {
   },
 
   getRoomGeometry(plan, id) {
-    if (plan.roomGeometryCache.has(id)) return plan.roomGeometryCache.get(id);
-    if (!plan.roomDefinitions.has(id))
+    if (id === undefined || id === null || String(id).trim() === "") {
+      const knownIds = [...(plan.roomDefinitions?.keys() ?? [])].join(", ");
+      const caller = new Error().stack
+        ?.split("\n")
+        .slice(2, 5)
+        .join(" <- ");
+      throw new Error(
+        `Missing room reference ID while resolving geometry. Known room IDs: ${knownIds || "none"}. Call chain: ${caller || "unavailable"}`,
+      );
+    }
+    if (plan.roomGeometryCache?.has(id)) return plan.roomGeometryCache.get(id);
+    if (!plan.roomDefinitions?.has(id))
       throw new Error(`Unknown room reference: ${id}`);
-    if (plan.roomGeometryStack.has(id))
+    if (plan.roomGeometryStack?.has(id))
       throw new Error(`Circular room reference: ${id}`);
 
     plan.roomGeometryStack.add(id);
@@ -562,9 +593,8 @@ const FloorPlanReferences = {
           ? parts.map(({ x, y, w, l }) => ({ x, y, w, l }))
           : [{ x: geometry.x, y: geometry.y, w: geometry.w, l: geometry.l }],
         partReferences: new Map(
-          (parts ?? []).map((part) => [
-            part.id,
-            {
+          (parts ?? []).map((part) => {
+            const reference = {
               x0: () => part.x,
               x1: () => part.x + part.w,
               xc: () => part.x + part.w / 2,
@@ -578,10 +608,16 @@ const FloorPlanReferences = {
               w: () => part.w,
               l: () => part.l,
               area: () => part.w * part.l,
-            },
-          ]),
+            };
+            FloorPlanGeometryBox.attach(reference, { label: part.id });
+            return [part.id, reference];
+          }),
         ),
       };
+      FloorPlanGeometryBox.attach(reference, {
+        compound: Boolean(parts?.length),
+        label: id,
+      });
       plan.roomGeometryCache.set(id, reference);
       return reference;
     } finally {

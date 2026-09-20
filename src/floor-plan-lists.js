@@ -98,7 +98,7 @@ const FloorPlanLists = {
     const rows = FloorPlanModel.floorRows(
       floors,
       plan.roomDefinitions,
-      plan.rooms,
+      plan.roomReferences,
     );
     const total = {
       label: "Total geral",

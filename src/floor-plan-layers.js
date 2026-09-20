@@ -168,7 +168,13 @@ const FloorPlanLayers = {
   },
 
   cycleLayer(plan) {
-    if (!(plan.maxLayer > 0)) return;
+    // Recompute the graph on demand so the control remains usable after a
+    // floor change or after objects are added programmatically.
+    if (!(plan.maxLayer > 0)) plan.updateOverlaps();
+    if (!(plan.maxLayer > 0)) {
+      if (plan.layerButton) plan.layerButton.textContent = "Sem camadas sobrepostas";
+      return;
+    }
     plan.layerCutoff =
       plan.layerCutoff === null ? plan.maxLayer - 1 : plan.layerCutoff - 1;
     if (plan.layerCutoff < 0) plan.layerCutoff = null;
@@ -177,29 +183,31 @@ const FloorPlanLayers = {
 
   updateLayerVisibility(plan) {
     const cutoff = plan.layerCutoff;
-    plan.root.querySelectorAll(".plan-generated").forEach((element) => {
-      const sourceRoom = element.dataset.openingRoomId
-        ? plan.roomElements.find(
-            (room) => room.dataset.id === element.dataset.openingRoomId,
-          )
-        : null;
-      const layer = Number(
-        sourceRoom?.dataset.layer ?? element.dataset.layer ?? 0,
-      );
-      element.classList.toggle(
-        "layer-hidden",
-        cutoff !== null && layer > cutoff,
-      );
-    });
+    plan.root
+      .querySelectorAll(".plan-generated, [data-layer]")
+      .forEach((element) => {
+        const sourceRoom = element.dataset.openingRoomId
+          ? plan.roomElements.find(
+              (room) => room.dataset.id === element.dataset.openingRoomId,
+            )
+          : null;
+        const layer = Number(
+          sourceRoom?.dataset.layer ?? element.dataset.layer ?? 0,
+        );
+        element.classList.toggle(
+          "layer-hidden",
+          cutoff !== null && layer > cutoff,
+        );
+      });
     if (plan.layerButton) {
       plan.layerButton.textContent =
         cutoff === null ? "Todas as camadas" : `Mostrar até camada ${cutoff}`;
-      plan.layerButton.disabled = !(plan.maxLayer > 0);
+      plan.layerButton.disabled = !plan.currentConfig;
     }
   },
 
   calculateRoomArea(plan) {
-    return FloorPlanMetrics.calculateRoomArea(this);
+    return FloorPlanMetrics.calculateRoomArea(plan);
   },
 
   calculateUnionArea(plan, rectangles) {
@@ -207,7 +215,7 @@ const FloorPlanLayers = {
   },
 
   calculateNetRoomArea(plan, room) {
-    return FloorPlanMetrics.calculateNetRoomArea(this, room);
+    return FloorPlanMetrics.calculateNetRoomArea(plan, room);
   },
 
   subtractRectangles(plan, rectangle, cutters) {

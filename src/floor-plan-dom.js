@@ -90,6 +90,7 @@ const FloorPlanDom = {
     element.w = () => Number(w);
     element.l = () => Number(l);
     element.area = () => Number(w) * Number(l);
+    FloorPlanGeometryBox.attach(element, { label: data.id || label || "room" });
 
     if (room) {
       if (data.id) element.dataset.id = data.id;
@@ -174,6 +175,10 @@ const FloorPlanDom = {
         ];
     if (parts?.length) {
       element.classList.add("compound-room");
+      FloorPlanGeometryBox.attach(element, {
+        compound: true,
+        label: room.id || room.label || "room",
+      });
       element.partReferences = new Map(
         parts.map((part) => [
           part.id,
@@ -193,6 +198,9 @@ const FloorPlanDom = {
             area: () => part.w * part.l,
           },
         ]),
+      );
+      element.partReferences.forEach((reference, partId) =>
+        FloorPlanGeometryBox.attach(reference, { label: partId }),
       );
       parts.forEach((part) => {
         const partElement = document.createElement("div");
@@ -215,6 +223,17 @@ const FloorPlanDom = {
         partElement.style.setProperty("--z0", part.z0);
         partElement.style.setProperty("--z1", part.z1);
         partElement.style.setProperty("--h", part.h);
+        partElement.x0 = () => Number(part.x);
+        partElement.x1 = () => Number(part.x) + Number(part.w);
+        partElement.y0 = () => Number(part.y);
+        partElement.y1 = () => Number(part.y) + Number(part.l);
+        partElement.z0 = () => Number(part.z0);
+        partElement.z1 = () => Number(part.z1);
+        partElement.w = () => Number(part.w);
+        partElement.l = () => Number(part.l);
+        partElement.h = () => Number(part.h);
+        partElement.area = () => Number(part.w) * Number(part.l);
+        FloorPlanGeometryBox.attach(partElement, { label: part.id });
         const partColor = part.color ?? room.color;
         if (partColor)
           partElement.style.backgroundColor = plan.themeFillColor(partColor);

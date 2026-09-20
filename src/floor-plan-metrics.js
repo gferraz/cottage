@@ -16,7 +16,7 @@ const FloorPlanMetrics = {
     const referenceRooms = plan.model?.floors?.[0]?.rooms ?? [];
     const geometries = referenceRooms
       .map((room) =>
-        room.id && plan.roomDefinitions.has(room.id)
+        room.id && plan.roomDefinitions?.has(room.id)
           ? plan.getRoomGeometry(room.id)
           : null,
       )

@@ -260,7 +260,7 @@ const FloorPlanOpenings = {
       throw new Error(`Room ${roomId} has no solid ${wall} wall`);
 
     const target = String(opening.to ?? "exterior").trim() || "exterior";
-    if (target !== "exterior" && !plan.rooms.has(target)) {
+    if (target !== "exterior" && !plan.rooms?.has(target)) {
       throw new Error(`Unknown opening target: ${target}`);
     }
 
@@ -369,7 +369,7 @@ const FloorPlanOpenings = {
         "Opening z0 must be non-negative and h must be greater than zero",
       );
     }
-    return {
+    const normalized = {
       ...opening,
       id,
       from: opening.from,
@@ -395,20 +395,44 @@ const FloorPlanOpenings = {
       z1: z0 + height,
       h: height,
     };
+    FloorPlanGeometryBox.attach(normalized, {
+      label: normalized.id,
+    });
+    return normalized;
   },
 
   wallSegment(plan, room, wall) {
+    // Keep this helper compatible with older callers that passed only
+    // (room, wall) while the public facade now passes (plan, room, wall).
+    if (wall === undefined && typeof room === "string") {
+      wall = room;
+      room = plan;
+      plan = null;
+    }
+    const geometry =
+      typeof room.x0 === "function" &&
+      typeof room.x1 === "function" &&
+      typeof room.y0 === "function" &&
+      typeof room.y1 === "function"
+        ? room
+        : typeof plan?.normalizeGeometry === "function"
+          ? plan.normalizeGeometry(room)
+          : room;
+    const x0 = typeof geometry.x0 === "function" ? geometry.x0() : geometry.x;
+    const x1 = typeof geometry.x1 === "function" ? geometry.x1() : geometry.x + geometry.w;
+    const y0 = typeof geometry.y0 === "function" ? geometry.y0() : geometry.y;
+    const y1 = typeof geometry.y1 === "function" ? geometry.y1() : geometry.y + geometry.l;
     const horizontal = wall === "top" || wall === "bottom";
     return {
       coordinate: horizontal
         ? wall === "top"
-          ? room.y0()
-          : room.y1()
+          ? y0
+          : y1
         : wall === "left"
-          ? room.x0()
-          : room.x1(),
-      start: horizontal ? room.x0() : room.y0(),
-      end: horizontal ? room.x1() : room.y1(),
+          ? x0
+          : x1,
+      start: horizontal ? x0 : y0,
+      end: horizontal ? x1 : y1,
     };
   },
 };

@@ -97,10 +97,30 @@ const FloorPlanModel = {
   },
 
   floorRows(floors, roomDefinitions, roomReferences) {
+    const getReference = (room, floor) => {
+      const reference = roomReferences?.get(room.id);
+      if (
+        reference &&
+        typeof reference.x0 === "function" &&
+        typeof reference.x1 === "function" &&
+        typeof reference.y0 === "function" &&
+        typeof reference.y1 === "function"
+      ) {
+        return reference;
+      }
+
+      const received = reference === undefined
+        ? "undefined"
+        : reference?.constructor?.name || typeof reference;
+      throw new Error(
+        `Invalid room reference for "${room.id}" on floor "${floor.id || floor.label || "unknown"}": expected x0(), x1(), y0(), y1(); received ${received}`,
+      );
+    };
+
     return floors.map((floor) => {
       const rooms = (floor.rooms ?? [])
         .filter((room) => roomDefinitions.get(room.id) === room)
-        .map((room) => roomReferences.get(room.id))
+        .map((room) => getReference(room, floor))
         .filter(Boolean);
       const baseRooms = (floor.rooms ?? [])
         .filter(
@@ -108,7 +128,7 @@ const FloorPlanModel = {
             room.overlaps === undefined &&
             roomDefinitions.get(room.id) === room,
         )
-        .map((room) => roomReferences.get(room.id))
+        .map((room) => getReference(room, floor))
         .filter(Boolean);
       const dimensionRooms = baseRooms.length ? baseRooms : rooms;
       const areaRooms = baseRooms.length ? baseRooms : rooms;

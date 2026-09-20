@@ -36,6 +36,7 @@ class FloorPlan {
     this.roomArea = 0;
     this.roomCount = 0;
     this.rooms = new Map();
+    this.roomReferences = new Map();
     this.references = new Map();
     this.roomElements = [];
     this.stairElements = [];
@@ -55,6 +56,9 @@ class FloorPlan {
     this.roomGeometryCache = new Map();
     this.roomGeometryStack = new Set();
     this.partReferenceStack = [];
+    this.partOwners = new Map();
+    this.globalObjectIds = new Set();
+    this.validZoneIds = new Set();
     this.invalidRoomIds = new Set();
     this.allRooms = [];
     this.allItems = [];
@@ -107,8 +111,11 @@ class FloorPlan {
     if (floorSelect) {
       floorSelect.disabled = true;
       floorSelect.addEventListener("change", () => {
-        if (!this.currentConfig?.floors) return;
-        const activeFloor = this.currentConfig.floors.findIndex((floorConfig) => floorConfig.id === floorSelect.value);
+        const floors = this.currentConfig?.floors;
+        if (!Array.isArray(floors)) return;
+        const activeFloor = floors.findIndex(
+          (floorConfig) => String(floorConfig.id) === floorSelect.value,
+        );
         if (activeFloor >= 0) this.load({ ...this.currentConfig, activeFloor });
       });
     }
@@ -120,7 +127,8 @@ class FloorPlan {
         try {
           await this.loadFile(file);
         } catch (error) {
-          alert(`Não foi possível carregar a planta: ${error.message}`);
+          const details = error.stack ? `\n\n${error.stack}` : "";
+          alert(`Não foi possível carregar a planta: ${error.message}${details}`);
         } finally {
           event.target.value = "";
         }
@@ -403,7 +411,7 @@ class FloorPlan {
   }
 
   wallSegment(room, wall) {
-    return FloorPlanOpenings.wallSegment(room, wall);
+    return FloorPlanOpenings.wallSegment(this, room, wall);
   }
   /**
    * Calcula os limites geométricos dos elementos da planta corrente.
@@ -421,6 +429,22 @@ class FloorPlan {
    */
   buildingReferenceBounds() {
     return FloorPlanMetrics.buildingReferenceBounds(this);
+  }
+
+  calculateRoomArea() {
+    return FloorPlanMetrics.calculateRoomArea(this);
+  }
+
+  calculateNetRoomArea(room) {
+    return FloorPlanMetrics.calculateNetRoomArea(this, room);
+  }
+
+  subtractRectangles(rectangle, cutters) {
+    return FloorPlanMetrics.subtractRectangles(rectangle, cutters);
+  }
+
+  fragmentWalls(fragment, source, sourceWalls) {
+    return FloorPlanMetrics.fragmentWalls(fragment, source, sourceWalls);
   }
 
   updateOverlaps() {
@@ -444,6 +468,7 @@ class FloorPlan {
     this.multiFloorLayer.replaceChildren();
     this.clearTerrain();
     this.rooms.clear();
+    this.roomReferences.clear();
     this.stairElements = [];
     this.references.clear();
     this.roomElements = [];
@@ -457,7 +482,6 @@ class FloorPlan {
     this.roomCount = 0;
     this.layerCutoff = null;
     this.maxLayer = 0;
-    this.updateSummary();
   }
 
   /**
@@ -466,6 +490,15 @@ class FloorPlan {
    * @returns {FloorPlan} A própria instância, para encadeamento.
    */
   load(config) {
+    this.references ??= new Map();
+    this.rooms ??= new Map();
+    this.roomReferences ??= new Map();
+    this.roomDefinitions ??= new Map();
+    this.roomGeometryCache ??= new Map();
+    this.roomGeometryStack ??= new Set();
+    this.partOwners ??= new Map();
+    this.globalObjectIds ??= new Set();
+    this.validZoneIds ??= new Set();
     this.model = FloorPlanModel.fromConfig(config);
     this.currentConfig = config;
     this.itemTypes = { ...(this.catalog.items || {}), ...(config["item-types"] || {}) };
@@ -490,7 +523,7 @@ class FloorPlan {
       if (config.floors?.length) {
         config.floors.forEach((availableFloor) => {
           const option = document.createElement("option");
-          option.value = availableFloor.id || "";
+          option.value = String(availableFloor.id || "");
           option.textContent = availableFloor.label || availableFloor.id || "Pavimento";
           this.floorSelect.append(option);
         });
@@ -514,14 +547,16 @@ class FloorPlan {
     } catch (error) {
       this.errors.push({ category: "presentation", message: error.message });
     }
+    const invalidRoomIds = this.invalidRoomIds ?? new Set();
     const validRooms = (floorConfig.rooms ?? []).filter((room) => room.id
       && this.roomDefinitions.get(room.id) === room
-      && !this.invalidRoomIds.has(room.id));
+      && !invalidRoomIds.has(room.id));
     this.addRooms(validRooms);
     this.addSpanningStairs(config, floorConfig);
     this.updateOverlaps();
     this.addVisibleVerticalOpenings(config, floorConfig);
-    this.addZones(this.visibleZones(config, floorConfig).filter((zone) => this.validZoneIds.has(zone.id)));
+    const validZoneIds = this.validZoneIds ?? new Set();
+    this.addZones(this.visibleZones(config, floorConfig).filter((zone) => validZoneIds.has(zone.id)));
     (floorConfig.items ?? []).forEach((item, index) => {
       try {
         this.addItem(item);

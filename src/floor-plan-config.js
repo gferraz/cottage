@@ -42,7 +42,8 @@ function loadJsonFromCommandLine() {
     );
     floor.load(JSON.parse(new TextDecoder().decode(bytes)));
   } catch (error) {
-    alert(`Não foi possível carregar a planta: ${error.message}`);
+    const details = error.stack ? `\n\n${error.stack}` : "";
+    alert(`Não foi possível carregar a planta: ${error.message}${details}`);
   }
 }
 

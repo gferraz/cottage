@@ -1600,10 +1600,30 @@ const FloorPlanModel = {
   },
 
   floorRows(floors, roomDefinitions, roomReferences) {
+    const getReference = (room, floor) => {
+      const reference = roomReferences?.get(room.id);
+      if (
+        reference &&
+        typeof reference.x0 === "function" &&
+        typeof reference.x1 === "function" &&
+        typeof reference.y0 === "function" &&
+        typeof reference.y1 === "function"
+      ) {
+        return reference;
+      }
+
+      const received = reference === undefined
+        ? "undefined"
+        : reference?.constructor?.name || typeof reference;
+      throw new Error(
+        `Invalid room reference for "${room.id}" on floor "${floor.id || floor.label || "unknown"}": expected x0(), x1(), y0(), y1(); received ${received}`,
+      );
+    };
+
     return floors.map((floor) => {
       const rooms = (floor.rooms ?? [])
         .filter((room) => roomDefinitions.get(room.id) === room)
-        .map((room) => roomReferences.get(room.id))
+        .map((room) => getReference(room, floor))
         .filter(Boolean);
       const baseRooms = (floor.rooms ?? [])
         .filter(
@@ -1611,7 +1631,7 @@ const FloorPlanModel = {
             room.overlaps === undefined &&
             roomDefinitions.get(room.id) === room,
         )
-        .map((room) => roomReferences.get(room.id))
+        .map((room) => getReference(room, floor))
         .filter(Boolean);
       const dimensionRooms = baseRooms.length ? baseRooms : rooms;
       const areaRooms = baseRooms.length ? baseRooms : rooms;
@@ -1869,7 +1889,7 @@ const FloorPlanExport = {
     floors.forEach((floor) => {
       plan.currentFloorHeight = Number(floor.h ?? 0);
       (floor.rooms ?? []).forEach((room) => {
-        if (!room.id || !plan.roomDefinitions.has(room.id)) return;
+        if (!room.id || !plan.roomDefinitions?.has(room.id)) return;
         const geometry = plan.getRoomGeometry(room.id);
         const parts = room.parts?.length
           ? plan.normalizeParts(room.parts)
@@ -2171,7 +2191,11 @@ const FloorPlanGeometry = {
     if (partMatch) {
       const [, roomId, partId, method, operator, amount] = partMatch;
       const room = this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId);
-      if (!room) throw new Error(`Unknown room reference: ${roomId}`);
+      if (!room) {
+        throw new Error(
+          `Unknown room reference: ${roomId} in geometric expression "${reference}"`,
+        );
+      }
       const part = room.partReferences?.get(partId);
       if (!part) throw new Error(`Unknown part reference: ${roomId}.${partId}`);
       const offset = amount ? Number(amount) : 0;
@@ -2186,7 +2210,11 @@ const FloorPlanGeometry = {
 
     const [, roomId, method, operator, amount] = match;
     const room = this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId);
-    if (!room) throw new Error(`Unknown room reference: ${roomId}`);
+    if (!room) {
+      throw new Error(
+        `Unknown room reference: ${roomId} in geometric expression "${reference}"`,
+      );
+    }
 
     const offset = amount ? Number(amount) : 0;
     const resolvedMethod = { x: "x0", y: "y0" }[method] || method;
@@ -2195,6 +2223,86 @@ const FloorPlanGeometry = {
 };
 
 window.FloorPlanGeometry = FloorPlanGeometry;
+
+
+/**
+ * Shared rectangular-geometry contract for normalized application objects.
+ * A bounding box is always available; exact rectangular geometry is only
+ * available for objects that are actually one rectangle.
+ */
+const FloorPlanGeometryBox = {
+  attach(target, { compound = false, label = "object" } = {}) {
+    const value = (name, fallback) => {
+      if (typeof target[name] === "function") return target[name]();
+      if (target[name] !== undefined) return Number(target[name]);
+      return fallback;
+    };
+
+    if (typeof target.x0 !== "function" && target.x !== undefined)
+      target.x0 = () => Number(target.x);
+    if (typeof target.x1 !== "function" && target.x !== undefined && target.w !== undefined)
+      target.x1 = () => Number(target.x) + Number(target.w);
+    if (typeof target.y0 !== "function" && target.y !== undefined)
+      target.y0 = () => Number(target.y);
+    if (typeof target.y1 !== "function" && target.y !== undefined && target.l !== undefined)
+      target.y1 = () => Number(target.y) + Number(target.l);
+    target.bounds ??= () => {
+      const x0 = value("x0", 0);
+      const y0 = value("y0", 0);
+      const z0 = value("z0", 0);
+      const x1 = value("x1", x0);
+      const y1 = value("y1", y0);
+      const z1 = value("z1", z0);
+      return FloorPlanGeometryBox.fromValues({
+        x: x0,
+        y: y0,
+        w: x1 - x0,
+        l: y1 - y0,
+        z0,
+        h: z1 - z0,
+      });
+    };
+    const exactGeometry = () => {
+      if (compound)
+        throw new Error(
+          `Rectangular-prism geometry does not apply to compound object "${label}"; use bounds() or geometryParts`,
+        );
+      return target.bounds();
+    };
+    if (compound) target.geometry = exactGeometry;
+    else target.geometry ??= exactGeometry;
+    return target;
+  },
+
+  fromValues({ x, y, w, l, z0 = 0, h = 0 }) {
+    const x0 = Number(x);
+    const y0 = Number(y);
+    const width = Number(w);
+    const length = Number(l);
+    const baseZ = Number(z0);
+    const height = Number(h);
+    const box = {
+      x0: () => x0,
+      x1: () => x0 + width,
+      xc: () => x0 + width / 2,
+      y0: () => y0,
+      y1: () => y0 + length,
+      yc: () => y0 + length / 2,
+      z0: () => baseZ,
+      z1: () => baseZ + height,
+      zc: () => baseZ + height / 2,
+      w: () => width,
+      l: () => length,
+      h: () => height,
+      area: () => width * length,
+    };
+    box.bounds = () => box;
+    box.geometry = () => box;
+    return box;
+  },
+};
+
+window.FloorPlanGeometryBox = FloorPlanGeometryBox;
 
 
 const FloorPlanMetrics = {
@@ -2215,7 +2323,7 @@ const FloorPlanMetrics = {
     const referenceRooms = plan.model?.floors?.[0]?.rooms ?? [];
     const geometries = referenceRooms
       .map((room) =>
-        room.id && plan.roomDefinitions.has(room.id)
+        room.id && plan.roomDefinitions?.has(room.id)
           ? plan.getRoomGeometry(room.id)
           : null,
       )
@@ -2846,6 +2954,20 @@ const FloorPlanRoofs = {
         const ridgeEndY = longitudinal ? y1 : ridgeY;
         const ridgeLength = Math.hypot(ridgeEndX - ridgeX, ridgeEndY - ridgeY);
         const rise = (baseSpan / 2) * Math.tan(radians);
+        roof.bounds = () =>
+          FloorPlanGeometryBox.fromValues({
+            x: x0,
+            y: y0,
+            w: x1 - x0,
+            l: y1 - y0,
+            z0,
+            h: rise,
+          });
+        roof.geometry = () => {
+          throw new Error(
+            `Rectangular-prism geometry does not apply to roof "${roof.id || index + 1}"; use bounds()`,
+          );
+        };
         const projectionScale = 1;
         const offsetX =
           Number.parseFloat(
@@ -3240,7 +3362,7 @@ const FloorPlanOpenings = {
       throw new Error(`Room ${roomId} has no solid ${wall} wall`);
 
     const target = String(opening.to ?? "exterior").trim() || "exterior";
-    if (target !== "exterior" && !plan.rooms.has(target)) {
+    if (target !== "exterior" && !plan.rooms?.has(target)) {
       throw new Error(`Unknown opening target: ${target}`);
     }
 
@@ -3349,7 +3471,7 @@ const FloorPlanOpenings = {
         "Opening z0 must be non-negative and h must be greater than zero",
       );
     }
-    return {
+    const normalized = {
       ...opening,
       id,
       from: opening.from,
@@ -3375,20 +3497,44 @@ const FloorPlanOpenings = {
       z1: z0 + height,
       h: height,
     };
+    FloorPlanGeometryBox.attach(normalized, {
+      label: normalized.id,
+    });
+    return normalized;
   },
 
   wallSegment(plan, room, wall) {
+    // Keep this helper compatible with older callers that passed only
+    // (room, wall) while the public facade now passes (plan, room, wall).
+    if (wall === undefined && typeof room === "string") {
+      wall = room;
+      room = plan;
+      plan = null;
+    }
+    const geometry =
+      typeof room.x0 === "function" &&
+      typeof room.x1 === "function" &&
+      typeof room.y0 === "function" &&
+      typeof room.y1 === "function"
+        ? room
+        : typeof plan?.normalizeGeometry === "function"
+          ? plan.normalizeGeometry(room)
+          : room;
+    const x0 = typeof geometry.x0 === "function" ? geometry.x0() : geometry.x;
+    const x1 = typeof geometry.x1 === "function" ? geometry.x1() : geometry.x + geometry.w;
+    const y0 = typeof geometry.y0 === "function" ? geometry.y0() : geometry.y;
+    const y1 = typeof geometry.y1 === "function" ? geometry.y1() : geometry.y + geometry.l;
     const horizontal = wall === "top" || wall === "bottom";
     return {
       coordinate: horizontal
         ? wall === "top"
-          ? room.y0()
-          : room.y1()
+          ? y0
+          : y1
         : wall === "left"
-          ? room.x0()
-          : room.x1(),
-      start: horizontal ? room.x0() : room.y0(),
-      end: horizontal ? room.x1() : room.y1(),
+          ? x0
+          : x1,
+      start: horizontal ? x0 : y0,
+      end: horizontal ? x1 : y1,
     };
   },
 };
@@ -3492,11 +3638,24 @@ window.FloorPlanElements = FloorPlanElements;
 
 const FloorPlanReferences = {
   prepareRoomReferences(plan, config) {
+    // These collections are part of the plan state even before the first
+    // configuration is prepared. Keep the preparation safe for a fresh plan
+    // and for callers that reload a configuration more than once.
+    plan.references ??= new Map();
+    plan.rooms ??= new Map();
+    plan.roomReferences ??= new Map();
+    plan.roomDefinitions ??= new Map();
+    plan.roomGeometryCache ??= new Map();
+    plan.roomGeometryStack ??= new Set();
+    plan.partOwners ??= new Map();
+    plan.globalObjectIds ??= new Set();
+    plan.validZoneIds ??= new Set();
     plan.roomDefinitions.clear();
     plan.roomGeometryCache.clear();
     plan.roomGeometryStack.clear();
     plan.invalidRoomIds.clear();
     plan.rooms.clear();
+    plan.roomReferences.clear();
     plan.references.clear();
     const collected = FloorPlanValidation.collectRoomDefinitions(
       plan.model || FloorPlanModel.fromConfig(config),
@@ -3507,6 +3666,7 @@ const FloorPlanReferences = {
     plan.roomDefinitions.forEach((_room, id) => {
       const reference = plan.createRoomReference(id);
       plan.rooms.set(id, reference);
+      plan.roomReferences.set(id, reference);
       plan.references.set(id, reference);
     });
     plan.registerGlobalPartReferences();
@@ -3534,7 +3694,7 @@ const FloorPlanReferences = {
     plan.roomDefinitions.forEach((room, roomId) => {
       (room.parts ?? []).forEach((part, index) => {
         const partId = part.id || `part-${index + 1}`;
-        if (plan.partOwners.has(partId)) {
+        if (plan.partOwners?.has(partId)) {
           plan.errors.push({
             category: "room",
             id: partId,
@@ -3543,7 +3703,7 @@ const FloorPlanReferences = {
           });
           return;
         }
-        if (plan.references.has(partId)) {
+        if (plan.references?.has(partId)) {
           plan.errors.push({
             category: "room",
             id: partId,
@@ -3572,6 +3732,7 @@ const FloorPlanReferences = {
           reference[method] = () =>
             plan.getRoomGeometry(roomId).partReferences.get(partId)[method]();
         });
+        FloorPlanGeometryBox.attach(reference, { label: partId });
         plan.references.set(partId, reference);
       });
     });
@@ -3582,7 +3743,7 @@ const FloorPlanReferences = {
       if (
         !floorConfig.id ||
         FloorPlanValidation.isReservedId(floorConfig.id) ||
-        plan.references.has(floorConfig.id)
+        plan.references?.has(floorConfig.id)
       )
         return;
       const height = Number(floorConfig.h ?? 0);
@@ -3609,7 +3770,7 @@ const FloorPlanReferences = {
       if (
         !guide.id ||
         FloorPlanValidation.isReservedId(guide.id) ||
-        plan.references.has(guide.id)
+        plan.references?.has(guide.id)
       )
         return;
       const [xValue, yValue] = guide.pos ?? guide.from ?? [];
@@ -3688,7 +3849,7 @@ const FloorPlanReferences = {
       ? [...(config.zones ?? []), ...floorZones]
       : floorZones;
     zones.forEach((zone) => {
-      if (!zone.id || plan.references.has(zone.id)) return;
+      if (!zone.id || plan.references?.has(zone.id)) return;
       const geometry = () => plan.normalizeGeometry(zone);
       plan.references.set(zone.id, {
         x0: () => geometry().x,
@@ -3761,7 +3922,7 @@ const FloorPlanReferences = {
           opening: zone,
           message: `ID reservado: ${zone.id}`,
         });
-      } else if (plan.globalObjectIds.has(zone.id)) {
+      } else if (plan.globalObjectIds?.has(zone.id)) {
         plan.errors.push({
           category: "zone",
           id: zone.id,
@@ -3787,7 +3948,7 @@ const FloorPlanReferences = {
             opening: object,
             message: `ID reservado: ${object.id}`,
           });
-        } else if (plan.globalObjectIds.has(object.id)) {
+        } else if (plan.globalObjectIds?.has(object.id)) {
           plan.errors.push({
             category: "object",
             id: object.id,
@@ -3877,7 +4038,7 @@ const FloorPlanReferences = {
       const floor = floors.find((floorConfig) =>
         (floorConfig.rooms ?? []).includes(room),
       );
-      const reference = plan.rooms.get(id);
+      const reference = plan.roomReferences.get(id);
       return {
         id,
         label: room.label || id,
@@ -3947,8 +4108,7 @@ const FloorPlanReferences = {
   },
 
   createRoomReference(plan, id) {
-    const floorPlan = this;
-    return {
+    const reference = {
       dataset: { id, label: plan.roomDefinitions.get(id)?.label || id },
       x0: () => plan.getRoomGeometry(id).x0(),
       x1: () => plan.getRoomGeometry(id).x1(),
@@ -3966,12 +4126,17 @@ const FloorPlanReferences = {
       wallState: (side) => plan.getRoomGeometry(id).wallState(side),
       hasWall: (side) => plan.getRoomGeometry(id).hasWall(side),
       get geometryParts() {
-        return floorPlan.getRoomGeometry(id).geometryParts;
+        return plan.getRoomGeometry(id).geometryParts;
       },
       get partReferences() {
-        return floorPlan.getRoomGeometry(id).partReferences;
+        return plan.getRoomGeometry(id).partReferences;
       },
     };
+    FloorPlanGeometryBox.attach(reference, {
+      compound: Boolean(plan.roomDefinitions.get(id)?.parts?.length),
+      label: id,
+    });
+    return reference;
   },
 
   normalizeParts(plan, parts) {
@@ -3983,7 +4148,7 @@ const FloorPlanReferences = {
           ...plan.normalizeGeometry(part),
           id: part.id || `part-${index + 1}`,
         };
-        localReferences.set(geometry.id, {
+        const reference = {
           x0: () => geometry.x,
           x1: () => geometry.x + geometry.w,
           xc: () => geometry.x + geometry.w / 2,
@@ -3997,7 +4162,9 @@ const FloorPlanReferences = {
           w: () => geometry.w,
           l: () => geometry.l,
           area: () => geometry.w * geometry.l,
-        });
+        };
+        FloorPlanGeometryBox.attach(reference, { label: geometry.id });
+        localReferences.set(geometry.id, reference);
         return geometry;
       });
     } finally {
@@ -4006,10 +4173,20 @@ const FloorPlanReferences = {
   },
 
   getRoomGeometry(plan, id) {
-    if (plan.roomGeometryCache.has(id)) return plan.roomGeometryCache.get(id);
-    if (!plan.roomDefinitions.has(id))
+    if (id === undefined || id === null || String(id).trim() === "") {
+      const knownIds = [...(plan.roomDefinitions?.keys() ?? [])].join(", ");
+      const caller = new Error().stack
+        ?.split("\n")
+        .slice(2, 5)
+        .join(" <- ");
+      throw new Error(
+        `Missing room reference ID while resolving geometry. Known room IDs: ${knownIds || "none"}. Call chain: ${caller || "unavailable"}`,
+      );
+    }
+    if (plan.roomGeometryCache?.has(id)) return plan.roomGeometryCache.get(id);
+    if (!plan.roomDefinitions?.has(id))
       throw new Error(`Unknown room reference: ${id}`);
-    if (plan.roomGeometryStack.has(id))
+    if (plan.roomGeometryStack?.has(id))
       throw new Error(`Circular room reference: ${id}`);
 
     plan.roomGeometryStack.add(id);
@@ -4054,9 +4231,8 @@ const FloorPlanReferences = {
           ? parts.map(({ x, y, w, l }) => ({ x, y, w, l }))
           : [{ x: geometry.x, y: geometry.y, w: geometry.w, l: geometry.l }],
         partReferences: new Map(
-          (parts ?? []).map((part) => [
-            part.id,
-            {
+          (parts ?? []).map((part) => {
+            const reference = {
               x0: () => part.x,
               x1: () => part.x + part.w,
               xc: () => part.x + part.w / 2,
@@ -4070,10 +4246,16 @@ const FloorPlanReferences = {
               w: () => part.w,
               l: () => part.l,
               area: () => part.w * part.l,
-            },
-          ]),
+            };
+            FloorPlanGeometryBox.attach(reference, { label: part.id });
+            return [part.id, reference];
+          }),
         ),
       };
+      FloorPlanGeometryBox.attach(reference, {
+        compound: Boolean(parts?.length),
+        label: id,
+      });
       plan.roomGeometryCache.set(id, reference);
       return reference;
     } finally {
@@ -4255,7 +4437,13 @@ const FloorPlanLayers = {
   },
 
   cycleLayer(plan) {
-    if (!(plan.maxLayer > 0)) return;
+    // Recompute the graph on demand so the control remains usable after a
+    // floor change or after objects are added programmatically.
+    if (!(plan.maxLayer > 0)) plan.updateOverlaps();
+    if (!(plan.maxLayer > 0)) {
+      if (plan.layerButton) plan.layerButton.textContent = "Sem camadas sobrepostas";
+      return;
+    }
     plan.layerCutoff =
       plan.layerCutoff === null ? plan.maxLayer - 1 : plan.layerCutoff - 1;
     if (plan.layerCutoff < 0) plan.layerCutoff = null;
@@ -4264,29 +4452,31 @@ const FloorPlanLayers = {
 
   updateLayerVisibility(plan) {
     const cutoff = plan.layerCutoff;
-    plan.root.querySelectorAll(".plan-generated").forEach((element) => {
-      const sourceRoom = element.dataset.openingRoomId
-        ? plan.roomElements.find(
-            (room) => room.dataset.id === element.dataset.openingRoomId,
-          )
-        : null;
-      const layer = Number(
-        sourceRoom?.dataset.layer ?? element.dataset.layer ?? 0,
-      );
-      element.classList.toggle(
-        "layer-hidden",
-        cutoff !== null && layer > cutoff,
-      );
-    });
+    plan.root
+      .querySelectorAll(".plan-generated, [data-layer]")
+      .forEach((element) => {
+        const sourceRoom = element.dataset.openingRoomId
+          ? plan.roomElements.find(
+              (room) => room.dataset.id === element.dataset.openingRoomId,
+            )
+          : null;
+        const layer = Number(
+          sourceRoom?.dataset.layer ?? element.dataset.layer ?? 0,
+        );
+        element.classList.toggle(
+          "layer-hidden",
+          cutoff !== null && layer > cutoff,
+        );
+      });
     if (plan.layerButton) {
       plan.layerButton.textContent =
         cutoff === null ? "Todas as camadas" : `Mostrar até camada ${cutoff}`;
-      plan.layerButton.disabled = !(plan.maxLayer > 0);
+      plan.layerButton.disabled = !plan.currentConfig;
     }
   },
 
   calculateRoomArea(plan) {
-    return FloorPlanMetrics.calculateRoomArea(this);
+    return FloorPlanMetrics.calculateRoomArea(plan);
   },
 
   calculateUnionArea(plan, rectangles) {
@@ -4294,7 +4484,7 @@ const FloorPlanLayers = {
   },
 
   calculateNetRoomArea(plan, room) {
-    return FloorPlanMetrics.calculateNetRoomArea(this, room);
+    return FloorPlanMetrics.calculateNetRoomArea(plan, room);
   },
 
   subtractRectangles(plan, rectangle, cutters) {
@@ -4573,7 +4763,7 @@ const FloorPlanLists = {
     const rows = FloorPlanModel.floorRows(
       floors,
       plan.roomDefinitions,
-      plan.rooms,
+      plan.roomReferences,
     );
     const total = {
       label: "Total geral",
@@ -5216,7 +5406,7 @@ const FloorPlanTextExport = {
     const floorRows = FloorPlanModel.floorRows(
       floors,
       plan.roomDefinitions,
-      plan.rooms,
+      plan.roomReferences,
     );
 
     const appendRoofSection = (heading, roofEntries) => {
@@ -5855,6 +6045,7 @@ const FloorPlanDom = {
     element.w = () => Number(w);
     element.l = () => Number(l);
     element.area = () => Number(w) * Number(l);
+    FloorPlanGeometryBox.attach(element, { label: data.id || label || "room" });
 
     if (room) {
       if (data.id) element.dataset.id = data.id;
@@ -5939,6 +6130,10 @@ const FloorPlanDom = {
         ];
     if (parts?.length) {
       element.classList.add("compound-room");
+      FloorPlanGeometryBox.attach(element, {
+        compound: true,
+        label: room.id || room.label || "room",
+      });
       element.partReferences = new Map(
         parts.map((part) => [
           part.id,
@@ -5958,6 +6153,9 @@ const FloorPlanDom = {
             area: () => part.w * part.l,
           },
         ]),
+      );
+      element.partReferences.forEach((reference, partId) =>
+        FloorPlanGeometryBox.attach(reference, { label: partId }),
       );
       parts.forEach((part) => {
         const partElement = document.createElement("div");
@@ -5980,6 +6178,17 @@ const FloorPlanDom = {
         partElement.style.setProperty("--z0", part.z0);
         partElement.style.setProperty("--z1", part.z1);
         partElement.style.setProperty("--h", part.h);
+        partElement.x0 = () => Number(part.x);
+        partElement.x1 = () => Number(part.x) + Number(part.w);
+        partElement.y0 = () => Number(part.y);
+        partElement.y1 = () => Number(part.y) + Number(part.l);
+        partElement.z0 = () => Number(part.z0);
+        partElement.z1 = () => Number(part.z1);
+        partElement.w = () => Number(part.w);
+        partElement.l = () => Number(part.l);
+        partElement.h = () => Number(part.h);
+        partElement.area = () => Number(part.w) * Number(part.l);
+        FloorPlanGeometryBox.attach(partElement, { label: part.id });
         const partColor = part.color ?? room.color;
         if (partColor)
           partElement.style.backgroundColor = plan.themeFillColor(partColor);
@@ -6228,6 +6437,7 @@ class FloorPlan {
     this.roomArea = 0;
     this.roomCount = 0;
     this.rooms = new Map();
+    this.roomReferences = new Map();
     this.references = new Map();
     this.roomElements = [];
     this.stairElements = [];
@@ -6247,6 +6457,9 @@ class FloorPlan {
     this.roomGeometryCache = new Map();
     this.roomGeometryStack = new Set();
     this.partReferenceStack = [];
+    this.partOwners = new Map();
+    this.globalObjectIds = new Set();
+    this.validZoneIds = new Set();
     this.invalidRoomIds = new Set();
     this.allRooms = [];
     this.allItems = [];
@@ -6299,8 +6512,11 @@ class FloorPlan {
     if (floorSelect) {
       floorSelect.disabled = true;
       floorSelect.addEventListener("change", () => {
-        if (!this.currentConfig?.floors) return;
-        const activeFloor = this.currentConfig.floors.findIndex((floorConfig) => floorConfig.id === floorSelect.value);
+        const floors = this.currentConfig?.floors;
+        if (!Array.isArray(floors)) return;
+        const activeFloor = floors.findIndex(
+          (floorConfig) => String(floorConfig.id) === floorSelect.value,
+        );
         if (activeFloor >= 0) this.load({ ...this.currentConfig, activeFloor });
       });
     }
@@ -6312,7 +6528,8 @@ class FloorPlan {
         try {
           await this.loadFile(file);
         } catch (error) {
-          alert(`Não foi possível carregar a planta: ${error.message}`);
+          const details = error.stack ? `\n\n${error.stack}` : "";
+          alert(`Não foi possível carregar a planta: ${error.message}${details}`);
         } finally {
           event.target.value = "";
         }
@@ -6595,7 +6812,7 @@ class FloorPlan {
   }
 
   wallSegment(room, wall) {
-    return FloorPlanOpenings.wallSegment(room, wall);
+    return FloorPlanOpenings.wallSegment(this, room, wall);
   }
   /**
    * Calcula os limites geométricos dos elementos da planta corrente.
@@ -6613,6 +6830,22 @@ class FloorPlan {
    */
   buildingReferenceBounds() {
     return FloorPlanMetrics.buildingReferenceBounds(this);
+  }
+
+  calculateRoomArea() {
+    return FloorPlanMetrics.calculateRoomArea(this);
+  }
+
+  calculateNetRoomArea(room) {
+    return FloorPlanMetrics.calculateNetRoomArea(this, room);
+  }
+
+  subtractRectangles(rectangle, cutters) {
+    return FloorPlanMetrics.subtractRectangles(rectangle, cutters);
+  }
+
+  fragmentWalls(fragment, source, sourceWalls) {
+    return FloorPlanMetrics.fragmentWalls(fragment, source, sourceWalls);
   }
 
   updateOverlaps() {
@@ -6636,6 +6869,7 @@ class FloorPlan {
     this.multiFloorLayer.replaceChildren();
     this.clearTerrain();
     this.rooms.clear();
+    this.roomReferences.clear();
     this.stairElements = [];
     this.references.clear();
     this.roomElements = [];
@@ -6649,7 +6883,6 @@ class FloorPlan {
     this.roomCount = 0;
     this.layerCutoff = null;
     this.maxLayer = 0;
-    this.updateSummary();
   }
 
   /**
@@ -6658,6 +6891,15 @@ class FloorPlan {
    * @returns {FloorPlan} A própria instância, para encadeamento.
    */
   load(config) {
+    this.references ??= new Map();
+    this.rooms ??= new Map();
+    this.roomReferences ??= new Map();
+    this.roomDefinitions ??= new Map();
+    this.roomGeometryCache ??= new Map();
+    this.roomGeometryStack ??= new Set();
+    this.partOwners ??= new Map();
+    this.globalObjectIds ??= new Set();
+    this.validZoneIds ??= new Set();
     this.model = FloorPlanModel.fromConfig(config);
     this.currentConfig = config;
     this.itemTypes = { ...(this.catalog.items || {}), ...(config["item-types"] || {}) };
@@ -6682,7 +6924,7 @@ class FloorPlan {
       if (config.floors?.length) {
         config.floors.forEach((availableFloor) => {
           const option = document.createElement("option");
-          option.value = availableFloor.id || "";
+          option.value = String(availableFloor.id || "");
           option.textContent = availableFloor.label || availableFloor.id || "Pavimento";
           this.floorSelect.append(option);
         });
@@ -6706,14 +6948,16 @@ class FloorPlan {
     } catch (error) {
       this.errors.push({ category: "presentation", message: error.message });
     }
+    const invalidRoomIds = this.invalidRoomIds ?? new Set();
     const validRooms = (floorConfig.rooms ?? []).filter((room) => room.id
       && this.roomDefinitions.get(room.id) === room
-      && !this.invalidRoomIds.has(room.id));
+      && !invalidRoomIds.has(room.id));
     this.addRooms(validRooms);
     this.addSpanningStairs(config, floorConfig);
     this.updateOverlaps();
     this.addVisibleVerticalOpenings(config, floorConfig);
-    this.addZones(this.visibleZones(config, floorConfig).filter((zone) => this.validZoneIds.has(zone.id)));
+    const validZoneIds = this.validZoneIds ?? new Set();
+    this.addZones(this.visibleZones(config, floorConfig).filter((zone) => validZoneIds.has(zone.id)));
     (floorConfig.items ?? []).forEach((item, index) => {
       try {
         this.addItem(item);
@@ -6951,7 +7195,8 @@ function loadJsonFromCommandLine() {
     );
     floor.load(JSON.parse(new TextDecoder().decode(bytes)));
   } catch (error) {
-    alert(`Não foi possível carregar a planta: ${error.message}`);
+    const details = error.stack ? `\n\n${error.stack}` : "";
+    alert(`Não foi possível carregar a planta: ${error.message}${details}`);
   }
 }
 

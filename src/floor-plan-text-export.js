@@ -355,7 +355,7 @@ const FloorPlanTextExport = {
     const floorRows = FloorPlanModel.floorRows(
       floors,
       plan.roomDefinitions,
-      plan.rooms,
+      plan.roomReferences,
     );
 
     const appendRoofSection = (heading, roofEntries) => {

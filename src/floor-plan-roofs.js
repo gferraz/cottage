@@ -54,6 +54,20 @@ const FloorPlanRoofs = {
         const ridgeEndY = longitudinal ? y1 : ridgeY;
         const ridgeLength = Math.hypot(ridgeEndX - ridgeX, ridgeEndY - ridgeY);
         const rise = (baseSpan / 2) * Math.tan(radians);
+        roof.bounds = () =>
+          FloorPlanGeometryBox.fromValues({
+            x: x0,
+            y: y0,
+            w: x1 - x0,
+            l: y1 - y0,
+            z0,
+            h: rise,
+          });
+        roof.geometry = () => {
+          throw new Error(
+            `Rectangular-prism geometry does not apply to roof "${roof.id || index + 1}"; use bounds()`,
+          );
+        };
         const projectionScale = 1;
         const offsetX =
           Number.parseFloat(

@@ -78,7 +78,11 @@ const FloorPlanGeometry = {
     if (partMatch) {
       const [, roomId, partId, method, operator, amount] = partMatch;
       const room = this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId);
-      if (!room) throw new Error(`Unknown room reference: ${roomId}`);
+      if (!room) {
+        throw new Error(
+          `Unknown room reference: ${roomId} in geometric expression "${reference}"`,
+        );
+      }
       const part = room.partReferences?.get(partId);
       if (!part) throw new Error(`Unknown part reference: ${roomId}.${partId}`);
       const offset = amount ? Number(amount) : 0;
@@ -93,7 +97,11 @@ const FloorPlanGeometry = {
 
     const [, roomId, method, operator, amount] = match;
     const room = this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId);
-    if (!room) throw new Error(`Unknown room reference: ${roomId}`);
+    if (!room) {
+      throw new Error(
+        `Unknown room reference: ${roomId} in geometric expression "${reference}"`,
+      );
+    }
 
     const offset = amount ? Number(amount) : 0;
     const resolvedMethod = { x: "x0", y: "y0" }[method] || method;
