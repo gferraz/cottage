@@ -62,7 +62,11 @@ const FloorPlanExport = {
 
   downloadDxf(plan, filename = "planta.dxf") {
     const dxf = FloorPlanExport.toDxf(plan);
-    FloorPlanExport.downloadText(dxf, filename, "application/dxf;charset=utf-8");
+    FloorPlanExport.downloadText(
+      dxf,
+      filename,
+      "application/dxf;charset=utf-8",
+    );
   },
 
   toDxf(plan) {
@@ -70,8 +74,11 @@ const FloorPlanExport = {
     if (!config)
       throw new Error("Carregue uma planta antes de exportar o DXF.");
     const lines = [];
-    const add = (...values) =>
-      values.forEach((value) => lines.push(String(value)));
+    const add = (...values) => {
+      values.forEach((value) => {
+        lines.push(String(value));
+      });
+    };
     const line = (layer, x1, y1, x2, y2, z1 = 0, z2 = z1) =>
       add(0, "LINE", 8, layer, 10, x1, 20, y1, 30, z1, 11, x2, 21, y2, 31, z2);
     const text = (layer, value, x, y, height = 0.25) =>
@@ -113,7 +120,9 @@ const FloorPlanExport = {
       ["ROOF_LABELS", 2],
       ["ITEMS_LABELS", 5],
       ["ZONES_LABELS", 8],
-    ].forEach(([name, color]) => add(0, "LAYER", 2, name, 70, 0, 62, color));
+    ].forEach(([name, color]) => {
+      add(0, "LAYER", 2, name, 70, 0, 62, color);
+    });
     add(0, "ENDTAB", 0, "ENDSEC", 0, "SECTION", 2, "ENTITIES");
 
     const floors = config.floors ?? [config];
@@ -353,5 +362,5 @@ const FloorPlanExport = {
 
     add(0, "ENDSEC", 0, "EOF");
     return `${lines.join("\n")}\n`;
-  }
+  },
 };

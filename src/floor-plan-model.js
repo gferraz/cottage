@@ -5,24 +5,33 @@ const FloorPlanModel = {
 
   fromConfig(config) {
     const floors = config.floors ?? [config];
-    const viewport = config.viewport ?? { size: [20, 20], origin: [-4.25, -4.25] };
+    const viewport = config.viewport ?? {
+      size: [20, 20],
+      origin: [-4.25, -4.25],
+    };
     return {
       config,
       floors,
       viewport,
-      rooms: floors.flatMap((floor) => (floor.rooms ?? []).map((room) => ({
-        room,
-        floorId: floor.id ?? null,
-        floorLabel: floor.label ?? null
-      })))
+      rooms: floors.flatMap((floor) =>
+        (floor.rooms ?? []).map((room) => ({
+          room,
+          floorId: floor.id ?? null,
+          floorLabel: floor.label ?? null,
+        })),
+      ),
     };
   },
 
   calculateUnionArea(rectangles) {
     if (rectangles.length === 0) return 0;
 
-    const xs = [...new Set(rectangles.flatMap(({ x, w }) => [x, x + w]))].sort((a, b) => a - b);
-    const ys = [...new Set(rectangles.flatMap(({ y, l }) => [y, y + l]))].sort((a, b) => a - b);
+    const xs = [...new Set(rectangles.flatMap(({ x, w }) => [x, x + w]))].sort(
+      (a, b) => a - b,
+    );
+    const ys = [...new Set(rectangles.flatMap(({ y, l }) => [y, y + l]))].sort(
+      (a, b) => a - b,
+    );
     let area = 0;
 
     for (let xIndex = 0; xIndex < xs.length - 1; xIndex += 1) {
@@ -31,9 +40,12 @@ const FloorPlanModel = {
         const x1 = xs[xIndex + 1];
         const y0 = ys[yIndex];
         const y1 = ys[yIndex + 1];
-        const covered = rectangles.some((rectangle) =>
-          rectangle.x <= x0 && rectangle.x + rectangle.w >= x1
-          && rectangle.y <= y0 && rectangle.y + rectangle.l >= y1
+        const covered = rectangles.some(
+          (rectangle) =>
+            rectangle.x <= x0 &&
+            rectangle.x + rectangle.w >= x1 &&
+            rectangle.y <= y0 &&
+            rectangle.y + rectangle.l >= y1,
         );
         if (covered) area += (x1 - x0) * (y1 - y0);
       }
@@ -49,12 +61,23 @@ const FloorPlanModel = {
     });
     const coveredBy = rooms
       .filter((other) => other !== room)
-      .flatMap((other) => other.geometryParts.filter((part) =>
-        (part.overlapTargets ?? other.allowedOverlaps ?? []).some((target) => targetIds.has(target))
-      ));
+      .flatMap((other) =>
+        other.geometryParts.filter((part) =>
+          (part.overlapTargets ?? other.allowedOverlaps ?? []).some((target) =>
+            targetIds.has(target),
+          ),
+        ),
+      );
     const itemOverlaps = items
-      .filter((item) => (item.allowedOverlaps ?? []).some((target) => targetIds.has(target)))
-      .map((item) => ({ x: item.x0(), y: item.y0(), w: item.w(), l: item.l() }));
+      .filter((item) =>
+        (item.allowedOverlaps ?? []).some((target) => targetIds.has(target)),
+      )
+      .map((item) => ({
+        x: item.x0(),
+        y: item.y0(),
+        w: item.w(),
+        l: item.l(),
+      }));
     const deductions = [];
     room.geometryParts.forEach((part) => {
       [...coveredBy, ...itemOverlaps].forEach((other) => {
@@ -62,10 +85,14 @@ const FloorPlanModel = {
         const y0 = Math.max(part.y, other.y);
         const x1 = Math.min(part.x + part.w, other.x + other.w);
         const y1 = Math.min(part.y + part.l, other.y + other.l);
-        if (x1 > x0 && y1 > y0) deductions.push({ x: x0, y: y0, w: x1 - x0, l: y1 - y0 });
+        if (x1 > x0 && y1 > y0)
+          deductions.push({ x: x0, y: y0, w: x1 - x0, l: y1 - y0 });
       });
     });
-    const grossArea = room.geometryParts.reduce((total, part) => total + part.w * part.l, 0);
+    const grossArea = room.geometryParts.reduce(
+      (total, part) => total + part.w * part.l,
+      0,
+    );
     return grossArea - FloorPlanModel.calculateUnionArea(deductions);
   },
 
@@ -76,7 +103,11 @@ const FloorPlanModel = {
         .map((room) => roomReferences.get(room.id))
         .filter(Boolean);
       const baseRooms = (floor.rooms ?? [])
-        .filter((room) => room.overlaps === undefined && roomDefinitions.get(room.id) === room)
+        .filter(
+          (room) =>
+            room.overlaps === undefined &&
+            roomDefinitions.get(room.id) === room,
+        )
         .map((room) => roomReferences.get(room.id))
         .filter(Boolean);
       const dimensionRooms = baseRooms.length ? baseRooms : rooms;
@@ -84,10 +115,18 @@ const FloorPlanModel = {
       return {
         label: floor.label || floor.id || "Piso",
         count: rooms.length,
-        width: dimensionRooms.length ? Math.max(...dimensionRooms.map((room) => room.x1())) - Math.min(...dimensionRooms.map((room) => room.x0())) : 0,
-        height: dimensionRooms.length ? Math.max(...dimensionRooms.map((room) => room.y1())) - Math.min(...dimensionRooms.map((room) => room.y0())) : 0,
-        area: FloorPlanModel.calculateUnionArea(areaRooms.flatMap((room) => room.geometryParts || []))
+        width: dimensionRooms.length
+          ? Math.max(...dimensionRooms.map((room) => room.x1())) -
+            Math.min(...dimensionRooms.map((room) => room.x0()))
+          : 0,
+        height: dimensionRooms.length
+          ? Math.max(...dimensionRooms.map((room) => room.y1())) -
+            Math.min(...dimensionRooms.map((room) => room.y0()))
+          : 0,
+        area: FloorPlanModel.calculateUnionArea(
+          areaRooms.flatMap((room) => room.geometryParts || []),
+        ),
       };
     });
-  }
+  },
 };
