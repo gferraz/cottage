@@ -357,6 +357,30 @@ const FloorPlanTextExport = {
       plan.roomDefinitions,
       plan.roomReferences,
     );
+    const originalFloorIndex = Math.max(
+      0,
+      floors.findIndex((floor) => floor.id === plan.currentFloorId),
+    );
+    const originalMultiFloorMode = plan.multiFloorMode;
+    const asciiByFloor = [];
+    try {
+      plan.multiFloorMode = false;
+      floors.forEach((_floor, floorIndex) => {
+        plan.load({ ...plan.currentConfig, activeFloor: floorIndex });
+        asciiByFloor.push({
+          label:
+            floors[floorIndex].label ||
+            floors[floorIndex].id ||
+            `Piso ${floorIndex + 1}`,
+          layout: FloorPlanTextExport.asciiLayout(plan),
+        });
+      });
+    } finally {
+      plan.multiFloorMode = originalMultiFloorMode;
+      plan.load({ ...plan.currentConfig, activeFloor: originalFloorIndex });
+      plan.multiFloorMode = originalMultiFloorMode;
+      plan.renderMultiFloorUnderlay();
+    }
 
     const appendRoofSection = (heading, roofEntries) => {
       if (roofEntries.length === 0) return;
@@ -368,7 +392,7 @@ const FloorPlanTextExport = {
         "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
       );
       roofEntries.forEach((roof) => {
-        const metrics = FloorPlanExport.roofMetrics(this, roof);
+        const metrics = FloorPlanExport.roofMetrics(plan, roof);
         if (!metrics) {
           lines.push(
             `| ${plan.markdownText(roof.id || "—")} | geometria inválida |  |  |  |  |  |  |  |  |  |  |`,
@@ -548,7 +572,10 @@ const FloorPlanTextExport = {
       );
     }
 
-    lines.push("", "## ASCII art", "", "```text", plan.asciiLayout(), "```");
+    lines.push("", "## ASCII art");
+    asciiByFloor.forEach(({ label, layout }) => {
+      lines.push("", `### ${plan.markdownText(label)}`, "", "```text", layout, "```");
+    });
     FloorPlanExport.downloadText(
       `${lines.join("\n")}\n`,
       filename,

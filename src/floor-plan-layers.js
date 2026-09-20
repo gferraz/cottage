@@ -201,8 +201,12 @@ const FloorPlanLayers = {
       });
     if (plan.layerButton) {
       plan.layerButton.textContent =
-        cutoff === null ? "Todas as camadas" : `Mostrar até camada ${cutoff}`;
-      plan.layerButton.disabled = !plan.currentConfig;
+        cutoff === null ? "Todas" : `Mostrar até camada ${cutoff}`;
+      const visible = Boolean(plan.currentConfig && plan.maxLayer > 0);
+      plan.layerButton.hidden = !visible;
+      plan.layerButton
+        .closest(".layer-selector")
+        ?.toggleAttribute("hidden", !visible);
     }
   },
 
@@ -381,13 +385,12 @@ const FloorPlanLayers = {
         }
       });
     }
-    if (plan.multiFloorButton) {
-      plan.multiFloorButton.disabled = !lowerFloors.length;
-      plan.multiFloorButton.textContent =
-        plan.multiFloorMode && lowerFloors.length
-          ? "Visão: Multi-pisos"
-          : "Visão: Piso atual";
+    if (plan.multiFloorSwitch) {
+      plan.multiFloorSwitch.hidden = !lowerFloors.length;
+      plan.multiFloorSwitch.checked = plan.multiFloorMode && lowerFloors.length > 0;
+      plan.multiFloorSwitch.closest(".visibility-switch")?.toggleAttribute("hidden", !lowerFloors.length);
     }
+    plan.updateVisibilityHeading();
   },
 };
 

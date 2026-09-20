@@ -59,7 +59,7 @@ const FloorPlanHtmlExport = {
 
     exportedDocument
       .querySelectorAll(
-        "#json-file, #load-json, #layer-button, #download-html, #download-markdown, #download-dxf, #multi-floor-button, #floor-select, .floor-selector, #plan-status, #terrain-compass-rose-data",
+        ".plan-controls, #json-file, #load-json, #layer-button, #download-html, #download-markdown, #download-dxf, #show-roofs, #show-multi-floor, #floor-select, .floor-selector, .visibility-heading, .visibility-switch, #plan-status, #terrain-compass-rose-data",
       )
       .forEach((element) => {
         element.remove();

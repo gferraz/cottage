@@ -21,9 +21,11 @@ const floor = new FloorPlan({
   downloadButton: document.querySelector("#download-html"),
   markdownButton: document.querySelector("#download-markdown"),
   dxfButton: document.querySelector("#download-dxf"),
-  multiFloorButton: document.querySelector("#multi-floor-button"),
+  multiFloorSwitch: document.querySelector("#show-multi-floor"),
+  roofSwitch: document.querySelector("#show-roofs"),
   jsonInput: document.querySelector("#json-file"),
   layerButton: document.querySelector("#layer-button"),
+  visibilityHeading: document.querySelector(".visibility-heading"),
   scale: 56,
 });
 

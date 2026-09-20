@@ -6,7 +6,7 @@ class FloorPlan {
    * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
    * @param {number} [options.scale=56] Escala inicial em pixels por metro.
    */
-  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorButton = null, jsonInput = null, layerButton = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerButton = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
@@ -30,7 +30,9 @@ class FloorPlan {
     this.downloadButton = downloadButton;
     this.markdownButton = markdownButton;
     this.dxfButton = dxfButton;
-    this.multiFloorButton = multiFloorButton;
+    this.multiFloorSwitch = multiFloorSwitch;
+    this.roofSwitch = roofSwitch;
+    this.visibilityHeading = visibilityHeading;
     this.jsonInput = jsonInput;
     this.layerButton = layerButton;
     this.roomArea = 0;
@@ -80,6 +82,7 @@ class FloorPlan {
     this.multiFloorLayer.className = "multi-floor-layer";
     root.prepend(this.multiFloorLayer);
     this.multiFloorMode = false;
+    this.showRoofs = true;
 
     root.style.setProperty("--m", `${scale}px`);
     root.addEventListener("pointerdown", (event) => this.beginViewportPan(event));
@@ -96,20 +99,35 @@ class FloorPlan {
     if (downloadButton) downloadButton.addEventListener("click", () => this.downloadHtml());
     if (markdownButton) markdownButton.addEventListener("click", () => this.downloadMarkdown());
     if (dxfButton) dxfButton.addEventListener("click", () => FloorPlanExport.downloadDxf(this));
-    if (dxfButton) dxfButton.disabled = true;
-    if (multiFloorButton) {
-      multiFloorButton.disabled = true;
-      multiFloorButton.addEventListener("click", () => {
-        this.multiFloorMode = !this.multiFloorMode;
+    [downloadButton, markdownButton, dxfButton].forEach((button) => {
+      if (button) button.hidden = true;
+    });
+    if (multiFloorSwitch) {
+      multiFloorSwitch.hidden = true;
+      multiFloorSwitch.closest(".visibility-switch")?.toggleAttribute("hidden", true);
+      multiFloorSwitch.checked = false;
+      multiFloorSwitch.addEventListener("change", () => {
+        this.multiFloorMode = multiFloorSwitch.checked;
         this.renderMultiFloorUnderlay();
       });
     }
+    if (roofSwitch) {
+      roofSwitch.hidden = true;
+      roofSwitch.closest(".visibility-switch")?.toggleAttribute("hidden", true);
+      roofSwitch.checked = true;
+      roofSwitch.addEventListener("change", () => {
+        this.showRoofs = roofSwitch.checked;
+        this.updateRoofVisibility();
+      });
+    }
     if (layerButton) {
-      layerButton.disabled = true;
+      layerButton.hidden = true;
+      layerButton.closest(".layer-selector")?.toggleAttribute("hidden", true);
       layerButton.addEventListener("click", () => this.cycleLayer());
     }
     if (floorSelect) {
       floorSelect.disabled = true;
+      floorSelect.closest(".floor-selector")?.toggleAttribute("hidden", true);
       floorSelect.addEventListener("change", () => {
         const floors = this.currentConfig?.floors;
         if (!Array.isArray(floors)) return;
@@ -330,6 +348,21 @@ class FloorPlan {
   renderRoofs(roofs = []) {
     return FloorPlanRoofs.render(this, roofs);
   }
+
+  updateRoofVisibility() {
+    this.root.querySelectorAll(".roof-plan").forEach((roof) => {
+      roof.classList.toggle("roof-hidden", !this.showRoofs);
+    });
+    this.updateVisibilityHeading();
+  }
+
+  updateVisibilityHeading() {
+    const hasSwitch = Boolean(
+      (this.roofSwitch && !this.roofSwitch.hidden) ||
+      (this.multiFloorSwitch && !this.multiFloorSwitch.hidden),
+    );
+    this.visibilityHeading?.toggleAttribute("hidden", !hasSwitch);
+  }
   resolveExpression(expression, localOrigin = null) {
     return FloorPlanGeometry.resolveExpression.call(this, expression, localOrigin);
   }
@@ -529,8 +562,12 @@ class FloorPlan {
         });
         this.floorSelect.value = this.currentFloorId || "";
         this.floorSelect.disabled = false;
+        this.floorSelect
+          .closest(".floor-selector")
+          ?.toggleAttribute("hidden", config.floors.length < 2);
       } else {
         this.floorSelect.disabled = true;
+        this.floorSelect.closest(".floor-selector")?.toggleAttribute("hidden", true);
       }
     }
     const title = floorConfig.label ? `${config.title || "Planta"} — ${floorConfig.label}` : config.title;
@@ -587,10 +624,22 @@ class FloorPlan {
     } catch (error) {
       this.errors.push({ category: "presentation", message: error.message });
     }
-    this.renderRoofs(this.visibleRoofs(config, floorConfig));
+    const visibleRoofs = this.visibleRoofs(config, floorConfig);
+    this.renderRoofs(visibleRoofs);
+    if (this.roofSwitch) {
+      const hasRoofs = visibleRoofs.length > 0;
+      this.roofSwitch.hidden = !hasRoofs;
+      this.roofSwitch.checked = this.showRoofs;
+      this.roofSwitch.closest(".visibility-switch")?.toggleAttribute("hidden", !hasRoofs);
+    }
+    this.updateRoofVisibility();
     this.renderGuides(this.visibleGuides(config, floorConfig));
     this.updateSummary();
-    if (this.dxfButton) this.dxfButton.disabled = false;
+    [this.downloadButton, this.markdownButton, this.dxfButton].forEach(
+      (button) => {
+        if (button) button.hidden = false;
+      },
+    );
     return this;
   }
 
