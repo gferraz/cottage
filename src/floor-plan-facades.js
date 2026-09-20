@@ -111,6 +111,73 @@ const FloorPlanFacades = {
       grid.classList.add("facade-grid");
       svg.append(grid);
 
+      const facadeWalls = [facadeWall];
+      const facadeRoomIds = new Set(
+        projectedRooms.map((room) => String(room.dataset.id || "")),
+      );
+      const facadeOpenings = [...plan.openings, ...plan.windows].filter(
+        (opening) =>
+          facadeWalls.includes(opening.wall) &&
+          facadeRoomIds.has(String(opening.roomId || "")),
+      );
+
+      plan.itemElements
+        .filter((item) => item.classList.contains("railing"))
+        .filter((item) => {
+          const near = side ? item.x0() : item.y0();
+          const far = side ? item.x1() : item.y1();
+          const atEdge =
+            facadeEdge === "min"
+              ? near <= edge + 0.1
+              : far >= edge - 0.1;
+          const parallel = side ? item.l() >= item.w() : item.w() >= item.l();
+          return atEdge && parallel;
+        })
+        .forEach((item) => {
+          const itemStart = side ? item.y0() : item.x0();
+          const itemEnd = itemStart + (side ? item.l() : item.w());
+          const cuts = facadeOpenings
+            .filter((opening) => opening.type === "opening")
+            .map((opening) => {
+              const start = side ? opening.y : opening.x;
+              return [start, start + Number(opening.w ?? 0)];
+            })
+            .filter(
+              ([start, end]) =>
+                Number.isFinite(start) &&
+                Number.isFinite(end) &&
+                start < itemEnd &&
+                end > itemStart,
+            )
+            .sort(([first], [second]) => first - second);
+          const fragmentEnds = [
+            itemStart,
+            ...cuts.flatMap(([start, end]) => [
+              Math.max(itemStart, start),
+              Math.min(itemEnd, end),
+            ]),
+            itemEnd,
+          ];
+          const z0 = item.z0();
+          const height = item.h();
+          for (let fragmentIndex = 0; fragmentIndex < fragmentEnds.length - 1; fragmentIndex += 2) {
+            const start = fragmentEnds[fragmentIndex];
+            const end = fragmentEnds[fragmentIndex + 1];
+            if (end - start <= 0.01) continue;
+            const railing = document.createElementNS(svgNamespace, "rect");
+            railing.setAttribute("x", `${(start - min + padding) * scale}`);
+            railing.setAttribute(
+              "y",
+              `${(floorHeight - z0 - height + padding) * scale}`,
+            );
+            railing.setAttribute("width", `${(end - start) * scale}`);
+            railing.setAttribute("height", `${height * scale}`);
+            railing.classList.add("facade-railing");
+            railing.dataset.id = item.dataset.id || "";
+            svg.append(railing);
+          }
+        });
+
       surfaceRooms.forEach((room) => {
         const start = side ? room.y0() : room.x0();
         const end = side ? room.y1() : room.x1();
@@ -151,16 +218,7 @@ const FloorPlanFacades = {
 
       });
 
-      const facadeWalls = [facadeWall];
-      const facadeRoomIds = new Set(
-        projectedRooms.map((room) => String(room.dataset.id || "")),
-      );
-      [...plan.openings, ...plan.windows]
-        .filter(
-          (opening) =>
-            facadeWalls.includes(opening.wall) &&
-            facadeRoomIds.has(String(opening.roomId || "")),
-        )
+      facadeOpenings
         .forEach((opening) => {
           const start = side ? opening.y : opening.x;
           const z0 = Number(opening.z0 ?? 0);
@@ -191,6 +249,10 @@ const FloorPlanFacades = {
             svg.append(divider);
           }
         });
+
+      svg.querySelectorAll(".facade-railing").forEach((railing) => {
+        svg.append(railing);
+      });
 
       const figure = document.createElement("figure");
       figure.className = "facade-view-container";

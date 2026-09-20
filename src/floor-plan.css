@@ -101,6 +101,7 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .facade-opening { fill: var(--theme-opening); stroke: var(--theme-opening-line); stroke-width: 2; }
 .facade-window { fill: var(--theme-window); stroke: var(--theme-window-line); stroke-width: 2; }
 .facade-window-divider { stroke: var(--theme-window-line); stroke-width: 1; }
+.facade-railing { fill: #d8d8d8; fill-opacity: 0.9; stroke: #777; stroke-width: 1.5; }
 
 .viewport-summary {
   margin: -8px 0 18px;
