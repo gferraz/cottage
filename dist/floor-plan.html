@@ -4036,6 +4036,20 @@ window.FloorPlanRoofs = FloorPlanRoofs;
 
 
 const FloorPlanOpenings = {
+  roomOpenings(plan, floorConfig) {
+    return (floorConfig.rooms ?? []).flatMap((room) =>
+      (room.openings ?? []).map((opening) => {
+        const from = String(opening.from ?? "").trim();
+        const relativeWall = /^(top|right|bottom|left)$/.test(from);
+        return {
+          ...opening,
+          from: relativeWall ? `${room.id}.${from}` : from,
+          roomId: room.id,
+        };
+      }),
+    );
+  },
+
   addOpening(plan, opening) {
     if (plan.isVerticalOpening(opening)) {
       return plan.addVerticalOpening(opening);
@@ -4904,6 +4918,7 @@ const FloorPlanReferences = {
       [
         ...(floorConfig.items ?? []),
         ...(floorConfig.openings ?? []),
+        ...plan.roomOpenings(floorConfig),
         ...(floorConfig.windows ?? []),
       ].forEach((object) => {
         if (!object.id) return;
@@ -4970,7 +4985,7 @@ const FloorPlanReferences = {
           });
         }
       });
-      (floorConfig.openings ?? []).forEach((opening, index) => {
+      [...(floorConfig.openings ?? []), ...plan.roomOpenings(floorConfig)].forEach((opening, index) => {
         if (plan.isVerticalOpening(opening)) return;
         try {
           plan.normalizeOpening(opening);
@@ -5043,7 +5058,7 @@ const FloorPlanReferences = {
           // The active-floor render path records the detailed error.
         }
       });
-      (floorConfig.openings ?? []).forEach((opening) => {
+      [...(floorConfig.openings ?? []), ...plan.roomOpenings(floorConfig)].forEach((opening) => {
         if (plan.isVerticalOpening(opening)) return;
         try {
           const feature = plan.normalizeOpening(opening);
@@ -7845,6 +7860,10 @@ class FloorPlan {
     return FloorPlanOpenings.addOpening(this, opening);
   }
 
+  roomOpenings(floorConfig) {
+    return FloorPlanOpenings.roomOpenings(this, floorConfig);
+  }
+
   isVerticalOpening(opening) {
     return FloorPlanOpenings.isVerticalOpening(this, opening);
   }
@@ -8041,7 +8060,7 @@ class FloorPlan {
       }
     });
     this.updateOverlaps();
-    (floorConfig.openings ?? []).forEach((opening, index) => {
+    [...(floorConfig.openings ?? []), ...this.roomOpenings(floorConfig)].forEach((opening, index) => {
       if (this.isVerticalOpening(opening)) return;
       try {
         this.addOpening(opening);

@@ -331,6 +331,7 @@ const FloorPlanReferences = {
       [
         ...(floorConfig.items ?? []),
         ...(floorConfig.openings ?? []),
+        ...plan.roomOpenings(floorConfig),
         ...(floorConfig.windows ?? []),
       ].forEach((object) => {
         if (!object.id) return;
@@ -397,7 +398,7 @@ const FloorPlanReferences = {
           });
         }
       });
-      (floorConfig.openings ?? []).forEach((opening, index) => {
+      [...(floorConfig.openings ?? []), ...plan.roomOpenings(floorConfig)].forEach((opening, index) => {
         if (plan.isVerticalOpening(opening)) return;
         try {
           plan.normalizeOpening(opening);
@@ -470,7 +471,7 @@ const FloorPlanReferences = {
           // The active-floor render path records the detailed error.
         }
       });
-      (floorConfig.openings ?? []).forEach((opening) => {
+      [...(floorConfig.openings ?? []), ...plan.roomOpenings(floorConfig)].forEach((opening) => {
         if (plan.isVerticalOpening(opening)) return;
         try {
           const feature = plan.normalizeOpening(opening);

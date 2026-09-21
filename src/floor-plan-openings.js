@@ -1,4 +1,18 @@
 const FloorPlanOpenings = {
+  roomOpenings(plan, floorConfig) {
+    return (floorConfig.rooms ?? []).flatMap((room) =>
+      (room.openings ?? []).map((opening) => {
+        const from = String(opening.from ?? "").trim();
+        const relativeWall = /^(top|right|bottom|left)$/.test(from);
+        return {
+          ...opening,
+          from: relativeWall ? `${room.id}.${from}` : from,
+          roomId: room.id,
+        };
+      }),
+    );
+  },
+
   addOpening(plan, opening) {
     if (plan.isVerticalOpening(opening)) {
       return plan.addVerticalOpening(opening);

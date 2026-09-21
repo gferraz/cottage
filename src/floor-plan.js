@@ -415,6 +415,10 @@ class FloorPlan {
     return FloorPlanOpenings.addOpening(this, opening);
   }
 
+  roomOpenings(floorConfig) {
+    return FloorPlanOpenings.roomOpenings(this, floorConfig);
+  }
+
   isVerticalOpening(opening) {
     return FloorPlanOpenings.isVerticalOpening(this, opening);
   }
@@ -611,7 +615,7 @@ class FloorPlan {
       }
     });
     this.updateOverlaps();
-    (floorConfig.openings ?? []).forEach((opening, index) => {
+    [...(floorConfig.openings ?? []), ...this.roomOpenings(floorConfig)].forEach((opening, index) => {
       if (this.isVerticalOpening(opening)) return;
       try {
         this.addOpening(opening);
