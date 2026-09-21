@@ -14,6 +14,30 @@ const FloorPlanRoofs = {
     });
   },
 
+  baseCeilingZ(plan, base, fallback = 0) {
+    const baseZ0 = typeof base?.z0 === "function" ? Number(base.z0()) : 0;
+    const baseZ1 = typeof base?.z1 === "function" ? Number(base.z1()) : NaN;
+    if (Number.isFinite(baseZ1) && baseZ1 > baseZ0) return baseZ1;
+
+    const candidates = (plan.zoneElements ?? [])
+      .filter(
+        (zone) =>
+          typeof zone.x0 === "function" &&
+          typeof zone.x1 === "function" &&
+          typeof zone.y0 === "function" &&
+          typeof zone.y1 === "function" &&
+          typeof zone.z1 === "function" &&
+          zone.x0() <= base.x0() &&
+          zone.y0() <= base.y0() &&
+          zone.x1() >= base.x1() &&
+          zone.y1() >= base.y1() &&
+          zone.z1() > baseZ0,
+      )
+      .sort((first, second) => first.area() - second.area());
+
+    return candidates[0]?.z1() ?? fallback;
+  },
+
   resolveBase(plan, baseDefinition) {
     if (typeof baseDefinition === "string") {
       const base = plan.references.get(baseDefinition);
@@ -85,9 +109,7 @@ const FloorPlanRoofs = {
         const z0 =
           roof.z0 !== undefined
             ? plan.resolve(roof.z0)
-            : base.z1
-              ? base.z1()
-              : 0;
+            : FloorPlanRoofs.baseCeilingZ(plan, base);
         if (!Number.isFinite(z0))
           throw new Error("A cota z0 do telhado precisa ser numérica");
         const radians = (pitch * Math.PI) / 180;

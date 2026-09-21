@@ -119,11 +119,12 @@ const FloorPlanFacades = {
         const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
         const pitch = Number(roof.pitch);
         const baseSpan = longitudinal ? base.w() : base.l();
+        const baseZ1 = FloorPlanRoofs.baseCeilingZ(plan, base, floorHeight);
         const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
         const z0 =
           roof.z0 !== undefined
             ? plan.resolve(roof.z0)
-            : floorHeight;
+            : baseZ1;
         return {
           x0: base.x0() - (longitudinal ? eave0 : rake0),
           x1: base.x1() + (longitudinal ? eave1 : rake1),
@@ -137,6 +138,7 @@ const FloorPlanFacades = {
           eave1,
           pitch,
           z0,
+          baseZ1,
           rise,
         };
       };
