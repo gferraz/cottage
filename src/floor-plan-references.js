@@ -35,6 +35,7 @@ const FloorPlanReferences = {
     plan.registerFloorReferences(config);
     plan.registerStaticGuideReferences(config);
     plan.registerStaticZoneReferences(config);
+    plan.registerRoofReferences(config);
     plan.roomDefinitions.forEach((_room, id) => {
       try {
         plan.getRoomGeometry(id);
@@ -225,6 +226,36 @@ const FloorPlanReferences = {
         l: () => geometry().l,
         area: () => geometry().w * geometry().l,
       });
+    });
+  },
+
+  registerRoofReferences(plan, config) {
+    const roofs = config.floors
+      ? [
+          ...(config.roofs ?? []),
+          ...config.floors.flatMap((floor) => floor.roofs ?? []),
+        ]
+      : config.roofs ?? [];
+
+    roofs.forEach((roof) => {
+      if (
+        !roof.id ||
+        FloorPlanValidation.isReservedId(roof.id) ||
+        plan.references.has(roof.id)
+      ) {
+        return;
+      }
+      try {
+        const base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+        plan.references.set(roof.id, base);
+      } catch (error) {
+        plan.errors.push({
+          category: "roof",
+          id: roof.id,
+          opening: roof,
+          message: error.message,
+        });
+      }
     });
   },
 

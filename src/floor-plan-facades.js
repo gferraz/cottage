@@ -54,7 +54,7 @@ const FloorPlanFacades = {
               : room.y1();
         return Math.abs(roomEdge - edge) < 0.01;
       });
-      const facadeDepth = Number(facade.depth ?? 3);
+      const facadeDepth = Number(facade.depth ?? (side ? Infinity : 3));
       const projectedRooms = rooms.filter((room) => {
         const near = side ? room.x0() : room.y0();
         const far = side ? room.x1() : room.y1();
@@ -62,9 +62,25 @@ const FloorPlanFacades = {
           ? near <= edge + facadeDepth
           : far >= edge - facadeDepth;
       });
-      const surfaceRooms = projectedRooms.filter((room) => {
+      const surfaceRooms = projectedRooms.flatMap((room) => {
+        const roomId = String(room.dataset.id || "");
+        const definition = plan.roomDefinitions?.get(roomId);
+        if (definition?.parts?.length) {
+          return plan.normalizeParts(definition.parts)
+            .filter((part, partIndex) => {
+              const partDefinition = definition.parts[partIndex];
+              const walls = plan.normalizeWalls(
+                partDefinition.walls ?? definition.walls,
+              );
+              const state = walls[facadeWall];
+              return state === "solid" || state === "virtual";
+            })
+            .map((part) => ({ room, geometry: part, compoundPart: true }));
+        }
         const state = room.wallState?.(facadeWall) ?? "solid";
-        return state === "solid" || state === "virtual";
+        return state === "solid" || state === "virtual"
+          ? [{ room, geometry: room, compoundPart: false }]
+          : [];
       });
       const depthDirection = facadeEdge === "min" ? 1 : -1;
       projectedRooms.sort((first, second) => {
@@ -72,6 +88,13 @@ const FloorPlanFacades = {
         const secondDepth = side ? second.x0() : second.y0();
         return depthDirection * (secondDepth - firstDepth);
       });
+      const roomDepthOrder = new Map(
+        projectedRooms.map((room, roomIndex) => [room, roomIndex]),
+      );
+      surfaceRooms.sort(
+        (first, second) =>
+          roomDepthOrder.get(first.room) - roomDepthOrder.get(second.room),
+      );
       const coordinates = projectedRooms.flatMap((room) =>
         side ? [room.y0(), room.y1()] : [room.x0(), room.x1()],
       );
@@ -117,7 +140,30 @@ const FloorPlanFacades = {
           rise,
         };
       };
-      roofs.forEach((roof) => {
+      const facadeRoofs = [...roofs].sort((first, second) => {
+        const firstGeometry = roofGeometry(first);
+        const secondGeometry = roofGeometry(second);
+        const firstDepth = firstGeometry
+          ? side
+            ? facadeEdge === "min"
+              ? firstGeometry.x0
+              : firstGeometry.x1
+            : facadeEdge === "min"
+              ? firstGeometry.y0
+              : firstGeometry.y1
+          : 0;
+        const secondDepth = secondGeometry
+          ? side
+            ? facadeEdge === "min"
+              ? secondGeometry.x0
+              : secondGeometry.x1
+            : facadeEdge === "min"
+              ? secondGeometry.y0
+              : secondGeometry.y1
+          : 0;
+        return depthDirection * (secondDepth - firstDepth);
+      });
+      facadeRoofs.forEach((roof) => {
         if (roof.type !== "gable") return;
         const longitudinal = roof.orientation === "longitudinal";
         const isVisible = longitudinal ? !side : side;
@@ -133,14 +179,12 @@ const FloorPlanFacades = {
       const max = Math.max(...coordinates);
       const width = Math.max(max - min, 1);
       const padding = 0.5;
-      const roofRise = roofs.reduce((highest, roof) => {
+      const roofRise = facadeRoofs.reduce((highest, roof) => {
         if (roof.type !== "gable") return highest;
-        const isVisible =
-          roof.orientation === "longitudinal" ? !side : side;
         const geometry = roofGeometry(roof);
-        return isVisible ? Math.max(highest, geometry?.rise ?? 0) : highest;
+        return Math.max(highest, geometry?.rise ?? 0);
       }, 0);
-      const roofDrop = roofs.reduce((lowest, roof) => {
+      const roofDrop = facadeRoofs.reduce((lowest, roof) => {
         if (roof.type !== "gable") return lowest;
         const isVisible =
           roof.orientation === "longitudinal" ? !side : side;
@@ -154,8 +198,9 @@ const FloorPlanFacades = {
       }, 0);
       const viewWidth = (width + padding * 2) * scale;
       const viewY = -roofRise * scale;
+      const dimensionGap = 0.35;
       const viewHeight =
-        (floorHeight + padding * 2 + roofRise + roofDrop) * scale;
+        (floorHeight + padding * 2 + roofRise + roofDrop + dimensionGap) * scale;
       const svg = document.createElementNS(svgNamespace, "svg");
       svg.classList.add("facade-view");
       svg.setAttribute(
@@ -212,7 +257,8 @@ const FloorPlanFacades = {
       const dimensionStroke =
         getComputedStyle(plan.root).getPropertyValue("--theme-label").trim() ||
         "#263746";
-      const dimensionY = (floorHeight + padding + roofDrop) * scale;
+      const dimensionY =
+        (floorHeight + padding + roofDrop + dimensionGap) * scale;
       const dimensionX0 = (facadeMin - min + padding) * scale;
       const dimensionX1 = (facadeMax - min + padding) * scale;
       const horizontalDimension = document.createElementNS(svgNamespace, "line");
@@ -274,8 +320,7 @@ const FloorPlanFacades = {
       );
       svg.append(verticalLabel);
 
-      const facadeRoofLabels = [];
-      roofs.forEach((roof) => {
+      facadeRoofs.forEach((roof) => {
         if (roof.type !== "gable") return;
         const longitudinal = roof.orientation === "longitudinal";
         const geometry = roofGeometry(roof);
@@ -310,7 +355,93 @@ const FloorPlanFacades = {
         const roofWidth = longitudinal ? geometry.x1 - geometry.x0 : geometry.y1 - geometry.y0;
         const roofLength = longitudinal ? geometry.y1 - geometry.y0 : geometry.x1 - geometry.x0;
         const isVisibleOnFacade = longitudinal ? !side : side;
-        if (!isVisibleOnFacade) return;
+        if (!isVisibleOnFacade) {
+          const ridgeLine = document.createElementNS(svgNamespace, "line");
+          const ridgeStart = side ? y0 : x0;
+          const ridgeEnd = side ? y1 : x1;
+          const ridgeCoordinate =
+            (floorHeight - roofZ0 - rise + padding) * scale;
+          const eaveCoordinate =
+            (floorHeight - roofZ0 + padding) * scale;
+          const roofBand = document.createElementNS(svgNamespace, "polygon");
+          roofBand.setAttribute(
+            "points",
+            [
+              `${(ridgeStart - min + padding) * scale},${ridgeCoordinate}`,
+              `${(ridgeEnd - min + padding) * scale},${ridgeCoordinate}`,
+              `${(ridgeEnd - min + padding) * scale},${eaveCoordinate}`,
+              `${(ridgeStart - min + padding) * scale},${eaveCoordinate}`,
+            ].join(" "),
+          );
+          roofBand.classList.add("facade-roof");
+          svg.append(roofBand);
+          ridgeLine.setAttribute(
+            "x1",
+            `${(ridgeStart - min + padding) * scale}`,
+          );
+          ridgeLine.setAttribute(
+            "x2",
+            `${(ridgeEnd - min + padding) * scale}`,
+          );
+          ridgeLine.setAttribute("y1", `${ridgeCoordinate}`);
+          ridgeLine.setAttribute("y2", `${ridgeCoordinate}`);
+          ridgeLine.setAttribute(
+            "stroke",
+            getComputedStyle(plan.root)
+              .getPropertyValue("--theme-roof-line")
+              .trim() || "rgba(112, 55, 35, 0.9)",
+          );
+          ridgeLine.setAttribute("stroke-width", "1.5");
+          ridgeLine.classList.add("facade-roof-ridge");
+          svg.append(ridgeLine);
+
+          const eaveLine = document.createElementNS(svgNamespace, "line");
+          eaveLine.setAttribute(
+            "x1",
+            `${(ridgeStart - min + padding) * scale}`,
+          );
+          eaveLine.setAttribute(
+            "x2",
+            `${(ridgeEnd - min + padding) * scale}`,
+          );
+          eaveLine.setAttribute("y1", `${eaveCoordinate}`);
+          eaveLine.setAttribute("y2", `${eaveCoordinate}`);
+          eaveLine.setAttribute(
+            "stroke",
+            getComputedStyle(plan.root)
+              .getPropertyValue("--theme-roof-line")
+              .trim() || "rgba(112, 55, 35, 0.9)",
+          );
+          eaveLine.setAttribute("stroke-width", "1.5");
+          eaveLine.classList.add("facade-roof-eave");
+          svg.append(eaveLine);
+
+          if (roof.label || roof.id) {
+            const ridgeLabelX =
+              ((ridgeStart + ridgeEnd) / 2 - min + padding) * scale;
+            const ridgeLabelY = ridgeCoordinate - 3;
+            const roofLabel = document.createElementNS(svgNamespace, "text");
+            roofLabel.setAttribute("x", `${ridgeLabelX}`);
+            roofLabel.setAttribute("y", `${ridgeLabelY}`);
+            roofLabel.setAttribute("text-anchor", "middle");
+            roofLabel.classList.add("facade-roof-label");
+
+            const roofTitle = document.createElementNS(svgNamespace, "tspan");
+            roofTitle.textContent = roof.label || roof.id;
+            roofTitle.setAttribute("x", `${ridgeLabelX}`);
+            roofTitle.classList.add("facade-roof-label-title");
+
+            const roofDetails = document.createElementNS(svgNamespace, "tspan");
+            roofDetails.textContent = `l: ${plan.formatMeters(roofLength)}m w: ${plan.formatMeters(roofWidth)}m h: ${plan.formatMeters(rise)}m`;
+            roofDetails.setAttribute("x", `${ridgeLabelX}`);
+            roofDetails.setAttribute("dy", "1.2em");
+            roofDetails.classList.add("facade-roof-label-details");
+
+            roofLabel.append(roofTitle, roofDetails);
+            svg.append(roofLabel);
+          }
+          return;
+        }
         const polygon = document.createElementNS(svgNamespace, "polygon");
         const points = [
           `${(baseStart - min + padding) * scale},${baseY}`,
@@ -369,7 +500,7 @@ const FloorPlanFacades = {
           roofDetails.classList.add("facade-roof-label-details");
 
           roofLabel.append(roofTitle, roofDetails);
-          facadeRoofLabels.push(roofLabel);
+          svg.append(roofLabel);
         }
       });
 
@@ -379,6 +510,7 @@ const FloorPlanFacades = {
       );
       const facadeOpenings = [...plan.openings, ...plan.windows].filter(
         (opening) =>
+          opening.to === "exterior" &&
           facadeWalls.includes(opening.wall) &&
           facadeRoomIds.has(String(opening.roomId || "")),
       );
@@ -389,9 +521,11 @@ const FloorPlanFacades = {
           const near = side ? item.x0() : item.y0();
           const far = side ? item.x1() : item.y1();
           const atEdge =
-            facadeEdge === "min"
-              ? near <= edge + 0.1
-              : far >= edge - 0.1;
+            side
+              ? near <= edge + 0.1 && far >= edge - 0.1
+              : facadeEdge === "min"
+                ? near <= edge + 0.1
+                : far >= edge - 0.1;
           const parallel = side ? item.l() >= item.w() : item.w() >= item.l();
           return atEdge && parallel;
         })
@@ -440,23 +574,41 @@ const FloorPlanFacades = {
           }
         });
 
-      surfaceRooms.forEach((room) => {
-        const start = side ? room.y0() : room.x0();
-        const end = side ? room.y1() : room.x1();
-        const z0 = room.z0();
-        const height = Math.max(room.z1() - z0, floorHeight - z0);
+      surfaceRooms.forEach(({ room, geometry, compoundPart }) => {
+        const start = compoundPart
+          ? side
+            ? geometry.y
+            : geometry.x
+          : side
+            ? geometry.y0()
+            : geometry.x0();
+        const end = side
+          ? compoundPart
+            ? geometry.y + geometry.l
+            : geometry.y1()
+          : compoundPart
+            ? geometry.x + geometry.w
+            : geometry.x1();
+        const z0 = compoundPart ? geometry.z0 : geometry.z0();
+        const height = Math.max(
+          (compoundPart ? geometry.z1 : geometry.z1()) - z0,
+          compoundPart ? 0 : floorHeight - z0,
+        );
         const rect = document.createElementNS(svgNamespace, "rect");
         rect.setAttribute("x", `${(start - min + padding) * scale}`);
         rect.setAttribute("y", `${(floorHeight - z0 - height + padding) * scale}`);
         rect.setAttribute("width", `${(end - start) * scale}`);
         rect.setAttribute("height", `${height * scale}`);
         rect.classList.add("facade-room");
-        rect.dataset.id = room.dataset.id || "";
+        rect.dataset.id = compoundPart
+          ? `${room.dataset.id || ""}.${geometry.id || "part"}`
+          : room.dataset.id || "";
         svg.append(rect);
 
-        const roomLabel =
-          room.querySelector(".room-label")?.textContent?.trim() ||
-          room.dataset.label?.trim();
+        const roomLabel = compoundPart
+          ? ""
+          : room.querySelector(".room-label")?.textContent?.trim() ||
+            room.dataset.label?.trim();
         if (roomLabel) {
           const label = document.createElementNS(svgNamespace, "text");
           const labelX = (start - min + padding + 0.12) * scale;
@@ -539,7 +691,6 @@ const FloorPlanFacades = {
       svg.querySelectorAll(".facade-railing").forEach((railing) => {
         svg.append(railing);
       });
-      facadeRoofLabels.forEach((label) => svg.append(label));
 
       const figure = document.createElement("figure");
       figure.className = "facade-view-container";

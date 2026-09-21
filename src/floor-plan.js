@@ -280,6 +280,10 @@ class FloorPlan {
     return FloorPlanReferences.registerFloorReferences(this, config);
   }
 
+  registerRoofReferences(config) {
+    return FloorPlanReferences.registerRoofReferences(this, config);
+  }
+
   registerStaticGuideReferences(config) {
     return FloorPlanReferences.registerStaticGuideReferences(this, config);
   }

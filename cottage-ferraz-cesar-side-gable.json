@@ -24,11 +24,16 @@
     ]
   },
   "zones": [
-    { "id": "main",    "pos": [0, 2.5, 0], "size": [9.6, 8.2, 3.0], "visible": false },
+    { "id": "main",    "pos": [0, 2.5, 0], "size": [9.6, 9.6, 3.0], "visible": false },
     { "id": "central", "from": ["main.xc - 0.7", "main.y0"], "to": ["x0 + 1.4", "main.y1"], "visible": false },
+    { "id": "top",     "rectangle": ["main.x0", "main.y0", "main.x1", "y0 + main.l / 2"], "visible": false },
+    { "id": "bottom",  "rectangle": ["main.x0", "main.y0 + main.l / 2", "main.x1", "main.y1"], "visible": false },
     { "id": "left",    "rectangle": ["main.x0", "main.y0", "central.x0", "central.y1"], "visible": false },
     { "id": "right",   "rectangle": ["central.x1", "central.y0", "main.x1", "main.y1"], "visible": false },
-    { "id": "dorm",    "inset": ["main", 0.8, 0.0], "color": "blue", "visible": false },
+
+    { "id": "dorm-top",    "rectangle": ["top.x0", "top.y0 + 0.8", "top.x1", "top.y1"], "color": "blue", "visible": false },
+    { "id": "dorm-bottom", "rectangle": ["bottom.x0", "bottom.y0", "bottom.x1", "bottom.y1 - 0.8"], "color": "blue", "visible": false },
+    { "id": "dorm",        "rectangle": ["dorm-top.x0", "dorm-top.y0", "dorm-bottom.x1", "dorm-bottom.y1"], "color": "blue", "visible": false },
     { "id": "confort", "inset": ["main", 1.8, 0.0], "color": "blue", "visible": false },
     { "id": "attic",   "inset": ["main", 3.0, 0.0], "color": "red",  "visible": false },
 
@@ -39,15 +44,15 @@
   "roofs": [
     {
       "id": "front-gable",
-      "label": "Telhado frontal",
+      "label": "Circulação dos domitórios",
       "type": "gable",
-      "inset": ["main", 2, 0],
+      "inset": ["main", 2.9, 0],
       "orientation": "longitudinal",
       "pitch": 51
     },
     {
       "id": "office-roof",
-      "label": "Telhado escritório",
+      "label": "Escritório",
       "type": "gable",
       "base": "office",
       "orientation": "longitudinal",
@@ -57,14 +62,21 @@
     },
 
     {
-      "id": "side-gable",
+      "id": "front-dorms-gable",
       "label": "Dormitórios frontais",
       "type": "gable",
-      "inset": ["main", 0, 0, "main.w / 2", 0],
+      "rectangle": ["top.x0", "top.y0", "top.x1", "top.y1 + 0.8"],
       "orientation": "transverse",
-      "pitch": 51,
-      "eave": 0.0,
-      "rake": 0.0
+      "pitch": 51
+    },
+
+    {
+      "id": "back-dorms-gable",
+      "label": "Dormitórios traseiros",
+      "type": "gable",
+      "rectangle": ["bottom.x0", "bottom.y0 - 0.80", "bottom.x1", "bottom.y1"],
+      "orientation": "transverse",
+      "pitch": 51
     }
 
 
@@ -74,16 +86,26 @@
       "id": "front",
       "label": "Fachada frontal",
       "direction": "front"
+    },
+    {
+      "id": "left",
+      "label": "Fachada lateral esquerda",
+      "direction": "left"
+    },
+    {
+      "id": "right",
+      "label": "Fachada lateral direita",
+      "direction": "right"
     }
   ],
   "guides": [
     { "id": "h-center", "label": "linha central", "pos": [-4.0, "main.yc"], "w": 20, "color": "green" },
     { "id": "l-axis", "label": "eixo longitudinal", "pos": ["central.xc", -2.5], "l": 20, "color": "green" },
     { "id": "main-left", "label": "Parede esquerda", "pos": ["left.x0", -2.5], "l": 20, "color": "green" },
-    { "id": "dorm-left", "label": "Meia parede esquerda", "pos": ["dorm.x0", -2.5], "l": 20, "color": "green" },
+    { "id": "knee-top", "label": "Meia parede frontal", "pos": [-4.0, "dorm.y0"], "w": 20, "color": "green" },
     { "id": "central-left", "label": "central esquerda", "pos": ["l-axis.x0 - 0.7", -2.5], "l": 20, "color": "green" },
     { "id": "central-right", "label": "central direita", "pos": ["l-axis.x0 + 0.7", -2.5], "l": 20, "color": "green" },
-    { "id": "dorm-right",  "label": "Meia parede direita", "pos": ["dorm.x1", -2.5], "l": 20, "color": "green" },
+    { "id": "knee-bottom",  "label": "Meia parede traseira", "pos": [-4.0, "dorm.y1"], "w": 20, "color": "green" },
     { "id": "main-right",  "label": "Parede direita", "pos": ["right.x1", -2.5], "l": 20, "color": "green" },
     { "id": "main-top",    "label": "Parede frontal", "pos": [-4.0, "main.y0"], "w": 20, "color": "green" },
     { "id": "main-bottom", "label": "Parede traseira", "pos": [-4.0, "main.y1"], "w": 20, "color": "green" }],
