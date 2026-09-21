@@ -62,8 +62,12 @@ const FloorPlanRoofs = {
           throw new Error("A cota z0 do telhado precisa ser numérica");
         const radians = (pitch * Math.PI) / 180;
         const baseSpan = longitudinal ? base.w() : base.l();
-        const ridgeX = longitudinal ? (x0 + x1) / 2 : x0;
-        const ridgeY = longitudinal ? y0 : (y0 + y1) / 2;
+        const baseX0 = base.x0();
+        const baseX1 = base.x1();
+        const baseY0 = base.y0();
+        const baseY1 = base.y1();
+        const ridgeX = longitudinal ? (baseX0 + baseX1) / 2 : x0;
+        const ridgeY = longitudinal ? y0 : (baseY0 + baseY1) / 2;
         const ridgeEndX = longitudinal ? ridgeX : x1;
         const ridgeEndY = longitudinal ? y1 : ridgeY;
         const ridgeLength = Math.hypot(ridgeEndX - ridgeX, ridgeEndY - ridgeY);

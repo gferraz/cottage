@@ -88,8 +88,8 @@
     { "id": "dorm-right",  "label": "Meia parede direita", "pos": ["dorm.x1", -2.5], "l": 20, "color": "green" },
     { "id": "main-right",  "label": "Parede direita", "pos": ["right.x1", -2.5], "l": 20, "color": "green" },
     { "id": "main-top",    "label": "Parede frontal", "pos": [-4.0, "main.y0"], "w": 20, "color": "green" },
-    { "id": "main-bottom", "label": "Parede traseira", "pos": [-4.0, "main.y1"], "w": 20, "color": "green" }
-  ],
+    { "id": "main-bottom", "label": "Parede traseira", "pos": [-4.0, "main.y1"], "w": 20, "color": "green" }],
+
 
   "building": { "anchor": "terrain.front-start", "position": { "x": 4, "y": 3 } },
 

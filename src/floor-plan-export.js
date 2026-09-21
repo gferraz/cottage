@@ -46,10 +46,10 @@ const FloorPlanExport = {
       rise,
       ridgeLength,
       surfaceArea,
-      ridgeX0: longitudinal ? (x0 + x1) / 2 : x0,
-      ridgeY0: longitudinal ? y0 : (y0 + y1) / 2,
-      ridgeX1: longitudinal ? (x0 + x1) / 2 : x1,
-      ridgeY1: longitudinal ? y1 : (y0 + y1) / 2,
+      ridgeX0: longitudinal ? (base.x0() + base.x1()) / 2 : x0,
+      ridgeY0: longitudinal ? y0 : (base.y0() + base.y1()) / 2,
+      ridgeX1: longitudinal ? (base.x0() + base.x1()) / 2 : x1,
+      ridgeY1: longitudinal ? y1 : (base.y0() + base.y1()) / 2,
     };
   },
 

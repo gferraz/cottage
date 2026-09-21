@@ -76,6 +76,8 @@ const FloorPlanFacades = {
         side ? [room.y0(), room.y1()] : [room.x0(), room.x1()],
       );
       if (coordinates.length === 0) return;
+      const facadeMin = Math.min(...coordinates);
+      const facadeMax = Math.max(...coordinates);
       const roofs = (plan.allRoofs ?? []).filter(
         (roof) => roof.floorId === null || roof.floorId === plan.currentFloorId,
       );
@@ -99,6 +101,13 @@ const FloorPlanFacades = {
           x1: base.x1() + (longitudinal ? eave1 : rake1),
           y0: base.y0() - (longitudinal ? rake0 : eave0),
           y1: base.y1() + (longitudinal ? rake1 : eave1),
+          baseX0: base.x0(),
+          baseX1: base.x1(),
+          baseY0: base.y0(),
+          baseY1: base.y1(),
+          eave0,
+          eave1,
+          pitch,
           z0,
           rise,
         };
@@ -126,9 +135,22 @@ const FloorPlanFacades = {
         const geometry = roofGeometry(roof);
         return isVisible ? Math.max(highest, geometry?.rise ?? 0) : highest;
       }, 0);
+      const roofDrop = roofs.reduce((lowest, roof) => {
+        if (roof.type !== "gable") return lowest;
+        const isVisible =
+          roof.orientation === "longitudinal" ? !side : side;
+        const geometry = roofGeometry(roof);
+        if (!isVisible || !geometry) return lowest;
+        return Math.max(
+          lowest,
+          Math.max(geometry.eave0, geometry.eave1) *
+            Math.tan((geometry.pitch * Math.PI) / 180),
+        );
+      }, 0);
       const viewWidth = (width + padding * 2) * scale;
       const viewY = -roofRise * scale;
-      const viewHeight = (floorHeight + padding * 2 + roofRise) * scale;
+      const viewHeight =
+        (floorHeight + padding * 2 + roofRise + roofDrop) * scale;
       const svg = document.createElementNS(svgNamespace, "svg");
       svg.classList.add("facade-view");
       svg.setAttribute(
@@ -155,6 +177,23 @@ const FloorPlanFacades = {
       gridPath.setAttribute("fill", "none");
       pattern.append(gridPath);
       defs.append(pattern);
+      const dimensionMarker = document.createElementNS(svgNamespace, "marker");
+      dimensionMarker.setAttribute("id", `facade-dimension-arrow-${index + 1}`);
+      dimensionMarker.setAttribute("markerWidth", "6");
+      dimensionMarker.setAttribute("markerHeight", "6");
+      dimensionMarker.setAttribute("refX", "3");
+      dimensionMarker.setAttribute("refY", "3");
+      dimensionMarker.setAttribute("orient", "auto-start-reverse");
+      dimensionMarker.setAttribute("markerUnits", "userSpaceOnUse");
+      const dimensionArrow = document.createElementNS(svgNamespace, "path");
+      dimensionArrow.setAttribute("d", "M 0 0 L 6 3 L 0 6 z");
+      dimensionArrow.setAttribute(
+        "fill",
+        getComputedStyle(plan.root).getPropertyValue("--theme-label").trim() ||
+          "#263746",
+      );
+      dimensionMarker.append(dimensionArrow);
+      defs.append(dimensionMarker);
       svg.append(defs);
       const grid = document.createElementNS(svgNamespace, "rect");
       grid.setAttribute("x", "0");
@@ -165,33 +204,133 @@ const FloorPlanFacades = {
       grid.classList.add("facade-grid");
       svg.append(grid);
 
+      const dimensionStroke =
+        getComputedStyle(plan.root).getPropertyValue("--theme-label").trim() ||
+        "#263746";
+      const dimensionY = (floorHeight + padding + roofDrop) * scale;
+      const dimensionX0 = (facadeMin - min + padding) * scale;
+      const dimensionX1 = (facadeMax - min + padding) * scale;
+      const horizontalDimension = document.createElementNS(svgNamespace, "line");
+      horizontalDimension.setAttribute("x1", `${dimensionX0}`);
+      horizontalDimension.setAttribute("x2", `${dimensionX1}`);
+      horizontalDimension.setAttribute("y1", `${dimensionY}`);
+      horizontalDimension.setAttribute("y2", `${dimensionY}`);
+      horizontalDimension.setAttribute("stroke", dimensionStroke);
+      horizontalDimension.setAttribute("stroke-width", "1");
+      horizontalDimension.setAttribute(
+        "marker-start",
+        `url(#facade-dimension-arrow-${index + 1})`,
+      );
+      horizontalDimension.setAttribute(
+        "marker-end",
+        `url(#facade-dimension-arrow-${index + 1})`,
+      );
+      svg.append(horizontalDimension);
+
+      const horizontalLabel = document.createElementNS(svgNamespace, "text");
+      horizontalLabel.textContent = `${plan.formatMeters(facadeMax - facadeMin)}m`;
+      horizontalLabel.setAttribute("x", `${(dimensionX0 + dimensionX1) / 2}`);
+      horizontalLabel.setAttribute("y", `${dimensionY - 0.08 * scale}`);
+      horizontalLabel.setAttribute("text-anchor", "middle");
+      horizontalLabel.setAttribute("fill", dimensionStroke);
+      horizontalLabel.setAttribute("font-size", "8");
+      svg.append(horizontalLabel);
+
+      const verticalDimension = document.createElementNS(svgNamespace, "line");
+      const verticalDimensionX = (padding + width + 0.22) * scale;
+      const verticalDimensionY0 = (padding - roofRise) * scale;
+      const verticalDimensionY1 = dimensionY;
+      verticalDimension.setAttribute("x1", `${verticalDimensionX}`);
+      verticalDimension.setAttribute("x2", `${verticalDimensionX}`);
+      verticalDimension.setAttribute("y1", `${verticalDimensionY0}`);
+      verticalDimension.setAttribute("y2", `${verticalDimensionY1}`);
+      verticalDimension.setAttribute("stroke", dimensionStroke);
+      verticalDimension.setAttribute("stroke-width", "1");
+      verticalDimension.setAttribute(
+        "marker-start",
+        `url(#facade-dimension-arrow-${index + 1})`,
+      );
+      verticalDimension.setAttribute(
+        "marker-end",
+        `url(#facade-dimension-arrow-${index + 1})`,
+      );
+      svg.append(verticalDimension);
+
+      const verticalLabel = document.createElementNS(svgNamespace, "text");
+      verticalLabel.textContent = `${plan.formatMeters(floorHeight + roofRise + roofDrop)}m`;
+      verticalLabel.setAttribute("x", `${verticalDimensionX + 0.16 * scale}`);
+      verticalLabel.setAttribute("y", `${(verticalDimensionY0 + verticalDimensionY1) / 2}`);
+      verticalLabel.setAttribute("text-anchor", "middle");
+      verticalLabel.setAttribute("fill", dimensionStroke);
+      verticalLabel.setAttribute("font-size", "8");
+      verticalLabel.setAttribute(
+        "transform",
+        `rotate(-90 ${verticalDimensionX + 0.16 * scale} ${(verticalDimensionY0 + verticalDimensionY1) / 2})`,
+      );
+      svg.append(verticalLabel);
+
       const facadeRoofLabels = [];
       roofs.forEach((roof) => {
         if (roof.type !== "gable") return;
         const longitudinal = roof.orientation === "longitudinal";
         const geometry = roofGeometry(roof);
         if (!geometry) return;
-        const { x0, x1, y0, y1, z0: roofZ0, rise } = geometry;
+        const {
+          x0,
+          x1,
+          y0,
+          y1,
+          z0: roofZ0,
+          rise,
+          baseX0,
+          baseX1,
+          baseY0,
+          baseY1,
+          eave0,
+          eave1,
+          pitch,
+        } = geometry;
         const roofSpan = longitudinal ? [x0, x1] : [y0, y1];
+        const baseSpan = longitudinal ? [baseX0, baseX1] : [baseY0, baseY1];
         const roofStart = roofSpan[0];
         const roofEnd = roofSpan[1];
+        const baseStart = baseSpan[0];
+        const baseEnd = baseSpan[1];
         const ridge = (roofStart + roofEnd) / 2;
+        const baseRidge = (baseStart + baseEnd) / 2;
+        const pitchTangent = Math.tan((pitch * Math.PI) / 180);
+        const baseY = (floorHeight - roofZ0 + padding) * scale;
+        const eaveStartY = baseY + eave0 * pitchTangent * scale;
+        const eaveEndY = baseY + eave1 * pitchTangent * scale;
         const roofWidth = longitudinal ? geometry.x1 - geometry.x0 : geometry.y1 - geometry.y0;
         const roofLength = longitudinal ? geometry.y1 - geometry.y0 : geometry.x1 - geometry.x0;
         const isVisibleOnFacade = longitudinal ? !side : side;
         if (!isVisibleOnFacade) return;
         const polygon = document.createElementNS(svgNamespace, "polygon");
         const points = [
-          `${(roofStart - min + padding) * scale},${(floorHeight - roofZ0 + padding) * scale}`,
-          `${(roofEnd - min + padding) * scale},${(floorHeight - roofZ0 + padding) * scale}`,
-          `${(ridge - min + padding) * scale},${(floorHeight - roofZ0 - rise + padding) * scale}`,
+          `${(baseStart - min + padding) * scale},${baseY}`,
+          `${(baseRidge - min + padding) * scale},${(floorHeight - roofZ0 - rise + padding) * scale}`,
+          `${(baseEnd - min + padding) * scale},${baseY}`,
         ].join(" ");
         polygon.setAttribute("points", points);
         polygon.classList.add("facade-roof");
         svg.append(polygon);
 
+        [
+          [baseStart, baseY, roofStart, eaveStartY],
+          [baseEnd, baseY, roofEnd, eaveEndY],
+        ].forEach(([start, startY, end, endY]) => {
+          const eaveLine = document.createElementNS(svgNamespace, "line");
+          eaveLine.setAttribute("x1", `${(start - min + padding) * scale}`);
+          eaveLine.setAttribute("y1", `${startY}`);
+          eaveLine.setAttribute("x2", `${(end - min + padding) * scale}`);
+          eaveLine.setAttribute("y2", `${endY}`);
+          eaveLine.classList.add("facade-roof-eave");
+          svg.append(eaveLine);
+        });
+
         if (roof.label || roof.id) {
-          const ridgeX = (ridge - min + padding) * scale;
+          const ridgeX = (baseRidge - min + padding) * scale;
           const baseY = (floorHeight - roofZ0 + padding) * scale;
           const ridgeY = (floorHeight - roofZ0 - rise + padding) * scale;
           const labelX = ridgeX;
@@ -204,7 +343,7 @@ const FloorPlanFacades = {
           roofLabel.setAttribute("text-anchor", longitudinal ? "start" : "middle");
           if (longitudinal) {
             const angle =
-              (Math.atan2(baseY - ridgeY, (roofEnd - ridge) * scale) * 180) /
+              (Math.atan2(baseY - ridgeY, (baseEnd - baseRidge) * scale) * 180) /
               Math.PI;
             roofLabel.setAttribute(
               "transform",
