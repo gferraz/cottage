@@ -17,31 +17,50 @@
       "P19": { "easting": 674787.138, "northing": 7150477.614 }
     },
     "segments": [
-      { "from": "P1", " to": "P2",  "distance": 18.0,   "azimuth_deg": 302.192641, "azimuth_dms": "302° 11' 34\"" },
-      { "from": "P2",  "to": "P18", "distance": 43.385, "azimuth_deg": 205.494801, "azimuth_dms": "205° 29' 41\"" },
+      { "from": "P1", " to": "P2", "distance": 18.0, "azimuth_deg": 302.192641, "azimuth_dms": "302° 11' 34\"" },
+      { "from": "P2", "to": "P18", "distance": 43.385, "azimuth_deg": 205.494801, "azimuth_dms": "205° 29' 41\"" },
       { "from": "P18", "to": "P19", "distance": 20.261, "azimuth_deg": 114.785411, "azimuth_dms": "114° 47' 07\"" },
-      { "from": "P19", "to": "P1",  "distance": 41.103, "azimuth_deg": 22.172083,  "azimuth_dms": " 22° 10' 19\"" }
+      { "from": "P19", "to": "P1", "distance": 41.103, "azimuth_deg": 22.172083, "azimuth_dms": " 22° 10' 19\"" }
     ]
   },
   "zones": [
-    { "id": "main",    "pos": [0, 2.5, 0], "size": [9.6, 9.6, 3.0], "visible": false },
+    { "id": "main", "pos": [0, 2.5, 0], "size": [9.6, 9.6, 3.0], "visible": false },
     { "id": "central", "from": ["main.xc - 0.7", "main.y0"], "to": ["x0 + 1.4", "main.y1"], "visible": false },
-    { "id": "top",     "rectangle": ["main.x0", "main.y0", "main.x1", "y0 + main.l / 2"], "visible": false },
-    { "id": "bottom",  "rectangle": ["main.x0", "main.y0 + main.l / 2", "main.x1", "main.y1"], "visible": false },
-    { "id": "left",    "rectangle": ["main.x0", "main.y0", "central.x0", "central.y1"], "visible": false },
-    { "id": "right",   "rectangle": ["central.x1", "central.y0", "main.x1", "main.y1"], "visible": false },
+    { "id": "top", "rectangle": ["main.x0", "main.y0", "main.x1", "y0 + main.l / 2"], "visible": false },
+    { "id": "bottom", "rectangle": ["main.x0", "main.y0 + main.l / 2", "main.x1", "main.y1"], "visible": false },
+    { "id": "left", "rectangle": ["main.x0", "main.y0", "central.x0", "central.y1"], "visible": false },
+    { "id": "right", "rectangle": ["central.x1", "central.y0", "main.x1", "main.y1"], "visible": false },
 
-    { "id": "dorm-top",       "rectangle": ["top.x0", "top.y0 + 0.8", "top.x1", "top.y1"], "color": "blue", "visible": false },
-    { "id": "dorm-top-right", "rectangle": ["office.x0 + 0.8", "top.y0", "top.x1 - 0.8", "top.y1"], "color": "blue", "visible": false },
+    {
+      "id": "dorm-top",
+      "rectangle": ["top.x0", "top.y0 + 0.8", "top.x1", "top.y1"],
+      "color": "blue",
+      "visible": false
+    },
+    {
+      "id": "dorm-top-right",
+      "rectangle": ["office.x0 + 0.8", "top.y0", "top.x1 - 0.8", "top.y1"],
+      "color": "blue",
+      "visible": false
+    },
 
-    { "id": "dorm-bottom", "rectangle": ["bottom.x0", "bottom.y0", "bottom.x1", "bottom.y1 - 0.8"], "color": "blue", "visible": false },
-    { "id": "dorm",        "rectangle": ["dorm-top.x0", "dorm-top.y0", "dorm-bottom.x1", "dorm-bottom.y1"], "color": "blue", "visible": false },
+    {
+      "id": "dorm-bottom",
+      "rectangle": ["bottom.x0", "bottom.y0", "bottom.x1", "bottom.y1 - 0.8"],
+      "color": "blue",
+      "visible": false
+    },
+    {
+      "id": "dorm",
+      "rectangle": ["dorm-top.x0", "dorm-top.y0", "dorm-bottom.x1", "dorm-bottom.y1"],
+      "color": "blue",
+      "visible": false
+    },
     { "id": "confort", "inset": ["main", 1.8, 0.0], "color": "blue", "visible": false },
-    { "id": "attic",   "inset": ["main", 3.0, 0.0], "color": "red",  "visible": false },
+    { "id": "attic", "inset": ["main", 3.0, 0.0], "color": "red", "visible": false },
 
-    {	"id": "office-roof-base",	"from": ["office.x0", "office.y0"],	"to": ["hall.x1", "office.y1"], "visible": false  },
-    {	"id": "hall-roof-base",	  "from": ["hall.x0", "porch.y0"],  	"to": ["hall.x1", "porch.y1"], "visible": false  }
-
+    { "id": "office-roof-base", "from": ["office.x0", "office.y0"], "to": ["hall.x1", "office.y1"], "visible": false },
+    { "id": "hall-roof-base", "from": ["hall.x0", "porch.y0"], "to": ["hall.x1", "porch.y1"], "visible": false }
   ],
   "roofs": [
     {
@@ -107,11 +126,11 @@
     { "id": "knee-top", "label": "Meia parede frontal", "pos": [-4.0, "dorm.y0"], "w": 20, "color": "green" },
     { "id": "central-left", "label": "central esquerda", "pos": ["l-axis.x0 - 0.7", -2.5], "l": 20, "color": "green" },
     { "id": "central-right", "label": "central direita", "pos": ["l-axis.x0 + 0.7", -2.5], "l": 20, "color": "green" },
-    { "id": "knee-bottom",  "label": "Meia parede traseira", "pos": [-4.0, "dorm.y1"], "w": 20, "color": "green" },
-    { "id": "main-right",  "label": "Parede direita", "pos": ["right.x1", -2.5], "l": 20, "color": "green" },
-    { "id": "main-top",    "label": "Parede frontal", "pos": [-4.0, "main.y0"], "w": 20, "color": "green" },
-    { "id": "main-bottom", "label": "Parede traseira", "pos": [-4.0, "main.y1"], "w": 20, "color": "green" }],
-
+    { "id": "knee-bottom", "label": "Meia parede traseira", "pos": [-4.0, "dorm.y1"], "w": 20, "color": "green" },
+    { "id": "main-right", "label": "Parede direita", "pos": ["right.x1", -2.5], "l": 20, "color": "green" },
+    { "id": "main-top", "label": "Parede frontal", "pos": [-4.0, "main.y0"], "w": 20, "color": "green" },
+    { "id": "main-bottom", "label": "Parede traseira", "pos": [-4.0, "main.y1"], "w": 20, "color": "green" }
+  ],
 
   "building": { "anchor": "terrain.front-start", "position": { "x": 4, "y": 3 } },
 
@@ -201,22 +220,22 @@
           "parts": [
             {
               "id": "upper-flight",
-              "from": ["right.x0",       "living.y1", 3.0],
-              "to":   ["right.x0 + 2.1", "y0 + 1.4",  "z0 - 1.33"],
+              "from": ["right.x0", "living.y1", 3.0],
+              "to": ["right.x0 + 2.1", "y0 + 1.4", "z0 - 1.33"],
               "walls": [],
               "classes": "stair-flight"
             },
             {
               "id": "upper-landing",
               "from": ["upper-flight.x1", "upper-flight.y0", "upper-flight.z1"],
-              "to":   ["right.x1",        "upper-flight.y1", "z0"],
+              "to": ["right.x1", "upper-flight.y1", "z0"],
               "walls": ["top", "right"],
               "color": "hazel"
             },
             {
               "id": "lower-landing",
               "from": ["right.x1", "upper-landing.y1", "upper-flight.z1"],
-              "to":   ["x0 - 1.4", "y0 + upper-flight.l", "z0"],
+              "to": ["x0 - 1.4", "y0 + upper-flight.l", "z0"],
               "walls": ["right", "bottom"],
               "color": "hazel"
             },
@@ -253,7 +272,6 @@
           "classes": "wet",
           "walls": ["left", "bottom"]
         },
-
 
         {
           "id": "circulation",
@@ -293,12 +311,16 @@
       ],
       "items": [
         { "title": "Mesa", "pos": ["dining.x0 + 1.2", "dining.y0 + 1.2"], "size": [2.7, 1.1], "classes": "table" },
-        { "title": "Lareira", "pos": ["living.x1 - 0.2", "living.y0 + 0.5"], "size": [0.5, 1.8], "classes": "fireplace" },
+        {
+          "title": "Lareira",
+          "pos": ["living.x1 - 0.2", "living.y0 + 0.5"],
+          "size": [0.5, 1.8],
+          "classes": "fireplace"
+        },
         { "title": "Carro", "pos": ["garage.x0 + 1", "garage.y0 + 1"], "size": [1.8, 4.0], "classes": "car" },
         { "type": "washing-machine", "pos": ["laundry.x1 - 0.7", "laundry.y0"] },
         { "type": "washing-machine", "pos": ["laundry.x1 - 1.4", "laundry.y0"] },
-        { "type": "queen-bed", "pos": ["master.x0 + 1", "master.y0"]
-        },
+        { "type": "queen-bed", "pos": ["master.x0 + 1", "master.y0"] },
         {
           "type": "railing",
           "pos": ["porch.x0", "porch.y0"],
@@ -317,14 +339,13 @@
       ],
       "openings": [
         { "from": "porch.top", "to": "exterior", "type": "opening", "w": 1.8, "dx": "hall.xc - porch.x0 - 0.9" },
-        { "from": "hall.top",  "to": "porch", "type": "door", "w": 1.0 },
+        { "from": "hall.top", "to": "porch", "type": "door", "w": 1.0 },
 
-        { "from": "office.top", "to": "exterior", "type": "window", "w": 1.8, "h": 1.5},
+        { "from": "office.top", "to": "exterior", "type": "window", "w": 1.8, "h": 1.5 },
         { "from": "office.right", "to": "hall", "type": "door" },
         { "from": "office.left", "to": "exterior", "type": "window" },
 
         { "from": "dining.top", "to": "exterior", "type": "window", "w": 2.4, "h": 1.5 },
-
 
         { "from": "closet.right", "to": "vestibule", "type": "opening" },
         { "from": "vestibule.right", "to": "living", "type": "door", "dy": 1.3 },
@@ -352,9 +373,7 @@
           "label": "Quarto N",
           "from": ["dorm-top.x0", "dorm-top.y0"],
           "to": ["x0 + 3.6", "dorm-top.y1"],
-          "openings": [
-            { "type": "door", "from": "right", "to": "playroom", "dy": 3 }
-          ]
+          "openings": [{ "type": "door", "from": "right", "to": "playroom", "dy": 3 }]
         },
         {
           "id": "prayer-room",
@@ -368,9 +387,7 @@
           "label": "Quarto E",
           "from": ["dorm-top.x1 - 3.6", "prayer-room.y1"],
           "to": ["dorm-top.x1", "dorm-top.y1"],
-          "openings": [
-            { "type": "door", "from": "left", "to": "playroom", "dy": 2.6 }
-          ]
+          "openings": [{ "type": "door", "from": "left", "to": "playroom", "dy": 2.6 }]
         },
         {
           "id": "playroom",
@@ -385,27 +402,21 @@
           "label": "Quarto W",
           "from": ["dorm-bottom.x0", "dorm-bottom.y0"],
           "to": ["x0 + 4.1", "y0 + 2.5"],
-          "openings": [
-            { "type": "door", "from": "right", "to": "c-2-1" }
-          ]
+          "openings": [{ "type": "door", "from": "right", "to": "c-2-1" }]
         },
         {
           "id": "bathroom",
           "label": "Banheiro",
           "from": ["dorm-bottom.x0", "bedroom-w.y1"],
           "to": ["x0 + 4.1", "dorm-bottom.y1"],
-          "openings": [
-            { "type": "door", "from": "right", "to": "c-2-1" }
-          ]
+          "openings": [{ "type": "door", "from": "right", "to": "c-2-1" }]
         },
         {
           "id": "bedroom-s",
           "label": "Quarto S",
           "from": ["stairs.x0", "dorm-bottom.y0"],
           "to": ["dorm-bottom.x1", "stairs.y0"],
-          "openings": [
-            { "type": "door", "from": "left", "to": "c-2-1" }
-          ]
+          "openings": [{ "type": "door", "from": "left", "to": "c-2-1" }]
         },
         {
           "id": "c-2-1",
@@ -418,8 +429,7 @@
       ],
       "items": [],
       "openings": [
-        { "type": "opening", "from": "upper", "to": "ground", "pos": ["stairs.x0", "stairs.y0"], "size": [4, 1.4]
-        }
+        { "type": "opening", "from": "upper", "to": "ground", "pos": ["stairs.x0", "stairs.y0"], "size": [4, 1.4] }
       ]
     }
   ]
