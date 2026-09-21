@@ -42,6 +42,6 @@ window.FloorPlanCatalog = {
   openings: {
     door: { w: 0.8, z0: 0, h: 2.1 },
     opening: { w: 1.0, z0: 0, h: 2.1 },
-    window: { w: 0.9, z0: 0.9, h: 1.2 },
+    window: { w: 0.9, z0: 0.9, h: 1.5 },
   },
 };

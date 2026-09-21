@@ -179,30 +179,36 @@ const FloorPlanLists = {
       const details = document.createElement("span");
       const base = plan.references.get(String(roof.base));
       const pitch = Number(roof.pitch);
-      const eave = Number(roof.eave ?? 0);
-      const rake = Number(roof.rake ?? 0);
+      const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
+      const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
       if (!base || !Number.isFinite(pitch)) {
         details.textContent = `base: ${roof.base || "—"}${roof.floorLabel ? ` — ${roof.floorLabel}` : ""}`;
       } else {
         const longitudinal = roof.orientation === "longitudinal";
         const baseWidth = base.w();
         const baseLength = base.l();
-        const roofWidth = baseWidth + 2 * (longitudinal ? eave : rake);
-        const roofLength = baseLength + 2 * (longitudinal ? rake : eave);
+        const roofWidth =
+          baseWidth + (longitudinal ? eave0 + eave1 : rake0 + rake1);
+        const roofLength =
+          baseLength + (longitudinal ? rake0 + rake1 : eave0 + eave1);
         const ridgeLength = longitudinal ? roofLength : roofWidth;
         const rise =
           ((longitudinal ? baseWidth : baseLength) / 2) *
           Math.tan((pitch * Math.PI) / 180);
         const baseSpan = longitudinal ? baseWidth : baseLength;
-        const slopeLength = Math.hypot(baseSpan / 2 + eave, rise);
-        const roofSurfaceArea = 2 * slopeLength * ridgeLength;
+        const slopeA = longitudinal ? eave0 : rake0;
+        const slopeB = longitudinal ? eave1 : rake1;
+        const roofSurfaceArea =
+          (Math.hypot(baseSpan / 2 + slopeA, rise) +
+            Math.hypot(baseSpan / 2 + slopeB, rise)) *
+          ridgeLength;
         const baseElevation =
           roof.z0 !== undefined
             ? plan.resolve(roof.z0)
             : base.z1
               ? base.z1()
               : 0;
-        details.textContent = `Tipo: ${plan.roofTypeLabel(roof.type)} — Cumeeira: ${plan.roofOrientationLabel(roof.orientation)} (${plan.formatMeters(ridgeLength)}m) — ${plan.formatMeters(roofWidth)}m × ${plan.formatMeters(roofLength)}m — Cota base: ${plan.formatMeters(baseElevation)}m — Altura: ${plan.formatMeters(rise)}m — Superfície: ${plan.formatMeters(roofSurfaceArea)}m² — Inclinação: ${plan.formatMeters(pitch)}° — Beiral: ${plan.formatMeters(eave)}m — Empena: ${plan.formatMeters(rake)}m${roof.floorLabel ? ` — ${roof.floorLabel}` : ""}`;
+        details.textContent = `Tipo: ${plan.roofTypeLabel(roof.type)} — Cumeeira: ${plan.roofOrientationLabel(roof.orientation)} (${plan.formatMeters(ridgeLength)}m) — ${plan.formatMeters(roofWidth)}m × ${plan.formatMeters(roofLength)}m — Cota base: ${plan.formatMeters(baseElevation)}m — Altura: ${plan.formatMeters(rise)}m — Superfície: ${plan.formatMeters(roofSurfaceArea)}m² — Inclinação: ${plan.formatMeters(pitch)}° — Beiral: ${FloorPlanRoofs.formatOverhang(plan, roof.eave)}m — Empena: ${FloorPlanRoofs.formatOverhang(plan, roof.rake)}m${roof.floorLabel ? ` — ${roof.floorLabel}` : ""}`;
       }
       item.append(title, details);
       plan.roofList.append(item);

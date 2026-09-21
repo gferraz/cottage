@@ -31,7 +31,10 @@
     { "id": "dorm",    "inset": ["main", 0.8, 0.0], "color": "blue", "visible": false },
     { "id": "confort", "inset": ["main", 1.8, 0.0], "color": "blue", "visible": false },
     { "id": "attic",   "inset": ["main", 3.0, 0.0], "color": "red",  "visible": false },
-    {	"id": "office-roof-base",	"from": ["office.x0", "office.y0"],	"to":   ["right.x0", "office.y1"], "visible": false  }
+
+    {	"id": "office-roof-base",	"from": ["office.x0", "office.y0"],	"to": ["hall.x1", "office.y1"], "visible": false  },
+    {	"id": "hall-roof-base",	  "from": ["hall.x0", "porch.y0"],  	"to": ["hall.x1", "porch.y1"], "visible": false  }
+
   ],
   "roofs": [
     {
@@ -51,9 +54,22 @@
       "base": "office-roof-base",
       "orientation": "longitudinal",
       "pitch": 51,
-      "eave": 0.5,
-      "rake": 0.5
+      "eave": [0.5, 0],
+      "rake": [0.5, 0]
+    },
+
+    {
+      "id": "hall-roof",
+      "label": "Telhado da entrada",
+      "type": "gable",
+      "base": "hall-roof-base",
+      "orientation": "longitudinal",
+      "pitch": 51,
+      "eave": 0.0,
+      "rake": 0.0
     }
+
+
   ],
   "facades": [
     {
@@ -72,12 +88,8 @@
     { "id": "dorm-right",  "label": "Meia parede direita", "pos": ["dorm.x1", -2.5], "l": 20, "color": "green" },
     { "id": "main-right",  "label": "Parede direita", "pos": ["right.x1", -2.5], "l": 20, "color": "green" },
     { "id": "main-top",    "label": "Parede frontal", "pos": [-4.0, "main.y0"], "w": 20, "color": "green" },
-    { "id": "main-bottom", "label": "Parede traseira", "pos": [-4.0, "main.y1"], "w": 20, "color": "green" },
-
-    { "id": "roof-left-office",  "from": ["office.x0", "main.y0"],        "to": ["office.x0 + (right.x0 - office.x0) / 2", "main.y0 -4"], "color": "blue" },
-    { "id": "roof-right-office", "from": ["roof-left-office.x1", "main.y0 - 4"], "to": ["right.x0", "main.y0"], "color": "blue" }
-],
-
+    { "id": "main-bottom", "label": "Parede traseira", "pos": [-4.0, "main.y1"], "w": 20, "color": "green" }
+  ],
 
   "building": { "anchor": "terrain.front-start", "position": { "x": 4, "y": 3 } },
 
@@ -108,14 +120,6 @@
           "to": ["right.x0", "office.y1"],
           "classes": "circulation",
           "walls": ["top", "left"]
-        },
-        {
-          "id":"entry",
-          "label": "Entrada",
-          "rectangle": ["hall.xc - 0.7", "hall.y0 - 0.4", "x0 + 1.4", "hall.y0"],
-          "overlaps": "porch",
-          "classes": "circulation",
-          "walls": ["top", "right", "left"]
         },
         {
           "id": "master",
@@ -276,12 +280,12 @@
         {
           "type": "railing",
           "pos": ["porch.x0", "porch.y0"],
-          "size": ["porch.xc - 0.9 - porch.x0", 0.08, 1.1]
+          "size": ["hall.xc - 0.9 - porch.x0", 0.08, 1.1]
         },
         {
           "type": "railing",
-          "pos": ["porch.xc + 0.9", "porch.y0"],
-          "size": ["porch.x1 - porch.xc - 0.9", 0.08, 1.1]
+          "pos": ["hall.xc + 0.9", "porch.y0"],
+          "size": ["porch.x1 - hall.xc - 0.9", 0.08, 1.1]
         },
         {
           "type": "railing",
@@ -290,12 +294,15 @@
         }
       ],
       "openings": [
-        { "from": "porch.top", "to": "exterior", "type": "opening", "w": 1.8 },
-        { "from": "entry.top", "to": "porch", "type": "door" },
+        { "from": "porch.top", "to": "exterior", "type": "opening", "w": 1.8, "dx": "hall.xc - porch.x0 - 0.9" },
+        { "from": "hall.top",  "to": "porch", "type": "door", "w": 1.0 },
+
+        { "from": "office.top", "to": "exterior", "type": "window", "w": 1.8, "h": 1.5},
         { "from": "office.right", "to": "hall", "type": "door" },
-        { "from": "office.top", "to": "exterior", "type": "window", "dx": 0.0 },
-        { "from": "office.top", "to": "exterior", "type": "window", "dx": 2.2 },
-        { "from": "office.left", "to": "exterior", "type": "window", "dy": 0.0 },
+        { "from": "office.left", "to": "exterior", "type": "window" },
+
+        { "from": "dining.top", "to": "exterior", "type": "window", "w": 2.4, "h": 1.5 },
+
 
         { "from": "closet.right", "to": "vestibule", "type": "opening" },
         { "from": "vestibule.right", "to": "living", "type": "door", "dy": 1.3 },

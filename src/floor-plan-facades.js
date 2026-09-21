@@ -76,13 +76,65 @@ const FloorPlanFacades = {
         side ? [room.y0(), room.y1()] : [room.x0(), room.x1()],
       );
       if (coordinates.length === 0) return;
+      const roofs = (plan.allRoofs ?? []).filter(
+        (roof) => roof.floorId === null || roof.floorId === plan.currentFloorId,
+      );
+      const roofGeometry = (roof) => {
+        const base = plan.references.get(String(roof.base));
+        if (!base || !["longitudinal", "transverse"].includes(roof.orientation)) {
+          return null;
+        }
+        const longitudinal = roof.orientation === "longitudinal";
+        const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
+        const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
+        const pitch = Number(roof.pitch);
+        const baseSpan = longitudinal ? base.w() : base.l();
+        const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
+        const z0 =
+          roof.z0 !== undefined
+            ? plan.resolve(roof.z0)
+            : floorHeight;
+        return {
+          x0: base.x0() - (longitudinal ? eave0 : rake0),
+          x1: base.x1() + (longitudinal ? eave1 : rake1),
+          y0: base.y0() - (longitudinal ? rake0 : eave0),
+          y1: base.y1() + (longitudinal ? rake1 : eave1),
+          z0,
+          rise,
+        };
+      };
+      roofs.forEach((roof) => {
+        if (roof.type !== "gable") return;
+        const longitudinal = roof.orientation === "longitudinal";
+        const isVisible = longitudinal ? !side : side;
+        if (!isVisible) return;
+        const geometry = roofGeometry(roof);
+        if (!geometry) return;
+        const span = longitudinal
+          ? [geometry.x0, geometry.x1]
+          : [geometry.y0, geometry.y1];
+        coordinates.push(...span);
+      });
       const min = Math.min(...coordinates);
       const max = Math.max(...coordinates);
       const width = Math.max(max - min, 1);
       const padding = 0.5;
+      const roofRise = roofs.reduce((highest, roof) => {
+        if (roof.type !== "gable") return highest;
+        const isVisible =
+          roof.orientation === "longitudinal" ? !side : side;
+        const geometry = roofGeometry(roof);
+        return isVisible ? Math.max(highest, geometry?.rise ?? 0) : highest;
+      }, 0);
+      const viewWidth = (width + padding * 2) * scale;
+      const viewY = -roofRise * scale;
+      const viewHeight = (floorHeight + padding * 2 + roofRise) * scale;
       const svg = document.createElementNS(svgNamespace, "svg");
       svg.classList.add("facade-view");
-      svg.setAttribute("viewBox", `0 0 ${(width + padding * 2) * scale} ${(floorHeight + padding * 2) * scale}`);
+      svg.setAttribute(
+        "viewBox",
+        `0 ${viewY} ${viewWidth} ${viewHeight}`,
+      );
       svg.setAttribute("role", "img");
       svg.setAttribute("aria-label", facade.label || `Fachada ${index + 1}`);
 
@@ -105,11 +157,77 @@ const FloorPlanFacades = {
       defs.append(pattern);
       svg.append(defs);
       const grid = document.createElementNS(svgNamespace, "rect");
-      grid.setAttribute("width", "100%");
-      grid.setAttribute("height", "100%");
+      grid.setAttribute("x", "0");
+      grid.setAttribute("y", `${viewY}`);
+      grid.setAttribute("width", `${viewWidth}`);
+      grid.setAttribute("height", `${viewHeight}`);
       grid.setAttribute("fill", `url(#facade-grid-${index + 1})`);
       grid.classList.add("facade-grid");
       svg.append(grid);
+
+      const facadeRoofLabels = [];
+      roofs.forEach((roof) => {
+        if (roof.type !== "gable") return;
+        const longitudinal = roof.orientation === "longitudinal";
+        const geometry = roofGeometry(roof);
+        if (!geometry) return;
+        const { x0, x1, y0, y1, z0: roofZ0, rise } = geometry;
+        const roofSpan = longitudinal ? [x0, x1] : [y0, y1];
+        const roofStart = roofSpan[0];
+        const roofEnd = roofSpan[1];
+        const ridge = (roofStart + roofEnd) / 2;
+        const roofWidth = longitudinal ? geometry.x1 - geometry.x0 : geometry.y1 - geometry.y0;
+        const roofLength = longitudinal ? geometry.y1 - geometry.y0 : geometry.x1 - geometry.x0;
+        const isVisibleOnFacade = longitudinal ? !side : side;
+        if (!isVisibleOnFacade) return;
+        const polygon = document.createElementNS(svgNamespace, "polygon");
+        const points = [
+          `${(roofStart - min + padding) * scale},${(floorHeight - roofZ0 + padding) * scale}`,
+          `${(roofEnd - min + padding) * scale},${(floorHeight - roofZ0 + padding) * scale}`,
+          `${(ridge - min + padding) * scale},${(floorHeight - roofZ0 - rise + padding) * scale}`,
+        ].join(" ");
+        polygon.setAttribute("points", points);
+        polygon.classList.add("facade-roof");
+        svg.append(polygon);
+
+        if (roof.label || roof.id) {
+          const ridgeX = (ridge - min + padding) * scale;
+          const baseY = (floorHeight - roofZ0 + padding) * scale;
+          const ridgeY = (floorHeight - roofZ0 - rise + padding) * scale;
+          const labelX = ridgeX;
+          const labelY = longitudinal
+            ? ridgeY - 3
+            : ridgeY - 0.18 * scale;
+          const roofLabel = document.createElementNS(svgNamespace, "text");
+          roofLabel.setAttribute("x", `${labelX}`);
+          roofLabel.setAttribute("y", `${labelY}`);
+          roofLabel.setAttribute("text-anchor", longitudinal ? "start" : "middle");
+          if (longitudinal) {
+            const angle =
+              (Math.atan2(baseY - ridgeY, (roofEnd - ridge) * scale) * 180) /
+              Math.PI;
+            roofLabel.setAttribute(
+              "transform",
+              `rotate(${angle} ${labelX} ${labelY})`,
+            );
+          }
+          roofLabel.classList.add("facade-roof-label");
+
+          const roofTitle = document.createElementNS(svgNamespace, "tspan");
+          roofTitle.textContent = roof.label || roof.id;
+          roofTitle.setAttribute("x", `${labelX}`);
+          roofTitle.classList.add("facade-roof-label-title");
+
+          const roofDetails = document.createElementNS(svgNamespace, "tspan");
+          roofDetails.textContent = `l: ${plan.formatMeters(roofLength)}m w: ${plan.formatMeters(roofWidth)}m h: ${plan.formatMeters(rise)}m`;
+          roofDetails.setAttribute("x", `${labelX}`);
+          roofDetails.setAttribute("dy", "1.2em");
+          roofDetails.classList.add("facade-roof-label-details");
+
+          roofLabel.append(roofTitle, roofDetails);
+          facadeRoofLabels.push(roofLabel);
+        }
+      });
 
       const facadeWalls = [facadeWall];
       const facadeRoomIds = new Set(
@@ -240,19 +358,44 @@ const FloorPlanFacades = {
           rect.append(title);
           svg.append(rect);
           if (opening.type === "window") {
-            const divider = document.createElementNS(svgNamespace, "line");
-            divider.setAttribute("x1", `${(start - min + padding) * scale}`);
-            divider.setAttribute("x2", `${(start - min + padding + featureWidth) * scale}`);
-            divider.setAttribute("y1", `${(floorHeight - z0 - height / 2 + padding) * scale}`);
-            divider.setAttribute("y2", divider.getAttribute("y1"));
-            divider.classList.add("facade-window-divider");
-            svg.append(divider);
+            const windowX = (start - min + padding) * scale;
+            const windowY = (floorHeight - z0 - height + padding) * scale;
+            const windowWidth = featureWidth * scale;
+            const windowHeight = height * scale;
+            for (let division = 1; division < 4; division += 1) {
+              const vertical = document.createElementNS(svgNamespace, "line");
+              const verticalX = windowX + (windowWidth * division) / 4;
+              vertical.setAttribute("x1", `${verticalX}`);
+              vertical.setAttribute("x2", `${verticalX}`);
+              vertical.setAttribute("y1", `${windowY}`);
+              vertical.setAttribute("y2", `${windowY + windowHeight}`);
+              vertical.setAttribute(
+                "stroke",
+                getComputedStyle(plan.root).getPropertyValue("--theme-window-line").trim() || "#a7adb3",
+              );
+              vertical.setAttribute("stroke-width", "1");
+              svg.append(vertical);
+
+              const horizontal = document.createElementNS(svgNamespace, "line");
+              const horizontalY = windowY + (windowHeight * division) / 4;
+              horizontal.setAttribute("x1", `${windowX}`);
+              horizontal.setAttribute("x2", `${windowX + windowWidth}`);
+              horizontal.setAttribute("y1", `${horizontalY}`);
+              horizontal.setAttribute("y2", `${horizontalY}`);
+              horizontal.setAttribute(
+                "stroke",
+                getComputedStyle(plan.root).getPropertyValue("--theme-window-line").trim() || "#a7adb3",
+              );
+              horizontal.setAttribute("stroke-width", "1");
+              svg.append(horizontal);
+            }
           }
         });
 
       svg.querySelectorAll(".facade-railing").forEach((railing) => {
         svg.append(railing);
       });
+      facadeRoofLabels.forEach((label) => svg.append(label));
 
       const figure = document.createElement("figure");
       figure.className = "facade-view-container";

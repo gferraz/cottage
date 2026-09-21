@@ -400,7 +400,7 @@ const FloorPlanTextExport = {
           return;
         }
         lines.push(
-          `| ${plan.markdownText(roof.id || "—")} | ${plan.markdownText(plan.roofTypeLabel(roof.type))} | ${plan.markdownText(plan.roofOrientationLabel(roof.orientation))} | ${plan.formatMeters(metrics.roofWidth)} | ${plan.formatMeters(metrics.roofLength)} | ${plan.formatMeters(metrics.ridgeLength)} | ${plan.formatMeters(metrics.baseElevation)} | ${plan.formatMeters(metrics.rise)} | ${plan.formatMeters(metrics.surfaceArea)} | ${plan.formatMeters(metrics.pitch)}° | ${plan.formatMeters(metrics.eave)} | ${plan.formatMeters(metrics.rake)} |`,
+          `| ${plan.markdownText(roof.id || "—")} | ${plan.markdownText(plan.roofTypeLabel(roof.type))} | ${plan.markdownText(plan.roofOrientationLabel(roof.orientation))} | ${plan.formatMeters(metrics.roofWidth)} | ${plan.formatMeters(metrics.roofLength)} | ${plan.formatMeters(metrics.ridgeLength)} | ${plan.formatMeters(metrics.baseElevation)} | ${plan.formatMeters(metrics.rise)} | ${plan.formatMeters(metrics.surfaceArea)} | ${plan.formatMeters(metrics.pitch)}° | ${FloorPlanRoofs.formatOverhang(plan, metrics.eave)} | ${FloorPlanRoofs.formatOverhang(plan, metrics.rake)} |`,
         );
       });
     };

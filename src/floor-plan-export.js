@@ -2,36 +2,39 @@ const FloorPlanExport = {
   roofMetrics(plan, roof) {
     const base = plan.references.get(String(roof.base));
     const pitch = Number(roof.pitch);
-    const eave = Number(roof.eave ?? 0);
-    const rake = Number(roof.rake ?? 0);
+    const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
+    const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
     if (
       !base ||
       !Number.isFinite(pitch) ||
       !(pitch > 0 && pitch < 90) ||
-      !Number.isFinite(eave) ||
-      !Number.isFinite(rake) ||
-      eave < 0 ||
-      rake < 0
+      ![eave0, eave1, rake0, rake1].every(Number.isFinite) ||
+      [eave0, eave1, rake0, rake1].some((value) => value < 0)
     )
       return null;
     const longitudinal = roof.orientation === "longitudinal";
-    const roofWidth = base.w() + 2 * (longitudinal ? eave : rake);
-    const roofLength = base.l() + 2 * (longitudinal ? rake : eave);
-    const x0 = base.x0() - (longitudinal ? eave : rake);
-    const x1 = base.x1() + (longitudinal ? eave : rake);
-    const y0 = base.y0() - (longitudinal ? rake : eave);
-    const y1 = base.y1() + (longitudinal ? rake : eave);
+    const roofWidth = base.w() + (longitudinal ? eave0 + eave1 : rake0 + rake1);
+    const roofLength = base.l() + (longitudinal ? rake0 + rake1 : eave0 + eave1);
+    const x0 = base.x0() - (longitudinal ? eave0 : rake0);
+    const x1 = base.x1() + (longitudinal ? eave1 : rake1);
+    const y0 = base.y0() - (longitudinal ? rake0 : eave0);
+    const y1 = base.y1() + (longitudinal ? rake1 : eave1);
     const baseElevation =
       roof.z0 !== undefined ? plan.resolve(roof.z0) : base.z1 ? base.z1() : 0;
     const baseSpan = longitudinal ? base.w() : base.l();
     const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
     const ridgeLength = longitudinal ? roofLength : roofWidth;
-    const surfaceArea = 2 * Math.hypot(baseSpan / 2 + eave, rise) * ridgeLength;
+    const slopeA = longitudinal ? eave0 : rake0;
+    const slopeB = longitudinal ? eave1 : rake1;
+    const surfaceArea =
+      (Math.hypot(baseSpan / 2 + slopeA, rise) +
+        Math.hypot(baseSpan / 2 + slopeB, rise)) *
+      ridgeLength;
     return {
       base,
       pitch,
-      eave,
-      rake,
+      eave: [eave0, eave1],
+      rake: [rake0, rake1],
       longitudinal,
       roofWidth,
       roofLength,

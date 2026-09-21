@@ -1,4 +1,15 @@
 const FloorPlanRoofs = {
+  overhangPair(value) {
+    const values = Array.isArray(value) ? value : [value ?? 0, value ?? 0];
+    return [Number(values[0] ?? 0), Number(values[1] ?? 0)];
+  },
+
+  formatOverhang(plan, value) {
+    const [first, second] = FloorPlanRoofs.overhangPair(value);
+    const formatted = [plan.formatMeters(first), plan.formatMeters(second)];
+    return first === second ? formatted[0] : `${formatted[0]} / ${formatted[1]}`;
+  },
+
   render(plan, roofs = []) {
     if (!plan.guidesLayer) return;
     const svg = "http://www.w3.org/2000/svg";
@@ -28,16 +39,19 @@ const FloorPlanRoofs = {
           throw new Error(
             "A gable roof pitch must be between 0 and 90 degrees",
           );
-        const eave = Number(roof.eave ?? 0);
-        const rake = Number(roof.rake ?? 0);
-        if (![eave, rake].every(Number.isFinite) || eave < 0 || rake < 0) {
+        const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
+        const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
+        if (
+          ![eave0, eave1, rake0, rake1].every(Number.isFinite) ||
+          [eave0, eave1, rake0, rake1].some((value) => value < 0)
+        ) {
           throw new Error("A roof eave and rake must be non-negative numbers");
         }
         const longitudinal = roof.orientation === "longitudinal";
-        const x0 = base.x0() - (longitudinal ? eave : rake);
-        const x1 = base.x1() + (longitudinal ? eave : rake);
-        const y0 = base.y0() - (longitudinal ? rake : eave);
-        const y1 = base.y1() + (longitudinal ? rake : eave);
+        const x0 = base.x0() - (longitudinal ? eave0 : rake0);
+        const x1 = base.x1() + (longitudinal ? eave1 : rake1);
+        const y0 = base.y0() - (longitudinal ? rake0 : eave0);
+        const y1 = base.y1() + (longitudinal ? rake1 : eave1);
         const z0 =
           roof.z0 !== undefined
             ? plan.resolve(roof.z0)
@@ -157,8 +171,8 @@ const FloorPlanRoofs = {
         group.dataset.base = String(roof.base);
         group.dataset.orientation = roof.orientation;
         group.dataset.pitch = String(pitch);
-        group.dataset.eave = String(eave);
-        group.dataset.rake = String(rake);
+        group.dataset.eave = JSON.stringify([eave0, eave1]);
+        group.dataset.rake = JSON.stringify([rake0, rake1]);
         group.dataset.baseZ = String(z0);
         group.dataset.ridgeZ = String(z0 + rise);
         group.dataset.projectionScale = String(projectionScale);
