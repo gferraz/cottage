@@ -1891,7 +1891,12 @@ const FloorPlanLegend = {
 
 const FloorPlanExport = {
   roofMetrics(plan, roof) {
-    const base = plan.references.get(String(roof.base));
+    let base;
+    try {
+      base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+    } catch {
+      return null;
+    }
     const pitch = Number(roof.pitch);
     const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
     const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
@@ -3131,7 +3136,12 @@ const FloorPlanFacades = {
         (roof) => roof.floorId === null || roof.floorId === plan.currentFloorId,
       );
       const roofGeometry = (roof) => {
-        const base = plan.references.get(String(roof.base));
+        let base;
+        try {
+          base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+        } catch {
+          return null;
+        }
         if (!base || !["longitudinal", "transverse"].includes(roof.orientation)) {
           return null;
         }
@@ -3599,6 +3609,34 @@ window.FloorPlanFacades = FloorPlanFacades;
 
 
 const FloorPlanRoofs = {
+  asGeometryBox(base, label = "roof base") {
+    if (typeof base?.w === "function" && typeof base?.l === "function") {
+      return base;
+    }
+    return FloorPlanGeometryBox.fromValues({
+      x: base?.x,
+      y: base?.y,
+      w: base?.w,
+      l: base?.l,
+      z0: base?.z0,
+      h: base?.h,
+      label,
+    });
+  },
+
+  resolveBase(plan, baseDefinition) {
+    if (typeof baseDefinition === "string") {
+      const base = plan.references.get(baseDefinition);
+      if (!base) throw new Error(`Unknown roof base reference: ${baseDefinition}`);
+      return FloorPlanRoofs.asGeometryBox(base);
+    }
+    if (!baseDefinition || typeof baseDefinition !== "object") {
+      throw new Error("A roof base must be an object or a reference ID");
+    }
+    const base = plan.normalizeGeometry(baseDefinition);
+    return FloorPlanRoofs.asGeometryBox(base);
+  },
+
   overhangPair(value) {
     const values = Array.isArray(value) ? value : [value ?? 0, value ?? 0];
     return [Number(values[0] ?? 0), Number(values[1] ?? 0)];
@@ -3625,15 +3663,17 @@ const FloorPlanRoofs = {
       try {
         if (roof.type !== "gable")
           throw new Error(`Unsupported roof type: ${roof.type || "undefined"}`);
-        if (!roof.base) throw new Error("A gable roof needs a base reference");
+        const baseDefinition = roof.base ?? roof;
+        if (!roof.base && !["from", "to", "rectangle", "pos", "size", "inset", "outset"].some((key) => roof[key] !== undefined)) {
+          throw new Error("A gable roof needs a base definition");
+        }
         if (!["longitudinal", "transverse"].includes(roof.orientation)) {
           throw new Error(
             'A gable roof orientation must be "longitudinal" or "transverse"',
           );
         }
 
-        const base = plan.references.get(String(roof.base));
-        if (!base) throw new Error(`Unknown roof base reference: ${roof.base}`);
+        const base = FloorPlanRoofs.resolveBase(plan, baseDefinition);
         const pitch = Number(roof.pitch);
         if (!(pitch > 0 && pitch < 90))
           throw new Error(
@@ -3772,7 +3812,8 @@ const FloorPlanRoofs = {
           class: "roof-plan",
           "data-id": roof.id || `roof-${index + 1}`,
         });
-        group.dataset.base = String(roof.base);
+        group.dataset.base =
+          typeof baseDefinition === "string" ? baseDefinition : "inline-geometry";
         group.dataset.orientation = roof.orientation;
         group.dataset.pitch = String(pitch);
         group.dataset.eave = JSON.stringify([eave0, eave1]);
@@ -5563,12 +5604,23 @@ const FloorPlanLists = {
       const title = document.createElement("strong");
       title.textContent = `${index + 1}. ${roof.label || roof.id || "Telhado"}`;
       const details = document.createElement("span");
-      const base = plan.references.get(String(roof.base));
+      let base;
+      try {
+        base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+      } catch {
+        base = null;
+      }
       const pitch = Number(roof.pitch);
       const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
       const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
       if (!base || !Number.isFinite(pitch)) {
-        details.textContent = `base: ${roof.base || "—"}${roof.floorLabel ? ` — ${roof.floorLabel}` : ""}`;
+        const baseLabel =
+          typeof roof.base === "string"
+            ? roof.base
+            : roof.inset
+              ? `inset de ${roof.inset[0]}`
+              : "geometria inline";
+        details.textContent = `base: ${baseLabel}${roof.floorLabel ? ` — ${roof.floorLabel}` : ""}`;
       } else {
         const longitudinal = roof.orientation === "longitudinal";
         const baseWidth = base.w();
@@ -6553,32 +6605,41 @@ const FloorPlanGeometryDomain = {
     }
 
     if (data.inset !== undefined) {
-      if (!Array.isArray(data.inset) || data.inset.length !== 3) {
-        throw new Error("Inset precisa ter [id, dx, dy]");
+      if (
+        !Array.isArray(data.inset) ||
+        ![3, 5].includes(data.inset.length)
+      ) {
+        throw new Error(
+          "Inset precisa ter [id, dx, dy] ou [id, left, top, right, bottom]",
+        );
       }
 
-      const [referenceId, xInsetValue, yInsetValue] = data.inset;
+      const [referenceId, leftValue, topValue, rightValue = leftValue, bottomValue = topValue] = data.inset;
       const reference = plan.references.get(String(referenceId));
       if (!reference)
         throw new Error(`Unknown geometric reference: ${referenceId}`);
 
-      const xInset = plan.resolve(xInsetValue);
-      const yInset = plan.resolve(yInsetValue);
+      const left = plan.resolve(leftValue);
+      const top = plan.resolve(topValue);
+      const right = plan.resolve(rightValue);
+      const bottom = plan.resolve(bottomValue);
       const baseWidth = reference.w();
       const baseLength = reference.l();
-      if (![xInset, yInset, baseWidth, baseLength].every(Number.isFinite)) {
+      if (![left, top, right, bottom, baseWidth, baseLength].every(Number.isFinite)) {
         throw new Error(`Inset precisa usar valores numéricos: ${referenceId}`);
       }
       if (
         !(
-          xInset >= 0 &&
-          xInset < baseWidth / 2 &&
-          yInset >= 0 &&
-          yInset < baseLength / 2
+          left >= 0 &&
+          top >= 0 &&
+          right >= 0 &&
+          bottom >= 0 &&
+          left + right < baseWidth &&
+          top + bottom < baseLength
         )
       ) {
         throw new Error(
-          `Inset deve ser não negativo e menor que metade das dimensões de ${referenceId}`,
+          `Inset deve ser não negativo e preservar largura e comprimento de ${referenceId}`,
         );
       }
 
@@ -6586,10 +6647,10 @@ const FloorPlanGeometryDomain = {
       const h = reference.h ? reference.h() : 0;
       return {
         ...data,
-        x: reference.x0() + xInset,
-        y: reference.y0() + yInset,
-        w: baseWidth - 2 * xInset,
-        l: baseLength - 2 * yInset,
+        x: reference.x0() + left,
+        y: reference.y0() + top,
+        w: baseWidth - left - right,
+        l: baseLength - top - bottom,
         z0,
         z1: z0 + h,
         h,
@@ -6597,25 +6658,32 @@ const FloorPlanGeometryDomain = {
     }
 
     if (data.outset !== undefined) {
-      if (!Array.isArray(data.outset) || data.outset.length !== 3) {
-        throw new Error("Outset precisa ter [id, dx, dy]");
+      if (
+        !Array.isArray(data.outset) ||
+        ![3, 5].includes(data.outset.length)
+      ) {
+        throw new Error(
+          "Outset precisa ter [id, dx, dy] ou [id, left, top, right, bottom]",
+        );
       }
 
-      const [referenceId, xOutsetValue, yOutsetValue] = data.outset;
+      const [referenceId, leftValue, topValue, rightValue = leftValue, bottomValue = topValue] = data.outset;
       const reference = plan.references.get(String(referenceId));
       if (!reference)
         throw new Error(`Unknown geometric reference: ${referenceId}`);
 
-      const xOutset = plan.resolve(xOutsetValue);
-      const yOutset = plan.resolve(yOutsetValue);
+      const left = plan.resolve(leftValue);
+      const top = plan.resolve(topValue);
+      const right = plan.resolve(rightValue);
+      const bottom = plan.resolve(bottomValue);
       const baseWidth = reference.w();
       const baseLength = reference.l();
-      if (![xOutset, yOutset, baseWidth, baseLength].every(Number.isFinite)) {
+      if (![left, top, right, bottom, baseWidth, baseLength].every(Number.isFinite)) {
         throw new Error(
           `Outset precisa usar valores numéricos: ${referenceId}`,
         );
       }
-      if (xOutset < 0 || yOutset < 0) {
+      if ([left, top, right, bottom].some((value) => value < 0)) {
         throw new Error("Outset deve ser não negativo");
       }
 
@@ -6623,10 +6691,10 @@ const FloorPlanGeometryDomain = {
       const h = reference.h ? reference.h() : 0;
       return {
         ...data,
-        x: reference.x0() - xOutset,
-        y: reference.y0() - yOutset,
-        w: baseWidth + 2 * xOutset,
-        l: baseLength + 2 * yOutset,
+        x: reference.x0() - left,
+        y: reference.y0() - top,
+        w: baseWidth + left + right,
+        l: baseLength + top + bottom,
         z0,
         z1: z0 + h,
         h,

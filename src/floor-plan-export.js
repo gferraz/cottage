@@ -1,6 +1,11 @@
 const FloorPlanExport = {
   roofMetrics(plan, roof) {
-    const base = plan.references.get(String(roof.base));
+    let base;
+    try {
+      base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+    } catch {
+      return null;
+    }
     const pitch = Number(roof.pitch);
     const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
     const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);

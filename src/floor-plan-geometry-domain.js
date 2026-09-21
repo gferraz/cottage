@@ -186,32 +186,41 @@ const FloorPlanGeometryDomain = {
     }
 
     if (data.inset !== undefined) {
-      if (!Array.isArray(data.inset) || data.inset.length !== 3) {
-        throw new Error("Inset precisa ter [id, dx, dy]");
+      if (
+        !Array.isArray(data.inset) ||
+        ![3, 5].includes(data.inset.length)
+      ) {
+        throw new Error(
+          "Inset precisa ter [id, dx, dy] ou [id, left, top, right, bottom]",
+        );
       }
 
-      const [referenceId, xInsetValue, yInsetValue] = data.inset;
+      const [referenceId, leftValue, topValue, rightValue = leftValue, bottomValue = topValue] = data.inset;
       const reference = plan.references.get(String(referenceId));
       if (!reference)
         throw new Error(`Unknown geometric reference: ${referenceId}`);
 
-      const xInset = plan.resolve(xInsetValue);
-      const yInset = plan.resolve(yInsetValue);
+      const left = plan.resolve(leftValue);
+      const top = plan.resolve(topValue);
+      const right = plan.resolve(rightValue);
+      const bottom = plan.resolve(bottomValue);
       const baseWidth = reference.w();
       const baseLength = reference.l();
-      if (![xInset, yInset, baseWidth, baseLength].every(Number.isFinite)) {
+      if (![left, top, right, bottom, baseWidth, baseLength].every(Number.isFinite)) {
         throw new Error(`Inset precisa usar valores numéricos: ${referenceId}`);
       }
       if (
         !(
-          xInset >= 0 &&
-          xInset < baseWidth / 2 &&
-          yInset >= 0 &&
-          yInset < baseLength / 2
+          left >= 0 &&
+          top >= 0 &&
+          right >= 0 &&
+          bottom >= 0 &&
+          left + right < baseWidth &&
+          top + bottom < baseLength
         )
       ) {
         throw new Error(
-          `Inset deve ser não negativo e menor que metade das dimensões de ${referenceId}`,
+          `Inset deve ser não negativo e preservar largura e comprimento de ${referenceId}`,
         );
       }
 
@@ -219,10 +228,10 @@ const FloorPlanGeometryDomain = {
       const h = reference.h ? reference.h() : 0;
       return {
         ...data,
-        x: reference.x0() + xInset,
-        y: reference.y0() + yInset,
-        w: baseWidth - 2 * xInset,
-        l: baseLength - 2 * yInset,
+        x: reference.x0() + left,
+        y: reference.y0() + top,
+        w: baseWidth - left - right,
+        l: baseLength - top - bottom,
         z0,
         z1: z0 + h,
         h,
@@ -230,25 +239,32 @@ const FloorPlanGeometryDomain = {
     }
 
     if (data.outset !== undefined) {
-      if (!Array.isArray(data.outset) || data.outset.length !== 3) {
-        throw new Error("Outset precisa ter [id, dx, dy]");
+      if (
+        !Array.isArray(data.outset) ||
+        ![3, 5].includes(data.outset.length)
+      ) {
+        throw new Error(
+          "Outset precisa ter [id, dx, dy] ou [id, left, top, right, bottom]",
+        );
       }
 
-      const [referenceId, xOutsetValue, yOutsetValue] = data.outset;
+      const [referenceId, leftValue, topValue, rightValue = leftValue, bottomValue = topValue] = data.outset;
       const reference = plan.references.get(String(referenceId));
       if (!reference)
         throw new Error(`Unknown geometric reference: ${referenceId}`);
 
-      const xOutset = plan.resolve(xOutsetValue);
-      const yOutset = plan.resolve(yOutsetValue);
+      const left = plan.resolve(leftValue);
+      const top = plan.resolve(topValue);
+      const right = plan.resolve(rightValue);
+      const bottom = plan.resolve(bottomValue);
       const baseWidth = reference.w();
       const baseLength = reference.l();
-      if (![xOutset, yOutset, baseWidth, baseLength].every(Number.isFinite)) {
+      if (![left, top, right, bottom, baseWidth, baseLength].every(Number.isFinite)) {
         throw new Error(
           `Outset precisa usar valores numéricos: ${referenceId}`,
         );
       }
-      if (xOutset < 0 || yOutset < 0) {
+      if ([left, top, right, bottom].some((value) => value < 0)) {
         throw new Error("Outset deve ser não negativo");
       }
 
@@ -256,10 +272,10 @@ const FloorPlanGeometryDomain = {
       const h = reference.h ? reference.h() : 0;
       return {
         ...data,
-        x: reference.x0() - xOutset,
-        y: reference.y0() - yOutset,
-        w: baseWidth + 2 * xOutset,
-        l: baseLength + 2 * yOutset,
+        x: reference.x0() - left,
+        y: reference.y0() - top,
+        w: baseWidth + left + right,
+        l: baseLength + top + bottom,
         z0,
         z1: z0 + h,
         h,

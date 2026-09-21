@@ -82,7 +82,12 @@ const FloorPlanFacades = {
         (roof) => roof.floorId === null || roof.floorId === plan.currentFloorId,
       );
       const roofGeometry = (roof) => {
-        const base = plan.references.get(String(roof.base));
+        let base;
+        try {
+          base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+        } catch {
+          return null;
+        }
         if (!base || !["longitudinal", "transverse"].includes(roof.orientation)) {
           return null;
         }

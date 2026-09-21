@@ -1,4 +1,32 @@
 const FloorPlanRoofs = {
+  asGeometryBox(base, label = "roof base") {
+    if (typeof base?.w === "function" && typeof base?.l === "function") {
+      return base;
+    }
+    return FloorPlanGeometryBox.fromValues({
+      x: base?.x,
+      y: base?.y,
+      w: base?.w,
+      l: base?.l,
+      z0: base?.z0,
+      h: base?.h,
+      label,
+    });
+  },
+
+  resolveBase(plan, baseDefinition) {
+    if (typeof baseDefinition === "string") {
+      const base = plan.references.get(baseDefinition);
+      if (!base) throw new Error(`Unknown roof base reference: ${baseDefinition}`);
+      return FloorPlanRoofs.asGeometryBox(base);
+    }
+    if (!baseDefinition || typeof baseDefinition !== "object") {
+      throw new Error("A roof base must be an object or a reference ID");
+    }
+    const base = plan.normalizeGeometry(baseDefinition);
+    return FloorPlanRoofs.asGeometryBox(base);
+  },
+
   overhangPair(value) {
     const values = Array.isArray(value) ? value : [value ?? 0, value ?? 0];
     return [Number(values[0] ?? 0), Number(values[1] ?? 0)];
@@ -25,15 +53,17 @@ const FloorPlanRoofs = {
       try {
         if (roof.type !== "gable")
           throw new Error(`Unsupported roof type: ${roof.type || "undefined"}`);
-        if (!roof.base) throw new Error("A gable roof needs a base reference");
+        const baseDefinition = roof.base ?? roof;
+        if (!roof.base && !["from", "to", "rectangle", "pos", "size", "inset", "outset"].some((key) => roof[key] !== undefined)) {
+          throw new Error("A gable roof needs a base definition");
+        }
         if (!["longitudinal", "transverse"].includes(roof.orientation)) {
           throw new Error(
             'A gable roof orientation must be "longitudinal" or "transverse"',
           );
         }
 
-        const base = plan.references.get(String(roof.base));
-        if (!base) throw new Error(`Unknown roof base reference: ${roof.base}`);
+        const base = FloorPlanRoofs.resolveBase(plan, baseDefinition);
         const pitch = Number(roof.pitch);
         if (!(pitch > 0 && pitch < 90))
           throw new Error(
@@ -172,7 +202,8 @@ const FloorPlanRoofs = {
           class: "roof-plan",
           "data-id": roof.id || `roof-${index + 1}`,
         });
-        group.dataset.base = String(roof.base);
+        group.dataset.base =
+          typeof baseDefinition === "string" ? baseDefinition : "inline-geometry";
         group.dataset.orientation = roof.orientation;
         group.dataset.pitch = String(pitch);
         group.dataset.eave = JSON.stringify([eave0, eave1]);

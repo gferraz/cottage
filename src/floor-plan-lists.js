@@ -177,12 +177,23 @@ const FloorPlanLists = {
       const title = document.createElement("strong");
       title.textContent = `${index + 1}. ${roof.label || roof.id || "Telhado"}`;
       const details = document.createElement("span");
-      const base = plan.references.get(String(roof.base));
+      let base;
+      try {
+        base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+      } catch {
+        base = null;
+      }
       const pitch = Number(roof.pitch);
       const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
       const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
       if (!base || !Number.isFinite(pitch)) {
-        details.textContent = `base: ${roof.base || "—"}${roof.floorLabel ? ` — ${roof.floorLabel}` : ""}`;
+        const baseLabel =
+          typeof roof.base === "string"
+            ? roof.base
+            : roof.inset
+              ? `inset de ${roof.inset[0]}`
+              : "geometria inline";
+        details.textContent = `base: ${baseLabel}${roof.floorLabel ? ` — ${roof.floorLabel}` : ""}`;
       } else {
         const longitudinal = roof.orientation === "longitudinal";
         const baseWidth = base.w();
