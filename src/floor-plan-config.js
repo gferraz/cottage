@@ -43,7 +43,7 @@ function loadJsonFromCommandLine() {
     const bytes = Uint8Array.from(binary, (character) =>
       character.charCodeAt(0),
     );
-    floor.load(JSON.parse(new TextDecoder().decode(bytes)));
+    floor.load(FloorPlanParser.parse(new TextDecoder().decode(bytes)));
   } catch (error) {
     const details = error.stack ? `\n\n${error.stack}` : "";
     alert(`Não foi possível carregar a planta: ${error.message}${details}`);

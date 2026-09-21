@@ -6,6 +6,17 @@ Aplicação estática para desenhar plantas baixas com HTML, CSS e JSON. Não ex
 
 Abra [`floor-plan.html`](floor-plan.html) no navegador e clique em **Carregar JSON**. A página inicia vazia; o projeto só é carregado quando um arquivo é escolhido. Para trocar a planta, selecione outro arquivo JSON.
 
+Arquivos `.json5` e `.jsonc` também são aceitos. Eles usam a mesma estrutura do JSON, mas permitem comentários, chaves sem aspas e vírgulas finais:
+
+```json5
+{
+  title: "Minha casa", // comentário
+  floors: [{ id: "ground", rooms: [], }],
+}
+```
+
+O parser é embutido na aplicação; não é necessário instalar biblioteca ou servidor.
+
 O seletor de piso muda apenas o desenho. As listas, totais e erros são consolidados entre todos os pisos.
 
 ## Estrutura mínima do JSON
@@ -119,5 +130,6 @@ planta continua sendo escolhido pelo botão “Carregar JSON”.
 - `src/floor-plan-references.js`, `src/floor-plan-layers.js`: referências globais, camadas e sobreposições.
 - `src/floor-plan-lists.js`, `src/floor-plan-text-export.js`, `src/floor-plan-html-export.js`: listas e exportações.
 - `src/floor-plan-model.js`, `src/floor-plan-validation.js`, `src/floor-plan-renderer.js`, `src/floor-plan-legend.js`, `src/floor-plan-export.js`: serviços auxiliares.
+- `src/floor-plan-parser.js`: parser JSON/JSON5/JSONC embutido.
 - `src/floor-plan-config.js`: inicialização, carregamento por arquivo e comando `floor`.
 - `cottage-ferraz-cesar.json`: exemplo com terreno e múltiplos pisos.

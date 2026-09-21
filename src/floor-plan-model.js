@@ -1,6 +1,6 @@
 const FloorPlanModel = {
   fromText(sourceText) {
-    return FloorPlanModel.fromConfig(JSON.parse(sourceText));
+    return FloorPlanModel.fromConfig(FloorPlanParser.parse(sourceText));
   },
 
   fromConfig(config) {

@@ -665,7 +665,7 @@ class FloorPlan {
    */
   async loadFile(file) {
     const sourceText = await file.text();
-    const config = JSON.parse(sourceText);
+    const config = FloorPlanParser.parse(sourceText);
     this.currentSourceText = sourceText;
     return this.load(config);
   }
