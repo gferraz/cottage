@@ -351,46 +351,61 @@
           "id": "bedroom-n",
           "label": "Quarto N",
           "from": ["dorm-top.x0", "dorm-top.y0"],
-          "to": ["x0 + 3.6", "dorm-top.y1"]
+          "to": ["x0 + 3.6", "dorm-top.y1"],
+          "openings": [
+            { "type": "door", "from": "right", "to": "playroom", "dy": 3 }
+          ]
         },
         {
           "id": "prayer-room",
           "label": "Sala de oração",
           "from": ["dorm-top.x1 - 3.6", "dorm-top-right.y0"],
-          "to": ["dorm-top.x1", "y0 +1.2"]
+          "to": ["dorm-top.x1", "y0 +1.2"],
+          "walls": ["top", "right"]
         },
         {
           "id": "bedroom-e",
           "label": "Quarto E",
           "from": ["dorm-top.x1 - 3.6", "prayer-room.y1"],
-          "to": ["dorm-top.x1", "dorm-top.y1"]
+          "to": ["dorm-top.x1", "dorm-top.y1"],
+          "openings": [
+            { "type": "door", "from": "left", "to": "playroom", "dy": 2.6 }
+          ]
         },
         {
           "id": "playroom",
           "label": "Sala de Jogos",
           "from": ["bedroom-n.x1", "dorm-top-right.y0"],
           "to": ["bedroom-e.x0", "dorm-top.y1"],
-          "walls": ["top", "right", "left"],
+          "walls": ["top", "left"],
           "classes": "circulation"
         },
         {
           "id": "bedroom-w",
           "label": "Quarto W",
           "from": ["dorm-bottom.x0", "dorm-bottom.y0"],
-          "to": ["x0 + 4.1", "y0 + 2.5"]
-
+          "to": ["x0 + 4.1", "y0 + 2.5"],
+          "openings": [
+            { "type": "door", "from": "right", "to": "c-2-1" }
+          ]
         },
         {
           "id": "bathroom",
           "label": "Banheiro",
           "from": ["dorm-bottom.x0", "bedroom-w.y1"],
-          "to": ["x0 + 4.1", "dorm-bottom.y1"]
+          "to": ["x0 + 4.1", "dorm-bottom.y1"],
+          "openings": [
+            { "type": "door", "from": "right", "to": "c-2-1" }
+          ]
         },
         {
           "id": "bedroom-s",
           "label": "Quarto S",
           "from": ["stairs.x0", "dorm-bottom.y0"],
-          "to": ["dorm-bottom.x1", "stairs.y0"]
+          "to": ["dorm-bottom.x1", "stairs.y0"],
+          "openings": [
+            { "type": "door", "from": "left", "to": "c-2-1" }
+          ]
         },
         {
           "id": "c-2-1",
@@ -403,11 +418,6 @@
       ],
       "items": [],
       "openings": [
-        { "type": "door", "from": "bedroom-n.right", "to": "dorm-corridor" },
-        { "type": "door", "from": "bedroom-e.left",  "to": "dorm-corridor" },
-        { "type": "door", "from": "bathroom.right",  "to": "dorm-corridor" },
-        { "type": "door", "from": "bedroom-s.left",  "to": "dorm-corridor" },
-
         { "type": "opening", "from": "upper", "to": "ground", "pos": ["stairs.x0", "stairs.y0"], "size": [4, 1.4]
         }
       ]
