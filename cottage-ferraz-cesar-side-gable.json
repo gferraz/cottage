@@ -31,7 +31,9 @@
     { "id": "left",    "rectangle": ["main.x0", "main.y0", "central.x0", "central.y1"], "visible": false },
     { "id": "right",   "rectangle": ["central.x1", "central.y0", "main.x1", "main.y1"], "visible": false },
 
-    { "id": "dorm-top",    "rectangle": ["top.x0", "top.y0 + 0.8", "top.x1", "top.y1"], "color": "blue", "visible": false },
+    { "id": "dorm-top",       "rectangle": ["top.x0", "top.y0 + 0.8", "top.x1", "top.y1"], "color": "blue", "visible": false },
+    { "id": "dorm-top-right", "rectangle": ["office.x0 + 0.8", "top.y0", "top.x1 - 0.8", "top.y1"], "color": "blue", "visible": false },
+
     { "id": "dorm-bottom", "rectangle": ["bottom.x0", "bottom.y0", "bottom.x1", "bottom.y1 - 0.8"], "color": "blue", "visible": false },
     { "id": "dorm",        "rectangle": ["dorm-top.x0", "dorm-top.y0", "dorm-bottom.x1", "dorm-bottom.y1"], "color": "blue", "visible": false },
     { "id": "confort", "inset": ["main", 1.8, 0.0], "color": "blue", "visible": false },
@@ -46,7 +48,7 @@
       "id": "front-gable",
       "label": "Circulação dos domitórios",
       "type": "gable",
-      "inset": ["main", 2.9, 0],
+      "rectangle": ["hall.x0", "hall.y0", "main.x1", "main.y1"],
       "orientation": "longitudinal",
       "pitch": 51
     },
@@ -121,8 +123,8 @@
         {
           "id": "office",
           "label": "Escritório",
-          "from": ["left.x0 - 1.0", "left.y0  - 2.5"],
-          "to": ["left.x1 - 1.6", "left.y0 + 1.5"],
+          "from": ["left.x0", "left.y0  - 2.5"],
+          "to": ["left.x1 - 1.1", "left.y0 + 1.5"],
           "classes": "office"
         },
         {
@@ -349,25 +351,54 @@
           "id": "bedroom-n",
           "label": "Quarto N",
           "from": ["dorm-top.x0", "dorm-top.y0"],
-          "to": ["l-axis.x0", "dorm-top.y1"]
+          "to": ["x0 + 3.6", "dorm-top.y1"]
+        },
+        {
+          "id": "prayer-room",
+          "label": "Sala de oração",
+          "from": ["dorm-top.x1 - 3.6", "dorm-top-right.y0"],
+          "to": ["dorm-top.x1", "y0 +1.2"]
         },
         {
           "id": "bedroom-e",
           "label": "Quarto E",
-          "from": ["l-axis.x0", "dorm.y0"],
-          "to": ["dorm.x1", "dorm-top.y1"]
+          "from": ["dorm-top.x1 - 3.6", "prayer-room.y1"],
+          "to": ["dorm-top.x1", "dorm-top.y1"]
+        },
+        {
+          "id": "playroom",
+          "label": "Sala de Jogos",
+          "from": ["bedroom-n.x1", "dorm-top-right.y0"],
+          "to": ["bedroom-e.x0", "dorm-top.y1"],
+          "walls": ["top", "right", "left"],
+          "classes": "circulation"
         },
         {
           "id": "bedroom-w",
           "label": "Quarto W",
           "from": ["dorm-bottom.x0", "dorm-bottom.y0"],
-          "to": ["l-axis.x0", "dorm-bottom.y1"]
+          "to": ["x0 + 4.1", "y0 + 2.5"]
+
+        },
+        {
+          "id": "bathroom",
+          "label": "Banheiro",
+          "from": ["dorm-bottom.x0", "bedroom-w.y1"],
+          "to": ["x0 + 4.1", "dorm-bottom.y1"]
         },
         {
           "id": "bedroom-s",
           "label": "Quarto S",
-          "from": ["l-axis.x0", "dorm-bottom.y0"],
+          "from": ["stairs.x0", "dorm-bottom.y0"],
           "to": ["dorm-bottom.x1", "stairs.y0"]
+        },
+        {
+          "id": "c-2-1",
+          "label": "Circ.",
+          "from": ["bedroom-w.x1", "dorm-bottom.y0"],
+          "to": ["bedroom-s.x0", "dorm-bottom.y1"],
+          "walls": ["bottom"],
+          "classes": "circulation"
         }
       ],
       "items": [],
