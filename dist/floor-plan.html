@@ -2933,6 +2933,7 @@ const FloorPlanTerrain = {
         id,
         easting: Number(point.easting),
         northing: Number(point.northing),
+        z: Number(point.z ?? 0),
       };
     });
     const first = corners[0];
@@ -2987,7 +2988,23 @@ const FloorPlanTerrain = {
     plan.root.style.setProperty("--plan-offset-y", offsetY);
     plan.root.style.setProperty("--building-offset-x", offsetX);
     plan.root.style.setProperty("--building-offset-y", offsetY);
-    plan.terrainReference = { frontStart: { x: offsetX, y: offsetY } };
+    const edgeMean = (edge, coordinate) => {
+      const points = (edge ?? [])
+        .map((id) => localCorners.find((point) => point.id === id))
+        .filter(Boolean);
+      return points.length
+        ? points.reduce((sum, point) => sum + point[coordinate], 0) / points.length
+        : null;
+    };
+    const frontEdge = terrain.front?.edge ?? order.slice(0, 2);
+    const rearEdge = terrain.rear?.edge ?? order.slice(-2);
+    plan.terrainReference = {
+      frontStart: { x: offsetX, y: offsetY },
+      frontY: edgeMean(frontEdge, "y"),
+      rearY: edgeMean(rearEdge, "y"),
+      frontZ: edgeMean(frontEdge, "z"),
+      rearZ: edgeMean(rearEdge, "z"),
+    };
     plan.updateTerrainViewport();
     plan.terrainLayer.setAttribute("preserveAspectRatio", "xMidYMid meet");
 

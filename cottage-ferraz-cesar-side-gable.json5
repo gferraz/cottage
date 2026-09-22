@@ -12,10 +12,10 @@
     unit: "m",
     boundary_order: ["P02", "P01", "P19", "P18"],
     corners: {
-      P01: { easting: 674802.650, northing: 7150515.678 },
-      P02: { easting: 674787.417, northing: 7150525.268 },
-      P18: { easting: 674768.743, northing: 7150486.108 },
-      P19: { easting: 674787.138, northing: 7150477.614 }
+      P01: { easting: 674802.650, northing: 7150515.678, z: 0 },
+      P02: { easting: 674787.417, northing: 7150525.268, z: 0 },
+      P18: { easting: 674768.743, northing: 7150486.108, z: -6 },
+      P19: { easting: 674787.138, northing: 7150477.614, z: -6 }
     },
     segments: [
       { from: "P01", to: "P02", distance: 18.000, azimuth_deg: 302.192641, azimuth_dms: "302° 11' 34\"" },
