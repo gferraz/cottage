@@ -76,10 +76,6 @@ const FloorPlanFacades3D = {
           z0: () => z0,
           z1: () => facadeZ1,
         };
-      })
-      .filter((room) => {
-        const wall = room?.wallState(facadeSide);
-        return wall === "solid" || wall === "virtual";
       });
 
     if (!rooms.length) {
@@ -137,11 +133,19 @@ const FloorPlanFacades3D = {
     const aspect = width / height;
     const contentWidth = drawingBounds.x1 - drawingBounds.x0 + padding * 2;
     const contentHeight = drawingBounds.z1 - drawingBounds.z0 + padding * 2;
-    const viewHeight = Math.max(contentHeight, contentWidth / aspect);
+    const viewHeight = Math.max(
+      contentHeight * 1.2,
+      (contentWidth / aspect) * 1.15,
+    );
     const viewWidth = viewHeight * aspect;
     const centerX = (drawingBounds.x0 + drawingBounds.x1) / 2;
     // Leave a little more visual breathing room below the facade baseline.
     const centerZ = (drawingBounds.z0 + drawingBounds.z1) / 2 - 0.8;
+    // Elevations are read from outside the building. Mirror the presentation
+    // around the facade center so the plan's longitudinal orientation is
+    // preserved: the office remains on the observer's right, near P02.
+    scene.scale.x = -1;
+    scene.position.x = centerX * 2;
     const camera = new THREE.OrthographicCamera(
       centerX - viewWidth / 2,
       centerX + viewWidth / 2,
@@ -152,8 +156,8 @@ const FloorPlanFacades3D = {
     );
     camera.position.set(
       (roomBounds.x0 + roomBounds.x1) / 2 + 8,
-      direction === "front" ? -100 : 100,
-      (roomBounds.z0 + roomBounds.z1) / 2 + 8,
+      direction === "front" ? -45 : 45,
+      (roomBounds.z0 + roomBounds.z1) / 2 + 18,
     );
     camera.up.set(0, 0, 1);
     camera.lookAt(
@@ -187,10 +191,17 @@ const FloorPlanFacades3D = {
     });
     const windowMaterial = new THREE.MeshBasicMaterial({
       color: "#b9d5e5",
+      transparent: true,
+      opacity: 0.28,
+      depthWrite: false,
       side: THREE.DoubleSide,
     });
     const doorMaterial = new THREE.MeshBasicMaterial({
       color: "#8b6b4f",
+      side: THREE.DoubleSide,
+    });
+    const terrainMaterial = new THREE.MeshBasicMaterial({
+      color: "#9dbb8b",
       side: THREE.DoubleSide,
     });
     const outdoorIds = new Set(
@@ -256,26 +267,63 @@ const FloorPlanFacades3D = {
           !gableOwnedOpeningIds.has(opening.id),
       );
 
+    const terrainBounds = rooms.reduce(
+      (bounds, room) => ({
+        x0: Math.min(bounds.x0, room.x0()),
+        x1: Math.max(bounds.x1, room.x1()),
+        y0: Math.min(bounds.y0, room.y0()),
+        y1: Math.max(bounds.y1, room.y1()),
+      }),
+      { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity },
+    );
+    const terrain = new THREE.Mesh(
+      new THREE.PlaneGeometry(
+        terrainBounds.x1 - terrainBounds.x0 + 8,
+        terrainBounds.y1 - terrainBounds.y0 + 8,
+      ),
+      terrainMaterial,
+    );
+    terrain.position.set(
+      (terrainBounds.x0 + terrainBounds.x1) / 2,
+      (terrainBounds.y0 + terrainBounds.y1) / 2,
+      -0.03,
+    );
+    terrain.renderOrder = -10;
+    scene.add(terrain);
+
     rooms.forEach((room) => {
       const x0 = Number(room.x0());
       const x1 = Number(room.x1());
+      const y0 = Number(room.y0());
+      const y1 = Number(room.y1());
       const y = Number(direction === "front" ? room.y0() : room.y1());
       const z0 = Number(room.z0());
       const z1 = Number(room.z1());
       const width = x1 - x0;
+      const depth = y1 - y0;
       const height = z1 - z0;
-      if (!finite(x0, x1, y, z0, z1) || width <= 0 || height <= 0) {
+      if (
+        !finite(x0, x1, y0, y1, y, z0, z1) ||
+        width <= 0 ||
+        depth <= 0 ||
+        height <= 0
+      ) {
         reportInvalid("cômodo", room.dataset.id);
         return;
       }
-      const openingParts = facadeOpenings(room.dataset.id, facadeSide);
-      const shape = new THREE.Shape();
-      shape.moveTo(0, 0);
-      shape.lineTo(width, 0);
-      shape.lineTo(width, height);
-      shape.lineTo(0, height);
-      shape.closePath();
-      openingParts.forEach((opening) => {
+      const facadeWall = room.wallState(facadeSide);
+      const openingParts =
+        facadeWall === "solid" || facadeWall === "virtual"
+          ? facadeOpenings(room.dataset.id, facadeSide)
+          : [];
+      if (facadeWall === "solid" || facadeWall === "virtual") {
+        const shape = new THREE.Shape();
+        shape.moveTo(0, 0);
+        shape.lineTo(width, 0);
+        shape.lineTo(width, height);
+        shape.lineTo(0, height);
+        shape.closePath();
+        openingParts.forEach((opening) => {
         const part = opening.void || opening;
         const holeX = Number(part.x) - x0;
         const holeZ = Number(part.z0) - z0;
@@ -299,44 +347,211 @@ const FloorPlanFacades3D = {
         hole.lineTo(holeX + holeWidth, holeZ + holeHeight);
         hole.lineTo(holeX, holeZ + holeHeight);
         hole.closePath();
-        shape.holes.push(hole);
-      });
-      const geometry = new THREE.ExtrudeGeometry(shape, {
-        depth: 0.12,
-        bevelEnabled: false,
-      });
-      const mesh = new THREE.Mesh(geometry, wallMaterial);
-      mesh.rotation.x = direction === "front" ? Math.PI / 2 : -Math.PI / 2;
-      mesh.position.set(
-        x0,
-        direction === "front" ? y + 0.06 : y - 0.06,
-        z0,
-      );
-      mesh.userData.domainId = room.dataset.id || "";
-      scene.add(mesh);
-      const outline = new THREE.LineSegments(
-        new THREE.EdgesGeometry(mesh.geometry),
-        wallLineMaterial,
-      );
-      outline.rotation.copy(mesh.rotation);
-      outline.position.copy(mesh.position);
-      scene.add(outline);
+          shape.holes.push(hole);
+        });
+        const geometry = new THREE.ExtrudeGeometry(shape, {
+          depth: 0.12,
+          bevelEnabled: false,
+        });
+        const mesh = new THREE.Mesh(geometry, wallMaterial);
+        mesh.rotation.x = direction === "front" ? Math.PI / 2 : -Math.PI / 2;
+        mesh.position.set(
+          x0,
+          direction === "front" ? y + 0.06 : y - 0.06,
+          z0,
+        );
+        mesh.userData.domainId = room.dataset.id || "";
+        scene.add(mesh);
+        const outline = new THREE.LineSegments(
+          new THREE.EdgesGeometry(mesh.geometry),
+          wallLineMaterial,
+        );
+        outline.rotation.copy(mesh.rotation);
+        outline.position.copy(mesh.position);
+        scene.add(outline);
 
-      openingParts.forEach((opening) => {
-        if (!opening.element) return;
-        const part = opening.element;
-        const element = new THREE.Mesh(
-          new THREE.BoxGeometry(Number(part.w), 0.04, Number(part.h)),
-          part.type === "window" ? windowMaterial : doorMaterial,
+        openingParts.forEach((opening) => {
+          if (!opening.element) return;
+          const part = opening.element;
+          const element = new THREE.Mesh(
+            new THREE.BoxGeometry(Number(part.w), 0.04, Number(part.h)),
+            part.type === "window" ? windowMaterial : doorMaterial,
+          );
+          const outerY = direction === "front" ? y - 0.025 : y + 0.025;
+          element.position.set(
+            Number(part.x) + Number(part.w) / 2,
+            outerY,
+            Number(part.z0) + Number(part.h) / 2,
+          );
+          element.renderOrder = 9;
+          scene.add(element);
+        });
+      }
+
+      const oppositeHorizontalWall = facadeSide === "top" ? "bottom" : "top";
+      const oppositeWallState = room.wallState(oppositeHorizontalWall);
+      if (oppositeWallState === "solid" || oppositeWallState === "virtual") {
+        const oppositeOpenings = externalOpenings.filter(
+          (opening) =>
+            opening.roomId === room.dataset.id &&
+            opening.wall === oppositeHorizontalWall,
         );
-        const outerY = direction === "front" ? y - 0.025 : y + 0.025;
-        element.position.set(
-          Number(part.x) + Number(part.w) / 2,
-          outerY,
-          Number(part.z0) + Number(part.h) / 2,
+        const oppositeShape = new THREE.Shape();
+        oppositeShape.moveTo(0, 0);
+        oppositeShape.lineTo(width, 0);
+        oppositeShape.lineTo(width, height);
+        oppositeShape.lineTo(0, height);
+        oppositeShape.closePath();
+        oppositeOpenings.forEach((opening) => {
+          const part = opening.void || opening;
+          const holeX = Number(part.x) - x0;
+          const holeZ = Number(part.z0) - z0;
+          const holeWidth = Number(part.w);
+          const holeHeight = Number(part.h);
+          if (
+            !finite(holeX, holeZ, holeWidth, holeHeight) ||
+            holeWidth <= 0 ||
+            holeHeight <= 0 ||
+            holeX < 0 ||
+            holeZ < 0 ||
+            holeX + holeWidth > width ||
+            holeZ + holeHeight > height
+          ) {
+            reportInvalid("recorte da parede oposta", opening.id);
+            return;
+          }
+          const hole = new THREE.Path();
+          hole.moveTo(holeX, holeZ);
+          hole.lineTo(holeX + holeWidth, holeZ);
+          hole.lineTo(holeX + holeWidth, holeZ + holeHeight);
+          hole.lineTo(holeX, holeZ + holeHeight);
+          hole.closePath();
+          oppositeShape.holes.push(hole);
+        });
+        const oppositeGeometry = new THREE.ExtrudeGeometry(oppositeShape, {
+          depth: 0.12,
+          bevelEnabled: false,
+        });
+        const oppositeWall = new THREE.Mesh(
+          oppositeGeometry,
+          wallMaterial,
         );
-        element.renderOrder = 9;
-        scene.add(element);
+        // The local shape's vertical axis must always map to world Z. The
+        // wall side changes only the Y placement, never the height direction.
+        oppositeWall.rotation.x = Math.PI / 2;
+        oppositeWall.position.set(
+          x0,
+          oppositeHorizontalWall === "bottom" ? y1 + 0.06 : y0 + 0.06,
+          z0,
+        );
+        oppositeWall.userData.domainId = room.dataset.id || "";
+        scene.add(oppositeWall);
+        const oppositeOutline = new THREE.LineSegments(
+          new THREE.EdgesGeometry(oppositeWall.geometry),
+          wallLineMaterial,
+        );
+        oppositeOutline.rotation.copy(oppositeWall.rotation);
+        oppositeOutline.position.copy(oppositeWall.position);
+        scene.add(oppositeOutline);
+        oppositeOpenings.forEach((opening) => {
+          if (!opening.element) return;
+          const part = opening.element;
+          const feature = new THREE.Mesh(
+            new THREE.BoxGeometry(Number(part.w), 0.04, Number(part.h)),
+            part.type === "window" ? windowMaterial : doorMaterial,
+          );
+          feature.position.set(
+            Number(part.x) + Number(part.w) / 2,
+            oppositeHorizontalWall === "bottom" ? y1 - 0.08 : y0 + 0.08,
+            Number(part.z0) + Number(part.h) / 2,
+          );
+          feature.renderOrder = 9;
+          scene.add(feature);
+        });
+      }
+
+      [
+        ["left", x0],
+        ["right", x1],
+      ].forEach(([wall, x]) => {
+        const wallState = room.wallState(wall);
+        if (wallState !== "solid" && wallState !== "virtual") return;
+        const sideOpenings = externalOpenings.filter(
+          (opening) => opening.roomId === room.dataset.id && opening.wall === wall,
+        );
+        const sideShape = new THREE.Shape();
+        sideShape.moveTo(0, 0);
+        sideShape.lineTo(depth, 0);
+        sideShape.lineTo(depth, height);
+        sideShape.lineTo(0, height);
+        sideShape.closePath();
+        sideOpenings.forEach((opening) => {
+          const part = opening.void || opening;
+          const holeY = Number(part.y) - y0;
+          const holeZ = Number(part.z0) - z0;
+          const holeWidth = Number(part.w);
+          const holeHeight = Number(part.h);
+          if (
+            !finite(holeY, holeZ, holeWidth, holeHeight) ||
+            holeWidth <= 0 ||
+            holeHeight <= 0 ||
+            holeY < 0 ||
+            holeZ < 0 ||
+            holeY + holeWidth > depth ||
+            holeZ + holeHeight > height
+          ) {
+            reportInvalid("recorte lateral", opening.id);
+            return;
+          }
+          const hole = new THREE.Path();
+          hole.moveTo(holeY, holeZ);
+          hole.lineTo(holeY + holeWidth, holeZ);
+          hole.lineTo(holeY + holeWidth, holeZ + holeHeight);
+          hole.lineTo(holeY, holeZ + holeHeight);
+          hole.closePath();
+          sideShape.holes.push(hole);
+        });
+        const sideGeometry = new THREE.ExtrudeGeometry(sideShape, {
+          depth: 0.12,
+          bevelEnabled: false,
+        });
+        sideGeometry.applyMatrix4(
+          new THREE.Matrix4().set(
+            0, 0, 1, 0,
+            1, 0, 0, 0,
+            0, 1, 0, 0,
+            0, 0, 0, 1,
+          ),
+        );
+        const sideWall = new THREE.Mesh(
+          sideGeometry,
+          wallMaterial,
+        );
+        sideWall.position.set(wall === "left" ? x : x - 0.12, y0, z0);
+        sideWall.userData.domainId = room.dataset.id || "";
+        scene.add(sideWall);
+        const sideOutline = new THREE.LineSegments(
+          new THREE.EdgesGeometry(sideWall.geometry),
+          wallLineMaterial,
+        );
+        sideOutline.position.copy(sideWall.position);
+        scene.add(sideOutline);
+
+        sideOpenings.forEach((opening) => {
+          if (!opening.element) return;
+          const part = opening.element;
+          const feature = new THREE.Mesh(
+            new THREE.BoxGeometry(0.04, Number(part.w), Number(part.h)),
+            part.type === "window" ? windowMaterial : doorMaterial,
+          );
+          feature.position.set(
+            wall === "left" ? x - 0.025 : x + 0.025,
+            Number(part.y) + Number(part.w) / 2,
+            Number(part.z0) + Number(part.h) / 2,
+          );
+          feature.renderOrder = 9;
+          scene.add(feature);
+        });
       });
     });
 
@@ -348,14 +563,13 @@ const FloorPlanFacades3D = {
         const width = Number(item.w);
         const height = Number(item.h ?? item.z1 - item.z0);
         const z0 = Number(item.z0 ?? 0);
-        const frontDepth = Math.min(...rooms.map((room) => room.y0()));
-        if (!finite(x, y, width, height, z0) || width <= 0 || height <= 0) return;
-        if (y > frontDepth + 0.15) return;
+        const length = Number(item.l ?? item.length ?? item.w);
+        if (!finite(x, y, width, length, height, z0) || width <= 0 || length <= 0 || height <= 0) return;
         const railing = new THREE.Mesh(
-          new THREE.BoxGeometry(width, 0.08, height),
+          new THREE.BoxGeometry(width, length, height),
           wallLineMaterial,
         );
-        railing.position.set(x + width / 2, y - 0.08, z0 + height / 2);
+        railing.position.set(x + width / 2, y + length / 2, z0 + height / 2);
         railing.renderOrder = 5;
         scene.add(railing);
       });
@@ -418,6 +632,26 @@ const FloorPlanFacades3D = {
         };
         makeSlope(roofX0, z0 - eave0 * pitchTangent, ridgeX, z0 + rise);
         makeSlope(ridgeX, z0 + rise, roofX1, z0 - eave1 * pitchTangent);
+        [roofY0, roofY1].forEach((y) => {
+          const rakeEdge = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([
+              new THREE.Vector3(
+                roofX0,
+                y,
+                z0 - eave0 * pitchTangent,
+              ),
+              new THREE.Vector3(ridgeX, y, z0 + rise),
+              new THREE.Vector3(
+                roofX1,
+                y,
+                z0 - eave1 * pitchTangent,
+              ),
+            ]),
+            roofLineMaterial,
+          );
+          rakeEdge.renderOrder = 8;
+          scene.add(rakeEdge);
+        });
 
         const shape = new THREE.Shape();
         shape.moveTo(base.x0(), z0);

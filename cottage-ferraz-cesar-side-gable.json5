@@ -62,6 +62,8 @@
       rectangle: ["hall.x0", "hall.y0", "main.x1", "main.y1"],
       orientation: "longitudinal",
       pitch: 51,
+      eave: [0.0, 0.5],
+      rake: [2.5, 2.5],
       openings: [{ type: "window", from: "top" }],
     },
     {
@@ -71,8 +73,8 @@
       base: "office",
       orientation: "longitudinal",
       pitch: 51,
-      eave: [0.5, 0.5],
-      rake: [0.5, 0],
+      eave: 0.5,
+      rake: 0.5,
       openings: [{ type: "window", from: "top",  w: 0.4, h: 0.7 }],
     },
 
@@ -84,8 +86,8 @@
       to: ["top.x1", "top.y1 + 0.8", "z0"],
       orientation: "transverse",
       pitch: 51,
-      eave: [0.5, 0.5],
-      rake: [0.5],
+      eave: [0.0, 0.5],
+      rake: 0.5,
     },
 
     {
