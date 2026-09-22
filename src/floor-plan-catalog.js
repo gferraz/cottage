@@ -1,4 +1,7 @@
 window.FloorPlanCatalog = {
+  walls: {
+    thickness: 0.12,
+  },
   colors: {
     furniture: "#d8c19a",
     appliance: "#c7d2dc",

@@ -58,6 +58,7 @@ class FloorPlan {
     this.model = null;
     this.itemTypes = {};
     this.roomDefinitions = new Map();
+    this.walls = new Map();
     this.roomGeometryCache = new Map();
     this.roomGeometryStack = new Set();
     this.partReferenceStack = [];

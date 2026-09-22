@@ -50,6 +50,7 @@ const FloorPlanReferences = {
         });
       }
     });
+    FloorPlanWalls.normalizeRoomWalls(plan, config);
     plan.validateGlobalObjectIds(config);
   },
 
@@ -265,6 +266,7 @@ const FloorPlanReferences = {
     plan.globalObjectIds = new Set([
       ...plan.roomDefinitions.keys(),
       ...(plan.partOwners?.keys() ?? []),
+      ...(plan.walls?.keys() ?? []),
     ]);
     plan.validZoneIds = new Set();
     const floorConfigs = config.floors ?? [config];
