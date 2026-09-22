@@ -4833,6 +4833,42 @@ const FloorPlanFacades3D = {
       (terrainBounds.y0 + terrainBounds.y1) / 2,
       -0.03,
     );
+    const terrainProfile = plan.terrainReference;
+    const buildingOffsetY = Number.parseFloat(
+      getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
+    ) || 0;
+    const hasTerrainProfile =
+      terrainProfile &&
+      [
+        terrainProfile.frontY,
+        terrainProfile.rearY,
+        terrainProfile.frontZ,
+        terrainProfile.rearZ,
+      ].every(Number.isFinite) &&
+      terrainProfile.rearY !== terrainProfile.frontY;
+    if (hasTerrainProfile) {
+      const positions = terrain.geometry.attributes.position;
+      for (let index = 0; index < positions.count; index += 1) {
+        const siteY =
+          terrain.position.y + positions.getY(index) + buildingOffsetY;
+        const progress = Math.max(
+          0,
+          Math.min(
+            1,
+            (siteY - terrainProfile.frontY) /
+              (terrainProfile.rearY - terrainProfile.frontY),
+          ),
+        );
+        const elevation =
+          terrainProfile.frontZ +
+          progress * (terrainProfile.rearZ - terrainProfile.frontZ);
+        positions.setZ(index, elevation);
+      }
+      positions.needsUpdate = true;
+      terrain.geometry.computeVertexNormals();
+      terrain.geometry.computeBoundingBox();
+      terrain.geometry.computeBoundingSphere();
+    }
     terrain.renderOrder = -10;
     scene.add(terrain);
 
