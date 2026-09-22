@@ -134,9 +134,11 @@ const FloorPlanFacades = {
       const projectedRooms = rooms.filter((room) => {
         const near = side ? room.x0() : room.y0();
         const far = side ? room.x1() : room.y1();
-        return facadeEdge === "min"
+        const withinDepth = facadeEdge === "min"
           ? near <= edge + facadeDepth
           : far >= edge - facadeDepth;
+        const wallState = room.wallState?.(facadeWall);
+        return withinDepth || wallState === "solid" || wallState === "virtual";
       });
       const surfaceRooms = projectedRooms.flatMap((room) => {
         const roomId = String(room.dataset.id || "");
