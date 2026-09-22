@@ -655,7 +655,13 @@ class FloorPlan {
     }
     this.updateRoofVisibility();
     this.renderGuides(this.visibleGuides(config, floorConfig));
-    const facades = floorConfig.facades ?? config.facades ?? [];
+    const defaultFacades = [
+      { id: "front", label: "Fachada frontal", direction: "front" },
+      { id: "rear", label: "Fachada posterior", direction: "rear" },
+      { id: "left", label: "Fachada lateral esquerda", direction: "left" },
+      { id: "right", label: "Fachada lateral direita", direction: "right" },
+    ];
+    const facades = floorConfig.facades ?? config.facades ?? defaultFacades;
     this.renderFacades(facades);
     this.updateSummary();
     [this.downloadButton, this.markdownButton, this.dxfButton].forEach(

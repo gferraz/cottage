@@ -102,23 +102,6 @@
       "pitch": 51
     }
   ],
-  "facades": [
-    {
-      "id": "front",
-      "label": "Fachada frontal",
-      "direction": "front"
-    },
-    {
-      "id": "left",
-      "label": "Fachada lateral esquerda",
-      "direction": "left"
-    },
-    {
-      "id": "right",
-      "label": "Fachada lateral direita",
-      "direction": "right"
-    }
-  ],
   "guides": [
     { "id": "w-axis", "label": "eixo transversal", "pos": [-4.0, "main.yc"], "w": 20, "color": "green" },
     { "id": "l-axis", "label": "eixo longitudinal", "pos": ["central.xc", -2.5], "l": 20, "color": "green" },
