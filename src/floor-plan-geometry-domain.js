@@ -309,7 +309,7 @@ const FloorPlanGeometryDomain = {
 
   normalizeWalls(plan, walls) {
     const sides = ["top", "right", "bottom", "left"];
-    const normalized = Object.fromEntries(sides.map((side) => [side, "solid"]));
+    const normalized = Object.fromEntries(sides.map((side) => [side, "open"]));
 
     if (walls === undefined) return normalized;
     if (Array.isArray(walls)) {

@@ -413,6 +413,25 @@ const FloorPlanOpenings = {
       z1: z0 + height,
       h: height,
     };
+    const openingGeometry = {
+      x: normalized.x,
+      y: normalized.y,
+      z0: normalized.z0,
+      z1: normalized.z1,
+      w: normalized.w,
+      h: normalized.h,
+      wall: normalized.wall,
+      horizontal: normalized.horizontal,
+      roomId: normalized.roomId,
+    };
+    normalized.void = { ...openingGeometry };
+    normalized.element =
+      type === "opening"
+        ? null
+        : {
+            ...openingGeometry,
+            type,
+          };
     FloorPlanGeometryBox.attach(normalized, {
       label: normalized.id,
     });
