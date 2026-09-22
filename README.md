@@ -27,13 +27,16 @@ O seletor de piso muda apenas o desenho. As listas, totais e erros são consolid
   "floors": [{
     "id": "ground",
     "label": "Térreo",
-    "h": 0,
+    "z0": 0,
+    "wall_max_height": 3,
     "rooms": [],
     "items": [],
     "openings": []
   }]
 }
 ```
+
+Cada piso deve informar `z0`, sua cota vertical, e `wall_max_height`, a altura máxima das paredes desse piso. Quando existe um piso acima, a altura efetiva das paredes é limitada pela diferença entre os `z0`; no último piso, usa-se `wall_max_height`. O antigo `h` do piso não é mais usado para definir sua posição.
 
 Os IDs dos cômodos são obrigatórios, globais e únicos. IDs de zonas, itens, janelas, passagens e guias também devem ser únicos quando informados. Objetos geométricos com ID podem ser referenciados globalmente quando o tipo oferece referências. `x0`, `y0` e `z0` são palavras reservadas e não podem ser usados como IDs.
 

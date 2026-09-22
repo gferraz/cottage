@@ -1,7 +1,7 @@
 const FloorPlanGeometryDomain = {
   normalizeGeometryAtFloor(plan, data, floorConfig) {
     const previousHeight = plan.currentFloorHeight;
-    plan.currentFloorHeight = Number(floorConfig?.h ?? 0);
+    plan.currentFloorHeight = Number(floorConfig?.z0 ?? 0);
     try {
       return plan.normalizeGeometry(data);
     } finally {

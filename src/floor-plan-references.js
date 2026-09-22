@@ -19,6 +19,7 @@ const FloorPlanReferences = {
     plan.rooms.clear();
     plan.roomReferences.clear();
     plan.references.clear();
+    plan.errors.push(...FloorPlanValidation.validateFloors(config));
     const collected = FloorPlanValidation.collectRoomDefinitions(
       plan.model || FloorPlanModel.fromConfig(config),
     );
@@ -109,12 +110,13 @@ const FloorPlanReferences = {
         plan.references?.has(floorConfig.id)
       )
         return;
-      const height = Number(floorConfig.h ?? 0);
+      const height = Number(floorConfig.z0 ?? 0);
+      const wallMaxHeight = Number(floorConfig.wall_max_height ?? 0);
       plan.references.set(floorConfig.id, {
         z0: () => height,
-        z1: () => height,
-        zc: () => height,
-        h: () => height,
+        z1: () => height + wallMaxHeight,
+        zc: () => height + wallMaxHeight / 2,
+        h: () => wallMaxHeight,
         w: () => 0,
         l: () => 0,
         area: () => 0,
@@ -451,7 +453,7 @@ const FloorPlanReferences = {
     });
     floors.forEach((floorConfig) => {
       const previousFloorHeight = plan.currentFloorHeight;
-      plan.currentFloorHeight = Number(floorConfig.h ?? 0);
+      plan.currentFloorHeight = Number(floorConfig.z0 ?? 0);
       (floorConfig.roofs ?? []).forEach((roof) => {
         plan.allRoofs.push({
           ...roof,

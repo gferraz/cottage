@@ -150,7 +150,7 @@ const FloorPlanExport = {
     };
 
     floors.forEach((floor) => {
-      plan.currentFloorHeight = Number(floor.h ?? 0);
+      plan.currentFloorHeight = Number(floor.z0 ?? 0);
       (floor.rooms ?? []).forEach((room) => {
         if (!room.id || !plan.roomDefinitions?.has(room.id)) return;
         const geometry = plan.getRoomGeometry(room.id);

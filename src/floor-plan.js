@@ -564,9 +564,9 @@ class FloorPlan {
     const floorIndex = configuredFloorIndex >= 0 ? configuredFloorIndex : 0;
     const floorConfig = config.floors?.[floorIndex] || config;
     this.currentFloorId = floorConfig.id || null;
-    this.currentFloorHeight = Number(floorConfig.h ?? 0);
+    this.currentFloorHeight = Number(floorConfig.z0 ?? 0);
     if (!Number.isFinite(this.currentFloorHeight)) {
-      throw new Error("floor.h precisa ser numérico");
+      throw new Error("floor.z0 precisa ser numérico");
     }
     if (this.floorOptions) {
       this.floorOptions.replaceChildren();

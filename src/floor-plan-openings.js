@@ -55,8 +55,8 @@ const FloorPlanOpenings = {
       throw new Error(`Unknown vertical opening target floor: ${toId}`);
     if (fromId === toId)
       throw new Error("Abertura vertical precisa conectar pisos diferentes");
-    const fromHeight = Number(fromFloor.h ?? 0);
-    const toHeight = Number(toFloor.h ?? 0);
+    const fromHeight = Number(fromFloor.z0 ?? 0);
+    const toHeight = Number(toFloor.z0 ?? 0);
     if (
       ![fromHeight, toHeight].every(Number.isFinite) ||
       fromHeight === toHeight
@@ -125,11 +125,11 @@ const FloorPlanOpenings = {
 
   renderLowerFloorProjection(plan, floors, fromFloor, fromHeight, opening) {
     const lowerFloors = floors
-      .filter((floor) => Number(floor.h ?? 0) < fromHeight)
-      .sort((first, second) => Number(second.h ?? 0) - Number(first.h ?? 0));
+      .filter((floor) => Number(floor.z0 ?? 0) < fromHeight)
+      .sort((first, second) => Number(second.z0 ?? 0) - Number(first.z0 ?? 0));
     const lowerFloor = lowerFloors[0];
     if (!lowerFloor) return;
-    const lowerFloorHeight = Number(lowerFloor.h ?? 0);
+    const lowerFloorHeight = Number(lowerFloor.z0 ?? 0);
 
     const compoundGeometry = (definition) => {
       const parts = plan.normalizeParts(definition.parts);

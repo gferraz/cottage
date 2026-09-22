@@ -35,7 +35,17 @@ const FloorPlanRoofs = {
       )
       .sort((first, second) => first.area() - second.area());
 
-    return candidates[0]?.z1() ?? fallback;
+    if (candidates[0]) return candidates[0].z1();
+
+    const activeFloor = (plan.currentConfig?.floors ?? [plan.currentConfig]).find(
+      (floor) => Number(floor?.z0) === Number(plan.currentFloorHeight),
+    );
+    const wallMaxHeight = Number(activeFloor?.wall_max_height);
+    if (baseZ0 > 0) return baseZ0;
+    if (Number.isFinite(wallMaxHeight) && wallMaxHeight > 0) {
+      return baseZ0 + wallMaxHeight;
+    }
+    return fallback;
   },
 
   resolveBase(plan, baseDefinition) {

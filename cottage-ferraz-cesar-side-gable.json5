@@ -80,8 +80,8 @@
       id: "front-dorms-gable",
       label: "Dormitórios frontais",
       type: "gable",
-      from: ["top.x0", "top.y0", 3],
-      to: ["top.x1", "top.y1 + 0.8"],
+      from: ["top.x0", "top.y0", "upper.z0"],
+      to: ["top.x1", "top.y1 + 0.8", "z0"],
       orientation: "transverse",
       pitch: 51
     },
@@ -90,8 +90,8 @@
       id: "back-dorms-gable",
       label: "Dormitórios traseiros",
       type: "gable",
-      from: ["bottom.x0", "bottom.y0 - 0.80", 3],
-      to: ["bottom.x1", "bottom.y1"],
+      from: ["bottom.x0", "bottom.y0 - 0.80", "upper.z0"],
+      to: ["bottom.x1", "bottom.y1", "z0"],
       orientation: "transverse",
       pitch: 51
     }
@@ -115,6 +115,8 @@
     {
       id: "ground",
       label: "Térreo",
+      z0: 0,
+      wall_max_height: 3,
       rooms: [
         {
           id: "office",
@@ -346,7 +348,8 @@
     {
       id: "upper",
       label: "Dormitórios",
-      h: 3.0,
+      z0: 3,
+      wall_max_height: 3,
       rooms: [
         {
           id: "bedroom-n",

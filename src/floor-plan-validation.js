@@ -7,6 +7,29 @@ const FloorPlanValidation = {
     );
   },
 
+  validateFloors(config) {
+    const floors = config.floors ?? [config];
+    const errors = [];
+    floors.forEach((floor, index) => {
+      const label = floor.id || `piso ${index + 1}`;
+      const z0 = Number(floor.z0);
+      const wallMaxHeight = Number(floor.wall_max_height);
+      if (!Number.isFinite(z0)) {
+        errors.push({ category: "floor", id: floor.id, opening: floor, message: `${label}: z0 precisa ser numérico` });
+      }
+      if (!Number.isFinite(wallMaxHeight) || wallMaxHeight <= 0) {
+        errors.push({ category: "floor", id: floor.id, opening: floor, message: `${label}: wall_max_height precisa ser positivo` });
+      }
+      if (index > 0 && Number.isFinite(z0)) {
+        const previousZ0 = Number(floors[index - 1].z0);
+        if (Number.isFinite(previousZ0) && z0 <= previousZ0) {
+          errors.push({ category: "floor", id: floor.id, opening: floor, message: `${label}: z0 precisa ser superior ao piso anterior` });
+        }
+      }
+    });
+    return errors;
+  },
+
   collectRoomDefinitions(model) {
     const definitions = new Map();
     const errors = [];

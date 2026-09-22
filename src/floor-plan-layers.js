@@ -259,10 +259,10 @@ const FloorPlanLayers = {
       config?.floors?.find((floor) => floor.id === plan.currentFloorId) ||
       config;
     const floors = config?.floors ?? [config];
-    const activeHeight = Number(activeFloor?.h ?? 0);
+    const activeHeight = Number(activeFloor?.z0 ?? 0);
     const lowerFloors = floors
-      .filter((floor) => floor && Number(floor.h ?? 0) < activeHeight)
-      .sort((first, second) => Number(second.h ?? 0) - Number(first.h ?? 0));
+      .filter((floor) => floor && Number(floor.z0 ?? 0) < activeHeight)
+      .sort((first, second) => Number(second.z0 ?? 0) - Number(first.z0 ?? 0));
     const canShow = plan.multiFloorMode && lowerFloors.length > 0;
     if (canShow) {
       let covered = plan.roomElements.flatMap((room) => room.geometryParts);
@@ -293,7 +293,7 @@ const FloorPlanLayers = {
       });
       lowerFloors.forEach((floor) => {
         const previousHeight = plan.currentFloorHeight;
-        plan.currentFloorHeight = Number(floor.h ?? 0);
+        plan.currentFloorHeight = Number(floor.z0 ?? 0);
         try {
           (floor.rooms ?? []).forEach((definition) => {
             const geometries = definition.parts?.length
