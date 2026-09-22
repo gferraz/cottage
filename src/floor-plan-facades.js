@@ -335,7 +335,7 @@ const FloorPlanFacades = {
           : facadeEdge === "min"
             ? geometry.baseY0
             : geometry.baseY1;
-        return projectedRooms.some((room) => {
+        return surfaceRooms.some(({ room }) => {
           const roomStart = side ? room.y0() : room.x0();
           const roomEnd = side ? room.y1() : room.x1();
           const overlapsAxis =
@@ -353,6 +353,49 @@ const FloorPlanFacades = {
             : roofDepth >= roomDepth - 0.01;
         });
       };
+      const roomsCoveredByRoof = new Set();
+      facadeRoofs.forEach((roof) => {
+        if (roof.type !== "gable") return;
+        const geometry = roofGeometry(roof);
+        if (!geometry || !roofReachesFacade(geometry)) return;
+
+        // A surface roof hides the room behind it in this projection. A
+        // gable wall remains a visible architectural face and does not hide
+        // the room wholesale.
+        const longitudinal = roof.orientation === "longitudinal";
+        const roofIsSurface = longitudinal ? side : !side;
+        if (!roofIsSurface || !roofIsInFrontAtBase(geometry)) return;
+
+        const roofStart = side ? geometry.baseY0 : geometry.baseX0;
+        const roofEnd = side ? geometry.baseY1 : geometry.baseX1;
+        const roofDepth = side
+          ? facadeEdge === "min"
+            ? geometry.baseX0
+            : geometry.baseX1
+          : facadeEdge === "min"
+            ? geometry.baseY0
+            : geometry.baseY1;
+
+        surfaceRooms.forEach(({ room }) => {
+          const roomStart = side ? room.y0() : room.x0();
+          const roomEnd = side ? room.y1() : room.x1();
+          const roomDepth = side
+            ? facadeEdge === "min"
+              ? room.x0()
+              : room.x1()
+            : facadeEdge === "min"
+              ? room.y0()
+              : room.y1();
+          const spansRoom =
+            roofStart <= roomStart + 0.01 && roofEnd >= roomEnd - 0.01;
+          const isInFront = facadeEdge === "min"
+            ? roofDepth <= roomDepth + 0.01
+            : roofDepth >= roomDepth - 0.01;
+          if (spansRoom && isInFront) {
+            roomsCoveredByRoof.add(String(room.dataset.id || ""));
+          }
+        });
+      });
       const roofElementSelector =
         ".facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label";
       facadeRoofs.forEach((roof) => {
@@ -384,11 +427,17 @@ const FloorPlanFacades = {
       // by those expressions, so do not include it in the origin twice.
       const min = frontAligned ? horizontalOrigin + padding : rawMin;
       const width = Math.max(max - rawMin, 1);
-      const roofRise = facadeRoofs.reduce((highest, roof) => {
+      const roofTop = facadeRoofs.reduce((highest, roof) => {
         if (roof.type !== "gable") return highest;
         const geometry = roofGeometry(roof);
-        return roofReachesFacade(geometry) ? Math.max(highest, geometry?.rise ?? 0) : highest;
+        return roofReachesFacade(geometry)
+          ? Math.max(highest, (geometry?.z0 ?? 0) + (geometry?.rise ?? 0))
+          : highest;
       }, 0);
+      // floorHeight is an absolute Z reference. The roof rise used by the
+      // viewport must therefore be only the part that extends above it, not
+      // the roof's full rise from its own base.
+      const roofRise = Math.max(0, roofTop - floorHeight);
       const roofDrop = facadeRoofs.reduce((lowest, roof) => {
         if (roof.type !== "gable") return lowest;
         const isVisible =
@@ -548,7 +597,9 @@ const FloorPlanFacades = {
         ? (facadeMax - min + padding + 0.22) * scale
         : (padding + width + 0.22) * scale;
       const verticalDimensionY0 = (padding - roofRise) * scale;
-      const verticalDimensionY1 = dimensionY;
+      // The vertical cota measures from the highest visible point down to
+      // the facade base, not to the separate horizontal dimension line.
+      const verticalDimensionY1 = (floorHeight + padding) * scale;
       verticalDimension.setAttribute("x1", `${verticalDimensionX}`);
       verticalDimension.setAttribute("x2", `${verticalDimensionX}`);
       verticalDimension.setAttribute("y1", `${verticalDimensionY0}`);
@@ -566,7 +617,7 @@ const FloorPlanFacades = {
       svg.append(verticalDimension);
 
       const verticalLabel = document.createElementNS(svgNamespace, "text");
-      verticalLabel.textContent = `${plan.formatMeters(floorHeight + roofRise + roofDrop)}m`;
+      verticalLabel.textContent = `${plan.formatMeters(floorHeight + roofRise)}m`;
       verticalLabel.setAttribute("x", `${verticalDimensionX + 0.16 * scale}`);
       verticalLabel.setAttribute("y", `${(verticalDimensionY0 + verticalDimensionY1) / 2}`);
       verticalLabel.setAttribute("text-anchor", "middle");
@@ -969,6 +1020,12 @@ const FloorPlanFacades = {
         });
 
       surfaceRooms.forEach(({ room, geometry, compoundPart }) => {
+        if (
+          !compoundPart &&
+          roomsCoveredByRoof.has(String(room.dataset.id || ""))
+        ) {
+          return;
+        }
         const start = compoundPart
           ? side
             ? geometry.y
