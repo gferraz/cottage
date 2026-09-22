@@ -413,6 +413,8 @@ const FloorPlanOpenings = {
       z1: z0 + height,
       h: height,
     };
+    const wallObject = FloorPlanWalls.resolveRoomSide(plan, roomId, wall, normalized);
+    normalized.wallId = wallObject.id;
     const openingGeometry = {
       x: normalized.x,
       y: normalized.y,
@@ -421,6 +423,7 @@ const FloorPlanOpenings = {
       w: normalized.w,
       h: normalized.h,
       wall: normalized.wall,
+      wallId: normalized.wallId,
       horizontal: normalized.horizontal,
       roomId: normalized.roomId,
     };

@@ -378,55 +378,64 @@ const FloorPlanReferences = {
   validateInactiveFloorFeatures(plan, config, activeFloorIndex) {
     (config.floors ?? []).forEach((floorConfig, floorIndex) => {
       if (floorIndex === activeFloorIndex) return;
-      (floorConfig.zones ?? []).forEach((zone, index) => {
-        try {
-          plan.normalizeGeometry(zone);
-        } catch (error) {
-          plan.errors.push({
-            index,
-            opening: zone,
-            category: "zone",
-            message: error.message,
-          });
-        }
-      });
-      (floorConfig.items ?? []).forEach((item, index) => {
-        try {
-          plan.normalizeGeometry(plan.resolveItemType(item));
-        } catch (error) {
-          plan.errors.push({
-            index,
-            opening: item,
-            category: "item",
-            message: error.message,
-          });
-        }
-      });
-      [...(floorConfig.openings ?? []), ...plan.roomOpenings(floorConfig)].forEach((opening, index) => {
-        if (plan.isVerticalOpening(opening)) return;
-        try {
-          plan.normalizeOpening(opening);
-        } catch (error) {
-          plan.errors.push({
-            index,
-            opening,
-            category: opening.type === "window" ? "window" : "opening",
-            message: error.message,
-          });
-        }
-      });
-      (floorConfig.windows ?? []).forEach((window, index) => {
-        try {
-          plan.normalizeOpening({ ...window, type: "window" });
-        } catch (error) {
-          plan.errors.push({
-            index,
-            opening: window,
-            category: "window",
-            message: error.message,
-          });
-        }
-      });
+      const previousFloorHeight = plan.currentFloorHeight;
+      plan.currentFloorHeight = Number(floorConfig.z0 ?? 0);
+      try {
+        (floorConfig.zones ?? []).forEach((zone, index) => {
+          try {
+            plan.normalizeGeometry(zone);
+          } catch (error) {
+            plan.errors.push({
+              index,
+              opening: zone,
+              category: "zone",
+              message: error.message,
+            });
+          }
+        });
+        (floorConfig.items ?? []).forEach((item, index) => {
+          try {
+            plan.normalizeGeometry(plan.resolveItemType(item));
+          } catch (error) {
+            plan.errors.push({
+              index,
+              opening: item,
+              category: "item",
+              message: error.message,
+            });
+          }
+        });
+        [
+          ...(floorConfig.openings ?? []),
+          ...plan.roomOpenings(floorConfig),
+        ].forEach((opening, index) => {
+          if (plan.isVerticalOpening(opening)) return;
+          try {
+            plan.normalizeOpening(opening);
+          } catch (error) {
+            plan.errors.push({
+              index,
+              opening,
+              category: opening.type === "window" ? "window" : "opening",
+              message: error.message,
+            });
+          }
+        });
+        (floorConfig.windows ?? []).forEach((window, index) => {
+          try {
+            plan.normalizeOpening({ ...window, type: "window" });
+          } catch (error) {
+            plan.errors.push({
+              index,
+              opening: window,
+              category: "window",
+              message: error.message,
+            });
+          }
+        });
+      } finally {
+        plan.currentFloorHeight = previousFloorHeight;
+      }
     });
   },
 
