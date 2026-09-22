@@ -69,10 +69,6 @@ const FloorPlanDom = {
     const walls = room ? plan.normalizeWalls(data.walls) : null;
     if (walls) {
       element.walls = walls;
-      ["top", "right", "bottom", "left"].forEach((side) => {
-        element.dataset[`wall${side[0].toUpperCase()}${side.slice(1)}`] =
-          walls[side];
-      });
       element.wallState = (side) => walls[side];
       element.hasWall = (side) => walls[side] === "solid";
     }
@@ -260,10 +256,7 @@ const FloorPlanDom = {
           partElement.append(arrow);
         }
         const walls = plan.normalizeWalls(part.walls ?? room.walls);
-        ["top", "right", "bottom", "left"].forEach((side) => {
-          partElement.dataset[`wall${side[0].toUpperCase()}${side.slice(1)}`] =
-            walls[side];
-        });
+        partElement.walls = walls;
         partElement.dataset.overlapTargets = JSON.stringify(
           plan.normalizeOverlapTargets(part.overlaps ?? room.overlaps),
         );

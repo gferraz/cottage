@@ -274,6 +274,28 @@ class FloorPlan {
     }
   }
 
+  renderWallsForFloor(floorConfig) {
+    const roomIds = new Set((floorConfig.rooms ?? []).map((room) => room.id));
+    this.walls.forEach((wall) => {
+      if (!wall.sourceRoomIds.some((roomId) => roomIds.has(roomId))) return;
+      const element = this.add({
+        id: wall.id,
+        pos: wall.pos,
+        size: wall.size,
+        classes: `plan-wall${wall.state === "virtual" ? " plan-wall-virtual" : ""}`,
+      });
+      if (element) {
+        element.dataset.id = wall.id;
+        const sourceLayers = this.roomElements
+          .filter((room) => wall.sourceRoomIds.includes(room.dataset.id))
+          .map((room) => Number(room.dataset.layer ?? 0));
+        const layer = sourceLayers.length ? Math.min(...sourceLayers) : 0;
+        element.dataset.layer = String(layer);
+        element.style.setProperty("--layer", layer);
+      }
+    });
+  }
+
   prepareRoomReferences(config) {
     return FloorPlanReferences.prepareRoomReferences(this, config);
   }
@@ -618,6 +640,7 @@ class FloorPlan {
     this.addRooms(validRooms);
     this.addSpanningStairs(config, floorConfig);
     this.updateOverlaps();
+    this.renderWallsForFloor(floorConfig);
     this.addVisibleVerticalOpenings(config, floorConfig);
     const validZoneIds = this.validZoneIds ?? new Set();
     this.addZones(this.visibleZones(config, floorConfig).filter((zone) => validZoneIds.has(zone.id)));

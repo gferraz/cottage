@@ -438,6 +438,17 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   z-index: calc(5 + var(--layer, 0));
   opacity: 0.45;
 }
+.plan-wall {
+  z-index: calc(4 + var(--layer, 0));
+  opacity: 1 !important;
+  background: var(--theme-wall-fill);
+  border: 1px solid var(--theme-wall);
+  pointer-events: none;
+}
+.plan-wall.plan-wall-virtual {
+  background: transparent;
+  border: 1px dashed var(--theme-wall-virtual);
+}
 .plan-item.railing {
   z-index: 18;
   opacity: 1;
@@ -534,19 +545,6 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   display: none;
 }
 
-.room[data-wall-top="solid"], .room-part[data-wall-top="solid"] { border-top-color: #222; border-top-style: solid; }
-.room[data-wall-right="solid"], .room-part[data-wall-right="solid"] { border-right-color: #222; border-right-style: solid; }
-.room[data-wall-bottom="solid"], .room-part[data-wall-bottom="solid"] { border-bottom-color: #222; border-bottom-style: solid; }
-.room[data-wall-left="solid"], .room-part[data-wall-left="solid"] { border-left-color: #222; border-left-style: solid; }
-.room[data-wall-top="virtual"], .room-part[data-wall-top="virtual"] { border-top-color: #222; border-top-style: dotted; }
-.room[data-wall-right="virtual"], .room-part[data-wall-right="virtual"] { border-right-color: #222; border-right-style: dotted; }
-.room[data-wall-bottom="virtual"], .room-part[data-wall-bottom="virtual"] { border-bottom-color: #222; border-bottom-style: dotted; }
-.room[data-wall-left="virtual"], .room-part[data-wall-left="virtual"] { border-left-color: #222; border-left-style: dotted; }
-.room[data-wall-top="open"], .room-part[data-wall-top="open"] { border-top: 0; }
-.room[data-wall-right="open"], .room-part[data-wall-right="open"] { border-right: 0; }
-.room[data-wall-bottom="open"], .room-part[data-wall-bottom="open"] { border-bottom: 0; }
-.room[data-wall-left="open"], .room-part[data-wall-left="open"] { border-left: 0; }
-
 .room small { margin-top: 4px; font-weight: 500; color: var(--theme-muted); }
 .room .area { margin-top: 2px; }
 .room-label,
@@ -562,10 +560,6 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .room-overlap {
   background: var(--theme-overlap) !important;
 }
-.room-overlap[data-wall-top="solid"], .room-overlap[data-wall-top="virtual"], .room-overlap .room-part[data-wall-top="solid"], .room-overlap .room-part[data-wall-top="virtual"] { border-top-color: var(--theme-overlap-line); }
-.room-overlap[data-wall-right="solid"], .room-overlap[data-wall-right="virtual"], .room-overlap .room-part[data-wall-right="solid"], .room-overlap .room-part[data-wall-right="virtual"] { border-right-color: var(--theme-overlap-line); }
-.room-overlap[data-wall-bottom="solid"], .room-overlap[data-wall-bottom="virtual"], .room-overlap .room-part[data-wall-bottom="solid"], .room-overlap .room-part[data-wall-bottom="virtual"] { border-bottom-color: var(--theme-overlap-line); }
-.room-overlap[data-wall-left="solid"], .room-overlap[data-wall-left="virtual"], .room-overlap .room-part[data-wall-left="solid"], .room-overlap .room-part[data-wall-left="virtual"] { border-left-color: var(--theme-overlap-line); }
 .outdoor { background: var(--theme-outdoor); }
 .service { background: var(--theme-service); }
 .circulation, .stair-landing { background: var(--theme-circulation); }
@@ -8789,10 +8783,6 @@ const FloorPlanDom = {
     const walls = room ? plan.normalizeWalls(data.walls) : null;
     if (walls) {
       element.walls = walls;
-      ["top", "right", "bottom", "left"].forEach((side) => {
-        element.dataset[`wall${side[0].toUpperCase()}${side.slice(1)}`] =
-          walls[side];
-      });
       element.wallState = (side) => walls[side];
       element.hasWall = (side) => walls[side] === "solid";
     }
@@ -8980,10 +8970,7 @@ const FloorPlanDom = {
           partElement.append(arrow);
         }
         const walls = plan.normalizeWalls(part.walls ?? room.walls);
-        ["top", "right", "bottom", "left"].forEach((side) => {
-          partElement.dataset[`wall${side[0].toUpperCase()}${side.slice(1)}`] =
-            walls[side];
-        });
+        partElement.walls = walls;
         partElement.dataset.overlapTargets = JSON.stringify(
           plan.normalizeOverlapTargets(part.overlaps ?? room.overlaps),
         );
@@ -9459,6 +9446,28 @@ class FloorPlan {
     }
   }
 
+  renderWallsForFloor(floorConfig) {
+    const roomIds = new Set((floorConfig.rooms ?? []).map((room) => room.id));
+    this.walls.forEach((wall) => {
+      if (!wall.sourceRoomIds.some((roomId) => roomIds.has(roomId))) return;
+      const element = this.add({
+        id: wall.id,
+        pos: wall.pos,
+        size: wall.size,
+        classes: `plan-wall${wall.state === "virtual" ? " plan-wall-virtual" : ""}`,
+      });
+      if (element) {
+        element.dataset.id = wall.id;
+        const sourceLayers = this.roomElements
+          .filter((room) => wall.sourceRoomIds.includes(room.dataset.id))
+          .map((room) => Number(room.dataset.layer ?? 0));
+        const layer = sourceLayers.length ? Math.min(...sourceLayers) : 0;
+        element.dataset.layer = String(layer);
+        element.style.setProperty("--layer", layer);
+      }
+    });
+  }
+
   prepareRoomReferences(config) {
     return FloorPlanReferences.prepareRoomReferences(this, config);
   }
@@ -9803,6 +9812,7 @@ class FloorPlan {
     this.addRooms(validRooms);
     this.addSpanningStairs(config, floorConfig);
     this.updateOverlaps();
+    this.renderWallsForFloor(floorConfig);
     this.addVisibleVerticalOpenings(config, floorConfig);
     const validZoneIds = this.validZoneIds ?? new Set();
     this.addZones(this.visibleZones(config, floorConfig).filter((zone) => validZoneIds.has(zone.id)));
