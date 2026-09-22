@@ -192,7 +192,7 @@ const FloorPlanFacades3D = {
     const windowMaterial = new THREE.MeshBasicMaterial({
       color: "#b9d5e5",
       transparent: true,
-      opacity: 0.28,
+      opacity: 0.40,
       depthWrite: false,
       side: THREE.DoubleSide,
     });
