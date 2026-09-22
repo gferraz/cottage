@@ -3470,13 +3470,21 @@ const FloorPlanFacades = {
           : 0;
         return depthDirection * (secondDepth - firstDepth);
       });
+      const roofReachesFacade = (geometry) => {
+        if (!geometry) return false;
+        const near = side ? geometry.x0 : geometry.y0;
+        const far = side ? geometry.x1 : geometry.y1;
+        return facadeEdge === "min"
+          ? near <= edge + facadeDepth
+          : far >= edge - facadeDepth;
+      };
       facadeRoofs.forEach((roof) => {
         if (roof.type !== "gable") return;
         const longitudinal = roof.orientation === "longitudinal";
         const isVisible = longitudinal ? !side : side;
         if (!isVisible) return;
         const geometry = roofGeometry(roof);
-        if (!geometry) return;
+        if (!roofReachesFacade(geometry)) return;
         const span = longitudinal
           ? [geometry.x0, geometry.x1]
           : [geometry.y0, geometry.y1];
@@ -3502,14 +3510,14 @@ const FloorPlanFacades = {
       const roofRise = facadeRoofs.reduce((highest, roof) => {
         if (roof.type !== "gable") return highest;
         const geometry = roofGeometry(roof);
-        return Math.max(highest, geometry?.rise ?? 0);
+        return roofReachesFacade(geometry) ? Math.max(highest, geometry?.rise ?? 0) : highest;
       }, 0);
       const roofDrop = facadeRoofs.reduce((lowest, roof) => {
         if (roof.type !== "gable") return lowest;
         const isVisible =
           roof.orientation === "longitudinal" ? !side : side;
         const geometry = roofGeometry(roof);
-        if (!isVisible || !geometry) return lowest;
+        if (!isVisible || !roofReachesFacade(geometry)) return lowest;
         return Math.max(
           lowest,
           Math.max(geometry.eave0, geometry.eave1) *
@@ -3697,7 +3705,7 @@ const FloorPlanFacades = {
         if (roof.type !== "gable") return;
         const longitudinal = roof.orientation === "longitudinal";
         const geometry = roofGeometry(roof);
-        if (!geometry) return;
+        if (!roofReachesFacade(geometry)) return;
         const {
           x0,
           x1,
@@ -3934,19 +3942,27 @@ const FloorPlanFacades = {
       const facadeRoomIds = new Set(
         projectedRooms.map((room) => String(room.dataset.id || "")),
       );
+      const outdoorRoomIds = new Set(
+        [...(plan.roomDefinitions?.entries() ?? [])]
+          .filter(([, room]) =>
+            String(room.classes || "").split(/\s+/).includes("outdoor"),
+          )
+          .map(([id]) => String(id)),
+      );
       const facadeOpenings = [
         ...(plan.allOpenings.length ? plan.allOpenings : plan.openings),
         ...(plan.allWindows.length ? plan.allWindows : plan.windows),
       ].filter(
         (opening) =>
-          opening.to === "exterior" &&
+          (opening.to === "exterior" ||
+            outdoorRoomIds.has(String(opening.to || "").split(".")[0])) &&
           facadeWalls.includes(opening.wall) &&
           facadeRoomIds.has(String(opening.roomId || "")),
       );
       facadeRoofs.forEach((roof) => {
         if (roof.type !== "gable" || !roof.openings?.length) return;
         const geometry = roofGeometry(roof);
-        if (!geometry || roofWallState(roof) === "open") return;
+        if (!roofReachesFacade(geometry) || roofWallState(roof) === "open") return;
         const wallSide = roofFacadeSide();
         const longitudinal = roof.orientation === "longitudinal";
         const matchesFacade = roof.openings.filter(

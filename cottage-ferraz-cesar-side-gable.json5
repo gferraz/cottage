@@ -289,6 +289,7 @@
           label: "Terraço Traseiro",
           from: ["kitchen.x0", "kitchen.y1"],
           to: ["kitchen.x1", "y0 +  3"],
+          walls: [],
           classes: "outdoor terrace"
         }
       ],
@@ -321,7 +322,7 @@
         }
       ],
       openings: [
-        { from: "porch.top", to: "exterior", type: "opening", w: 1.8, dx: "hall.xc - porch.x0 - 0.9" },
+        //{ from: "porch.top", to: "exterior", type: "opening", w: 1.8, dx: "hall.xc - porch.x0 - 0.9" },
         { from: "hall.top", to: "porch", type: "door", w: 1.0 },
 
         { from: "dining.top", to: "exterior", type: "window", w: 2.4, h: 1.5 },
