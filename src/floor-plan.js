@@ -6,7 +6,7 @@ class FloorPlan {
    * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
    * @param {number} [options.scale=56] Escala inicial em pixels por metro.
    */
-  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerButton = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
@@ -14,7 +14,7 @@ class FloorPlan {
     this.facadeLayer = facadeLayer;
     this.viewportSummary = viewportSummary;
     this.titleElement = titleElement;
-    this.floorSelect = floorSelect;
+    this.floorOptions = floorOptions;
     this.roomList = roomList;
     this.itemList = itemList;
     this.roofList = roofList;
@@ -35,7 +35,7 @@ class FloorPlan {
     this.roofSwitch = roofSwitch;
     this.visibilityHeading = visibilityHeading;
     this.jsonInput = jsonInput;
-    this.layerButton = layerButton;
+    this.layerOptions = layerOptions;
     this.roomArea = 0;
     this.roomCount = 0;
     this.rooms = new Map();
@@ -121,19 +121,22 @@ class FloorPlan {
         this.updateRoofVisibility();
       });
     }
-    if (layerButton) {
-      layerButton.hidden = true;
-      layerButton.closest(".layer-selector")?.toggleAttribute("hidden", true);
-      layerButton.addEventListener("click", () => this.cycleLayer());
+    if (layerOptions) {
+      layerOptions.closest(".layer-selector")?.toggleAttribute("hidden", true);
+      layerOptions.addEventListener("change", (event) => {
+        this.layerCutoff = event.target.value === "all"
+          ? null
+          : Number(event.target.value);
+        this.updateLayerVisibility();
+      });
     }
-    if (floorSelect) {
-      floorSelect.disabled = true;
-      floorSelect.closest(".floor-selector")?.toggleAttribute("hidden", true);
-      floorSelect.addEventListener("change", () => {
+    if (floorOptions) {
+      floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", true);
+      floorOptions.addEventListener("change", (event) => {
         const floors = this.currentConfig?.floors;
         if (!Array.isArray(floors)) return;
         const activeFloor = floors.findIndex(
-          (floorConfig) => String(floorConfig.id) === floorSelect.value,
+          (floorConfig) => String(floorConfig.id) === event.target.value,
         );
         if (activeFloor >= 0) this.load({ ...this.currentConfig, activeFloor });
       });
@@ -564,23 +567,27 @@ class FloorPlan {
     if (!Number.isFinite(this.currentFloorHeight)) {
       throw new Error("floor.h precisa ser numérico");
     }
-    if (this.floorSelect) {
-      this.floorSelect.replaceChildren();
+    if (this.floorOptions) {
+      this.floorOptions.replaceChildren();
       if (config.floors?.length) {
-        config.floors.forEach((availableFloor) => {
-          const option = document.createElement("option");
-          option.value = String(availableFloor.id || "");
-          option.textContent = availableFloor.label || availableFloor.id || "Pavimento";
-          this.floorSelect.append(option);
+        config.floors.forEach((availableFloor, floorIndex) => {
+          const optionId = `floor-option-${availableFloor.id || floorIndex}`;
+          const label = document.createElement("label");
+          label.className = "floor-option";
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = "floor-selection";
+          input.value = String(availableFloor.id || "");
+          input.id = optionId;
+          input.checked = String(availableFloor.id) === String(this.currentFloorId);
+          const text = document.createElement("span");
+          text.textContent = availableFloor.label || availableFloor.id || "Pavimento";
+          label.append(input, text);
+          this.floorOptions.append(label);
         });
-        this.floorSelect.value = this.currentFloorId || "";
-        this.floorSelect.disabled = false;
-        this.floorSelect
-          .closest(".floor-selector")
-          ?.toggleAttribute("hidden", config.floors.length < 2);
+        this.floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", config.floors.length < 2);
       } else {
-        this.floorSelect.disabled = true;
-        this.floorSelect.closest(".floor-selector")?.toggleAttribute("hidden", true);
+        this.floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", true);
       }
     }
     const title = floorConfig.label ? `${config.title || "Planta"} — ${floorConfig.label}` : config.title;

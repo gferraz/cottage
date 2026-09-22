@@ -1,4 +1,30 @@
 const FloorPlanHtmlExport = {
+  namespaceSvgReferences(root, namespace) {
+    root.querySelectorAll("svg").forEach((svg) => {
+      const ids = new Map();
+      svg.querySelectorAll("[id]").forEach((element) => {
+        const originalId = element.id;
+        const namespacedId = `${namespace}-${originalId}`;
+        ids.set(originalId, namespacedId);
+        element.id = namespacedId;
+      });
+      if (ids.size === 0) return;
+      svg.querySelectorAll("*").forEach((element) => {
+        [...element.attributes].forEach((attribute) => {
+          let value = attribute.value;
+          ids.forEach((namespacedId, originalId) => {
+            value = value
+              .replaceAll(`url(#${originalId})`, `url(#${namespacedId})`)
+              .replaceAll(`#${originalId}`, `#${namespacedId}`);
+          });
+          if (value !== attribute.value) {
+            element.setAttribute(attribute.name, value);
+          }
+        });
+      });
+    });
+  },
+
   async downloadHtml(plan, filename = "planta-terrea-gerada.html") {
     if (!plan.currentConfig) {
       alert("Carregue uma planta antes de exportar o HTML.");
@@ -51,6 +77,10 @@ const FloorPlanHtmlExport = {
         section.append(heading);
         const snapshot = exportedDocument.importNode(element, true);
         snapshot.id = `floor-plan-export-${index + 1}`;
+        FloorPlanHtmlExport.namespaceSvgReferences(
+          snapshot,
+          `floor-${index + 1}`,
+        );
         section.append(snapshot);
         stack.append(section);
       });
@@ -72,33 +102,22 @@ const FloorPlanHtmlExport = {
       ...document.querySelectorAll('link[rel="stylesheet"]'),
     ];
     const fallbackLinks = [];
-    const embeddedCss = document
-      .querySelector("#portable-export-css")
-      ?.content.textContent.trim();
-    const themeLink = document.querySelector(
-      'link[href*="floor-plan-theme.css"]',
-    );
-    const themeCss = themeLink?.sheet
-      ? [...themeLink.sheet.cssRules].map((rule) => rule.cssText).join("\n")
-      : "";
-    const styles = embeddedCss ? [embeddedCss, themeCss] : [];
-    if (!embeddedCss) {
-      for (const link of stylesheetLinks) {
-        const sheet = link.sheet;
-        if (!sheet) {
-          fallbackLinks.push(link);
-          continue;
-        }
+    const styles = [];
+    for (const link of stylesheetLinks) {
+      const sheet = link.sheet;
+      if (!sheet) {
+        fallbackLinks.push(link);
+        continue;
+      }
+      try {
+        styles.push([...sheet.cssRules].map((rule) => rule.cssText).join("\n"));
+      } catch {
         try {
-          styles.push(...[...sheet.cssRules].map((rule) => rule.cssText));
+          const response = await fetch(link.href);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          styles.push(await response.text());
         } catch {
-          try {
-            const response = await fetch(link.href);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            styles.push(await response.text());
-          } catch {
-            fallbackLinks.push(link);
-          }
+          fallbackLinks.push(link);
         }
       }
     }

@@ -766,15 +766,17 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
     <div class="plan-controls">
       <input id="json-file" type="file" accept="application/json,.json,.json5,.jsonc,text/plain" hidden />
       <button id="load-json" type="button" onclick="document.querySelector('#json-file').click()">↑ Planta</button>
-      <label class="floor-selector" for="floor-select" hidden>
-        Piso:
-        <select id="floor-select" disabled>
-          <option>Carregue um projeto</option>
-        </select>
-      </label>
       <button id="download-html" type="button">↓ HTML</button>
       <button id="download-markdown" type="button">↓ Markdown</button>
       <button id="download-dxf" type="button">↓ DXF</button>
+      <fieldset class="floor-selector" id="floor-selector" hidden>
+        <legend>Piso:</legend>
+        <div id="floor-options"></div>
+      </fieldset>
+      <fieldset class="layer-selector" id="layer-selector" hidden>
+        <legend>Camadas:</legend>
+        <div id="layer-options"></div>
+      </fieldset>
       <span class="visibility-heading" hidden>Mostrar:</span>
       <label class="visibility-switch" hidden>
         <input id="show-roofs" type="checkbox" checked />
@@ -784,10 +786,6 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
         <input id="show-multi-floor" type="checkbox" />
         <span>Multi-pisos</span>
       </label>
-      <div class="layer-selector" hidden>
-        <span>Camadas:</span>
-        <button id="layer-button" type="button">Todas</button>
-      </div>
     </div>
     <h1>Planta térrea — separada por módulos</h1>
     <p id="plan-status">Nenhuma planta é carregada automaticamente. Selecione um JSON para desenhar a planta.</p>

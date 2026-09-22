@@ -90,6 +90,43 @@ body {
   font-weight: 650;
 }
 
+.floor-selector {
+  margin: 0;
+  margin-bottom: 12px;
+  padding: 0;
+  border: 0;
+  font-size: 12px;
+}
+
+.floor-selector legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-weight: 650;
+}
+
+.floor-option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0;
+  white-space: nowrap;
+}
+
+.floor-option input { accent-color: var(--theme-accent); }
+
+.layer-selector {
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  font-size: 12px;
+}
+
+.layer-selector legend {
+  padding: 0;
+  margin-bottom: 4px;
+  font-weight: 650;
+}
+
 h1 { margin: 0 0 6px; font-size: 20px; }
 p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 
@@ -645,7 +682,6 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .room-overlap .room-part { background: var(--theme-overlap) !important; }
 
 #load-json,
-#layer-button,
 #download-html,
 #download-markdown,
 #download-dxf,
@@ -662,35 +698,7 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   width: 100%;
   text-align: left;
 }
-.floor-selector {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  margin: 0 0 16px;
-  font-size: 13px;
-}
-.layer-selector {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  margin: 0 0 16px;
-  font-size: 13px;
-}
-#floor-select {
-  padding: 7px 10px;
-  border: 1px solid #888;
-  border-radius: 5px;
-  background: var(--theme-button);
-  color: #222;
-  font: inherit;
-  font-size: 13px;
-  width: 100%;
-}
-
 #load-json:hover,
-#layer-button:hover:not(:disabled),
 #download-html:hover,
 #download-markdown:hover,
 #download-dxf:hover,
@@ -1571,15 +1579,17 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
     <div class="plan-controls">
       <input id="json-file" type="file" accept="application/json,.json,.json5,.jsonc,text/plain" hidden />
       <button id="load-json" type="button" onclick="document.querySelector('#json-file').click()">↑ Planta</button>
-      <label class="floor-selector" for="floor-select" hidden>
-        Piso:
-        <select id="floor-select" disabled>
-          <option>Carregue um projeto</option>
-        </select>
-      </label>
       <button id="download-html" type="button">↓ HTML</button>
       <button id="download-markdown" type="button">↓ Markdown</button>
       <button id="download-dxf" type="button">↓ DXF</button>
+      <fieldset class="floor-selector" id="floor-selector" hidden>
+        <legend>Piso:</legend>
+        <div id="floor-options"></div>
+      </fieldset>
+      <fieldset class="layer-selector" id="layer-selector" hidden>
+        <legend>Camadas:</legend>
+        <div id="layer-options"></div>
+      </fieldset>
       <span class="visibility-heading" hidden>Mostrar:</span>
       <label class="visibility-switch" hidden>
         <input id="show-roofs" type="checkbox" checked />
@@ -1589,10 +1599,6 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
         <input id="show-multi-floor" type="checkbox" />
         <span>Multi-pisos</span>
       </label>
-      <div class="layer-selector" hidden>
-        <span>Camadas:</span>
-        <button id="layer-button" type="button">Todas</button>
-      </div>
     </div>
     <h1>Planta térrea — separada por módulos</h1>
     <p id="plan-status">Nenhuma planta é carregada automaticamente. Selecione um JSON para desenhar a planta.</p>
@@ -5535,7 +5541,6 @@ const FloorPlanLayers = {
     // floor change or after objects are added programmatically.
     if (!(plan.maxLayer > 0)) plan.updateOverlaps();
     if (!(plan.maxLayer > 0)) {
-      if (plan.layerButton) plan.layerButton.textContent = "Sem camadas sobrepostas";
       return;
     }
     plan.layerCutoff =
@@ -5562,14 +5567,35 @@ const FloorPlanLayers = {
           cutoff !== null && layer > cutoff,
         );
       });
-    if (plan.layerButton) {
-      plan.layerButton.textContent =
-        cutoff === null ? "Todas" : `Mostrar até camada ${cutoff}`;
+    if (plan.layerOptions) {
       const visible = Boolean(plan.currentConfig && plan.maxLayer > 0);
-      plan.layerButton.hidden = !visible;
-      plan.layerButton
-        .closest(".layer-selector")
-        ?.toggleAttribute("hidden", !visible);
+      const container = plan.layerOptions.closest(".layer-selector");
+      container?.toggleAttribute("hidden", !visible);
+      if (visible && plan.layerOptions.childElementCount !== plan.maxLayer + 1) {
+        plan.layerOptions.replaceChildren();
+        const options = [{ value: "all", label: "Todas" }];
+        for (let layer = 0; layer < plan.maxLayer; layer += 1) {
+          options.push({ value: String(layer), label: `Camada ${layer}` });
+        }
+        options.forEach(({ value, label: text }) => {
+          const label = document.createElement("label");
+          label.className = "floor-option";
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = "layer-selection";
+          input.value = value;
+          input.checked = cutoff === null ? value === "all" : Number(value) === cutoff;
+          const caption = document.createElement("span");
+          caption.textContent = text;
+          label.append(input, caption);
+          plan.layerOptions.append(label);
+        });
+      }
+      plan.layerOptions.querySelectorAll("input").forEach((input) => {
+        input.checked = cutoff === null
+          ? input.value === "all"
+          : Number(input.value) === cutoff;
+      });
     }
   },
 
@@ -7421,6 +7447,32 @@ window.FloorPlanDom = FloorPlanDom;
 
 
 const FloorPlanHtmlExport = {
+  namespaceSvgReferences(root, namespace) {
+    root.querySelectorAll("svg").forEach((svg) => {
+      const ids = new Map();
+      svg.querySelectorAll("[id]").forEach((element) => {
+        const originalId = element.id;
+        const namespacedId = `${namespace}-${originalId}`;
+        ids.set(originalId, namespacedId);
+        element.id = namespacedId;
+      });
+      if (ids.size === 0) return;
+      svg.querySelectorAll("*").forEach((element) => {
+        [...element.attributes].forEach((attribute) => {
+          let value = attribute.value;
+          ids.forEach((namespacedId, originalId) => {
+            value = value
+              .replaceAll(`url(#${originalId})`, `url(#${namespacedId})`)
+              .replaceAll(`#${originalId}`, `#${namespacedId}`);
+          });
+          if (value !== attribute.value) {
+            element.setAttribute(attribute.name, value);
+          }
+        });
+      });
+    });
+  },
+
   async downloadHtml(plan, filename = "planta-terrea-gerada.html") {
     if (!plan.currentConfig) {
       alert("Carregue uma planta antes de exportar o HTML.");
@@ -7473,6 +7525,10 @@ const FloorPlanHtmlExport = {
         section.append(heading);
         const snapshot = exportedDocument.importNode(element, true);
         snapshot.id = `floor-plan-export-${index + 1}`;
+        FloorPlanHtmlExport.namespaceSvgReferences(
+          snapshot,
+          `floor-${index + 1}`,
+        );
         section.append(snapshot);
         stack.append(section);
       });
@@ -7494,33 +7550,22 @@ const FloorPlanHtmlExport = {
       ...document.querySelectorAll('link[rel="stylesheet"]'),
     ];
     const fallbackLinks = [];
-    const embeddedCss = document
-      .querySelector("#portable-export-css")
-      ?.content.textContent.trim();
-    const themeLink = document.querySelector(
-      'link[href*="floor-plan-theme.css"]',
-    );
-    const themeCss = themeLink?.sheet
-      ? [...themeLink.sheet.cssRules].map((rule) => rule.cssText).join("\n")
-      : "";
-    const styles = embeddedCss ? [embeddedCss, themeCss] : [];
-    if (!embeddedCss) {
-      for (const link of stylesheetLinks) {
-        const sheet = link.sheet;
-        if (!sheet) {
-          fallbackLinks.push(link);
-          continue;
-        }
+    const styles = [];
+    for (const link of stylesheetLinks) {
+      const sheet = link.sheet;
+      if (!sheet) {
+        fallbackLinks.push(link);
+        continue;
+      }
+      try {
+        styles.push([...sheet.cssRules].map((rule) => rule.cssText).join("\n"));
+      } catch {
         try {
-          styles.push(...[...sheet.cssRules].map((rule) => rule.cssText));
+          const response = await fetch(link.href);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          styles.push(await response.text());
         } catch {
-          try {
-            const response = await fetch(link.href);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            styles.push(await response.text());
-          } catch {
-            fallbackLinks.push(link);
-          }
+          fallbackLinks.push(link);
         }
       }
     }
@@ -7564,7 +7609,7 @@ class FloorPlan {
    * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
    * @param {number} [options.scale=56] Escala inicial em pixels por metro.
    */
-  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, viewportSummary = null, titleElement = null, floorSelect = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerButton = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
@@ -7572,7 +7617,7 @@ class FloorPlan {
     this.facadeLayer = facadeLayer;
     this.viewportSummary = viewportSummary;
     this.titleElement = titleElement;
-    this.floorSelect = floorSelect;
+    this.floorOptions = floorOptions;
     this.roomList = roomList;
     this.itemList = itemList;
     this.roofList = roofList;
@@ -7593,7 +7638,7 @@ class FloorPlan {
     this.roofSwitch = roofSwitch;
     this.visibilityHeading = visibilityHeading;
     this.jsonInput = jsonInput;
-    this.layerButton = layerButton;
+    this.layerOptions = layerOptions;
     this.roomArea = 0;
     this.roomCount = 0;
     this.rooms = new Map();
@@ -7679,19 +7724,22 @@ class FloorPlan {
         this.updateRoofVisibility();
       });
     }
-    if (layerButton) {
-      layerButton.hidden = true;
-      layerButton.closest(".layer-selector")?.toggleAttribute("hidden", true);
-      layerButton.addEventListener("click", () => this.cycleLayer());
+    if (layerOptions) {
+      layerOptions.closest(".layer-selector")?.toggleAttribute("hidden", true);
+      layerOptions.addEventListener("change", (event) => {
+        this.layerCutoff = event.target.value === "all"
+          ? null
+          : Number(event.target.value);
+        this.updateLayerVisibility();
+      });
     }
-    if (floorSelect) {
-      floorSelect.disabled = true;
-      floorSelect.closest(".floor-selector")?.toggleAttribute("hidden", true);
-      floorSelect.addEventListener("change", () => {
+    if (floorOptions) {
+      floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", true);
+      floorOptions.addEventListener("change", (event) => {
         const floors = this.currentConfig?.floors;
         if (!Array.isArray(floors)) return;
         const activeFloor = floors.findIndex(
-          (floorConfig) => String(floorConfig.id) === floorSelect.value,
+          (floorConfig) => String(floorConfig.id) === event.target.value,
         );
         if (activeFloor >= 0) this.load({ ...this.currentConfig, activeFloor });
       });
@@ -8122,23 +8170,27 @@ class FloorPlan {
     if (!Number.isFinite(this.currentFloorHeight)) {
       throw new Error("floor.h precisa ser numérico");
     }
-    if (this.floorSelect) {
-      this.floorSelect.replaceChildren();
+    if (this.floorOptions) {
+      this.floorOptions.replaceChildren();
       if (config.floors?.length) {
-        config.floors.forEach((availableFloor) => {
-          const option = document.createElement("option");
-          option.value = String(availableFloor.id || "");
-          option.textContent = availableFloor.label || availableFloor.id || "Pavimento";
-          this.floorSelect.append(option);
+        config.floors.forEach((availableFloor, floorIndex) => {
+          const optionId = `floor-option-${availableFloor.id || floorIndex}`;
+          const label = document.createElement("label");
+          label.className = "floor-option";
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = "floor-selection";
+          input.value = String(availableFloor.id || "");
+          input.id = optionId;
+          input.checked = String(availableFloor.id) === String(this.currentFloorId);
+          const text = document.createElement("span");
+          text.textContent = availableFloor.label || availableFloor.id || "Pavimento";
+          label.append(input, text);
+          this.floorOptions.append(label);
         });
-        this.floorSelect.value = this.currentFloorId || "";
-        this.floorSelect.disabled = false;
-        this.floorSelect
-          .closest(".floor-selector")
-          ?.toggleAttribute("hidden", config.floors.length < 2);
+        this.floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", config.floors.length < 2);
       } else {
-        this.floorSelect.disabled = true;
-        this.floorSelect.closest(".floor-selector")?.toggleAttribute("hidden", true);
+        this.floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", true);
       }
     }
     const title = floorConfig.label ? `${config.title || "Planta"} — ${floorConfig.label}` : config.title;
@@ -8386,7 +8438,7 @@ const floor = new FloorPlan({
   facadeLayer: document.querySelector("#facade-list"),
   viewportSummary: document.querySelector("#viewport-summary"),
   titleElement: document.querySelector("h1"),
-  floorSelect: document.querySelector("#floor-select"),
+  floorOptions: document.querySelector("#floor-options"),
   roomList: document.querySelector("#room-list"),
   itemList: document.querySelector("#item-list"),
   roofList: document.querySelector("#roof-list"),
@@ -8405,7 +8457,7 @@ const floor = new FloorPlan({
   multiFloorSwitch: document.querySelector("#show-multi-floor"),
   roofSwitch: document.querySelector("#show-roofs"),
   jsonInput: document.querySelector("#json-file"),
-  layerButton: document.querySelector("#layer-button"),
+  layerOptions: document.querySelector("#layer-options"),
   visibilityHeading: document.querySelector(".visibility-heading"),
   scale: 56,
 });

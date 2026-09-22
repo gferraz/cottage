@@ -172,7 +172,6 @@ const FloorPlanLayers = {
     // floor change or after objects are added programmatically.
     if (!(plan.maxLayer > 0)) plan.updateOverlaps();
     if (!(plan.maxLayer > 0)) {
-      if (plan.layerButton) plan.layerButton.textContent = "Sem camadas sobrepostas";
       return;
     }
     plan.layerCutoff =
@@ -199,14 +198,35 @@ const FloorPlanLayers = {
           cutoff !== null && layer > cutoff,
         );
       });
-    if (plan.layerButton) {
-      plan.layerButton.textContent =
-        cutoff === null ? "Todas" : `Mostrar até camada ${cutoff}`;
+    if (plan.layerOptions) {
       const visible = Boolean(plan.currentConfig && plan.maxLayer > 0);
-      plan.layerButton.hidden = !visible;
-      plan.layerButton
-        .closest(".layer-selector")
-        ?.toggleAttribute("hidden", !visible);
+      const container = plan.layerOptions.closest(".layer-selector");
+      container?.toggleAttribute("hidden", !visible);
+      if (visible && plan.layerOptions.childElementCount !== plan.maxLayer + 1) {
+        plan.layerOptions.replaceChildren();
+        const options = [{ value: "all", label: "Todas" }];
+        for (let layer = 0; layer < plan.maxLayer; layer += 1) {
+          options.push({ value: String(layer), label: `Camada ${layer}` });
+        }
+        options.forEach(({ value, label: text }) => {
+          const label = document.createElement("label");
+          label.className = "floor-option";
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = "layer-selection";
+          input.value = value;
+          input.checked = cutoff === null ? value === "all" : Number(value) === cutoff;
+          const caption = document.createElement("span");
+          caption.textContent = text;
+          label.append(input, caption);
+          plan.layerOptions.append(label);
+        });
+      }
+      plan.layerOptions.querySelectorAll("input").forEach((input) => {
+        input.checked = cutoff === null
+          ? input.value === "all"
+          : Number(input.value) === cutoff;
+      });
     }
   },
 

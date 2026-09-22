@@ -6,7 +6,7 @@ const floor = new FloorPlan({
   facadeLayer: document.querySelector("#facade-list"),
   viewportSummary: document.querySelector("#viewport-summary"),
   titleElement: document.querySelector("h1"),
-  floorSelect: document.querySelector("#floor-select"),
+  floorOptions: document.querySelector("#floor-options"),
   roomList: document.querySelector("#room-list"),
   itemList: document.querySelector("#item-list"),
   roofList: document.querySelector("#roof-list"),
@@ -25,7 +25,7 @@ const floor = new FloorPlan({
   multiFloorSwitch: document.querySelector("#show-multi-floor"),
   roofSwitch: document.querySelector("#show-roofs"),
   jsonInput: document.querySelector("#json-file"),
-  layerButton: document.querySelector("#layer-button"),
+  layerOptions: document.querySelector("#layer-options"),
   visibilityHeading: document.querySelector(".visibility-heading"),
   scale: 56,
 });
