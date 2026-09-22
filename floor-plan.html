@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Planta térrea — separada por módulos</title>
     <link rel="stylesheet" href="src/floor-plan-theme.css" />
-    <link rel="stylesheet" href="src/floor-plan.css?v=roofs-3" />
+    <link rel="stylesheet" href="src/floor-plan.css?v=roofs-5" />
   </head>
   <body>
 <template id="portable-export-css"><style>
@@ -791,6 +791,11 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
     <p id="plan-status">Nenhuma planta é carregada automaticamente. Selecione um JSON para desenhar a planta.</p>
     <p id="viewport-summary" class="viewport-summary">Viewport não carregado.</p>
 
+    <section class="facade-section facade-front-section" id="facade-section" hidden aria-labelledby="facade-list-title">
+      <h2 id="facade-list-title">Fachada frontal</h2>
+      <div id="facade-list"></div>
+    </section>
+
     <div class="plan-layout">
       <div class="site" id="floor-plan">
         <svg class="terrain-layer" id="terrain-layer" aria-label="Limite do terreno"></svg>
@@ -800,9 +805,9 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
       </div>
     </div>
 
-    <section class="facade-section" id="facade-section" hidden aria-labelledby="facade-list-title">
-      <h2 id="facade-list-title">Fachadas</h2>
-      <div id="facade-list"></div>
+    <section class="facade-section facade-secondary-section" id="secondary-facade-section" hidden aria-labelledby="secondary-facade-list-title">
+      <h2 id="secondary-facade-list-title">Outras fachadas</h2>
+      <div id="secondary-facade-list"></div>
     </section>
 
     <div class="plan-details">
@@ -853,7 +858,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
     <script src="src/floor-plan-viewport.js?v=modules-9" defer></script>
     <script src="src/floor-plan-terrain.js?v=modules-9" defer></script>
     <script src="src/floor-plan-guides.js?v=modules-9" defer></script>
-    <script src="src/floor-plan-facades.js?v=facades-2" defer></script>
+    <script src="src/floor-plan-facades.js?v=facades-5" defer></script>
     <script src="src/floor-plan-roofs.js?v=modules-10" defer></script>
     <script src="src/floor-plan-openings.js?v=modules-16" defer></script>
     <script src="src/floor-plan-elements.js?v=modules-9" defer></script>

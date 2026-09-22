@@ -2,7 +2,19 @@ const FloorPlanFacades = {
   render(plan, facades = []) {
     if (!plan.facadeLayer) return;
     plan.facadeLayer.replaceChildren();
-    plan.facadeLayer.closest(".facade-section")?.toggleAttribute("hidden", facades.length === 0);
+    plan.secondaryFacadeLayer?.replaceChildren();
+    const frontFacades = facades.filter(
+      (facade) => (facade.direction || "front") === "front",
+    );
+    const secondaryFacades = facades.filter(
+      (facade) => (facade.direction || "front") !== "front",
+    );
+    plan.facadeLayer
+      .closest(".facade-section")
+      ?.toggleAttribute("hidden", frontFacades.length === 0);
+    plan.secondaryFacadeLayer
+      ?.closest(".facade-section")
+      ?.toggleAttribute("hidden", secondaryFacades.length === 0);
     if (facades.length === 0) return;
 
     const svgNamespace = "http://www.w3.org/2000/svg";
@@ -177,10 +189,23 @@ const FloorPlanFacades = {
           : [geometry.y0, geometry.y1];
         coordinates.push(...span);
       });
-      const min = Math.min(...coordinates);
+      const rawMin = Math.min(...coordinates);
       const max = Math.max(...coordinates);
-      const width = Math.max(max - min, 1);
       const padding = 0.5;
+      const frontAligned = direction === "front";
+      const viewportOriginX = Number(plan.viewport?.origin?.[0] ?? 0);
+      const buildingOffsetX =
+        Number.parseFloat(
+          getComputedStyle(plan.root).getPropertyValue("--building-offset-x"),
+        ) || 0;
+      const horizontalOrigin = frontAligned
+        ? viewportOriginX - buildingOffsetX
+        : rawMin - padding;
+      // Keep the existing local-coordinate expressions while changing only
+      // their origin for the front elevation. The padding is already added
+      // by those expressions, so do not include it in the origin twice.
+      const min = frontAligned ? horizontalOrigin + padding : rawMin;
+      const width = Math.max(max - rawMin, 1);
       const roofRise = facadeRoofs.reduce((highest, roof) => {
         if (roof.type !== "gable") return highest;
         const geometry = roofGeometry(roof);
@@ -198,13 +223,17 @@ const FloorPlanFacades = {
             Math.tan((geometry.pitch * Math.PI) / 180),
         );
       }, 0);
-      const viewWidth = (width + padding * 2) * scale;
+      const viewWidth = frontAligned
+        ? Number(plan.viewport?.size?.[0] ?? width + padding * 2) * scale
+        : (width + padding * 2) * scale;
       const viewY = -roofRise * scale;
       const dimensionGap = 0.35;
       const viewHeight =
         (floorHeight + padding * 2 + roofRise + roofDrop + dimensionGap) * scale;
       const svg = document.createElementNS(svgNamespace, "svg");
       svg.classList.add("facade-view");
+      svg.setAttribute("width", `${viewWidth}`);
+      svg.setAttribute("height", `${viewHeight}`);
       svg.setAttribute(
         "viewBox",
         `0 ${viewY} ${viewWidth} ${viewHeight}`,
@@ -215,6 +244,9 @@ const FloorPlanFacades = {
       const defs = document.createElementNS(svgNamespace, "defs");
       const pattern = document.createElementNS(svgNamespace, "pattern");
       pattern.setAttribute("id", `facade-grid-${index + 1}`);
+      if (frontAligned) {
+        pattern.setAttribute("x", `${-viewportOriginX * scale}`);
+      }
       pattern.setAttribute("width", `${scale / 2}`);
       pattern.setAttribute("height", `${scale / 2}`);
       pattern.setAttribute("patternUnits", "userSpaceOnUse");
@@ -289,8 +321,54 @@ const FloorPlanFacades = {
       horizontalLabel.setAttribute("font-size", "8");
       svg.append(horizontalLabel);
 
+      if (frontAligned && plan.terrainReference) {
+        const terrain = plan.currentConfig?.terrain;
+        const boundary = terrain?.boundary_order ?? [];
+        const [fromId, toId] = boundary;
+        const from = terrain?.corners?.[fromId];
+        const to = terrain?.corners?.[toId];
+        const frontSegment = terrain?.segments?.find(
+          (segment) => segment.from === fromId && segment.to === toId,
+        );
+        const terrainLength = Number(
+          frontSegment?.distance ??
+            (from && to
+              ? Math.hypot(
+                  Number(to.easting) - Number(from.easting),
+                  Number(to.northing) - Number(from.northing),
+                )
+              : NaN),
+        );
+        const terrainStartX = Number(plan.terrainReference.frontStart.x);
+        if (Number.isFinite(terrainStartX) && terrainLength > 0) {
+          const terrainDimensionY = dimensionY + 0.45 * scale;
+          const terrainLine = document.createElementNS(svgNamespace, "line");
+          terrainLine.classList.add("facade-terrain-front");
+          terrainLine.setAttribute(
+            "x1",
+            `${(terrainStartX - viewportOriginX) * scale}`,
+          );
+          terrainLine.setAttribute(
+            "x2",
+            `${(terrainStartX + terrainLength - viewportOriginX) * scale}`,
+          );
+          terrainLine.setAttribute("y1", `${terrainDimensionY}`);
+          terrainLine.setAttribute("y2", `${terrainDimensionY}`);
+          terrainLine.setAttribute(
+            "stroke",
+            getComputedStyle(plan.root)
+              .getPropertyValue("--theme-terrain-boundary")
+              .trim() || "#55724d",
+          );
+          terrainLine.setAttribute("stroke-width", "1.5");
+          svg.append(terrainLine);
+        }
+      }
+
       const verticalDimension = document.createElementNS(svgNamespace, "line");
-      const verticalDimensionX = (padding + width + 0.22) * scale;
+      const verticalDimensionX = frontAligned
+        ? (facadeMax - min + padding + 0.22) * scale
+        : (padding + width + 0.22) * scale;
       const verticalDimensionY0 = (padding - roofRise) * scale;
       const verticalDimensionY1 = dimensionY;
       verticalDimension.setAttribute("x1", `${verticalDimensionX}`);
@@ -699,7 +777,11 @@ const FloorPlanFacades = {
       const title = document.createElement("figcaption");
       title.textContent = facade.label || `Fachada ${direction}`;
       figure.append(title, svg);
-      plan.facadeLayer.append(figure);
+      const target =
+        direction === "front"
+          ? plan.facadeLayer
+          : plan.secondaryFacadeLayer || plan.facadeLayer;
+      target.append(figure);
     });
   },
 };

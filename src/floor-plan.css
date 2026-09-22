@@ -127,10 +127,24 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   max-width: 1100px;
 }
 
+.facade-front-section {
+  width: min(100%, 1240px);
+  max-width: none;
+}
+
+.facade-front-section .facade-view {
+  margin-left: max(
+    0px,
+    calc((100% - (var(--viewport-width, 20) * var(--m))) / 2)
+  );
+  margin-right: 0;
+}
+
 .facade-section[hidden] { display: none !important; }
 .facade-view-container { margin: 0 0 20px; }
 .facade-view-container figcaption { margin: 0 0 8px; font-weight: 650; }
-.facade-view { display: block; width: 100%; max-height: 460px; background: var(--theme-site); border: 1px solid var(--theme-border); }
+.facade-view { display: block; width: auto; max-width: none; height: auto; background: var(--theme-site); border: 1px solid var(--theme-border); }
+.facade-terrain-front { stroke-linecap: round; }
 .facade-room { fill: var(--theme-surface); fill-opacity: 0.45; stroke: var(--theme-wall); stroke-width: 1.5; }
 .facade-room-label { fill: var(--theme-label); font-size: 7px; font-weight: 400; }
 .facade-room-label-title { font-weight: 400; }

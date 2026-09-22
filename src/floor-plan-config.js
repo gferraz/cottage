@@ -4,6 +4,7 @@ const floor = new FloorPlan({
   terrainLayer: document.querySelector("#terrain-layer"),
   guidesLayer: document.querySelector("#guides-layer"),
   facadeLayer: document.querySelector("#facade-list"),
+  secondaryFacadeLayer: document.querySelector("#secondary-facade-list"),
   viewportSummary: document.querySelector("#viewport-summary"),
   titleElement: document.querySelector("h1"),
   floorOptions: document.querySelector("#floor-options"),
