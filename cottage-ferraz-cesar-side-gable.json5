@@ -121,6 +121,12 @@
           label: "Escritório",
           from: ["left.x0", "left.y0  - 2.5"],
           to: ["left.x1 - 1.1", "left.y0 + 1.5"],
+          openings: [
+            { type: "door",   from: "right", to: "hall"  },
+            { type: "window", from: "top",  dx: 0.9, w: 0.6 },
+            { type: "window", from: "top",  dx: 1.5, w: 0.6 },
+            { type: "window", from: "left", type: "window" }
+          ],
           classes: "office"
         },
         {
@@ -317,10 +323,6 @@
       openings: [
         { from: "porch.top", to: "exterior", type: "opening", w: 1.8, dx: "hall.xc - porch.x0 - 0.9" },
         { from: "hall.top", to: "porch", type: "door", w: 1.0 },
-
-        { from: "office.top", to: "exterior", type: "window", w: 1.8, h: 1.5 },
-        { from: "office.right", to: "hall", type: "door" },
-        { from: "office.left", to: "exterior", type: "window" },
 
         { from: "dining.top", to: "exterior", type: "window", w: 2.4, h: 1.5 },
 
