@@ -177,10 +177,40 @@ const FloorPlanFacades = {
           : [];
       });
       const depthDirection = facadeEdge === "min" ? 1 : -1;
+      const roomFacadeDepth = (room) =>
+        side
+          ? facadeEdge === "min"
+            ? room.x0()
+            : room.x1()
+          : facadeEdge === "min"
+            ? room.y0()
+            : room.y1();
+      const roomFacadeSpan = (room) =>
+        side ? [room.y0(), room.y1()] : [room.x0(), room.x1()];
+      const roofFacadeDepth = (geometry) =>
+        side
+          ? facadeEdge === "min"
+            ? geometry.baseX0
+            : geometry.baseX1
+          : facadeEdge === "min"
+            ? geometry.baseY0
+            : geometry.baseY1;
+      const roofFacadeSpan = (geometry) =>
+        side
+          ? [geometry.baseY0, geometry.baseY1]
+          : [geometry.baseX0, geometry.baseX1];
+      const isAtOrInFront = (candidateDepth, referenceDepth) =>
+        facadeEdge === "min"
+          ? candidateDepth <= referenceDepth + 0.01
+          : candidateDepth >= referenceDepth - 0.01;
+      const isStrictlyInFront = (candidateDepth, referenceDepth) =>
+        facadeEdge === "min"
+          ? candidateDepth < referenceDepth - 0.01
+          : candidateDepth > referenceDepth + 0.01;
       projectedRooms.sort((first, second) => {
-        const firstDepth = side ? first.x0() : first.y0();
-        const secondDepth = side ? second.x0() : second.y0();
-        return depthDirection * (secondDepth - firstDepth);
+        const firstDepth = roomFacadeDepth(first);
+        const secondDepth = roomFacadeDepth(second);
+        return depthDirection * (firstDepth - secondDepth);
       });
       const roomDepthOrder = new Map(
         projectedRooms.map((room, roomIndex) => [room, roomIndex]),
@@ -189,6 +219,28 @@ const FloorPlanFacades = {
         (first, second) =>
           roomDepthOrder.get(first.room) - roomDepthOrder.get(second.room),
       );
+      const roomsCoveredByCloserRoom = new Set();
+      surfaceRooms.forEach(({ room }) => {
+        const roomId = String(room.dataset.id || "");
+        const [roomStart, roomEnd] = roomFacadeSpan(room);
+        const roomDepth = roomFacadeDepth(room);
+        const roomZ0 = room.z0();
+        const roomZ1 = room.z1();
+        const isCovered = surfaceRooms.some(({ room: other }) => {
+          if (other === room) return false;
+          const [otherStart, otherEnd] = roomFacadeSpan(other);
+          const otherDepth = roomFacadeDepth(other);
+          const overlapsHeight =
+            Math.min(roomZ1, other.z1()) - Math.max(roomZ0, other.z0()) >
+            0.001;
+          const coversAxis =
+            otherStart <= roomStart + 0.01 &&
+            otherEnd >= roomEnd - 0.01;
+          const isCloser = isStrictlyInFront(otherDepth, roomDepth);
+          return overlapsHeight && coversAxis && isCloser;
+        });
+        if (isCovered) roomsCoveredByCloserRoom.add(roomId);
+      });
       const coordinates = projectedRooms.flatMap((room) =>
         side ? [room.y0(), room.y1()] : [room.x0(), room.x1()],
       );
@@ -276,7 +328,16 @@ const FloorPlanFacades = {
         return walls[roofFacadeSide()];
       };
       const facadeGableWalls = [];
-      const appendGableWall = (roof, start, ridge, end, baseY, ridgeY, roofInFront = false) => {
+      const appendGableWall = (
+        roof,
+        start,
+        ridge,
+        end,
+        baseY,
+        ridgeY,
+        roofInFront = false,
+        roofCovered = false,
+      ) => {
         const state = roofWallState(roof);
         if (state === "open") return;
         const wall = document.createElementNS(svgNamespace, "polygon");
@@ -289,7 +350,20 @@ const FloorPlanFacades = {
           ].join(" "),
         );
         wall.classList.add("facade-gable-wall", `facade-wall-${state}`);
+        if (state === "virtual") {
+          wall.style.fill = "none";
+        } else {
+          wall.style.fill =
+            getComputedStyle(plan.root)
+              .getPropertyValue("--theme-wall-fill")
+              .trim() || "#f7f7f4";
+          wall.style.fillOpacity = "1";
+        }
+        wall.style.stroke =
+          getComputedStyle(plan.root).getPropertyValue("--theme-wall").trim() ||
+          "#222";
         wall.dataset.roofInFront = String(roofInFront);
+        wall.dataset.roofCovered = String(roofCovered);
         facadeGableWalls.push(wall);
       };
       const roofs = plan.allRoofs ?? [];
@@ -314,30 +388,35 @@ const FloorPlanFacades = {
               ? secondGeometry.y0
               : secondGeometry.y1
           : 0;
-        return depthDirection * (secondDepth - firstDepth);
+        return depthDirection * (firstDepth - secondDepth);
       });
       const roofReachesFacade = (geometry) => {
         if (!geometry) return false;
-        const near = side ? geometry.x0 : geometry.y0;
-        const far = side ? geometry.x1 : geometry.y1;
-        return facadeEdge === "min"
-          ? near <= edge + facadeDepth
-          : far >= edge - facadeDepth;
+        const roofNear = side ? geometry.x0 : geometry.y0;
+        const roofFar = side ? geometry.x1 : geometry.y1;
+        const reachesFacadeDepth =
+          facadeEdge === "min"
+            ? roofNear <= edge + facadeDepth
+            : roofFar >= edge - facadeDepth;
+        if (!reachesFacadeDepth) return false;
+        return rooms.some((room) => {
+          const roomNear = side ? room.x0() : room.y0();
+          const roomFar = side ? room.x1() : room.y1();
+          return (
+            Math.min(roofFar, roomFar) - Math.max(roofNear, roomNear) >
+            0.001
+          );
+        });
       };
       const roofIsInFrontAtBase = (geometry) => {
         if (!geometry) return false;
         const roofStart = side ? geometry.baseY0 : geometry.baseX0;
         const roofEnd = side ? geometry.baseY1 : geometry.baseX1;
-        const roofDepth = side
-          ? facadeEdge === "min"
-            ? geometry.baseX0
-            : geometry.baseX1
-          : facadeEdge === "min"
-            ? geometry.baseY0
-            : geometry.baseY1;
-        return surfaceRooms.some(({ room }) => {
-          const roomStart = side ? room.y0() : room.x0();
-          const roomEnd = side ? room.y1() : room.x1();
+        const roofDepth = roofFacadeDepth(geometry);
+        return rooms.some((room) => {
+          const wallState = room.wallState?.(facadeWall) ?? "solid";
+          if (wallState !== "solid" && wallState !== "virtual") return false;
+          const [roomStart, roomEnd] = roomFacadeSpan(room);
           const overlapsAxis =
             Math.min(roofEnd, roomEnd) - Math.max(roofStart, roomStart) > 0.001;
           if (!overlapsAxis) return false;
@@ -348,54 +427,9 @@ const FloorPlanFacades = {
             : facadeEdge === "min"
               ? room.y0()
               : room.y1();
-          return facadeEdge === "min"
-            ? roofDepth <= roomDepth + 0.01
-            : roofDepth >= roomDepth - 0.01;
+          return isAtOrInFront(roofDepth, roomDepth);
         });
       };
-      const roomsCoveredByRoof = new Set();
-      facadeRoofs.forEach((roof) => {
-        if (roof.type !== "gable") return;
-        const geometry = roofGeometry(roof);
-        if (!geometry || !roofReachesFacade(geometry)) return;
-
-        // A surface roof hides the room behind it in this projection. A
-        // gable wall remains a visible architectural face and does not hide
-        // the room wholesale.
-        const longitudinal = roof.orientation === "longitudinal";
-        const roofIsSurface = longitudinal ? side : !side;
-        if (!roofIsSurface || !roofIsInFrontAtBase(geometry)) return;
-
-        const roofStart = side ? geometry.baseY0 : geometry.baseX0;
-        const roofEnd = side ? geometry.baseY1 : geometry.baseX1;
-        const roofDepth = side
-          ? facadeEdge === "min"
-            ? geometry.baseX0
-            : geometry.baseX1
-          : facadeEdge === "min"
-            ? geometry.baseY0
-            : geometry.baseY1;
-
-        surfaceRooms.forEach(({ room }) => {
-          const roomStart = side ? room.y0() : room.x0();
-          const roomEnd = side ? room.y1() : room.x1();
-          const roomDepth = side
-            ? facadeEdge === "min"
-              ? room.x0()
-              : room.x1()
-            : facadeEdge === "min"
-              ? room.y0()
-              : room.y1();
-          const spansRoom =
-            roofStart <= roomStart + 0.01 && roofEnd >= roomEnd - 0.01;
-          const isInFront = facadeEdge === "min"
-            ? roofDepth <= roomDepth + 0.01
-            : roofDepth >= roomDepth - 0.01;
-          if (spansRoom && isInFront) {
-            roomsCoveredByRoof.add(String(room.dataset.id || ""));
-          }
-        });
-      });
       const roofElementSelector =
         ".facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label";
       facadeRoofs.forEach((roof) => {
@@ -645,6 +679,9 @@ const FloorPlanFacades = {
             }
           });
         };
+        // Roof visibility is determined by facade depth and SVG order. Do
+        // not discard a complete roof based on room intersection alone.
+        const roofCovered = false;
         const {
           x0,
           x1,
@@ -686,6 +723,7 @@ const FloorPlanFacades = {
             baseY,
             ridgeCoordinate,
             roofIsInFront,
+            roofCovered,
           );
           const appendRoofLine = (start, startY, end, endY) => {
             const line = document.createElementNS(svgNamespace, "line");
@@ -831,6 +869,7 @@ const FloorPlanFacades = {
           baseY,
           ridgeCoordinate,
           roofIsInFront,
+          roofCovered,
         );
 
         [
@@ -1019,10 +1058,55 @@ const FloorPlanFacades = {
           }
         });
 
+      const roofBehindRoom = (room) => {
+        const [roomStart, roomEnd] = roomFacadeSpan(room);
+        const roomDepth = roomFacadeDepth(room);
+        return facadeRoofs.some((roof) => {
+          if (roof.type !== "gable") return false;
+          const geometry = roofGeometry(roof);
+          if (!geometry || !roofReachesFacade(geometry)) return false;
+          const [roofStart, roofEnd] = roofFacadeSpan(geometry);
+          const overlapsAxis =
+            Math.min(roomEnd, roofEnd) - Math.max(roomStart, roofStart) >
+            0.001;
+          return (
+            overlapsAxis &&
+            isStrictlyInFront(roomDepth, roofFacadeDepth(geometry))
+          );
+        });
+      };
+
+      surfaceRooms.forEach(({ room, geometry, compoundPart }) => {
+        if (!roofBehindRoom(room)) return;
+        const start = compoundPart
+          ? side
+            ? geometry.y
+            : geometry.x
+          : side
+            ? room.y0()
+            : room.x0();
+        const end = compoundPart
+          ? side
+            ? geometry.y + geometry.l
+            : geometry.x + geometry.w
+          : side
+            ? room.y1()
+            : room.x1();
+        const z0 = compoundPart ? geometry.z0 : room.z0();
+        const z1 = compoundPart ? geometry.z1 : room.z1();
+        const occluder = document.createElementNS(svgNamespace, "rect");
+        occluder.setAttribute("x", `${(start - min + padding) * scale}`);
+        occluder.setAttribute("y", `${(floorHeight - z1 + padding) * scale}`);
+        occluder.setAttribute("width", `${(end - start) * scale}`);
+        occluder.setAttribute("height", `${(z1 - z0) * scale}`);
+        occluder.classList.add("facade-occluder");
+        svg.append(occluder);
+      });
+
       surfaceRooms.forEach(({ room, geometry, compoundPart }) => {
         if (
           !compoundPart &&
-          roomsCoveredByRoof.has(String(room.dataset.id || ""))
+          roomsCoveredByCloserRoom.has(String(room.dataset.id || ""))
         ) {
           return;
         }
@@ -1054,7 +1138,12 @@ const FloorPlanFacades = {
             : room.y1();
         const roofCandidates = facadeRoofs
           .map(roofGeometry)
-          .filter((roof) => roof && roof.z0 > z0 + 0.001);
+          .filter((roof) => {
+            if (!roof || roof.z0 <= z0 + 0.001) return false;
+            const roofIsSurfaceOnFacade = roof.longitudinal ? side : !side;
+            if (!roofIsSurfaceOnFacade) return false;
+            return isAtOrInFront(roofFacadeDepth(roof), depth);
+          });
         const roofHeightAt = (coordinate) => {
           const x = side ? depth : coordinate;
           const y = side ? coordinate : depth;
@@ -1122,13 +1211,11 @@ const FloorPlanFacades = {
 
       });
 
-      svg
-        .querySelectorAll(
-          ".facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label, .facade-gable-wall",
-        )
-        .forEach((element) => {
-          if (element.dataset.roofInFront === "true") svg.append(element);
-        });
+      const foregroundRoofSelector =
+        ".facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label, .facade-gable-wall";
+      svg.querySelectorAll(foregroundRoofSelector).forEach((element) => {
+        if (element.dataset.roofInFront === "true") svg.append(element);
+      });
 
       facadeOpenings
         .forEach((opening) => {

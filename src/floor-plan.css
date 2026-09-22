@@ -144,8 +144,17 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .facade-view-container { margin: 0 0 20px; }
 .facade-view-container figcaption { margin: 0 0 8px; font-weight: 650; }
 .facade-view { display: block; width: auto; max-width: none; height: auto; background: var(--theme-site); border: 1px solid var(--theme-border); }
+.facade-3d-section #facade-3d-list {
+  min-height: 420px;
+  overflow: hidden;
+  border: 1px solid var(--theme-grid);
+  background: var(--theme-surface);
+  margin-bottom: 32px;
+}
+.facade-3d-canvas { display: block; width: 100%; height: 420px; }
 .facade-terrain-front { stroke-linecap: round; }
 .facade-room { fill: var(--theme-surface); fill-opacity: 0.45; stroke: var(--theme-wall); stroke-width: 1.5; }
+.facade-occluder { fill: var(--theme-wall-fill, #f7f7f4); fill-opacity: 1; stroke: none; }
 .facade-room-label { fill: var(--theme-label); font-size: 7px; font-weight: 400; }
 .facade-room-label-title { font-weight: 400; }
 .facade-room-label-details { font-size: 5px; font-weight: 400; }
@@ -153,7 +162,7 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .facade-window { fill: var(--theme-window); stroke: var(--theme-window-line); stroke-width: 2; }
 .facade-railing { fill: #d8d8d8; fill-opacity: 0.9; stroke: #777; stroke-width: 1.5; }
 .facade-roof { fill: var(--theme-roof-fill); stroke: var(--theme-roof-line); stroke-width: 1.5; }
-.facade-gable-wall { fill: var(--theme-surface); fill-opacity: 1; stroke: var(--theme-wall); stroke-width: 1.5; }
+.facade-gable-wall { fill: var(--theme-wall-fill); fill-opacity: 1; stroke: var(--theme-wall); stroke-width: 1.5; }
 .facade-gable-wall.facade-wall-virtual { fill: none; stroke: var(--theme-wall-virtual); stroke-dasharray: 5 4; }
 .facade-roof-eave { fill: none; stroke: var(--theme-roof-line); stroke-width: 1.5; }
 .facade-roof-ridge { fill: none; stroke: var(--theme-roof-line); stroke-width: 1.5; }

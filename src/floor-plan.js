@@ -6,13 +6,14 @@ class FloorPlan {
    * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
    * @param {number} [options.scale=56] Escala inicial em pixels por metro.
    */
-  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
     this.guidesLayer = guidesLayer;
     this.facadeLayer = facadeLayer;
     this.secondaryFacadeLayer = secondaryFacadeLayer;
+    this.facade3dLayer = facade3dLayer;
     this.viewportSummary = viewportSummary;
     this.titleElement = titleElement;
     this.floorOptions = floorOptions;
@@ -358,6 +359,10 @@ class FloorPlan {
     return FloorPlanFacades.render(this, facades);
   }
 
+  renderFacade3D() {
+    return window.FloorPlanFacades3D?.render(this, { direction: "front" });
+  }
+
   renderRoofs(roofs = []) {
     return FloorPlanRoofs.render(this, roofs);
   }
@@ -663,6 +668,10 @@ class FloorPlan {
     ];
     const facades = floorConfig.facades ?? config.facades ?? defaultFacades;
     this.renderFacades(facades);
+    if (this.facade3dLayer) {
+      this.facade3dLayer.closest(".facade-3d-section")?.toggleAttribute("hidden", false);
+      this.renderFacade3D();
+    }
     this.updateSummary();
     [this.downloadButton, this.markdownButton, this.dxfButton].forEach(
       (button) => {
