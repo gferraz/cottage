@@ -20,7 +20,13 @@ Use two-space indentation, UTF-8 encoding, semantic HTML where practical, and lo
 
 ## Testing Guidelines
 
-There is no automated test suite or coverage requirement. Manually test every visual change in a current browser, checking room placement, labels, grid scaling, overflow, and legibility. Validate that the document still loads without console errors and that changes to dimensions do not create unintended overlaps.
+Domain tests run with Node's built-in test runner (no dependencies):
+
+```sh
+node --test test/
+```
+
+The tests cover only the pure, DOM-free geometry and validation logic; no jsdom or package manager is used. Manually test every visual change in a current browser, checking room placement, labels, grid scaling, overflow, and legibility. Validate that the document still loads without console errors and that changes to dimensions do not create unintended overlaps.
 
 ## Commit & Pull Request Guidelines
 
