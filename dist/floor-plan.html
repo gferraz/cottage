@@ -3231,6 +3231,12 @@ const FloorPlanFacades = {
     const rooms = floorConfigs.flatMap((floorConfig) =>
       (floorConfig?.rooms ?? []).flatMap((definition) => {
         try {
+          const floorIndex = floorConfigs.indexOf(floorConfig);
+          const floorZ0 = Number(floorConfig?.h ?? 0);
+          const nextFloorZ0 = Number(floorConfigs[floorIndex + 1]?.h);
+          const defaultWallHeight = Number.isFinite(nextFloorZ0)
+            ? Math.max(0, nextFloorZ0 - floorZ0)
+            : 3;
           const parts = definition.parts?.length
             ? normalizePartsAtFloor(definition.parts, floorConfig)
             : null;
@@ -3256,6 +3262,14 @@ const FloorPlanFacades = {
                   plan.currentFloorHeight = previousFloorHeight;
                 }
               })();
+          const facadeGeometry =
+            geometry.z1 > geometry.z0
+              ? geometry
+              : {
+                  ...geometry,
+                  z1: geometry.z0 + defaultWallHeight,
+                  h: defaultWallHeight,
+                };
           const walls = plan.normalizeWalls(definition.walls);
           const room = {
             dataset: {
@@ -3265,15 +3279,15 @@ const FloorPlanFacades = {
             geometryParts: parts?.map((part) => ({
               ...part,
               sourceWalls: definition.parts.find((source) => source.id === part.id)?.walls,
-            })) ?? [geometry],
-            x0: () => geometry.x,
-            x1: () => geometry.x + geometry.w,
-            y0: () => geometry.y,
-            y1: () => geometry.y + geometry.l,
-            z0: () => geometry.z0,
-            z1: () => geometry.z1,
-            w: () => geometry.w,
-            l: () => geometry.l,
+            })) ?? [facadeGeometry],
+            x0: () => facadeGeometry.x,
+            x1: () => facadeGeometry.x + facadeGeometry.w,
+            y0: () => facadeGeometry.y,
+            y1: () => facadeGeometry.y + facadeGeometry.l,
+            z0: () => facadeGeometry.z0,
+            z1: () => facadeGeometry.z1,
+            w: () => facadeGeometry.w,
+            l: () => facadeGeometry.l,
             wallState: (side) => walls[side],
             querySelector: () => null,
           };
@@ -4129,6 +4143,12 @@ const FloorPlanFacades = {
         }
 
       });
+
+      svg
+        .querySelectorAll(
+          ".facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label, .facade-gable-wall",
+        )
+        .forEach((element) => svg.append(element));
 
       facadeOpenings
         .forEach((opening) => {
