@@ -376,7 +376,11 @@ const FloorPlanOpenings = {
     const shift = hasPosition ? Math.round(position * 100) : 0;
     const id = `${roomId}-${target}-${shift}`;
     const openingDefaults = verticalDefaults[type] || {};
-    const z0 = plan.resolve(opening.z0 ?? openingDefaults.z0 ?? 0);
+    const floorZ0 = Number(plan.currentFloorHeight) || 0;
+    const z0 =
+      opening.z0 === undefined
+        ? floorZ0 + plan.resolve(openingDefaults.z0 ?? 0)
+        : plan.resolve(opening.z0);
     const height = plan.resolve(opening.h ?? openingDefaults.h ?? 2.1);
     if (![z0, height].every(Number.isFinite) || z0 < 0 || height <= 0) {
       throw new Error(

@@ -450,6 +450,8 @@ const FloorPlanReferences = {
       plan.allRoofs.push({ ...roof, floorId: null, floorLabel: null });
     });
     floors.forEach((floorConfig) => {
+      const previousFloorHeight = plan.currentFloorHeight;
+      plan.currentFloorHeight = Number(floorConfig.h ?? 0);
       (floorConfig.roofs ?? []).forEach((roof) => {
         plan.allRoofs.push({
           ...roof,
@@ -498,6 +500,7 @@ const FloorPlanReferences = {
           // Validation and rendering record the error with its source data.
         }
       });
+      plan.currentFloorHeight = previousFloorHeight;
     });
   },
 

@@ -61,7 +61,8 @@
       type: "gable",
       rectangle: ["hall.x0", "hall.y0", "main.x1", "main.y1"],
       orientation: "longitudinal",
-      pitch: 51
+      pitch: 51,
+      openings: [{ type: "window", from: "top" }],
     },
     {
       id: "office-roof",
@@ -372,7 +373,7 @@
           label: "Sala de oração",
           from: ["dorm-top.x1 - 3.6", "dorm-top-right.y0"],
           to: ["dorm-top.x1", "y0 +1.2"],
-          walls: ["top", "right"]
+          walls: ["right"]
         },
         {
           id: "bedroom-e",
@@ -386,7 +387,7 @@
           label: "Sala de Jogos",
           from: ["bedroom-n.x1", "dorm-top-right.y0"],
           to: ["bedroom-e.x0", "dorm-top.y1"],
-          walls: ["top", "left"],
+          walls: ["left"],
           classes: "circulation"
         },
         {

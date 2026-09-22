@@ -153,6 +153,8 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .facade-window { fill: var(--theme-window); stroke: var(--theme-window-line); stroke-width: 2; }
 .facade-railing { fill: #d8d8d8; fill-opacity: 0.9; stroke: #777; stroke-width: 1.5; }
 .facade-roof { fill: var(--theme-roof-fill); stroke: var(--theme-roof-line); stroke-width: 1.5; }
+.facade-gable-wall { fill: var(--theme-surface); fill-opacity: 1; stroke: var(--theme-wall); stroke-width: 1.5; }
+.facade-gable-wall.facade-wall-virtual { fill: none; stroke: var(--theme-wall-virtual); stroke-dasharray: 5 4; }
 .facade-roof-eave { fill: none; stroke: var(--theme-roof-line); stroke-width: 1.5; }
 .facade-roof-ridge { fill: none; stroke: var(--theme-roof-line); stroke-width: 1.5; }
 .facade-roof-label { fill: var(--theme-label); font-size: 10px; }
