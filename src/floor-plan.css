@@ -250,11 +250,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   max-width: none;
 }
 
-.facade-front-section {
-  order: 5;
-}
-
-.facade-front-section .facade-view {
+.facade-secondary-section #facade-list .facade-view {
   margin-left: max(
     0px,
     calc((100% - (var(--viewport-width, 20) * var(--m))) / 2)
@@ -1388,7 +1384,6 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
     line-height: 1.25;
   }
 
-  .facade-front-section > h2::before,
   .facade-3d-section > h2::before,
   .plan-layout > h2::before,
   .plan-details > h2::before,
@@ -1404,10 +1399,9 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   }
 
   .facade-3d-section > h2::before { content: "01 / PERSPECTIVA"; }
-  .facade-front-section > h2::before { content: "02 / FACHADA FRONTAL"; }
-  .plan-layout > h2::before { content: "03 / PLANTA BAIXA"; }
-  .facade-secondary-section > h2::before { content: "04 / ELEVAÇÕES"; }
-  .plan-details > h2::before { content: "05 / QUADRO TÉCNICO"; }
+  .plan-layout > h2::before { content: "02 / PLANTA BAIXA"; }
+  .facade-secondary-section > h2::before { content: "03 / ELEVAÇÕES"; }
+  .plan-details > h2::before { content: "04 / QUADRO TÉCNICO"; }
 
   .facade-3d-section {
     padding: 0;

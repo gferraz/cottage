@@ -9,12 +9,15 @@ const FloorPlanFacades = {
     const secondaryFacades = facades.filter(
       (facade) => (facade.direction || "front") !== "front",
     );
-    plan.facadeLayer
-      .closest(".facade-section")
-      ?.toggleAttribute("hidden", frontFacades.length === 0);
-    plan.secondaryFacadeLayer
-      ?.closest(".facade-section")
-      ?.toggleAttribute("hidden", secondaryFacades.length === 0);
+    const frontSection = plan.facadeLayer.closest(".facade-section");
+    const secondarySection = plan.secondaryFacadeLayer
+      ?.closest(".facade-section");
+    if (frontSection && frontSection === secondarySection) {
+      frontSection.toggleAttribute("hidden", facades.length === 0);
+    } else {
+      frontSection?.toggleAttribute("hidden", frontFacades.length === 0);
+      secondarySection?.toggleAttribute("hidden", secondaryFacades.length === 0);
+    }
     if (facades.length === 0) return;
 
     const svgNamespace = "http://www.w3.org/2000/svg";

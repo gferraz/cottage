@@ -1,4 +1,34 @@
 const FloorPlanTextExport = {
+  independentWallFloorIndex(plan, wall, floors) {
+    if (wall.base === "level") {
+      const basedFloor = floors.findIndex(
+        (floor) => Math.abs(Number(floor.z0 ?? 0) - wall.baseZ) <= 1e-7,
+      );
+      if (basedFloor >= 0) return basedFloor;
+    }
+
+    const roomFloorIndexes = new Map();
+    floors.forEach((floor, floorIndex) => {
+      (floor.rooms ?? []).forEach((room) => roomFloorIndexes.set(room.id, floorIndex));
+    });
+    const touchedFloorIndexes = [...new Set(
+      (wall.touchedRoomIds ?? [])
+        .map((roomId) => roomFloorIndexes.get(roomId))
+        .filter((index) => index !== undefined),
+    )];
+    if (touchedFloorIndexes.length) return Math.min(...touchedFloorIndexes);
+
+    const intersectingFloor = floors.findIndex((floor, index) => {
+      const floorZ0 = Number(floor.z0 ?? 0);
+      const nextZ0 = Number(floors[index + 1]?.z0);
+      const floorTop = Number.isFinite(nextZ0)
+        ? nextZ0
+        : floorZ0 + Number(floor.wall_max_height ?? 0);
+      return wall.baseZ < floorTop && wall.topZ > floorZ0;
+    });
+    return intersectingFloor >= 0 ? intersectingFloor : null;
+  },
+
   asciiLayout(plan) {
     const bounds = plan.bounds();
     if (!bounds) return "(nenhum cômodo carregado)";
@@ -94,6 +124,41 @@ const FloorPlanTextExport = {
             grid[labelRow][start + index].character = character;
         });
       }
+    });
+
+    const floors = plan.currentConfig?.floors ?? [plan.currentConfig ?? {}];
+    const activeFloorIndex = Math.max(
+      0,
+      floors.findIndex((floor) => floor.id === plan.currentFloorId),
+    );
+    (plan.independentWalls?.values?.() ?? []).forEach((wall) => {
+      if (this.independentWallFloorIndex(plan, wall, floors) !== activeFloorIndex) return;
+      (wall.path?.points ?? []).slice(0, -1).forEach((from, index) => {
+        const to = wall.path.points[index + 1];
+        const x0 = column(from[0]);
+        const y0 = row(from[1]);
+        const x1 = column(to[0]);
+        const y1 = row(to[1]);
+        if (Math.abs(to[1] - from[1]) <= 1e-7) {
+          for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x += 1) {
+            addHorizontal(x, row(from[1]), "solid");
+          }
+        } else if (Math.abs(to[0] - from[0]) <= 1e-7) {
+          for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y += 1) {
+            addVertical(column(from[0]), y, "solid");
+          }
+        } else {
+          const steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
+          for (let stepIndex = 0; stepIndex <= steps; stepIndex += 1) {
+            const progress = steps ? stepIndex / steps : 0;
+            const x = Math.round(x0 + (x1 - x0) * progress);
+            const y = Math.round(y0 + (y1 - y0) * progress);
+            if (grid[y]?.[x]?.mask === 0) {
+              grid[y][x].character = (x1 - x0) * (y1 - y0) >= 0 ? "\\\\" : "/";
+            }
+          }
+        }
+      });
     });
 
     plan.openings.forEach((opening) => {
@@ -382,34 +447,6 @@ const FloorPlanTextExport = {
       plan.renderMultiFloorUnderlay();
     }
     const independentWalls = [...(plan.independentWalls?.values() ?? [])];
-    const roomFloorIndexes = new Map();
-    floors.forEach((floor, floorIndex) => {
-      (floor.rooms ?? []).forEach((room) => roomFloorIndexes.set(room.id, floorIndex));
-    });
-    const floorIndexForWall = (wall) => {
-      if (wall.base === "level") {
-        const basedFloor = floors.findIndex(
-          (floor) => Math.abs(Number(floor.z0 ?? 0) - wall.baseZ) <= 1e-7,
-        );
-        if (basedFloor >= 0) return basedFloor;
-      }
-      const touchedFloorIndexes = [...new Set(
-        (wall.touchedRoomIds ?? [])
-          .map((roomId) => roomFloorIndexes.get(roomId))
-          .filter((index) => index !== undefined),
-      )];
-      if (touchedFloorIndexes.length) return Math.min(...touchedFloorIndexes);
-
-      const intersectingFloor = floors.findIndex((floor, index) => {
-        const floorZ0 = Number(floor.z0 ?? 0);
-        const nextZ0 = Number(floors[index + 1]?.z0);
-        const floorTop = Number.isFinite(nextZ0)
-          ? nextZ0
-          : floorZ0 + Number(floor.wall_max_height ?? 0);
-        return wall.baseZ < floorTop && wall.topZ > floorZ0;
-      });
-      return intersectingFloor >= 0 ? intersectingFloor : null;
-    };
     const appendIndependentWalls = (floorWallEntries) => {
       lines.push(
         "",
@@ -484,7 +521,7 @@ const FloorPlanTextExport = {
         (roof) => (roof.floorId ?? null) === floorId,
       );
       const floorWalls = independentWalls.filter(
-        (wall) => floorIndexForWall(wall) === floorIndex,
+        (wall) => this.independentWallFloorIndex(plan, wall, floors) === floorIndex,
       );
 
       lines.push("", `## 05.${floorIndex + 1} — ${plan.markdownText(floorName)}`);
