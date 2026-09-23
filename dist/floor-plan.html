@@ -16,7 +16,7 @@
   --theme-surface: #fafafa;
   --theme-site: #f5f3ee;
   --theme-grid: rgba(0, 0, 0, 0.08);
-  --theme-wall-fill: #f7f7f4;
+  --theme-wall-fill: var(--color-leite-maltado);
   --theme-wall: #222;
   --theme-label: #263746;
   --theme-wall-virtual: #222;
@@ -895,6 +895,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
   --theme-surface: #fafafa;
   --theme-site: #f5f3ee;
   --theme-grid: rgba(0, 0, 0, 0.08);
+  --theme-wall-fill: #decabd;
   --theme-wall: #222;
   --theme-label: #263746;
   --theme-wall-virtual: #222;
@@ -5653,7 +5654,7 @@ const FloorPlanFacades3D = {
     container.append(renderer.domElement);
 
     const wallMaterial = new THREE.MeshLambertMaterial({
-      color: "#e7e7e1",
+      color: plan.themeFillColor("leite-maltado"),
       side: THREE.DoubleSide,
     });
     const wallLineMaterial = new THREE.LineBasicMaterial({ color: "#30302d" });

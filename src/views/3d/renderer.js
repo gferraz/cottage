@@ -230,7 +230,7 @@ const FloorPlanFacades3D = {
     container.append(renderer.domElement);
 
     const wallMaterial = new THREE.MeshLambertMaterial({
-      color: "#e7e7e1",
+      color: plan.themeFillColor("desejo-ambar"),
       side: THREE.DoubleSide,
     });
     const wallLineMaterial = new THREE.LineBasicMaterial({ color: "#30302d" });
