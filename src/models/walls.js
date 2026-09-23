@@ -1,4 +1,61 @@
 const FloorPlanWalls = {
+  geometryParts(wall) {
+    const epsilon = 1e-9;
+    return wall.path.points.slice(0, -1).flatMap((from, index) => {
+      const to = wall.path.points[index + 1];
+      const horizontal = Math.abs(from[1] - to[1]) <= epsilon;
+      const vertical = Math.abs(from[0] - to[0]) <= epsilon;
+      if (!horizontal && !vertical) {
+        return [{
+          id: `${wall.id}-segment-${index + 1}`,
+          sourceWallId: wall.id,
+          pathSegment: index,
+          axis: "path",
+          from: [from[0], from[1], wall.baseZ],
+          to: [to[0], to[1], wall.baseZ],
+          thickness: wall.thickness,
+          z0: wall.baseZ,
+          z1: wall.topZ,
+          h: wall.h,
+        }];
+      }
+
+      const axis = horizontal ? "x" : "y";
+      const start = horizontal
+        ? Math.min(from[0], to[0])
+        : Math.min(from[1], to[1]);
+      const end = horizontal
+        ? Math.max(from[0], to[0])
+        : Math.max(from[1], to[1]);
+      const length = end - start;
+      if (length <= epsilon) return [];
+      const x = horizontal ? start : from[0] - wall.thickness / 2;
+      const y = horizontal ? from[1] - wall.thickness / 2 : start;
+      const width = horizontal ? length : wall.thickness;
+      const depth = horizontal ? wall.thickness : length;
+      const center = horizontal ? from[1] : from[0];
+      return [{
+        id: `${wall.id}-segment-${index + 1}`,
+        sourceWallId: wall.id,
+        pathSegment: index,
+        axis,
+        from: horizontal
+          ? [start, center, wall.baseZ]
+          : [center, start, wall.baseZ],
+        to: horizontal
+          ? [end, center, wall.baseZ]
+          : [center, end, wall.baseZ],
+        pos: [x, y, wall.baseZ],
+        size: [width, depth, wall.h],
+        thickness: wall.thickness,
+        z0: wall.baseZ,
+        z1: wall.topZ,
+        h: wall.h,
+        color: wall.color,
+      }];
+    });
+  },
+
   resolveRoomSide(plan, roomId, side, opening) {
     const roomWalls = [...plan.walls.values()].filter((wall) =>
       wall.sourceSides.some(
@@ -384,6 +441,7 @@ const FloorPlanWalls = {
           throw new Error('A base da parede precisa ser "terrain" ou { level: "referência.z0" }');
         }
         if (wall.h <= 0) throw new Error("A cota superior da parede precisa ficar acima da base");
+        wall.geometryParts = this.geometryParts(wall);
         FloorPlanGeometryBox.attach(wall, { compound: true, label: wall.id });
         plan.independentWalls.set(wall.id, wall);
         plan.references.set(wall.id, wall);
@@ -396,6 +454,11 @@ const FloorPlanWalls = {
         });
       }
     });
+
+    plan.wallRenderParts = [
+      ...plan.walls.values(),
+      ...[...plan.independentWalls.values()].flatMap((wall) => wall.geometryParts),
+    ];
 
   },
 };

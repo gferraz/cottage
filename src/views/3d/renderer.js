@@ -22,7 +22,7 @@ const FloorPlanFacades3D = {
     delete container.dataset.threeWaiting;
 
     const THREE = window.THREE;
-    const finite = (...values) => values.every((value) => Number.isFinite(Number(value)));
+    const finite = (...values) => values.every(Number.isFinite);
     const reportInvalid = (kind, id) => {
       console.warn(`Fachada 3D: geometria ignorada em ${kind}${id ? ` (${id})` : ""}.`);
     };
