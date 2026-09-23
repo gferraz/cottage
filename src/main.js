@@ -691,7 +691,7 @@ class FloorPlan {
       { id: "left", label: "Fachada lateral esquerda", direction: "left" },
       { id: "right", label: "Fachada lateral direita", direction: "right" },
     ];
-    const facades = floorConfig.facades ?? config.facades ?? defaultFacades;
+    const facades = config.facades ?? defaultFacades;
     this.renderFacades(facades);
     if (this.facade3dLayer) {
       this.facade3dLayer.closest(".facade-3d-section")?.toggleAttribute("hidden", false);

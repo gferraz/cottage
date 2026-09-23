@@ -106,7 +106,6 @@ const FloorPlanFacades = {
       }),
     );
     const floorHeight = Math.max(
-      Number(plan.currentFloorHeight) || 0,
       ...rooms.map((room) => room.z1()),
       3,
     );
@@ -254,8 +253,11 @@ const FloorPlanFacades = {
       const facadeMax = Math.max(...coordinates);
       const roofGeometry = (roof) => {
         let base;
+        let floor;
         try {
-          base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+          const baseDefinition = roof.base ?? roof;
+          floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
+          base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
         } catch {
           return null;
         }
@@ -267,7 +269,7 @@ const FloorPlanFacades = {
         const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
         const pitch = Number(roof.pitch);
         const baseSpan = longitudinal ? base.w() : base.l();
-        const baseZ1 = FloorPlanRoofs.baseCeilingZ(plan, base, 0);
+        const baseZ1 = FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor);
         const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
         const z0 =
           roof.z0 !== undefined
