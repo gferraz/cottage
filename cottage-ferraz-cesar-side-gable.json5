@@ -61,7 +61,6 @@
       base: { level: "ground.z0" },
       top: { level: "ground.z1" },
       thickness: 0.12,
-      color: "terracotta",
       path: {
         points: [
           ["office.x0", "office.y0"],
@@ -110,11 +109,61 @@
           ["left.x0", "kitchen.y1"]
         ]
       }
+    },
+    {
+      id: "knee-wall-front",
+      base: { level: "upper.z0" },
+      top: { level: "upper.z0 + 1" },
+      thickness: 0.12,
+      path: {
+        points: [
+          ["left.x0",  "knee-top.y0"],
+          ["right.x1", "knee-top.y0"]
+        ]
+      }
+    },
+    {
+      id: "knee-wall-middle-left",
+      base: { level: "upper.z0" },
+      top: { level: "upper.z0 + 1" },
+      thickness: 0.12,
+      color: "terracotta",
+      path: {
+        points: [
+          ["left.x0",  "w-axis.y0"],
+          ["central.x0", "w-axis.y0"]
+        ]
+      }
+    },
+    {
+      id: "knee-wall-middle-right",
+      base: { level: "upper.z0" },
+      top: { level: "upper.z0 + 1" },
+      thickness: 0.12,
+      color: "terracotta",
+      path: {
+        points: [
+          ["central.x1", "w-axis.y0"],
+          ["right.x1",   "w-axis.y0"]
+        ]
+      }
+    },
+    {
+      id: "knee-wall-back",
+      base: { level: "upper.z0" },
+      top: { level: "upper.z0 + 1" },
+      thickness: 0.12,
+      path: {
+        points: [
+          ["left.x0",  "knee-bottom.y0"],
+          ["right.x1", "knee-bottom.y0"]
+        ]
+      }
     }
   ],
   roofs: [
     {
-      id: "front-gable",
+      id: "front-dorms-gable",
       label: "Circulação dos domitórios",
       type: "gable",
       rectangle: ["hall.x0", "hall.y0", "main.x1", "main.y1"],

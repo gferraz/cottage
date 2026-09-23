@@ -86,7 +86,7 @@ class FloorPlan {
     this.multiFloorLayer.className = "multi-floor-layer";
     root.prepend(this.multiFloorLayer);
     this.multiFloorMode = false;
-    this.showRoofs = true;
+    this.showRoofs = false;
 
     root.style.setProperty("--m", `${scale}px`);
     root.addEventListener("pointerdown", (event) => this.beginViewportPan(event));
@@ -118,7 +118,7 @@ class FloorPlan {
     if (roofSwitch) {
       roofSwitch.hidden = true;
       roofSwitch.closest(".visibility-switch")?.toggleAttribute("hidden", true);
-      roofSwitch.checked = true;
+      roofSwitch.checked = false;
       roofSwitch.addEventListener("change", () => {
         this.showRoofs = roofSwitch.checked;
         this.updateRoofVisibility();
