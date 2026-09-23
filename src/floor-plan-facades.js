@@ -1277,6 +1277,55 @@ const FloorPlanFacades = {
         svg.append(railing);
       });
 
+      if (frontAligned && plan.terrainReference) {
+        const profile = plan.terrainReference;
+        const buildingOffsetY = Number.parseFloat(
+          getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
+        ) || 0;
+        const profileValues = [
+          profile.frontY,
+          profile.rearY,
+          profile.frontZ,
+          profile.rearZ,
+        ];
+        if (
+          profileValues.every(Number.isFinite) &&
+          profile.rearY !== profile.frontY
+        ) {
+          const siteY = edge + buildingOffsetY;
+          const progress = Math.max(
+            0,
+            Math.min(
+              1,
+              (siteY - profile.frontY) / (profile.rearY - profile.frontY),
+            ),
+          );
+          const terrainZ =
+            profile.frontZ + progress * (profile.rearZ - profile.frontZ);
+          const terrainY = (floorHeight - terrainZ + padding) * scale;
+          const profileLine = document.createElementNS(svgNamespace, "line");
+          profileLine.classList.add("facade-terrain-profile");
+          profileLine.setAttribute(
+            "x1",
+            `${(facadeMin - min + padding) * scale}`,
+          );
+          profileLine.setAttribute(
+            "x2",
+            `${(facadeMax - min + padding) * scale}`,
+          );
+          profileLine.setAttribute("y1", `${terrainY}`);
+          profileLine.setAttribute("y2", `${terrainY}`);
+          profileLine.setAttribute(
+            "stroke",
+            getComputedStyle(plan.root)
+              .getPropertyValue("--theme-terrain-boundary")
+              .trim() || "#55724d",
+          );
+          profileLine.setAttribute("stroke-width", "2");
+          svg.append(profileLine);
+        }
+      }
+
       const figure = document.createElement("figure");
       figure.className = "facade-view-container";
       const title = document.createElement("figcaption");

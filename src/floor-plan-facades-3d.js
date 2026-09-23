@@ -30,7 +30,12 @@ const FloorPlanFacades3D = {
     const height = 420;
     const floors = plan.currentConfig?.floors ?? [plan.currentConfig];
     const facadeSide = direction === "front" ? "top" : "bottom";
+    const isStairFlight = (definition) =>
+      String(definition?.classes || "")
+        .split(/\s+/)
+        .includes("stair-flight");
     const rooms = (plan.allRooms || [])
+      .filter((entry) => !isStairFlight(plan.roomDefinitions?.get(entry.id)))
       .map((entry) => {
         const reference = plan.getRoomGeometry(entry.id);
         if (!reference) return null;
@@ -76,6 +81,27 @@ const FloorPlanFacades3D = {
         };
       });
 
+    const stairFlights = [];
+    floors.forEach((floor) => {
+      (floor?.rooms ?? []).forEach((definition) => {
+        if (isStairFlight(definition)) {
+          stairFlights.push(plan.normalizeGeometryAtFloor(definition, floor));
+        }
+        if (!Array.isArray(definition.parts)) return;
+        const previousHeight = plan.currentFloorHeight;
+        plan.currentFloorHeight = Number(floor?.z0 ?? 0);
+        try {
+          stairFlights.push(
+            ...plan
+              .normalizeParts(definition.parts)
+              .filter(isStairFlight),
+          );
+        } finally {
+          plan.currentFloorHeight = previousHeight;
+        }
+      });
+    });
+
     if (!rooms.length) {
       container.textContent = "Nenhum cômodo disponível para esta fachada.";
       return;
@@ -91,6 +117,12 @@ const FloorPlanFacades3D = {
       { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity },
     );
     const drawingBounds = { ...roomBounds };
+    stairFlights.forEach((stair) => {
+      drawingBounds.x0 = Math.min(drawingBounds.x0, Number(stair.x));
+      drawingBounds.x1 = Math.max(drawingBounds.x1, Number(stair.x) + Number(stair.w));
+      drawingBounds.z0 = Math.min(drawingBounds.z0, Number(stair.z0));
+      drawingBounds.z1 = Math.max(drawingBounds.z1, Number(stair.z1));
+    });
     (plan.allRoofs || []).forEach((roof) => {
       if (roof.type !== "gable") return;
       try {
@@ -417,6 +449,50 @@ const FloorPlanFacades3D = {
         feature.renderOrder = 9;
         scene.add(feature);
       });
+    });
+
+    stairFlights.forEach((stair) => {
+      const x = Number(stair.x);
+      const y = Number(stair.y);
+      const width = Number(stair.w);
+      const length = Number(stair.l);
+      const z0 = Number(stair.z0);
+      const height = Number(stair.h);
+      const axis = stair.stairAxis || (width >= length ? "horizontal" : "vertical");
+      const run = axis === "horizontal" ? width : length;
+      if (
+        !finite(x, y, width, length, z0, height, run) ||
+        width <= 0 || length <= 0 || height <= 0 || run <= 0
+      ) {
+        reportInvalid("lance de escada", stair.id);
+        return;
+      }
+
+      const stepCount = Math.max(1, Math.round(height / 0.16));
+      const stepRun = run / stepCount;
+      const stepRise = height / stepCount;
+      const ascendsWithIncreasingAxis =
+        (stair.stairDirection !== "reverse") === (stair.stairRise !== "down");
+      for (let index = 0; index < stepCount; index += 1) {
+        const offset = ascendsWithIncreasingAxis
+          ? index * stepRun
+          : run - (index + 1) * stepRun;
+        const stepHeight = (index + 1) * stepRise;
+        const dimensions = axis === "horizontal"
+          ? [stepRun, length, stepHeight]
+          : [width, stepRun, stepHeight];
+        const center = axis === "horizontal"
+          ? [x + offset + stepRun / 2, y + length / 2, z0 + stepHeight / 2]
+          : [x + width / 2, y + offset + stepRun / 2, z0 + stepHeight / 2];
+        const step = new THREE.Mesh(
+          new THREE.BoxGeometry(...dimensions),
+          wallMaterial,
+        );
+        step.position.set(...center);
+        step.userData.domainId = stair.id;
+        step.userData.stepIndex = index;
+        scene.add(step);
+      }
     });
 
     (plan.allItems || [])

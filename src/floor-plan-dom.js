@@ -18,6 +18,7 @@ const FloorPlanDom = {
       z0,
       z1,
       h,
+      stairAxis,
       stairDirection = "forward",
       stairRise = h > 0 ? "up" : "flat",
     } = normalized;
@@ -36,7 +37,7 @@ const FloorPlanDom = {
     element.dataset.z1 = String(z1);
     element.dataset.height = String(h);
     if (classes.split(/\s+/).includes("stair-flight")) {
-      element.dataset.stairAxis = w >= l ? "horizontal" : "vertical";
+      element.dataset.stairAxis = stairAxis;
       element.dataset.stairDirection = stairDirection;
       element.dataset.stairRise = stairRise;
       const elevationTolerance = 1e-9;
@@ -234,8 +235,7 @@ const FloorPlanDom = {
         if (partColor)
           partElement.style.backgroundColor = plan.themeFillColor(partColor);
         if (partClasses.split(/\s+/).includes("stair-flight")) {
-          partElement.dataset.stairAxis =
-            part.w >= part.l ? "horizontal" : "vertical";
+          partElement.dataset.stairAxis = part.stairAxis;
           partElement.dataset.stairDirection = part.stairDirection || "forward";
           partElement.dataset.stairRise =
             part.stairRise || (part.h > 0 ? "up" : "flat");

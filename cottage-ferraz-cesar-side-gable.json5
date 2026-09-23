@@ -25,7 +25,8 @@
     ]
   },
   zones: [
-    { id: "main",    pos: [0, 2.5, 0], size: [9.6, 9.6, 3.0], visible: false },
+    { id: "perimeter", pos: [0, 2.5], size: [9.6, 12.6], visible: false },
+    { id: "main",    pos: [0, 2.5], size: [9.6, 9.6], visible: false },
     { id: "central", from: ["main.xc - 0.7", "main.y0"], to: ["x0 + 1.4", "main.y1"], visible: false },
 
     { id: "top",     rectangle: ["main.x0",    "main.y0", "main.x1", "y0 + main.l / 2"], visible: false },
@@ -53,6 +54,12 @@
 
     { id: "office-roof-base", from: ["office.x0", "office.y0"], to: ["hall.x1", "office.y1"], visible: false },
     { id: "hall-roof-base", from: ["hall.x0", "porch.y0"], to: ["hall.x1", "porch.y1"], visible: false }
+  ],
+  walls:[
+    { id: "front-wall", rectangle: ["office.x1",    "perimeter.y0", "perimeter.x1", "y0"] },
+    { id: "left-wall",  rectangle: ["perimeter.x0", "perimeter.y0", "x0", "perimeter.y1"] },
+    { id: "rear-wall",  rectangle: ["perimeter.x0", "perimeter.y1", "perimeter.x1", "y1"] },
+    { id: "right-wall", rectangle: ["perimeter.x1", "perimeter.y0", "x1", "perimeter.y1"] }
   ],
   roofs: [
     {
@@ -129,7 +136,7 @@
           label: "Escritório",
           from: ["left.x0", "left.y0  - 2.5"],
           to: ["left.x1 - 1.1", "left.y0 + 1.5"],
-          walls: ["top", "right", "bottom", "left"],
+          walls: ["top", "bottom", "left"],
           openings: [
             { type: "door",   from: "right", to: "hall"  },
             { type: "window", from: "top",  dx: 0.9, w: 0.6 },
@@ -146,20 +153,28 @@
           classes: "outdoor porch",
         },
         {
+          id: "front-stairs",
+          label: "Escada da varanda",
+          from: ["porch.x0 + 0.2", "porch.y0 - 1", "porch.z0 - 0.45"],
+          to: ["x0 + 2.1", "porch.y0", 0.0],
+          orientation: "longitudinal",
+          classes: "stair-flight"
+        },
+        {
           id: "hall",
           label: "Hall",
           from: ["office.x1", "main.y0"],
           to: ["right.x0", "office.y1"],
           classes: "circulation",
-          walls: ["top", "left"]
+          walls: ["left"]
         },
         {
           id: "master",
           label: "Suíte Master",
           rectangle: ["left.x0", "office.y1", "left.x1 + 0.3", "y0 + 3.2"],
-          walls: ["top", "right", "bottom", "left"]
+          walls: ["top", "right", "bottom"]
         },
-        { id: "closet", label: "Closet", from: ["left.x0", "master.y1"], to: ["x0 + 3.2", "y0 + 2.4"], walls: ["left"] },
+        { id: "closet", label: "Closet", from: ["left.x0", "master.y1"], to: ["x0 + 3.2", "y0 + 2.4"] },
         {
           id: "vestibule",
           label: "Vest.",
@@ -173,7 +188,7 @@
           label: "Banheiro Master",
           from: ["left.x0", "closet.y1"],
           to: ["left.x1", "y0 + 1.8"],
-          walls: ["top", "left", "bottom", "right"],
+          walls: ["top", "bottom", "right"],
           classes: "wet"
         },
         {
@@ -253,8 +268,7 @@
           id: "living",
           label: "Estar",
           from: ["master.x1", "dining.y1"],
-          to: ["right.x1", "y0 + 4"],
-          walls: ["right"]
+          to: ["right.x1", "y0 + 4"]
         },
 
         {

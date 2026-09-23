@@ -1,3 +1,9 @@
+const stairAxisFor = (data, width, length) => {
+  if (data.orientation === "longitudinal") return "vertical";
+  if (data.orientation === "transverse") return "horizontal";
+  return width >= length ? "horizontal" : "vertical";
+};
+
 const FloorPlanGeometryDomain = {
   normalizeGeometryAtFloor(plan, data, floorConfig) {
     const previousHeight = plan.currentFloorHeight;
@@ -110,7 +116,8 @@ const FloorPlanGeometryDomain = {
         );
       }
 
-      const horizontal = w >= l;
+      const stairAxis = stairAxisFor(data, w, l);
+      const horizontal = stairAxis === "horizontal";
       return {
         ...data,
         x: Math.min(fromX, toX),
@@ -122,6 +129,7 @@ const FloorPlanGeometryDomain = {
         h: Math.abs(toZ - fromZ),
         ...(isStair
           ? {
+              stairAxis,
               stairDirection: (horizontal ? toX < fromX : toY < fromY)
                 ? "reverse"
                 : "forward",
@@ -295,15 +303,22 @@ const FloorPlanGeometryDomain = {
       throw new Error("A elevação precisa ter z0 numérico e h não negativo");
     }
 
+    const x = plan.resolve(xValue);
+    const y = plan.resolve(yValue);
+    const w = plan.resolve(wValue);
+    const l = plan.resolve(lValue);
+    const stairAxis = stairAxisFor(data, w, l);
+
     return {
       ...data,
-      x: plan.resolve(xValue),
-      y: plan.resolve(yValue),
-      w: plan.resolve(wValue),
-      l: plan.resolve(lValue),
+      x,
+      y,
+      w,
+      l,
       z0,
       z1: z0 + h,
       h,
+      ...(isStair ? { stairAxis } : {}),
     };
   },
 
