@@ -6,7 +6,7 @@ class FloorPlan {
    * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
    * @param {number} [options.scale=56] Escala inicial em pixels por metro.
    */
-  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, facade3dCameraControls = null, solarSeasonSelect = null, solarTimeSelect = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, facade3dCameraControls = null, solarSeasonSelect = null, solarTimeDisplay = null, solarTimePrevious = null, solarTimeNext = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
@@ -15,11 +15,13 @@ class FloorPlan {
     this.secondaryFacadeLayer = secondaryFacadeLayer;
     this.facade3dLayer = facade3dLayer;
     this.facade3dCameraControls = facade3dCameraControls;
-    this.facade3dCamera = { azimuthStep: 0, elevationStep: 0, zoom: 1 };
+    this.facade3dCamera = { azimuthStep: 0, elevation: 30, zoom: 1 };
     this.solarSeasonSelect = solarSeasonSelect;
-    this.solarTimeSelect = solarTimeSelect;
+    this.solarTimeDisplay = solarTimeDisplay;
+    this.solarTimePrevious = solarTimePrevious;
+    this.solarTimeNext = solarTimeNext;
     this.solarSeason = solarSeasonSelect?.value || "equinox";
-    this.solarTime = solarTimeSelect?.value || "15:00";
+    this.solarTime = solarTimeDisplay?.value || solarTimeDisplay?.textContent || "15:00";
     this.viewportSummary = viewportSummary;
     this.titleElement = titleElement;
     this.floorOptions = floorOptions;
@@ -128,6 +130,7 @@ class FloorPlan {
       roofSwitch.addEventListener("change", () => {
         this.showRoofs = roofSwitch.checked;
         this.updateRoofVisibility();
+        if (this.currentConfig) this.renderFacade3D();
       });
     }
     if (layerOptions) {
@@ -158,6 +161,7 @@ class FloorPlan {
     if (solarSeasonSelect) {
       solarSeasonSelect.addEventListener("change", () => {
         this.solarSeason = solarSeasonSelect.value;
+        this.updateSolarTimeControls();
         if (this.currentConfig) this.renderFacade3D();
       });
     }
@@ -167,12 +171,8 @@ class FloorPlan {
         if (button) this.adjustFacade3DCamera(button.dataset.cameraAction);
       });
     }
-    if (solarTimeSelect) {
-      solarTimeSelect.addEventListener("change", () => {
-        this.solarTime = solarTimeSelect.value;
-        if (this.currentConfig) this.renderFacade3D();
-      });
-    }
+    this.solarTimePrevious?.addEventListener("click", () => this.adjustSolarTime(-1));
+    this.solarTimeNext?.addEventListener("click", () => this.adjustSolarTime(1));
     if (jsonInput) {
       jsonInput.addEventListener("change", async (event) => {
         const [file] = event.target.files;
@@ -415,13 +415,77 @@ class FloorPlan {
     return window.FloorPlanFacades3D?.render(this, { direction: "front" });
   }
 
+  availableSolarHours() {
+    const fallbackHours = Array.from({ length: 13 }, (_, index) => index + 6);
+    if (!this.currentConfig || !window.FloorPlan3DSun?.position) return fallbackHours;
+    const hours = [];
+    let hasSolarPosition = false;
+    for (let hour = 0; hour < 24; hour += 1) {
+      const time = `${String(hour).padStart(2, "0")}:00`;
+      const position = window.FloorPlan3DSun.position(
+        {
+          ...this.currentConfig,
+          solar: {
+            ...this.currentConfig.solar,
+            season: this.solarSeason,
+            time,
+          },
+        },
+        this.terrainReference,
+      );
+      if (position) hasSolarPosition = true;
+      if (position?.elevation > 0) hours.push(hour);
+    }
+    return hasSolarPosition ? hours : fallbackHours;
+  }
+
+  updateSolarTimeControls() {
+    const hours = this.availableSolarHours();
+    const currentHour = Number.parseInt(this.solarTime?.split(":")[0], 10);
+    let selectedIndex = hours.indexOf(currentHour);
+    if (selectedIndex < 0 && hours.length) {
+      selectedIndex = hours.reduce((closest, hour, index) =>
+        Math.abs(hour - currentHour) < Math.abs(hours[closest] - currentHour)
+          ? index
+          : closest,
+      0);
+      this.solarTime = `${String(hours[selectedIndex]).padStart(2, "0")}:00`;
+    }
+    if (this.solarTimeDisplay) this.solarTimeDisplay.textContent = this.solarTime;
+    if (this.solarTimePrevious) {
+      this.solarTimePrevious.disabled = selectedIndex <= 0;
+    }
+    if (this.solarTimeNext) {
+      this.solarTimeNext.disabled = selectedIndex < 0 || selectedIndex >= hours.length - 1;
+    }
+  }
+
+  adjustSolarTime(direction) {
+    const hours = this.availableSolarHours();
+    if (!hours.length) return;
+    const currentHour = Number.parseInt(this.solarTime?.split(":")[0], 10);
+    const currentIndex = hours.indexOf(currentHour);
+    const startIndex = currentIndex < 0
+      ? hours.reduce((closest, hour, index) =>
+        Math.abs(hour - currentHour) < Math.abs(hours[closest] - currentHour)
+          ? index
+          : closest,
+      0)
+      : currentIndex;
+    const nextIndex = Math.max(0, Math.min(hours.length - 1, startIndex + direction));
+    if (nextIndex === startIndex && currentIndex >= 0) return;
+    this.solarTime = `${String(hours[nextIndex]).padStart(2, "0")}:00`;
+    this.updateSolarTimeControls();
+    if (this.currentConfig) this.renderFacade3D();
+  }
+
   adjustFacade3DCamera(action) {
     const camera = this.facade3dCamera;
     if (!camera) return;
-    if (action === "azimuth-left") camera.azimuthStep = (camera.azimuthStep + 7) % 8;
-    else if (action === "azimuth-right") camera.azimuthStep = (camera.azimuthStep + 1) % 8;
-    else if (action === "elevation-up") camera.elevationStep = 1;
-    else if (action === "elevation-down") camera.elevationStep = 0;
+    if (action === "azimuth-left") camera.azimuthStep = (camera.azimuthStep + 23) % 24;
+    else if (action === "azimuth-right") camera.azimuthStep = (camera.azimuthStep + 1) % 24;
+    else if (action === "elevation-up") camera.elevation = Math.min(90, camera.elevation + 15);
+    else if (action === "elevation-down") camera.elevation = Math.max(0, camera.elevation - 15);
     else if (action === "zoom-in") camera.zoom = Math.min(2.5, camera.zoom * 1.25);
     else if (action === "zoom-out") camera.zoom = Math.max(0.65, camera.zoom / 1.25);
     else return;
@@ -624,7 +688,7 @@ class FloorPlan {
     this.model = FloorPlanModel.fromConfig(config);
     this.currentConfig = config;
     if (!preservePresentation) {
-      this.facade3dCamera = { azimuthStep: 0, elevationStep: 0, zoom: 1 };
+      this.facade3dCamera = { azimuthStep: 0, elevation: 30, zoom: 1 };
       this.solarSeason = config.solar?.season ?? "equinox";
       this.solarTime = config.solar?.time ?? "15:00";
     }
@@ -635,13 +699,7 @@ class FloorPlan {
       this.solarSeasonSelect.value = availableSeason ? this.solarSeason : "equinox";
       this.solarSeason = this.solarSeasonSelect.value;
     }
-    if (this.solarTimeSelect) {
-      const availableTime = [...this.solarTimeSelect.options].some(
-        (option) => option.value === this.solarTime,
-      );
-      this.solarTimeSelect.value = availableTime ? this.solarTime : "15:00";
-      this.solarTime = this.solarTimeSelect.value;
-    }
+    this.updateSolarTimeControls();
     this.itemTypes = { ...(this.catalog.items || {}), ...(config["item-types"] || {}) };
     this.theme = {
       ...this.theme,

@@ -163,14 +163,28 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   gap: 4px;
   font-size: 0.9rem;
 }
-.solar-control select {
-  min-width: 88px;
+.solar-control select,
+.solar-time-control button {
   padding: 4px 8px;
   border: 1px solid var(--theme-border);
   border-radius: 4px;
   background: var(--theme-surface);
   color: inherit;
   font: inherit;
+}
+.solar-time-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.solar-time-control output {
+  min-width: 4ch;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.solar-time-control button:disabled {
+  opacity: 0.45;
+  cursor: default;
 }
 .facade-3d-controls {
   display: flex;

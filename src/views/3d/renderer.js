@@ -225,12 +225,12 @@ const FloorPlanFacades3D = {
     const halfX = (drawingBounds.x1 - drawingBounds.x0) / 2;
     const halfY = (drawingBounds.y1 - drawingBounds.y0) / 2;
     const halfZ = (drawingBounds.z1 - drawingBounds.z0) / 2;
-    for (let azimuthStep = 0; azimuthStep < 8; azimuthStep += 1) {
-      const azimuth = (azimuthStep * Math.PI) / 4;
+    for (let azimuthStep = 0; azimuthStep < 24; azimuthStep += 1) {
+      const azimuth = (azimuthStep * Math.PI) / 12;
       const horizontalHalfExtent =
         Math.abs(Math.cos(azimuth)) * halfX +
         Math.abs(Math.sin(azimuth)) * halfY;
-      for (const elevation of [20, 45]) {
+      for (const elevation of [0, 15, 30, 45, 60, 75, 90]) {
         const elevationRadians = (elevation * Math.PI) / 180;
         const verticalHalfExtent =
           Math.abs(Math.sin(elevationRadians) * Math.sin(azimuth)) * halfX +
@@ -257,16 +257,21 @@ const FloorPlanFacades3D = {
       0.1,
       Math.max(200, Math.hypot(halfX, halfY, halfZ) * 8),
     );
-    camera.up.set(0, 0, 1);
     const cameraState = plan.facade3dCamera ?? {
       azimuthStep: 0,
-      elevationStep: 0,
+      elevation: 30,
       zoom: 1,
     };
     const orbitRadius = Math.max(12, Math.hypot(halfX, halfY, halfZ) * 3);
     const positionCamera = () => {
-      const azimuth = (cameraState.azimuthStep * Math.PI) / 4;
-      const elevation = (cameraState.elevationStep === 1 ? 45 : 20) * (Math.PI / 180);
+      const azimuth = (cameraState.azimuthStep * Math.PI) / 12;
+      const elevationDegrees = cameraState.elevation;
+      const elevation = elevationDegrees * (Math.PI / 180);
+      if (elevationDegrees === 90) {
+        camera.up.set(-Math.sin(azimuth), Math.cos(azimuth), 0);
+      } else {
+        camera.up.set(0, 0, 1);
+      }
       const horizontalRadius = orbitRadius * Math.cos(elevation);
       camera.position.set(
         centerX + horizontalRadius * Math.sin(azimuth),
@@ -387,15 +392,15 @@ const FloorPlanFacades3D = {
     FloorPlan3DSite.render(context);
     FloorPlan3DWalls.render(context);
     FloorPlan3DElements.render(context);
-    FloorPlan3DRoofs.render(context);
+    if (plan.showRoofs) FloorPlan3DRoofs.render(context);
 
     const updateCamera = () => {
       positionCamera();
       renderer.render(scene, camera);
       plan.facade3dCameraControls?.querySelectorAll("button[data-camera-action]").forEach((button) => {
         button.disabled =
-          (button.dataset.cameraAction === "elevation-up" && cameraState.elevationStep === 1) ||
-          (button.dataset.cameraAction === "elevation-down" && cameraState.elevationStep === 0) ||
+          (button.dataset.cameraAction === "elevation-up" && cameraState.elevation === 90) ||
+          (button.dataset.cameraAction === "elevation-down" && cameraState.elevation === 0) ||
           (button.dataset.cameraAction === "zoom-in" && cameraState.zoom >= 2.5) ||
           (button.dataset.cameraAction === "zoom-out" && cameraState.zoom <= 0.65);
       });
