@@ -641,6 +641,7 @@ class FloorPlan {
     this.addSpanningStairs(config, floorConfig);
     this.updateOverlaps();
     this.renderWallsForFloor(floorConfig);
+    FloorPlanWalls.renderIndependentWalls(this);
     this.addVisibleVerticalOpenings(config, floorConfig);
     const validZoneIds = this.validZoneIds ?? new Set();
     this.addZones(this.visibleZones(config, floorConfig).filter((zone) => validZoneIds.has(zone.id)));

@@ -55,11 +55,59 @@
     { id: "office-roof-base", from: ["office.x0", "office.y0"], to: ["hall.x1", "office.y1"], visible: false },
     { id: "hall-roof-base", from: ["hall.x0", "porch.y0"], to: ["hall.x1", "porch.y1"], visible: false }
   ],
-  walls:[
-    { id: "front-wall", rectangle: ["office.x1",    "perimeter.y0", "perimeter.x1", "y0"] },
-    { id: "left-wall",  rectangle: ["perimeter.x0", "perimeter.y0", "x0", "perimeter.y1"] },
-    { id: "rear-wall",  rectangle: ["perimeter.x0", "perimeter.y1", "perimeter.x1", "y1"] },
-    { id: "right-wall", rectangle: ["perimeter.x1", "perimeter.y0", "x1", "perimeter.y1"] }
+  walls: [
+    {
+      id: "front-wall",
+      base: "terrain",
+      top: { level: "ground.z0" },
+      thickness: 0.12,
+      path: {
+        points: [
+          ["office.x0", "office.y0"],
+          ["office.x1", "office.y0"],
+          ["office.x1", "left.y0"],
+          ["right.x1",  "right.y0"]
+        ],
+      }
+    },
+    {
+      id: "right-wall",
+      base: "terrain",
+      top: { level: "ground.z0" },
+      thickness: 0.12,
+      path: {
+        points: [
+          ["right.x1", "dining.y0"],
+          ["right.x1", "mudroom.y1"]
+        ],
+      }
+    },
+    {
+      id: "rear-wall",
+      base: "terrain",
+      top: { level: "ground.z0" },
+      thickness: 0.12,
+      path: {
+        points: [
+          ["kitchen.x0", "kitchen.y1"],
+          ["kitchen.x1", "kitchen.y1"],
+          ["pantry.x0", "pantry.y1"],
+          ["mudroom.x1", "mudroom.y1"]
+        ],
+      }
+    },
+    {
+      id: "left-wall",
+      base: "terrain",
+      top: { level: "ground.z0" },
+      thickness: 0.12,
+      path: {
+        points: [
+          ["left.x0", "office.y0"],
+          ["left.x0", "kitchen.y1"]
+        ],
+      }
+    }
   ],
   roofs: [
     {
@@ -136,7 +184,6 @@
           label: "Escritório",
           from: ["left.x0", "left.y0  - 2.5"],
           to: ["left.x1 - 1.1", "left.y0 + 1.5"],
-          walls: ["top", "bottom", "left"],
           openings: [
             { type: "door",   from: "right", to: "hall"  },
             { type: "window", from: "top",  dx: 0.9, w: 0.6 },
@@ -217,7 +264,7 @@
           label: "Lavanderia",
           rectangle: ["right.x0", "stairs.y1 - 1.2", "right.x1", "y0 + 1.6"],
           classes: "service laundry wet",
-          walls: ["left", "right"]
+          walls: ["left"]
         },
 
         {
@@ -225,7 +272,7 @@
           label: "Escada",
           overlaps: ["powder", "laundry"],
           overlays: ["powder", "laundry"],
-          walls: ["top", "right", "bottom", "left"],
+          walls: ["top", "bottom", "left"],
           parts: [
             {
               id: "upper-flight",
@@ -237,7 +284,7 @@
               id: "upper-landing",
               from: ["upper-flight.x1", "upper-flight.y0", "upper-flight.z1"],
               to: ["right.x1", "upper-flight.y1", "z0"],
-              walls: ["top", "right"],
+              walls: ["top"],
               color: "hazel"
             },
             {
@@ -262,7 +309,7 @@
           label: "Jantar",
           from: ["right.x0", "porch.y1"],
           to: ["right.x1", "y0 + 3.4"],
-          walls: ["top", "right"]
+          walls: ["top"]
         },
         {
           id: "living",
@@ -276,8 +323,7 @@
           label: "Cozinha",
           from: ["dorm.x0", "masterbath.y1"],
           to: ["right.x0", "y0 + 3.9"],
-          classes: "wet",
-          walls: ["left", "bottom"]
+          classes: "wet"
         },
 
         {
@@ -291,14 +337,13 @@
           label: "Despensa",
           rectangle: ["right.x0", "circulation.y1", "x0 + 2", "y0 + 1.8"],
           classes: "service pantry",
-          walls: ["top", "right", "bottom", "left"]
+          walls: ["top", "right", "left"]
         },
         {
           id: "mudroom",
           label: "Mudroom",
           rectangle: ["pantry.x1", "circulation.y1", "right.x1", "y0 + 1.8"],
-          classes: "service mudroom",
-          walls: ["right", "bottom"]
+          classes: "service mudroom"
         },
 
         {
@@ -307,7 +352,7 @@
           pos: ["laundry.x1", "laundry.y1"],
           size: [4.0, 6.5],
           classes: "service garage",
-          walls: ["top", "right", "bottom", "left"]
+          walls: ["top", "right", "bottom"]
         },
         {
           id: "terrace",

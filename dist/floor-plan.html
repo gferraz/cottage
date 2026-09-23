@@ -4624,6 +4624,35 @@ const FloorPlanFacades3D = {
     const width = Math.max(container.clientWidth || 900, 480);
     const height = 420;
     const floors = plan.currentConfig?.floors ?? [plan.currentConfig];
+    const terrainProfile = plan.terrainReference;
+    const buildingOffsetY = Number.parseFloat(
+      getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
+    ) || 0;
+    const hasTerrainProfile =
+      terrainProfile &&
+      [
+        terrainProfile.frontY,
+        terrainProfile.rearY,
+        terrainProfile.frontZ,
+        terrainProfile.rearZ,
+      ].every(Number.isFinite) &&
+      terrainProfile.rearY !== terrainProfile.frontY;
+    const terrainElevationAt = (y) => {
+      if (!hasTerrainProfile) return null;
+      const siteY = y + buildingOffsetY;
+      const progress = Math.max(
+        0,
+        Math.min(
+          1,
+          (siteY - terrainProfile.frontY) /
+            (terrainProfile.rearY - terrainProfile.frontY),
+        ),
+      );
+      return (
+        terrainProfile.frontZ +
+        progress * (terrainProfile.rearZ - terrainProfile.frontZ)
+      );
+    };
     const facadeSide = direction === "front" ? "top" : "bottom";
     const isStairFlight = (definition) =>
       String(definition?.classes || "")
@@ -4712,6 +4741,21 @@ const FloorPlanFacades3D = {
       { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity },
     );
     const drawingBounds = { ...roomBounds };
+    (plan.foundationWalls || []).forEach((wall) => {
+      const startZ = terrainElevationAt(Number(wall.from?.[1]));
+      const endZ = terrainElevationAt(Number(wall.to?.[1]));
+      if (Number.isFinite(startZ)) drawingBounds.z0 = Math.min(drawingBounds.z0, startZ);
+      if (Number.isFinite(endZ)) drawingBounds.z0 = Math.min(drawingBounds.z0, endZ);
+    });
+    (plan.independentWalls || new Map()).forEach((wall) => {
+      drawingBounds.x0 = Math.min(drawingBounds.x0, wall.x0);
+      drawingBounds.x1 = Math.max(drawingBounds.x1, wall.x1);
+      wall.path.points.forEach(([, y]) => {
+        const baseZ = terrainElevationAt(y);
+        if (Number.isFinite(baseZ)) drawingBounds.z0 = Math.min(drawingBounds.z0, baseZ);
+      });
+      drawingBounds.z1 = Math.max(drawingBounds.z1, wall.topZ);
+    });
     stairFlights.forEach((stair) => {
       drawingBounds.x0 = Math.min(drawingBounds.x0, Number(stair.x));
       drawingBounds.x1 = Math.max(drawingBounds.x1, Number(stair.x) + Number(stair.w));
@@ -4782,13 +4826,13 @@ const FloorPlanFacades3D = {
     camera.position.set(
       (roomBounds.x0 + roomBounds.x1) / 2 + 8,
       direction === "front" ? -45 : 45,
-      (roomBounds.z0 + roomBounds.z1) / 2 + 18,
+      centerZ + 18,
     );
     camera.up.set(0, 0, 1);
     camera.lookAt(
       (roomBounds.x0 + roomBounds.x1) / 2,
       0,
-      (roomBounds.z0 + roomBounds.z1) / 2,
+      centerZ,
     );
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -4914,19 +4958,6 @@ const FloorPlanFacades3D = {
       (terrainBounds.y0 + terrainBounds.y1) / 2,
       -0.03,
     );
-    const terrainProfile = plan.terrainReference;
-    const buildingOffsetY = Number.parseFloat(
-      getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
-    ) || 0;
-    const hasTerrainProfile =
-      terrainProfile &&
-      [
-        terrainProfile.frontY,
-        terrainProfile.rearY,
-        terrainProfile.frontZ,
-        terrainProfile.rearZ,
-      ].every(Number.isFinite) &&
-      terrainProfile.rearY !== terrainProfile.frontY;
     if (hasTerrainProfile) {
       const positions = terrain.geometry.attributes.position;
       for (let index = 0; index < positions.count; index += 1) {
@@ -4952,6 +4983,165 @@ const FloorPlanFacades3D = {
     }
     terrain.renderOrder = -10;
     scene.add(terrain);
+
+    (plan.foundationWalls || []).forEach((wall) => {
+      const [x, y, z0] = wall.pos;
+      const [width, depth] = wall.size;
+      const topZ = Number(wall.topZ);
+      const alongX = wall.axis === "x";
+      const length = alongX ? width : depth;
+      const thickness = Number(wall.thickness);
+      const startY = Number(wall.from[1]);
+      const endY = Number(wall.to[1]);
+      let baseStart = terrainElevationAt(startY);
+      let baseEnd = terrainElevationAt(endY);
+      if (
+        !finite(x, y, z0, topZ, length, thickness, startY, endY) ||
+        !Number.isFinite(baseStart) ||
+        !Number.isFinite(baseEnd) ||
+        length <= 0 || thickness <= 0
+      ) {
+        reportInvalid("parede de embasamento", wall.id);
+        return;
+      }
+
+      let start = 0;
+      let end = length;
+      const originalBaseStart = baseStart;
+      const originalBaseEnd = baseEnd;
+      if (baseStart >= topZ && baseEnd >= topZ) return;
+      if (baseStart >= topZ) {
+        const crossing = (topZ - baseStart) / (baseEnd - baseStart);
+        start = length * crossing;
+        baseStart = topZ;
+      } else if (baseEnd >= topZ) {
+        const crossing = (topZ - baseStart) / (baseEnd - baseStart);
+        end = length * crossing;
+        baseEnd = topZ;
+      }
+      const visibleLength = end - start;
+      if (visibleLength <= 1e-9) return;
+
+      const shape = new THREE.Shape();
+      const startBaseZ = alongX
+        ? originalBaseStart
+        : originalBaseStart + ((originalBaseEnd - originalBaseStart) * start) / length;
+      const endBaseZ = alongX
+        ? originalBaseEnd
+        : originalBaseStart + ((originalBaseEnd - originalBaseStart) * end) / length;
+      shape.moveTo(0, 0);
+      shape.lineTo(visibleLength, endBaseZ - startBaseZ);
+      shape.lineTo(visibleLength, topZ - startBaseZ);
+      shape.lineTo(0, topZ - startBaseZ);
+      shape.closePath();
+
+      const geometry = new THREE.ExtrudeGeometry(shape, {
+        depth: thickness,
+        bevelEnabled: false,
+      });
+      const segmentX = alongX ? x + start : x;
+      const segmentY = alongX ? y : y + start;
+      const transform = alongX
+        ? new THREE.Matrix4().set(
+            1, 0, 0, segmentX,
+            0, 0, -1, segmentY + thickness,
+            0, 1, 0, startBaseZ,
+            0, 0, 0, 1,
+          )
+        : new THREE.Matrix4().set(
+            0, 0, 1, segmentX,
+            1, 0, 0, segmentY,
+            0, 1, 0, startBaseZ,
+            0, 0, 0, 1,
+          );
+      geometry.applyMatrix4(transform);
+      const foundation = new THREE.Mesh(geometry, wallMaterial);
+      foundation.userData.domainId = wall.id;
+      foundation.userData.sourceWallId = wall.sourceWallId;
+      foundation.renderOrder = 1;
+      scene.add(foundation);
+      scene.add(new THREE.LineSegments(new THREE.EdgesGeometry(geometry), wallLineMaterial));
+    });
+
+    (plan.independentWalls || new Map()).forEach((wall) => {
+      const { points } = wall.path;
+      for (let index = 0; index < points.length - 1; index += 1) {
+        const [x0, y0] = points[index];
+        const [x1, y1] = points[index + 1];
+        const dx = x1 - x0;
+        const dy = y1 - y0;
+        const length = Math.hypot(dx, dy);
+        let baseStart = terrainElevationAt(y0);
+        let baseEnd = terrainElevationAt(y1);
+        if (
+          !finite(x0, y0, x1, y1, length, wall.topZ, wall.thickness) ||
+          !Number.isFinite(baseStart) ||
+          !Number.isFinite(baseEnd) ||
+          length <= 1e-9 ||
+          wall.thickness <= 0
+        ) {
+          reportInvalid("parede independente", wall.id);
+          continue;
+        }
+        const originalBaseStart = baseStart;
+        const originalBaseEnd = baseEnd;
+        let start = 0;
+        let end = length;
+        if (baseStart >= wall.topZ && baseEnd >= wall.topZ) continue;
+        if (baseStart >= wall.topZ) {
+          start = length * (wall.topZ - baseStart) / (baseEnd - baseStart);
+          baseStart = wall.topZ;
+        } else if (baseEnd >= wall.topZ) {
+          end = length * (wall.topZ - baseStart) / (baseEnd - baseStart);
+          baseEnd = wall.topZ;
+        }
+        const segmentLength = end - start;
+        if (segmentLength <= 1e-9) continue;
+        const ux = dx / length;
+        const uy = dy / length;
+        const nx = -uy;
+        const ny = ux;
+        const startX = x0 + ux * start;
+        const startY = y0 + uy * start;
+        const startBaseZ = originalBaseStart + (originalBaseEnd - originalBaseStart) * start / length;
+        const endBaseZ = originalBaseStart + (originalBaseEnd - originalBaseStart) * end / length;
+        const profile = [
+          [0, 0],
+          [segmentLength, endBaseZ - startBaseZ],
+          [segmentLength, wall.topZ - startBaseZ],
+          [0, wall.topZ - startBaseZ],
+        ];
+        const polygon = profile.filter(([px, py], pointIndex) => {
+          const previous = profile[(pointIndex + profile.length - 1) % profile.length];
+          return Math.hypot(px - previous[0], py - previous[1]) > 1e-9;
+        });
+        const area = Math.abs(polygon.reduce((sum, [px, py], pointIndex) => {
+          const next = polygon[(pointIndex + 1) % polygon.length];
+          return sum + px * next[1] - next[0] * py;
+        }, 0)) / 2;
+        if (polygon.length < 3 || area <= 1e-9) continue;
+        const shape = new THREE.Shape();
+        shape.moveTo(...polygon[0]);
+        polygon.slice(1).forEach((point) => shape.lineTo(...point));
+        shape.closePath();
+        const geometry = new THREE.ExtrudeGeometry(shape, {
+          depth: wall.thickness,
+          bevelEnabled: false,
+        });
+        geometry.applyMatrix4(new THREE.Matrix4().set(
+          ux, 0, nx, startX - nx * wall.thickness / 2,
+          uy, 0, ny, startY - ny * wall.thickness / 2,
+          0, 1, 0, startBaseZ,
+          0, 0, 0, 1,
+        ));
+        const mesh = new THREE.Mesh(geometry, wallMaterial);
+        mesh.userData.domainId = wall.id;
+        mesh.userData.pathSegment = index;
+        mesh.renderOrder = 1;
+        scene.add(mesh);
+        scene.add(new THREE.LineSegments(new THREE.EdgesGeometry(geometry), wallLineMaterial));
+      }
+    });
 
     plan.walls.forEach((wall) => {
       const [x0, y0, z0] = wall.pos;
@@ -6163,8 +6353,37 @@ const FloorPlanWalls = {
     return wall;
   },
 
+  renderIndependentWalls(plan) {
+    plan.wallElements = [];
+    plan.independentWalls.forEach((wall) => {
+      const points = wall.path.points;
+      points.slice(0, -1).forEach(([x0, y0], index) => {
+        const [x1, y1] = points[index + 1];
+        const length = Math.hypot(x1 - x0, y1 - y0);
+        if (length <= 1e-9) return;
+        const element = plan.add({
+          id: `${wall.id}-segment-${index + 1}`,
+          label: "",
+          pos: [
+            (x0 + x1) / 2 - length / 2,
+            (y0 + y1) / 2 - wall.thickness / 2,
+            wall.z0,
+          ],
+          size: [length, wall.thickness, wall.h],
+          classes: "plan-wall independent-wall",
+          showLabel: false,
+        });
+        element.style.transform = `rotate(${Math.atan2(y1 - y0, x1 - x0)}rad)`;
+        element.style.transformOrigin = "center";
+        element.dataset.wallId = wall.id;
+        plan.wallElements.push(element);
+      });
+    });
+  },
+
   normalizeRoomWalls(plan, config) {
     plan.walls = new Map();
+    plan.independentWalls = new Map();
     const floors = config.floors ?? [config];
     const roomFloors = new Map();
     floors.forEach((floor) => {
@@ -6213,6 +6432,7 @@ const FloorPlanWalls = {
         }
         roomVolumes.push({
           id: roomId,
+          outdoor: definition.classes?.split(/\s+/).includes("outdoor"),
           x0: geometry.x0(),
           x1: geometry.x1(),
           y0: geometry.y0(),
@@ -6332,6 +6552,14 @@ const FloorPlanWalls = {
           Math.min(z1, room.z1) - Math.max(z0, room.z0) > epsilon,
         )
         .map((room) => room.id);
+      wall.adjacentEnclosedRoomIds = roomVolumes
+        .filter((room) =>
+          !room.outdoor &&
+          Math.min(x1, room.x1) - Math.max(x0, room.x0) > epsilon &&
+          Math.min(y1, room.y1) - Math.max(y0, room.y0) > epsilon &&
+          Math.min(z1, room.z1) - Math.max(z0, room.z0) > epsilon,
+        )
+        .map((room) => room.id);
       if (!wall.touchedRoomIds.length) {
         plan.errors.push({
           category: "wall",
@@ -6341,6 +6569,188 @@ const FloorPlanWalls = {
       }
       FloorPlanGeometryBox.attach(wall, { label: wall.id });
       plan.references.set(wall.id, wall);
+    });
+
+    const groundLevel = Number(floors[0]?.z0 ?? 0);
+    (config.walls ?? []).forEach((definition) => {
+      try {
+        if (!definition.id) throw new Error("Parede independente precisa de id");
+        if (FloorPlanValidation.isReservedId(definition.id)) {
+          throw new Error(`ID reservado: ${definition.id}`);
+        }
+        if (plan.references.has(definition.id)) {
+          throw new Error(`ID global duplicado: ${definition.id}`);
+        }
+        const points = definition.path?.points;
+        if (!Array.isArray(points) || points.length < 2) {
+          throw new Error("Parede independente precisa de path.points com ao menos dois pontos");
+        }
+        const resolvedPoints = points.map((point) => {
+          if (!Array.isArray(point) || point.length !== 2) {
+            throw new Error("Cada ponto de path.points precisa ser [x, y]");
+          }
+          const resolved = point.map((value) => plan.resolve(value));
+          if (!resolved.every(Number.isFinite)) {
+            throw new Error("As coordenadas de path.points precisam ser numéricas");
+          }
+          return resolved;
+        });
+        const thickness = Number(
+          definition.thickness ?? plan.catalog.walls?.thickness ?? 0.12,
+        );
+        const topZ = plan.resolve(definition.top?.level ?? groundLevel);
+        if (!Number.isFinite(thickness) || thickness <= 0 || !Number.isFinite(topZ)) {
+          throw new Error("Parede precisa de thickness positiva e cota superior numérica");
+        }
+        const x0 = Math.min(...resolvedPoints.map(([x]) => x)) - thickness / 2;
+        const x1 = Math.max(...resolvedPoints.map(([x]) => x)) + thickness / 2;
+        const y0 = Math.min(...resolvedPoints.map(([, y]) => y)) - thickness / 2;
+        const y1 = Math.max(...resolvedPoints.map(([, y]) => y)) + thickness / 2;
+        const wall = {
+          ...definition,
+          id: definition.id,
+          type: "wall",
+          path: { ...definition.path, points: resolvedPoints },
+          base: definition.base ?? "terrain",
+          top: { ...definition.top, level: topZ },
+          topZ,
+          thickness,
+          x: x0,
+          y: y0,
+          w: x1 - x0,
+          l: y1 - y0,
+          x0,
+          x1,
+          y0,
+          y1,
+          z0: groundLevel,
+          z1: topZ,
+          h: topZ - groundLevel,
+          touchedRoomIds: roomVolumes
+            .filter((room) =>
+              room.x0 < x1 && room.x1 > x0 &&
+              room.y0 < y1 && room.y1 > y0 &&
+              room.z0 <= topZ && room.z1 >= groundLevel,
+            )
+            .map((room) => room.id),
+        };
+        if (wall.base !== "terrain") {
+          throw new Error('Por ora, a base de parede independente aceita apenas "terrain"');
+        }
+        if (wall.h < 0) throw new Error("A cota superior da parede não pode ficar abaixo do piso térreo");
+        FloorPlanGeometryBox.attach(wall, { compound: true, label: wall.id });
+        plan.independentWalls.set(wall.id, wall);
+        plan.references.set(wall.id, wall);
+      } catch (error) {
+        plan.errors.push({
+          category: "wall",
+          id: definition.id,
+          opening: definition,
+          message: error.message,
+        });
+      }
+    });
+
+    const enclosedGroundRooms = roomVolumes.filter(
+      (room) => !room.outdoor && Math.abs(room.z0 - groundLevel) <= epsilon,
+    );
+    const boundaries = [];
+    enclosedGroundRooms.forEach((room) => {
+      boundaries.push(
+        { room, axis: "x", side: "left", coordinate: room.x0, start: room.y0, end: room.y1, negative: true },
+        { room, axis: "x", side: "right", coordinate: room.x1, start: room.y0, end: room.y1, negative: false },
+        { room, axis: "y", side: "top", coordinate: room.y0, start: room.x0, end: room.x1, negative: true },
+        { room, axis: "y", side: "bottom", coordinate: room.y1, start: room.x0, end: room.x1, negative: false },
+      );
+    });
+    const boundarySegments = [];
+    boundaries.forEach((boundary) => {
+      const { room, axis, coordinate, start, end, negative } = boundary;
+      const breaks = new Set([start, end]);
+      enclosedGroundRooms.forEach((other) => {
+        if (other.id === room.id) return;
+        const perpendicularStart = axis === "x" ? other.x0 : other.y0;
+        const perpendicularEnd = axis === "x" ? other.x1 : other.y1;
+        const alongStart = axis === "x" ? other.y0 : other.x0;
+        const alongEnd = axis === "x" ? other.y1 : other.x1;
+        if (
+          perpendicularStart < coordinate + epsilon &&
+          perpendicularEnd > coordinate - epsilon
+        ) {
+          breaks.add(Math.max(start, alongStart));
+          breaks.add(Math.min(end, alongEnd));
+        }
+      });
+      const sortedBreaks = [...breaks]
+        .filter((value) => value >= start && value <= end)
+        .sort((a, b) => a - b);
+      for (let index = 0; index < sortedBreaks.length - 1; index += 1) {
+        const segmentStart = sortedBreaks[index];
+        const segmentEnd = sortedBreaks[index + 1];
+        if (segmentEnd - segmentStart <= epsilon) continue;
+        const midpoint = (segmentStart + segmentEnd) / 2;
+        const hasRoomOutside = enclosedGroundRooms.some((other) => {
+          if (other.id === room.id) return false;
+          const otherAlongStart = axis === "x" ? other.y0 : other.x0;
+          const otherAlongEnd = axis === "x" ? other.y1 : other.x1;
+          const otherPerpendicularStart = axis === "x" ? other.x0 : other.y0;
+          const otherPerpendicularEnd = axis === "x" ? other.x1 : other.y1;
+          const crossesBoundary = negative
+            ? otherPerpendicularStart < coordinate - epsilon &&
+              otherPerpendicularEnd >= coordinate - epsilon
+            : otherPerpendicularStart <= coordinate + epsilon &&
+              otherPerpendicularEnd > coordinate + epsilon;
+          return (
+            midpoint > otherAlongStart + epsilon &&
+            midpoint < otherAlongEnd - epsilon &&
+            crossesBoundary
+          );
+        });
+        if (!hasRoomOutside) {
+          boundarySegments.push({ ...boundary, start: segmentStart, end: segmentEnd });
+        }
+      }
+    });
+
+    const uniqueBoundarySegments = new Map();
+    boundarySegments.forEach((segment) => {
+      const key = [
+        segment.axis,
+        segment.coordinate,
+        segment.start,
+        segment.end,
+      ].map((value) => Number(value).toFixed(6)).join(":");
+      if (!uniqueBoundarySegments.has(key)) uniqueBoundarySegments.set(key, segment);
+    });
+    const foundationThickness = Number(plan.catalog.walls?.thickness ?? 0.12);
+    plan.foundationWalls = [...uniqueBoundarySegments.values()].map((segment, index) => {
+      const { room, axis, side, coordinate, start, end } = segment;
+      const alongX = axis === "y";
+      const x = alongX ? start : coordinate - foundationThickness / 2;
+      const y = alongX ? coordinate - foundationThickness / 2 : start;
+      const width = alongX ? end - start : foundationThickness;
+      const depth = alongX ? foundationThickness : end - start;
+      const from = axis === "y"
+        ? [start, coordinate, groundLevel]
+        : [coordinate, start, groundLevel];
+      const to = axis === "y"
+        ? [end, coordinate, groundLevel]
+        : [coordinate, end, groundLevel];
+      return {
+        id: `foundation-${room.id}-${side}-${index + 1}`,
+        type: "wall",
+        sourceRoomIds: [room.id],
+        axis: axis === "y" ? "x" : "y",
+        from,
+        to,
+        pos: [x, y, groundLevel],
+        size: [width, depth],
+        topZ: groundLevel,
+        base: "terrain",
+        top: { level: groundLevel },
+        thickness: foundationThickness,
+        touchedRoomIds: [room.id],
+      };
     });
   },
 };
@@ -6711,6 +7121,7 @@ const FloorPlanReferences = {
       ...plan.roomDefinitions.keys(),
       ...(plan.partOwners?.keys() ?? []),
       ...(plan.walls?.keys() ?? []),
+      ...(plan.independentWalls?.keys() ?? []),
     ]);
     plan.validZoneIds = new Set();
     const floorConfigs = config.floors ?? [config];
@@ -10006,6 +10417,7 @@ class FloorPlan {
     this.addSpanningStairs(config, floorConfig);
     this.updateOverlaps();
     this.renderWallsForFloor(floorConfig);
+    FloorPlanWalls.renderIndependentWalls(this);
     this.addVisibleVerticalOpenings(config, floorConfig);
     const validZoneIds = this.validZoneIds ?? new Set();
     this.addZones(this.visibleZones(config, floorConfig).filter((zone) => validZoneIds.has(zone.id)));

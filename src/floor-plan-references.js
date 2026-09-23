@@ -267,6 +267,7 @@ const FloorPlanReferences = {
       ...plan.roomDefinitions.keys(),
       ...(plan.partOwners?.keys() ?? []),
       ...(plan.walls?.keys() ?? []),
+      ...(plan.independentWalls?.keys() ?? []),
     ]);
     plan.validZoneIds = new Set();
     const floorConfigs = config.floors ?? [config];

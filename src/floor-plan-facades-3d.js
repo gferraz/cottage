@@ -29,6 +29,35 @@ const FloorPlanFacades3D = {
     const width = Math.max(container.clientWidth || 900, 480);
     const height = 420;
     const floors = plan.currentConfig?.floors ?? [plan.currentConfig];
+    const terrainProfile = plan.terrainReference;
+    const buildingOffsetY = Number.parseFloat(
+      getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
+    ) || 0;
+    const hasTerrainProfile =
+      terrainProfile &&
+      [
+        terrainProfile.frontY,
+        terrainProfile.rearY,
+        terrainProfile.frontZ,
+        terrainProfile.rearZ,
+      ].every(Number.isFinite) &&
+      terrainProfile.rearY !== terrainProfile.frontY;
+    const terrainElevationAt = (y) => {
+      if (!hasTerrainProfile) return null;
+      const siteY = y + buildingOffsetY;
+      const progress = Math.max(
+        0,
+        Math.min(
+          1,
+          (siteY - terrainProfile.frontY) /
+            (terrainProfile.rearY - terrainProfile.frontY),
+        ),
+      );
+      return (
+        terrainProfile.frontZ +
+        progress * (terrainProfile.rearZ - terrainProfile.frontZ)
+      );
+    };
     const facadeSide = direction === "front" ? "top" : "bottom";
     const isStairFlight = (definition) =>
       String(definition?.classes || "")
@@ -117,6 +146,21 @@ const FloorPlanFacades3D = {
       { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity },
     );
     const drawingBounds = { ...roomBounds };
+    (plan.foundationWalls || []).forEach((wall) => {
+      const startZ = terrainElevationAt(Number(wall.from?.[1]));
+      const endZ = terrainElevationAt(Number(wall.to?.[1]));
+      if (Number.isFinite(startZ)) drawingBounds.z0 = Math.min(drawingBounds.z0, startZ);
+      if (Number.isFinite(endZ)) drawingBounds.z0 = Math.min(drawingBounds.z0, endZ);
+    });
+    (plan.independentWalls || new Map()).forEach((wall) => {
+      drawingBounds.x0 = Math.min(drawingBounds.x0, wall.x0);
+      drawingBounds.x1 = Math.max(drawingBounds.x1, wall.x1);
+      wall.path.points.forEach(([, y]) => {
+        const baseZ = terrainElevationAt(y);
+        if (Number.isFinite(baseZ)) drawingBounds.z0 = Math.min(drawingBounds.z0, baseZ);
+      });
+      drawingBounds.z1 = Math.max(drawingBounds.z1, wall.topZ);
+    });
     stairFlights.forEach((stair) => {
       drawingBounds.x0 = Math.min(drawingBounds.x0, Number(stair.x));
       drawingBounds.x1 = Math.max(drawingBounds.x1, Number(stair.x) + Number(stair.w));
@@ -187,13 +231,13 @@ const FloorPlanFacades3D = {
     camera.position.set(
       (roomBounds.x0 + roomBounds.x1) / 2 + 8,
       direction === "front" ? -45 : 45,
-      (roomBounds.z0 + roomBounds.z1) / 2 + 18,
+      centerZ + 18,
     );
     camera.up.set(0, 0, 1);
     camera.lookAt(
       (roomBounds.x0 + roomBounds.x1) / 2,
       0,
-      (roomBounds.z0 + roomBounds.z1) / 2,
+      centerZ,
     );
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -319,19 +363,6 @@ const FloorPlanFacades3D = {
       (terrainBounds.y0 + terrainBounds.y1) / 2,
       -0.03,
     );
-    const terrainProfile = plan.terrainReference;
-    const buildingOffsetY = Number.parseFloat(
-      getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
-    ) || 0;
-    const hasTerrainProfile =
-      terrainProfile &&
-      [
-        terrainProfile.frontY,
-        terrainProfile.rearY,
-        terrainProfile.frontZ,
-        terrainProfile.rearZ,
-      ].every(Number.isFinite) &&
-      terrainProfile.rearY !== terrainProfile.frontY;
     if (hasTerrainProfile) {
       const positions = terrain.geometry.attributes.position;
       for (let index = 0; index < positions.count; index += 1) {
@@ -357,6 +388,165 @@ const FloorPlanFacades3D = {
     }
     terrain.renderOrder = -10;
     scene.add(terrain);
+
+    (plan.foundationWalls || []).forEach((wall) => {
+      const [x, y, z0] = wall.pos;
+      const [width, depth] = wall.size;
+      const topZ = Number(wall.topZ);
+      const alongX = wall.axis === "x";
+      const length = alongX ? width : depth;
+      const thickness = Number(wall.thickness);
+      const startY = Number(wall.from[1]);
+      const endY = Number(wall.to[1]);
+      let baseStart = terrainElevationAt(startY);
+      let baseEnd = terrainElevationAt(endY);
+      if (
+        !finite(x, y, z0, topZ, length, thickness, startY, endY) ||
+        !Number.isFinite(baseStart) ||
+        !Number.isFinite(baseEnd) ||
+        length <= 0 || thickness <= 0
+      ) {
+        reportInvalid("parede de embasamento", wall.id);
+        return;
+      }
+
+      let start = 0;
+      let end = length;
+      const originalBaseStart = baseStart;
+      const originalBaseEnd = baseEnd;
+      if (baseStart >= topZ && baseEnd >= topZ) return;
+      if (baseStart >= topZ) {
+        const crossing = (topZ - baseStart) / (baseEnd - baseStart);
+        start = length * crossing;
+        baseStart = topZ;
+      } else if (baseEnd >= topZ) {
+        const crossing = (topZ - baseStart) / (baseEnd - baseStart);
+        end = length * crossing;
+        baseEnd = topZ;
+      }
+      const visibleLength = end - start;
+      if (visibleLength <= 1e-9) return;
+
+      const shape = new THREE.Shape();
+      const startBaseZ = alongX
+        ? originalBaseStart
+        : originalBaseStart + ((originalBaseEnd - originalBaseStart) * start) / length;
+      const endBaseZ = alongX
+        ? originalBaseEnd
+        : originalBaseStart + ((originalBaseEnd - originalBaseStart) * end) / length;
+      shape.moveTo(0, 0);
+      shape.lineTo(visibleLength, endBaseZ - startBaseZ);
+      shape.lineTo(visibleLength, topZ - startBaseZ);
+      shape.lineTo(0, topZ - startBaseZ);
+      shape.closePath();
+
+      const geometry = new THREE.ExtrudeGeometry(shape, {
+        depth: thickness,
+        bevelEnabled: false,
+      });
+      const segmentX = alongX ? x + start : x;
+      const segmentY = alongX ? y : y + start;
+      const transform = alongX
+        ? new THREE.Matrix4().set(
+            1, 0, 0, segmentX,
+            0, 0, -1, segmentY + thickness,
+            0, 1, 0, startBaseZ,
+            0, 0, 0, 1,
+          )
+        : new THREE.Matrix4().set(
+            0, 0, 1, segmentX,
+            1, 0, 0, segmentY,
+            0, 1, 0, startBaseZ,
+            0, 0, 0, 1,
+          );
+      geometry.applyMatrix4(transform);
+      const foundation = new THREE.Mesh(geometry, wallMaterial);
+      foundation.userData.domainId = wall.id;
+      foundation.userData.sourceWallId = wall.sourceWallId;
+      foundation.renderOrder = 1;
+      scene.add(foundation);
+      scene.add(new THREE.LineSegments(new THREE.EdgesGeometry(geometry), wallLineMaterial));
+    });
+
+    (plan.independentWalls || new Map()).forEach((wall) => {
+      const { points } = wall.path;
+      for (let index = 0; index < points.length - 1; index += 1) {
+        const [x0, y0] = points[index];
+        const [x1, y1] = points[index + 1];
+        const dx = x1 - x0;
+        const dy = y1 - y0;
+        const length = Math.hypot(dx, dy);
+        let baseStart = terrainElevationAt(y0);
+        let baseEnd = terrainElevationAt(y1);
+        if (
+          !finite(x0, y0, x1, y1, length, wall.topZ, wall.thickness) ||
+          !Number.isFinite(baseStart) ||
+          !Number.isFinite(baseEnd) ||
+          length <= 1e-9 ||
+          wall.thickness <= 0
+        ) {
+          reportInvalid("parede independente", wall.id);
+          continue;
+        }
+        const originalBaseStart = baseStart;
+        const originalBaseEnd = baseEnd;
+        let start = 0;
+        let end = length;
+        if (baseStart >= wall.topZ && baseEnd >= wall.topZ) continue;
+        if (baseStart >= wall.topZ) {
+          start = length * (wall.topZ - baseStart) / (baseEnd - baseStart);
+          baseStart = wall.topZ;
+        } else if (baseEnd >= wall.topZ) {
+          end = length * (wall.topZ - baseStart) / (baseEnd - baseStart);
+          baseEnd = wall.topZ;
+        }
+        const segmentLength = end - start;
+        if (segmentLength <= 1e-9) continue;
+        const ux = dx / length;
+        const uy = dy / length;
+        const nx = -uy;
+        const ny = ux;
+        const startX = x0 + ux * start;
+        const startY = y0 + uy * start;
+        const startBaseZ = originalBaseStart + (originalBaseEnd - originalBaseStart) * start / length;
+        const endBaseZ = originalBaseStart + (originalBaseEnd - originalBaseStart) * end / length;
+        const profile = [
+          [0, 0],
+          [segmentLength, endBaseZ - startBaseZ],
+          [segmentLength, wall.topZ - startBaseZ],
+          [0, wall.topZ - startBaseZ],
+        ];
+        const polygon = profile.filter(([px, py], pointIndex) => {
+          const previous = profile[(pointIndex + profile.length - 1) % profile.length];
+          return Math.hypot(px - previous[0], py - previous[1]) > 1e-9;
+        });
+        const area = Math.abs(polygon.reduce((sum, [px, py], pointIndex) => {
+          const next = polygon[(pointIndex + 1) % polygon.length];
+          return sum + px * next[1] - next[0] * py;
+        }, 0)) / 2;
+        if (polygon.length < 3 || area <= 1e-9) continue;
+        const shape = new THREE.Shape();
+        shape.moveTo(...polygon[0]);
+        polygon.slice(1).forEach((point) => shape.lineTo(...point));
+        shape.closePath();
+        const geometry = new THREE.ExtrudeGeometry(shape, {
+          depth: wall.thickness,
+          bevelEnabled: false,
+        });
+        geometry.applyMatrix4(new THREE.Matrix4().set(
+          ux, 0, nx, startX - nx * wall.thickness / 2,
+          uy, 0, ny, startY - ny * wall.thickness / 2,
+          0, 1, 0, startBaseZ,
+          0, 0, 0, 1,
+        ));
+        const mesh = new THREE.Mesh(geometry, wallMaterial);
+        mesh.userData.domainId = wall.id;
+        mesh.userData.pathSegment = index;
+        mesh.renderOrder = 1;
+        scene.add(mesh);
+        scene.add(new THREE.LineSegments(new THREE.EdgesGeometry(geometry), wallLineMaterial));
+      }
+    });
 
     plan.walls.forEach((wall) => {
       const [x0, y0, z0] = wall.pos;
