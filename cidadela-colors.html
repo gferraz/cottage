@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Paleta de Cores — Cottage Ferraz-César</title>
+
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      :root {
+        --sw-2807: #6e5241;
+        --sw-7501: #ad9b8c;
+        --sw-6433: #606b4a;
+        --sw-9155: #989192;
+        --sw-7709: #b27147;
+        --sw-6057: #decabd;
+        --sw-6438: #7c9067;
+        --sw-6269: #afa7ac;
+        --sw-6642: #cd7d4c;
+        --sw-6366: #f2cb96;
+        --sw-9038: #9ea67d;
+        --sw-6548: #c5c0c9;
+
+        --background: #f4f2ee;
+        --card: #ffffff;
+        --text: #252525;
+        --muted: #77736e;
+        --border: #ddd9d3;
+      }
+
+      body {
+        margin: 0;
+        background: var(--background);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+
+      header {
+        max-width: 1300px;
+        margin: 0 auto;
+        padding: 60px 32px 32px;
+      }
+
+      h1 {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: clamp(32px, 4vw, 52px);
+        font-weight: 500;
+        letter-spacing: -0.02em;
+      }
+
+      .subtitle {
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.6;
+      }
+
+      main {
+        max-width: 1300px;
+        margin: 0 auto;
+        padding: 20px 32px 70px;
+      }
+
+      .palette {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+      }
+
+      .color-card {
+        overflow: hidden;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        cursor: pointer;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+      }
+
+      .color-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.09);
+      }
+
+      .swatch {
+        height: 230px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+      }
+
+      .info {
+        padding: 20px 22px 22px;
+      }
+
+      .name {
+        margin-bottom: 6px;
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 22px;
+        font-weight: 500;
+      }
+
+      .sw-code {
+        margin-bottom: 18px;
+        color: var(--muted);
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+      }
+
+      .values {
+        display: grid;
+        grid-template-columns: 70px 1fr;
+        row-gap: 7px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 13px;
+      }
+
+      .label {
+        color: var(--muted);
+      }
+
+      .value {
+        color: var(--text);
+      }
+
+      .hint {
+        margin-top: 17px;
+        color: #99958f;
+        font-size: 12px;
+      }
+
+      footer {
+        padding: 0 32px 50px;
+        color: var(--muted);
+        text-align: center;
+        font-size: 13px;
+      }
+
+      #toast {
+        position: fixed;
+        bottom: 28px;
+        left: 50%;
+        z-index: 10;
+
+        padding: 11px 18px;
+
+        background: rgba(30, 30, 30, 0.94);
+        color: white;
+
+        border-radius: 30px;
+
+        font-size: 14px;
+
+        opacity: 0;
+        pointer-events: none;
+
+        transform: translate(-50%, 15px);
+
+        transition:
+          opacity 0.2s ease,
+          transform 0.2s ease;
+      }
+
+      #toast.visible {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+
+      @media (max-width: 900px) {
+        .palette {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 600px) {
+        header {
+          padding: 38px 20px 20px;
+        }
+
+        main {
+          padding: 16px 20px 50px;
+        }
+
+        .palette {
+          grid-template-columns: 1fr;
+        }
+
+        .swatch {
+          height: 200px;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <h1>Paleta de Cores</h1>
+
+      <div class="subtitle">
+        Cottage Ferraz-César<br />
+        Paleta para pintura das casas
+      </div>
+    </header>
+
+    <main>
+      <section class="palette">
+        <article class="color-card" data-color="#6E5241" onclick="copyColor(this)">
+          <div class="swatch" style="background: #6e5241"></div>
+
+          <div class="info">
+            <div class="name">Casca de Pinus</div>
+            <div class="sw-code">SW 2807</div>
+
+            <div class="values">
+              <div class="label">HEX</div>
+              <div class="value">#6E5241</div>
+
+              <div class="label">RGB</div>
+              <div class="value">110, 82, 65</div>
+            </div>
+
+            <div class="hint">Clique para copiar o HEX</div>
+          </div>
+        </article>
+
+        <article class="color-card" data-color="#AD9B8C" onclick="copyColor(this)">
+          <div class="swatch" style="background: #ad9b8c"></div>
+
+          <div class="info">
+            <div class="name">Jangada de Bambu</div>
+            <div class="sw-code">SW 7501</div>
+
+            <div class="values">
+              <div class="label">HEX</div>
+              <div class="value">#AD9B8C</div>
+
+              <div class="label">RGB</div>
+              <div class="value">173, 155, 140</div>
+            </div>
+
+            <div class="hint">Clique para copiar o HEX</div>
+          </div>
+        </article>
+
+        <article class="color-card" data-color="#606B4A" onclick="copyColor(this)">
+          <div class="swatch" style="background: #606b4a"></div>
+
+          <div class="info">
+            <div class="name">Mate Amargo</div>
+            <div class="sw-code">SW 6433</div>
+
+            <div class="values">
+              <div class="label">HEX</div>
+              <div class="value">#606B4A</div>
+
+              <div class="label">RGB</div>
+              <div class="value">96, 107, 74</div>
+            </div>
+
+            <div class="hint">Clique para copiar o HEX</div>
+          </div>
+        </article>
+
+        <article class="color-card" data-color="#989192" onclick="copyColor(this)">
+          <div class="swatch" style="background: #989192"></div>
+
+          <div class="info">
+            <div class="name">Prosa ao Entardecer</div>
+            <div class="sw-code">SW 9155</div>
+
+            <div class="values">
+              <div class="label">HEX</div>
+              <div class="value">#989192</div>
+
+              <div class="label">RGB</div>
+              <div class="value">152, 145, 146</div>
+            </div>
+
+            <div class="hint">Clique para copiar o HEX</div>
+          </div>
+        </article>
+
+        <article class="color-card" data-color="#B27147" onclick="copyColor(this)">
+          <div class="swatch" style="background: #b27147"></div>
+
+          <div class="info">
+            <div class="name">Tacho de Cobre</div>
+            <div class="sw-code">SW 7709</div>
+
+            <div class="values">
+              <div class="label">HEX</div>
+              <div class="value">#B27147</div>
+
+              <div class="label">RGB</div>
+              <div class="value">178, 113, 71</div>
+            </div>
+
+            <div class="hint">Clique para copiar o HEX</div>
+          </div>
+        </article>
+
+        <article class="color-card" data-color="#DECABD" onclick="copyColor(this)">
+          <div class="swatch" style="background: #decabd"></div>
+
+          <div class="info">
+            <div class="name">Leite Maltado</div>
+            <div class="sw-code">SW 6057</div>
+
+            <div class="values">
+              <div class="label">HEX</div>
+              <div class="value">#DECABD</div>
+
+              <div class="label">RGB</div>
+              <div class="value">222, 202, 189</div>
+            </div>
+
+            <div class="hint">Clique para copiar o HEX</div>
+          </div>
+        </article>
+
+        <article class="color-card" data-color="#7C9067" onclick="copyColor(this)">
+          <div class="swatch" style="background: #7c9067"></div>
+
+          <div class="info">
+            <div class="name">Endro</div>
+            <div class="sw-code">SW 6438</div>
+
+            <div class="values">
+              <div class="label">HEX</div>
+              <div class="value">#7C9067</div>
+
+              <div class="label">RGB</div>
+              <div class="value">124, 144, 103</div>
+            </div>
+
+            <div class="hint">Clique para copiar o HEX</div>
+          </div>
+        </article>
+
+        <article class="color-card" data-color="#AFA7AC" onclick="copyColor(this)">
+          <div class="swatch" style="background: #afa7ac"></div>
+
+          <div class="info">
+            <div class="name">Malva Exótica</div>
+            <div class="sw-code">SW 6269</div>
+
+            <div class="values">
+              <div class="label">HEX</div>
+              <div class="value">#AFA7AC</div>
+
+              <div class="label">RGB</div>
+              <div class="value">175, 167, 172</div>
+            </div>
+
+            <div class="hint">Clique para copiar o HEX</div>
+          </div>
+        </article>
+
+        <article class="color-card" data-color="#CD7D4C" onclick="copyColor(this)">
+          <div class="swatch" style="background: #cd7d4c"></div>
+
+          <div class="info">
+            <div class="name">Sertão Nordestino</div>
+            <div class="sw-code">SW 6642</div>
+
+            <div class="values">
+              <div class="label">HEX</div>
+              <div class="value">#CD7D4C</div>
+
+              <div class="label">RGB</div>
+              <div class="value">205, 125, 76</div>
+            </div>
+
+            <div class="hint">Clique para copiar o HEX</div>
+          </div>
+        </article>
+
+        <article class="color-card" data-color="#F2CB96" onclick="copyColor(this)">
+          <div class="swatch" style="background: #f2cb96"></div>
+
+          <div class="info">
+            <div class="name">Desejo Âmbar</div>
+            <div class="sw-code">SW 6366</div>
+
+            <div class="values">
+              <div class="label">HEX</div>
+              <div class="value">#F2CB96</div>
+
+              <div class="label">RGB</div>
+              <div class="value">242, 203, 150</div>
+            </div>
+
+            <div class="hint">Clique para copiar o HEX</div>
+          </div>
+        </article>
+
+        <article class="color-card" data-color="#9EA67D" onclick="copyColor(this)">
+          <div class="swatch" style="background: #9ea67d"></div>
+
+          <div class="info">
+            <div class="name">Abobrinha Italiana</div>
+            <div class="sw-code">SW 9038</div>
+
+            <div class="values">
+              <div class="label">HEX</div>
+              <div class="value">#9EA67D</div>
+
+              <div class="label">RGB</div>
+              <div class="value">158, 166, 125</div>
+            </div>
+
+            <div class="hint">Clique para copiar o HEX</div>
+          </div>
+        </article>
+
+        <article class="color-card" data-color="#C5C0C9" onclick="copyColor(this)">
+          <div class="swatch" style="background: #c5c0c9"></div>
+
+          <div class="info">
+            <div class="name">Aroma de Uva</div>
+            <div class="sw-code">SW 6548</div>
+
+            <div class="values">
+              <div class="label">HEX</div>
+              <div class="value">#C5C0C9</div>
+
+              <div class="label">RGB</div>
+              <div class="value">197, 192, 201</div>
+            </div>
+
+            <div class="hint">Clique para copiar o HEX</div>
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <footer>
+      Representação digital aproximada das cores de pintura.<br />
+      A aparência real varia conforme iluminação, acabamento, superfície e calibração do monitor.
+    </footer>
+
+    <div id="toast">Cor copiada</div>
+
+    <script>
+      let toastTimer;
+
+      function copyColor(card) {
+        const color = card.dataset.color;
+
+        navigator.clipboard.writeText(color).then(() => {
+          const toast = document.getElementById("toast");
+
+          toast.textContent = color + " copiado";
+          toast.classList.add("visible");
+
+          clearTimeout(toastTimer);
+
+          toastTimer = setTimeout(() => {
+            toast.classList.remove("visible");
+          }, 1400);
+        });
+      }
+    </script>
+  </body>
+</html>
