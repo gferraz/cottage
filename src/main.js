@@ -687,6 +687,10 @@ class FloorPlan {
     this.validZoneIds ??= new Set();
     this.model = FloorPlanModel.fromConfig(config);
     this.currentConfig = config;
+    document.querySelector("#empty-state")?.setAttribute("hidden", "");
+    document.querySelector("#plan-workspace")?.removeAttribute("hidden");
+    document.body?.classList.remove("page-empty");
+    document.body?.classList.add("page-has-plan");
     if (!preservePresentation) {
       this.facade3dCamera = { azimuthStep: 0, elevation: 30, zoom: 1 };
       this.solarSeason = config.solar?.season ?? "equinox";
@@ -740,11 +744,10 @@ class FloorPlan {
         this.floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", true);
       }
     }
-    const title = floorConfig.label ? `${config.title || "Planta"} — ${floorConfig.label}` : config.title;
-    if (title) {
-      if (this.titleElement) this.titleElement.textContent = title;
-      if (typeof document !== "undefined") document.title = title;
-    }
+    const title = config.title || "Estudo da planta";
+    if (this.titleElement) this.titleElement.textContent = title;
+    if (typeof document !== "undefined") document.title = title;
+    document.querySelector("#project-overview")?.removeAttribute("hidden");
     this.clear();
     this.prepareRoomReferences(config);
     this.validateInactiveFloorFeatures(config, floorIndex);

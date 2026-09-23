@@ -12,7 +12,7 @@ const floor = new FloorPlan({
   solarTimePrevious: document.querySelector("#solar-time-previous"),
   solarTimeNext: document.querySelector("#solar-time-next"),
   viewportSummary: document.querySelector("#viewport-summary"),
-  titleElement: document.querySelector("h1"),
+  titleElement: document.querySelector("#project-title"),
   floorOptions: document.querySelector("#floor-options"),
   roomList: document.querySelector("#room-list"),
   itemList: document.querySelector("#item-list"),

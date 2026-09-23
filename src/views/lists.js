@@ -25,6 +25,7 @@ const FloorPlanLists = {
           ? `Área calculada do terreno: ${plan.formatMeters(plan.terrainArea)}m²`
           : "Área calculada do terreno: —";
     }
+    this.updateProjectOverview(plan);
     plan.updateRoomList();
     plan.updateFloorSummary();
     plan.updateItemList();
@@ -33,6 +34,125 @@ const FloorPlanLists = {
     plan.updateWindowList();
     plan.updateNaturalList();
     plan.updateErrorList();
+  },
+
+  updateProjectOverview(plan) {
+    const config = plan.currentConfig ?? {};
+    const floors = config.floors ?? [
+      { id: config.id, label: config.label, rooms: config.rooms ?? [] },
+    ];
+    const floorRows = FloorPlanModel.floorRows(
+      floors,
+      plan.roomDefinitions,
+      plan.roomReferences,
+    );
+    const area = floorRows.reduce((total, row) => total + row.area, 0);
+    const style =
+      config.style ??
+      config.architectural_style ??
+      config.metadata?.style ??
+      config.project?.style;
+    document.querySelector(".project-facts")?.classList.toggle("has-style", Boolean(style));
+    const styleFact = document.querySelector("#project-style-fact");
+    if (styleFact) {
+      styleFact.hidden = !style;
+      document.querySelector("#project-style").textContent = style || "";
+    }
+    const description =
+      config.summary ??
+      config.description ??
+      config.metadata?.summary ??
+      config.metadata?.description ??
+      config.project?.summary ??
+      config.project?.description;
+    const descriptionElement = document.querySelector("#project-description");
+    if (descriptionElement) {
+      descriptionElement.textContent = description || "";
+      descriptionElement.hidden = !description;
+    }
+    const terrainFact = document.querySelector("#project-terrain-fact");
+    const hasTerrainArea = plan.terrainArea > 0;
+    if (terrainFact) terrainFact.hidden = !hasTerrainArea;
+    const terrainAreaElement = document.querySelector("#project-terrain-area");
+    if (terrainAreaElement) {
+      terrainAreaElement.textContent = hasTerrainArea
+        ? `${plan.formatMeters(plan.terrainArea)} m²`
+        : "—";
+    }
+    const coordinates = Array.isArray(config.coordinates)
+      ? config.coordinates.filter(Boolean).join(" · ")
+      : typeof config.coordinates === "string"
+        ? config.coordinates
+        : [config.coordinates?.latitude ?? config.coordinates?.lat, config.coordinates?.longitude ?? config.coordinates?.lon]
+          .filter(Boolean)
+          .join(" · ");
+    const coordinatesFact = document.querySelector("#project-coordinates-fact");
+    if (coordinatesFact) coordinatesFact.hidden = !coordinates;
+    const coordinatesElement = document.querySelector("#project-coordinates");
+    if (coordinatesElement) {
+      coordinatesElement.textContent = coordinates || "—";
+      if (coordinates) {
+        coordinatesElement.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(coordinates)}`;
+      } else {
+        coordinatesElement.removeAttribute("href");
+      }
+    }
+    document.querySelector("#project-area").textContent =
+      `${plan.formatMeters(area)} m²`;
+    document.querySelector("#project-floor-count").textContent =
+      String(floors.length);
+    document.querySelector("#project-floor-labels").textContent = floors
+      .map((floor) => floor.label || floor.id)
+      .filter(Boolean)
+      .join(" · ");
+
+    const categoryLabels = {
+      social: "Social",
+      intimate: "Íntimo",
+      service: "Serviço",
+      circulation: "Circulação",
+      outdoor: "Externo",
+      work: "Trabalho",
+      other: "Outros",
+    };
+    const categoryForRoom = (room) => {
+      const explicit = String(room.category ?? room.type ?? "").toLowerCase();
+      if (categoryLabels[explicit]) return explicit;
+      const tokens = new Set(String(room.classes ?? "").toLowerCase().split(/\s+/));
+      const id = String(room.id ?? "").toLowerCase();
+      if (tokens.has("outdoor") || tokens.has("porch") || tokens.has("terrace")) return "outdoor";
+      if (tokens.has("circulation") || /^(hall|corridor|stairs|stair)/.test(id)) return "circulation";
+      if (tokens.has("office") || id === "office") return "work";
+      if (["living", "dining", "kitchen", "playroom"].some((token) => tokens.has(token)) || /^(living|dining|kitchen|playroom)/.test(id)) return "social";
+      if (["master", "bedroom", "closet"].some((token) => tokens.has(token)) || /^(master|bedroom|closet|prayer-room|vestibule)/.test(id)) return "intimate";
+      if (tokens.has("service") || /^(garage|laundry|pantry|mudroom)/.test(id)) return "service";
+      if (tokens.has("wet") || /^(powder|bathroom)/.test(id)) return "service";
+      return "other";
+    };
+    const counts = new Map();
+    floors.forEach((floor) => {
+      (floor.rooms ?? []).forEach((room) => {
+        if (!room.id || plan.roomDefinitions.get(room.id) !== room) return;
+        if (String(room.classes ?? "").split(/\s+/).includes("stair-flight")) return;
+        const category = categoryForRoom(room);
+        counts.set(category, (counts.get(category) ?? 0) + 1);
+      });
+    });
+    const roomTypes = document.querySelector("#project-room-types");
+    roomTypes?.replaceChildren();
+    [...counts.entries()]
+      .sort((first, second) =>
+        categoryLabels[first[0]].localeCompare(categoryLabels[second[0]], "pt-BR"),
+      )
+      .forEach(([category, count]) => {
+        const item = document.createElement("li");
+        const label = document.createElement("span");
+        label.textContent = categoryLabels[category];
+        const value = document.createElement("strong");
+        value.textContent = String(count).padStart(2, "0");
+        item.append(label, value);
+        roomTypes?.append(item);
+      });
   },
 
   updateRoomList(plan) {
