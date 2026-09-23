@@ -377,30 +377,62 @@ const FloorPlanLists = {
       return;
     }
 
+    const scroll = document.createElement("div");
+    scroll.className = "roof-schedule-scroll";
+    const table = document.createElement("table");
+    table.className = "roof-schedule-table";
+    const headings = [
+      "Telhado",
+      "Tipo",
+      "Cumeeira",
+      "Dimensões (m)",
+      "Cota base (m)",
+      "Altura (m)",
+      "Superfície (m²)",
+      "Inclinação",
+      "Beiral (m)",
+      "Empena (m)",
+    ];
+    const head = document.createElement("thead");
+    const headingRow = document.createElement("tr");
+    headings.forEach((label) => {
+      const cell = document.createElement("th");
+      cell.scope = "col";
+      cell.textContent = label;
+      headingRow.append(cell);
+    });
+    head.append(headingRow);
+    table.append(head);
+    const body = document.createElement("tbody");
+
     roofs.forEach((roof, index) => {
-      const item = document.createElement("div");
-      item.className = "opening-list-item";
-      const title = document.createElement("strong");
+      const row = document.createElement("tr");
+      const title = document.createElement("th");
+      title.scope = "row";
       title.textContent = `${index + 1}. ${roof.label || roof.id || "Telhado"}`;
-      const details = document.createElement("span");
       let base;
+      let roofFloor = floor;
       try {
-        base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+        roofFloor ??= FloorPlanRoofs.floorForRoof(plan, roof, roof.base ?? roof);
+        base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof, roofFloor);
       } catch {
         base = null;
       }
       const pitch = Number(roof.pitch);
       const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
       const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
-      if (!base || !Number.isFinite(pitch)) {
-        const baseLabel =
-          typeof roof.base === "string"
-            ? roof.base
-            : roof.inset
-              ? `inset de ${roof.inset[0]}`
-              : "geometria inline";
-        details.textContent = `base: ${baseLabel}`;
-      } else {
+      let values = [
+        plan.roofTypeLabel(roof.type),
+        plan.roofOrientationLabel(roof.orientation),
+        "—",
+        "—",
+        "—",
+        "—",
+        Number.isFinite(pitch) ? `${plan.formatMeters(pitch)}°` : "—",
+        FloorPlanRoofs.formatOverhang(plan, roof.eave),
+        FloorPlanRoofs.formatOverhang(plan, roof.rake),
+      ];
+      if (base && Number.isFinite(pitch)) {
         const longitudinal = roof.orientation === "longitudinal";
         const baseWidth = base.w();
         const baseLength = base.l();
@@ -425,11 +457,29 @@ const FloorPlanLists = {
             : base.z1
               ? base.z1()
               : 0;
-        details.textContent = `Tipo: ${plan.roofTypeLabel(roof.type)} — Cumeeira: ${plan.roofOrientationLabel(roof.orientation)} (${plan.formatMeters(ridgeLength)}m) — ${plan.formatMeters(roofWidth)}m × ${plan.formatMeters(roofLength)}m — Cota base: ${plan.formatMeters(baseElevation)}m — Altura: ${plan.formatMeters(rise)}m — Superfície: ${plan.formatMeters(roofSurfaceArea)}m² — Inclinação: ${plan.formatMeters(pitch)}° — Beiral: ${FloorPlanRoofs.formatOverhang(plan, roof.eave)}m — Empena: ${FloorPlanRoofs.formatOverhang(plan, roof.rake)}m`;
+        values = [
+          plan.roofTypeLabel(roof.type),
+          `${plan.roofOrientationLabel(roof.orientation)} · ${plan.formatMeters(ridgeLength)} m`,
+          `${plan.formatMeters(roofWidth)} × ${plan.formatMeters(roofLength)}`,
+          plan.formatMeters(baseElevation),
+          plan.formatMeters(rise),
+          plan.formatMeters(roofSurfaceArea),
+          `${plan.formatMeters(pitch)}°`,
+          FloorPlanRoofs.formatOverhang(plan, roof.eave),
+          FloorPlanRoofs.formatOverhang(plan, roof.rake),
+        ];
       }
-      item.append(title, details);
-      target.append(item);
+      row.append(title);
+      values.forEach((value) => {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.append(cell);
+      });
+      body.append(row);
     });
+    table.append(body);
+    scroll.append(table);
+    target.append(scroll);
   },
 
   updateOpeningList(plan, target = plan.openingList, floor = null) {

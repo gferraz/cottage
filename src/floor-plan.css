@@ -545,7 +545,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .technical-global-errors {
   min-width: 0;
   padding: 18px;
-  border: 1px solid var(--theme-border);
+  border: 0;
   background: var(--theme-surface);
 }
 
@@ -573,7 +573,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .technical-category {
   min-width: 0;
   padding: 12px;
-  border: 1px solid var(--theme-border-light);
+  border: 0;
   background: var(--theme-background, #fff);
 }
 
@@ -586,6 +586,43 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   min-width: 0;
   font-size: 12px;
   overflow-wrap: anywhere;
+}
+
+.roof-schedule-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.roof-schedule-table {
+  width: 100%;
+  min-width: 940px;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.roof-schedule-table th,
+.roof-schedule-table td {
+  padding: 7px 8px;
+  border-top: 1px solid var(--theme-border-light);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.roof-schedule-table thead th {
+  color: var(--theme-subtle);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.roof-schedule-table tbody th {
+  max-width: 210px;
+  text-align: left;
+  white-space: normal;
+}
+
+.roof-schedule-table tbody td:nth-child(2),
+.roof-schedule-table tbody td:nth-child(3) {
+  text-align: left;
 }
 
 .technical-category .room-list-header {

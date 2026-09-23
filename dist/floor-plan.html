@@ -602,7 +602,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .technical-global-errors {
   min-width: 0;
   padding: 18px;
-  border: 1px solid var(--theme-border);
+  border: 0;
   background: var(--theme-surface);
 }
 
@@ -630,7 +630,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .technical-category {
   min-width: 0;
   padding: 12px;
-  border: 1px solid var(--theme-border-light);
+  border: 0;
   background: var(--theme-background, #fff);
 }
 
@@ -643,6 +643,43 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   min-width: 0;
   font-size: 12px;
   overflow-wrap: anywhere;
+}
+
+.roof-schedule-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.roof-schedule-table {
+  width: 100%;
+  min-width: 940px;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+
+.roof-schedule-table th,
+.roof-schedule-table td {
+  padding: 7px 8px;
+  border-top: 1px solid var(--theme-border-light);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.roof-schedule-table thead th {
+  color: var(--theme-subtle);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.roof-schedule-table tbody th {
+  max-width: 210px;
+  text-align: left;
+  white-space: normal;
+}
+
+.roof-schedule-table tbody td:nth-child(2),
+.roof-schedule-table tbody td:nth-child(3) {
+  text-align: left;
 }
 
 .technical-category .room-list-header {
@@ -9520,30 +9557,62 @@ const FloorPlanLists = {
       return;
     }
 
+    const scroll = document.createElement("div");
+    scroll.className = "roof-schedule-scroll";
+    const table = document.createElement("table");
+    table.className = "roof-schedule-table";
+    const headings = [
+      "Telhado",
+      "Tipo",
+      "Cumeeira",
+      "Dimensões (m)",
+      "Cota base (m)",
+      "Altura (m)",
+      "Superfície (m²)",
+      "Inclinação",
+      "Beiral (m)",
+      "Empena (m)",
+    ];
+    const head = document.createElement("thead");
+    const headingRow = document.createElement("tr");
+    headings.forEach((label) => {
+      const cell = document.createElement("th");
+      cell.scope = "col";
+      cell.textContent = label;
+      headingRow.append(cell);
+    });
+    head.append(headingRow);
+    table.append(head);
+    const body = document.createElement("tbody");
+
     roofs.forEach((roof, index) => {
-      const item = document.createElement("div");
-      item.className = "opening-list-item";
-      const title = document.createElement("strong");
+      const row = document.createElement("tr");
+      const title = document.createElement("th");
+      title.scope = "row";
       title.textContent = `${index + 1}. ${roof.label || roof.id || "Telhado"}`;
-      const details = document.createElement("span");
       let base;
+      let roofFloor = floor;
       try {
-        base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+        roofFloor ??= FloorPlanRoofs.floorForRoof(plan, roof, roof.base ?? roof);
+        base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof, roofFloor);
       } catch {
         base = null;
       }
       const pitch = Number(roof.pitch);
       const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
       const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
-      if (!base || !Number.isFinite(pitch)) {
-        const baseLabel =
-          typeof roof.base === "string"
-            ? roof.base
-            : roof.inset
-              ? `inset de ${roof.inset[0]}`
-              : "geometria inline";
-        details.textContent = `base: ${baseLabel}`;
-      } else {
+      let values = [
+        plan.roofTypeLabel(roof.type),
+        plan.roofOrientationLabel(roof.orientation),
+        "—",
+        "—",
+        "—",
+        "—",
+        Number.isFinite(pitch) ? `${plan.formatMeters(pitch)}°` : "—",
+        FloorPlanRoofs.formatOverhang(plan, roof.eave),
+        FloorPlanRoofs.formatOverhang(plan, roof.rake),
+      ];
+      if (base && Number.isFinite(pitch)) {
         const longitudinal = roof.orientation === "longitudinal";
         const baseWidth = base.w();
         const baseLength = base.l();
@@ -9568,11 +9637,29 @@ const FloorPlanLists = {
             : base.z1
               ? base.z1()
               : 0;
-        details.textContent = `Tipo: ${plan.roofTypeLabel(roof.type)} — Cumeeira: ${plan.roofOrientationLabel(roof.orientation)} (${plan.formatMeters(ridgeLength)}m) — ${plan.formatMeters(roofWidth)}m × ${plan.formatMeters(roofLength)}m — Cota base: ${plan.formatMeters(baseElevation)}m — Altura: ${plan.formatMeters(rise)}m — Superfície: ${plan.formatMeters(roofSurfaceArea)}m² — Inclinação: ${plan.formatMeters(pitch)}° — Beiral: ${FloorPlanRoofs.formatOverhang(plan, roof.eave)}m — Empena: ${FloorPlanRoofs.formatOverhang(plan, roof.rake)}m`;
+        values = [
+          plan.roofTypeLabel(roof.type),
+          `${plan.roofOrientationLabel(roof.orientation)} · ${plan.formatMeters(ridgeLength)} m`,
+          `${plan.formatMeters(roofWidth)} × ${plan.formatMeters(roofLength)}`,
+          plan.formatMeters(baseElevation),
+          plan.formatMeters(rise),
+          plan.formatMeters(roofSurfaceArea),
+          `${plan.formatMeters(pitch)}°`,
+          FloorPlanRoofs.formatOverhang(plan, roof.eave),
+          FloorPlanRoofs.formatOverhang(plan, roof.rake),
+        ];
       }
-      item.append(title, details);
-      target.append(item);
+      row.append(title);
+      values.forEach((value) => {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.append(cell);
+      });
+      body.append(row);
     });
+    table.append(body);
+    scroll.append(table);
+    target.append(scroll);
   },
 
   updateOpeningList(plan, target = plan.openingList, floor = null) {
@@ -10139,6 +10226,59 @@ const FloorPlanTextExport = {
       plan.multiFloorMode = originalMultiFloorMode;
       plan.renderMultiFloorUnderlay();
     }
+    const independentWalls = [...(plan.independentWalls?.values() ?? [])];
+    const roomFloorIndexes = new Map();
+    floors.forEach((floor, floorIndex) => {
+      (floor.rooms ?? []).forEach((room) => roomFloorIndexes.set(room.id, floorIndex));
+    });
+    const floorIndexForWall = (wall) => {
+      if (wall.base === "level") {
+        const basedFloor = floors.findIndex(
+          (floor) => Math.abs(Number(floor.z0 ?? 0) - wall.baseZ) <= 1e-7,
+        );
+        if (basedFloor >= 0) return basedFloor;
+      }
+      const touchedFloorIndexes = [...new Set(
+        (wall.touchedRoomIds ?? [])
+          .map((roomId) => roomFloorIndexes.get(roomId))
+          .filter((index) => index !== undefined),
+      )];
+      if (touchedFloorIndexes.length) return Math.min(...touchedFloorIndexes);
+
+      const intersectingFloor = floors.findIndex((floor, index) => {
+        const floorZ0 = Number(floor.z0 ?? 0);
+        const nextZ0 = Number(floors[index + 1]?.z0);
+        const floorTop = Number.isFinite(nextZ0)
+          ? nextZ0
+          : floorZ0 + Number(floor.wall_max_height ?? 0);
+        return wall.baseZ < floorTop && wall.topZ > floorZ0;
+      });
+      return intersectingFloor >= 0 ? intersectingFloor : null;
+    };
+    const appendIndependentWalls = (floorWallEntries) => {
+      lines.push(
+        "",
+        "### Paredes independentes",
+        "",
+        "| ID | Traçado (x, y) | Espessura (m) | Base | Cota base (m) | Cota superior (m) | Altura (m) | Cômodos tocados |",
+        "|---|---|---:|---|---:|---:|---:|---|",
+      );
+      if (floorWallEntries.length === 0) {
+        lines.push("| — | Nenhuma parede independente definida |  |  |  |  |  |  |");
+        return;
+      }
+      floorWallEntries.forEach((wall) => {
+        const path = (wall.path?.points ?? [])
+          .map(([x, y]) => `(${plan.formatMeters(x)}, ${plan.formatMeters(y)})`)
+          .join(" → ");
+        const touchedRooms = (wall.touchedRoomIds ?? [])
+          .map((roomId) => plan.roomDefinitions.get(roomId)?.label || roomId)
+          .join(", ") || "—";
+        lines.push(
+          `| ${plan.markdownText(wall.id)} | ${plan.markdownText(path || "—")} | ${plan.formatMeters(wall.thickness)} | ${wall.base === "terrain" ? "Terreno" : "Nível"} | ${plan.formatMeters(wall.baseZ)} | ${plan.formatMeters(wall.topZ)} | ${plan.formatMeters(wall.h)} | ${plan.markdownText(touchedRooms)} |`,
+        );
+      });
+    };
 
     const appendRoofSection = (heading, roofEntries) => {
       if (roofEntries.length === 0) return;
@@ -10146,19 +10286,19 @@ const FloorPlanTextExport = {
         "",
         `### ${heading}`,
         "",
-        "| ID | Tipo | Orientação da cumeeira | Largura | Comprimento | Cumeeira | Cota base | Altura | Superfície | Inclinação | Beiral | Empena |",
-        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "| Telhado | Tipo | Cumeeira | Dimensões (m) | Cota base (m) | Altura (m) | Superfície (m²) | Inclinação | Beiral (m) | Empena (m) |",
+        "|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
       );
       roofEntries.forEach((roof) => {
         const metrics = FloorPlanExport.roofMetrics(plan, roof);
         if (!metrics) {
           lines.push(
-            `| ${plan.markdownText(roof.id || "—")} | geometria inválida |  |  |  |  |  |  |  |  |  |  |`,
+            `| ${plan.markdownText(roof.label || roof.id || "Telhado")} | geometria inválida |  |  |  |  |  |  |  |  |`,
           );
           return;
         }
         lines.push(
-          `| ${plan.markdownText(roof.id || "—")} | ${plan.markdownText(plan.roofTypeLabel(roof.type))} | ${plan.markdownText(plan.roofOrientationLabel(roof.orientation))} | ${plan.formatMeters(metrics.roofWidth)} | ${plan.formatMeters(metrics.roofLength)} | ${plan.formatMeters(metrics.ridgeLength)} | ${plan.formatMeters(metrics.baseElevation)} | ${plan.formatMeters(metrics.rise)} | ${plan.formatMeters(metrics.surfaceArea)} | ${plan.formatMeters(metrics.pitch)}° | ${FloorPlanRoofs.formatOverhang(plan, metrics.eave)} | ${FloorPlanRoofs.formatOverhang(plan, metrics.rake)} |`,
+          `| ${plan.markdownText(roof.label || roof.id || "Telhado")} | ${plan.markdownText(plan.roofTypeLabel(roof.type))} | ${plan.markdownText(plan.roofOrientationLabel(roof.orientation))} · ${plan.formatMeters(metrics.ridgeLength)} m | ${plan.formatMeters(metrics.roofWidth)} × ${plan.formatMeters(metrics.roofLength)} | ${plan.formatMeters(metrics.baseElevation)} | ${plan.formatMeters(metrics.rise)} | ${plan.formatMeters(metrics.surfaceArea)} | ${plan.formatMeters(metrics.pitch)}° | ${FloorPlanRoofs.formatOverhang(plan, metrics.eave)} | ${FloorPlanRoofs.formatOverhang(plan, metrics.rake)} |`,
         );
       });
     };
@@ -10188,8 +10328,21 @@ const FloorPlanTextExport = {
       const floorRoofs = roofs.filter(
         (roof) => (roof.floorId ?? null) === floorId,
       );
+      const floorWalls = independentWalls.filter(
+        (wall) => floorIndexForWall(wall) === floorIndex,
+      );
 
-      lines.push("", `## ${plan.markdownText(floorName)}`);
+      lines.push("", `## 05.${floorIndex + 1} — ${plan.markdownText(floorName)}`);
+      const floorGrossArea = floorRooms.reduce(
+        (total, entry) => total + (entry.reference || entry).area(),
+        0,
+      );
+      const floorWidth = floorRows[floorIndex]?.width ?? 0;
+      const floorLength = floorRows[floorIndex]?.height ?? 0;
+      lines.push(
+        "",
+        `**Resumo:** ${floorRooms.length} cômodos · área bruta somada: ${plan.formatMeters(floorGrossArea)} m² · envelope: ${plan.formatMeters(floorWidth)} × ${plan.formatMeters(floorLength)} m`,
+      );
       lines.push(
         "",
         "### Cômodos",
@@ -10200,6 +10353,8 @@ const FloorPlanTextExport = {
       if (floorRooms.length === 0) {
         lines.push("| — | Nenhum cômodo definido |  |  |  |  |  |  |  |  |");
       } else {
+        let grossTotal = 0;
+        let netTotal = 0;
         floorRooms.forEach((entry, index) => {
           const room = entry.reference || entry;
           const walls =
@@ -10209,16 +10364,20 @@ const FloorPlanTextExport = {
           const activeRoom = plan.roomElements.find(
             (candidate) => candidate.dataset.id === entry.id,
           );
+          const grossArea = room.area();
+          const netArea = activeRoom?.netArea ?? grossArea;
+          grossTotal += grossArea;
+          netTotal += netArea;
           lines.push(
-            `| ${index + 1} | ${plan.markdownText(entry.id || room.dataset?.id || "—")} | ${plan.markdownText(entry.label || room.dataset?.label || "Cômodo")} | ${plan.formatMeters(room.x0())} | ${plan.formatMeters(room.y0())} | ${plan.formatMeters(room.w())} | ${plan.formatMeters(room.l())} | ${plan.formatMeters(room.area())} | ${plan.formatMeters(activeRoom?.netArea ?? room.area())} | ${walls} |`,
+            `| ${index + 1} | ${plan.markdownText(entry.id || room.dataset?.id || "—")} | ${plan.markdownText(entry.label || room.dataset?.label || "Cômodo")} | ${plan.formatMeters(room.x0())} | ${plan.formatMeters(room.y0())} | ${plan.formatMeters(room.w())} | ${plan.formatMeters(room.l())} | ${plan.formatMeters(grossArea)} | ${plan.formatMeters(netArea)} | ${walls} |`,
           );
         });
+        lines.push(
+          `|  |  | **Total do piso** |  |  | — | — | **${plan.formatMeters(grossTotal)}** | **${plan.formatMeters(netTotal)}** |  |`,
+        );
       }
-      const floorArea = floorRows[floorIndex]?.area ?? 0;
-      lines.push(
-        "",
-        `**Total do piso:** ${floorRows[floorIndex]?.count ?? floorRooms.length} cômodos · ${plan.formatMeters(floorArea)} m²`,
-      );
+
+      appendIndependentWalls(floorWalls);
 
       lines.push(
         "",
@@ -10288,18 +10447,22 @@ const FloorPlanTextExport = {
           );
         });
       }
-    });
 
-    lines.push("", "## Comunicações naturais do piso ativo", "");
-    if (plan.naturalCommunications.length === 0) {
-      lines.push("Nenhuma comunicação natural detectada.");
-    } else {
-      plan.naturalCommunications.forEach((communication) => {
-        lines.push(
-          `- **${plan.markdownText(communication.id)}:** ${plan.markdownText(communication.firstId)} → ${plan.markdownText(communication.secondId)} (${plan.formatMeters(communication.length)} m, orientação ${communication.orientation})`,
-        );
-      });
-    }
+      const floorCommunications = FloorPlanLists.findNaturalCommunications(
+        plan,
+        floorRooms.map((entry) => entry.reference || entry),
+      );
+      lines.push("", "### Comunicações naturais", "");
+      if (floorCommunications.length === 0) {
+        lines.push("Nenhuma comunicação natural detectada neste piso.");
+      } else {
+        floorCommunications.forEach((communication) => {
+          lines.push(
+            `- **${plan.markdownText(communication.id)}:** ${plan.markdownText(communication.firstLabel)} → ${plan.markdownText(communication.secondLabel)} (${plan.formatMeters(communication.length)} m, orientação ${communication.orientation})`,
+          );
+        });
+      }
+    });
 
     if (plan.errors.length > 0) {
       lines.push(
