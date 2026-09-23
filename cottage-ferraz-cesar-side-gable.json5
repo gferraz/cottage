@@ -124,13 +124,28 @@
       }
     },
     {
-      id: "knee-wall-front",
+      id: "knee-wall-front-left",
       base: { level: "upper.z0" },
       top: { level: "upper.z0 + 1" },
       thickness: 0.12,
+      color: "blue",
       path: {
         points: [
-          ["left.x0",  "knee-top.y0"],
+          ["left.x0",      "knee-top.y0"],
+          ["knee-left.x0", "knee-top.y0"]
+        ]
+      }
+    },
+    {
+      id: "knee-wall-front-right",
+      base: { level: "upper.z0" },
+      top: { level: "upper.z0 + 1" },
+      thickness: 0.12,
+      color: "blue",
+      path: {
+        points: [
+          ["right.x1 - 0.8",  "top.y0"],
+          ["right.x1 - 0.8",  "knee-top.y0"],
           ["right.x1", "knee-top.y0"]
         ]
       }
@@ -140,11 +155,11 @@
       base: { level: "upper.z0" },
       top: { level: "upper.z0 + 1" },
       thickness: 0.12,
-      color: "terracotta",
+      color: "blue",
       path: {
         points: [
           ["left.x0",  "w-axis.y0"],
-          ["central.x0", "w-axis.y0"]
+          ["knee-left.x0", "w-axis.y0"]
         ]
       }
     },
@@ -153,7 +168,7 @@
       base: { level: "upper.z0" },
       top: { level: "upper.z0 + 1" },
       thickness: 0.12,
-      color: "terracotta",
+      color: "blue",
       path: {
         points: [
           ["central.x1", "w-axis.y0"],
@@ -166,6 +181,7 @@
       base: { level: "upper.z0" },
       top: { level: "upper.z0 + 1" },
       thickness: 0.12,
+      color: "blue",
       path: {
         points: [
           ["left.x0",  "knee-bottom.y0"],
@@ -225,14 +241,20 @@
   guides: [
     { id: "w-axis", label: "eixo transversal", pos: [-4.0, "main.yc"], w: 20, color: "green" },
     { id: "l-axis", label: "eixo longitudinal", pos: ["central.xc", -2.5], l: 20, color: "green" },
-    { id: "main-left", label: "Parede esquerda", pos: ["left.x0", -2.5], l: 20, color: "green" },
-    { id: "knee-top", label: "Meia parede frontal", pos: [-4.0, "dorm.y0"], w: 20, color: "green" },
+
     { id: "central-left", label: "central esquerda", pos: ["l-axis.x0 - 0.7", -2.5], l: 20, color: "green" },
     { id: "central-right", label: "central direita", pos: ["l-axis.x0 + 0.7", -2.5], l: 20, color: "green" },
-    { id: "knee-bottom", label: "Meia parede traseira", pos: [-4.0, "dorm.y1"], w: 20, color: "green" },
-    { id: "main-right", label: "Parede direita", pos: ["right.x1", -2.5], l: 20, color: "green" },
-    { id: "main-top", label: "Parede frontal", pos: [-4.0, "main.y0"], w: 20, color: "green" },
-    { id: "main-bottom", label: "Parede traseira", pos: [-4.0, "main.y1"], w: 20, color: "green" }
+
+    { id: "main-top", label: "parede frontal", pos: [-4.0, "main.y0"], w: 20, color: "green" },
+    { id: "main-right", label: "parede direita", pos: ["right.x1", -2.5], l: 20, color: "green" },
+    { id: "main-bottom", label: "parede traseira", pos: [-4.0, "main.y1"], w: 20, color: "green" },
+    { id: "main-left", label: "parede esquerda", pos: ["left.x0", -2.5], l: 20, color: "green" },
+
+    { id: "knee-top",    label: "meia parede frontal",  pos: [-4.0, "dorm.y0"], w: 20, color: "green" },
+    { id: "knee-right",  label: "meia parede direita",  pos: ["front-dorms-gable.x1 - 0.8", -2.5], l: 20, color: "terracotta" },
+    { id: "knee-left",   label: "meia parede esquerda", pos: ["front-dorms-gable.x0 + 0.8", -2.5], l: 20, color: "terracotta" },
+    { id: "knee-bottom", label: "meia parede traseira", pos: [-4.0, "dorm.y1"], w: 20, color: "green" }
+
   ],
 
   building: { anchor: "terrain.front-start", position: { x: 4, y: 3 } },
@@ -485,20 +507,22 @@
           id: "bedroom-n",
           label: "Quarto N",
           from: ["dorm-top.x0", "dorm-top.y0"],
-          to: ["x0 + 3.6", "dorm-top.y1"],
-          openings: [{ type: "door", from: "right", to: "playroom", dy: 3 }]
+          to: ["knee-left.x0", "dorm-top.y1"],
+          openings: [{ type: "door", from: "right", to: "playroom", dy: 3 }],
+          walls: ["right"]
         },
         {
           id: "prayer-room",
           label: "Sala de oração",
           from: ["dorm-top.x1 - 3.6", "dorm-top-right.y0"],
-          to: ["dorm-top.x1", "y0 +1.2"],
+          to: ["dorm-top.x1 - 0.8", "y0 +1.2"],
         },
         {
           id: "bedroom-e",
           label: "Quarto E",
           from: ["dorm-top.x1 - 3.6", "prayer-room.y1"],
           to: ["dorm-top.x1", "dorm-top.y1"],
+          walls: ["top", "left"],
           openings: [{ type: "door", from: "left", to: "playroom", dy: 2.6 }]
         },
         {
@@ -506,27 +530,31 @@
           label: "Sala de Jogos",
           from: ["bedroom-n.x1", "dorm-top-right.y0"],
           to: ["bedroom-e.x0", "dorm-top.y1"],
+          walls: ["top"],
           classes: "circulation"
         },
         {
           id: "bedroom-w",
           label: "Quarto W",
           from: ["dorm-bottom.x0", "dorm-bottom.y0"],
-          to: ["x0 + 4.1", "y0 + 2.5"],
-          openings: [{ type: "door", from: "right", to: "c-2-1" }]
+          to: ["knee-left.x0", "y0 + 2.5"],
+          openings: [{ type: "door", from: "right", to: "c-2-1" }],
+          walls: ["right"]
         },
         {
           id: "bathroom",
           label: "Banheiro",
           from: ["dorm-bottom.x0", "bedroom-w.y1"],
-          to: ["x0 + 4.1", "dorm-bottom.y1"],
-          openings: [{ type: "door", from: "right", to: "c-2-1" }]
+          to: ["knee-left.x0", "dorm-bottom.y1"],
+          openings: [{ type: "door", from: "right", to: "c-2-1" }],
+          walls: ["top", "right"]
         },
         {
           id: "bedroom-s",
           label: "Quarto S",
           from: ["stairs.x0", "dorm-bottom.y0"],
           to: ["dorm-bottom.x1", "stairs.y0"],
+          walls: ["bottom", "left"],
           openings: [{ type: "door", from: "left", to: "c-2-1" }]
         },
         {
