@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Planta térrea — separada por módulos</title>
     <link rel="stylesheet" href="src/config/theme.css" />
-    <link rel="stylesheet" href="src/floor-plan.css?v=wall-color-1" />
+    <link rel="stylesheet" href="src/floor-plan.css?v=camera-controls-1" />
   </head>
   <body>
 <template id="portable-export-css"><style>
@@ -811,13 +811,30 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
         <label class="solar-control" for="solar-time">
           <span>Hora do sol</span>
           <select id="solar-time">
-          <option value="06:00">06:00</option>
-          <option value="09:00">09:00</option>
-          <option value="12:00">12:00</option>
-          <option value="15:00" selected>15:00</option>
-          <option value="18:00">18:00</option>
+            <option value="06:00">06:00</option>
+            <option value="09:00">09:00</option>
+            <option value="12:00">12:00</option>
+            <option value="15:00" selected>15:00</option>
+            <option value="18:00">18:00</option>
           </select>
         </label>
+      </div>
+      <div class="facade-3d-controls">
+        <div class="camera-control-group" id="facade-3d-camera-controls" role="group" aria-label="Controles da câmera">
+          <span class="camera-control-label">Câmera</span>
+          <div class="camera-direction-controls" role="group" aria-label="Direção da câmera">
+            <span aria-hidden="true"></span>
+            <button type="button" data-camera-action="elevation-up" aria-label="Elevar câmera">↑</button>
+            <span aria-hidden="true"></span>
+            <button type="button" data-camera-action="azimuth-left" aria-label="Girar câmera para a esquerda">←</button>
+            <button type="button" data-camera-action="elevation-down" aria-label="Baixar câmera">↓</button>
+            <button type="button" data-camera-action="azimuth-right" aria-label="Girar câmera para a direita">→</button>
+          </div>
+          <div class="camera-zoom-controls" role="group" aria-label="Zoom">
+            <button type="button" data-camera-action="zoom-out" aria-label="Afastar">−</button>
+            <button type="button" data-camera-action="zoom-in" aria-label="Aproximar">+</button>
+          </div>
+        </div>
       </div>
       <div id="facade-3d-list"></div>
     </section>
@@ -895,7 +912,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
     <script src="src/views/3d/elements.js?v=facades-3d-elements-1" defer></script>
     <script src="src/views/3d/roofs.js?v=facades-3d-roofs-1" defer></script>
     <script src="src/views/3d/sun.js?v=facades-3d-sun-3" defer></script>
-    <script src="src/views/3d/renderer.js?v=facades-3d-48" defer></script>
+    <script src="src/views/3d/renderer.js?v=facades-3d-49" defer></script>
     <script src="src/views/roofs.js?v=modules-10" defer></script>
     <script src="src/models/openings.js?v=modules-19" defer></script>
     <script src="src/models/walls.js?v=walls-10" defer></script>
@@ -907,8 +924,8 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
     <script src="src/models/geometry-domain.js?v=modules-10" defer></script>
     <script src="src/views/dom.js?v=modules-10" defer></script>
     <script src="src/exports/html.js?v=modules-9" defer></script>
-    <script src="src/main.js?v=modules-28" defer></script>
+    <script src="src/main.js?v=modules-29" defer></script>
     <script src="src/config/catalog.js?v=catalog-1" defer></script>
-    <script src="src/config/app.js?v=cli-4" defer></script>
+    <script src="src/config/app.js?v=cli-5" defer></script>
   </body>
 </html>

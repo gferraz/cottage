@@ -8,6 +8,7 @@ const FloorPlanFacades3D = {
     if (!container) return;
     container._threeRenderer?.dispose();
     container._threeRenderer = null;
+    container._updateFacadeCamera = null;
     container.replaceChildren();
 
     if (!window.THREE) {
@@ -139,10 +140,12 @@ const FloorPlanFacades3D = {
       (bounds, room) => ({
         x0: Math.min(bounds.x0, room.x0()),
         x1: Math.max(bounds.x1, room.x1()),
+        y0: Math.min(bounds.y0, room.y0()),
+        y1: Math.max(bounds.y1, room.y1()),
         z0: Math.min(bounds.z0, room.z0()),
         z1: Math.max(bounds.z1, room.z1()),
       }),
-      { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity },
+      { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity, z0: Infinity, z1: -Infinity },
     );
     const drawingBounds = { ...roomBounds };
     (plan.independentWalls || new Map()).forEach((wall) => {
@@ -150,12 +153,16 @@ const FloorPlanFacades3D = {
       drawingBounds.x1 = Math.max(drawingBounds.x1, wall.x1());
       drawingBounds.z0 = Math.min(drawingBounds.z0, wall.z0);
       drawingBounds.z1 = Math.max(drawingBounds.z1, wall.topZ);
+      drawingBounds.y0 = Math.min(drawingBounds.y0, wall.y0());
+      drawingBounds.y1 = Math.max(drawingBounds.y1, wall.y1());
     });
     stairFlights.forEach((stair) => {
       drawingBounds.x0 = Math.min(drawingBounds.x0, Number(stair.x));
       drawingBounds.x1 = Math.max(drawingBounds.x1, Number(stair.x) + Number(stair.w));
       drawingBounds.z0 = Math.min(drawingBounds.z0, Number(stair.z0));
       drawingBounds.z1 = Math.max(drawingBounds.z1, Number(stair.z1));
+      drawingBounds.y0 = Math.min(drawingBounds.y0, Number(stair.y));
+      drawingBounds.y1 = Math.max(drawingBounds.y1, Number(stair.y) + Number(stair.l));
     });
     (plan.allRoofs || []).forEach((roof) => {
       if (roof.type !== "gable") return;
@@ -169,19 +176,34 @@ const FloorPlanFacades3D = {
         );
         const baseX0 = Number(base.x0());
         const baseX1 = Number(base.x1());
+        const baseY0 = Number(base.y0());
+        const baseY1 = Number(base.y1());
         const baseSpan = longitudinal
           ? baseX1 - baseX0
-          : Number(base.y1()) - Number(base.y0());
+          : baseY1 - baseY0;
         const pitch = Number(roof.pitch);
         const z0 = roof.z0 === undefined
           ? FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor)
           : plan.resolve(roof.z0);
+        const pitchTangent = Math.tan((pitch * Math.PI) / 180);
         const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
         const x0 = baseX0 - overhang0;
         const x1 = baseX1 + overhang1;
-        if (finite(x0, x1, z0, rise)) {
+        const [depthOverhang0, depthOverhang1] = FloorPlanRoofs.overhangPair(
+          longitudinal ? roof.rake : roof.eave,
+        );
+        const y0 = baseY0 - depthOverhang0;
+        const y1 = baseY1 + depthOverhang1;
+        const [slopeOverhang0, slopeOverhang1] = FloorPlanRoofs.overhangPair(roof.eave);
+        if (finite(x0, x1, y0, y1, z0, rise, pitchTangent)) {
           drawingBounds.x0 = Math.min(drawingBounds.x0, x0);
           drawingBounds.x1 = Math.max(drawingBounds.x1, x1);
+          drawingBounds.y0 = Math.min(drawingBounds.y0, y0);
+          drawingBounds.y1 = Math.max(drawingBounds.y1, y1);
+          drawingBounds.z0 = Math.min(
+            drawingBounds.z0,
+            z0 - Math.max(slopeOverhang0, slopeOverhang1) * pitchTangent,
+          );
           drawingBounds.z1 = Math.max(drawingBounds.z1, z0 + rise);
         }
       } catch {
@@ -195,13 +217,35 @@ const FloorPlanFacades3D = {
     const aspect = width / height;
     const contentWidth = drawingBounds.x1 - drawingBounds.x0 + padding * 2;
     const contentHeight = drawingBounds.z1 - drawingBounds.z0 + padding * 2;
-    const viewHeight = Math.max(
+    let viewHeight = Math.max(
       contentHeight * 1.2,
       (contentWidth / aspect) * 1.15,
     );
+    const halfX = (drawingBounds.x1 - drawingBounds.x0) / 2;
+    const halfY = (drawingBounds.y1 - drawingBounds.y0) / 2;
+    const halfZ = (drawingBounds.z1 - drawingBounds.z0) / 2;
+    for (let azimuthStep = 0; azimuthStep < 8; azimuthStep += 1) {
+      const azimuth = (azimuthStep * Math.PI) / 4;
+      const horizontalHalfExtent =
+        Math.abs(Math.cos(azimuth)) * halfX +
+        Math.abs(Math.sin(azimuth)) * halfY;
+      for (const elevation of [20, 45]) {
+        const elevationRadians = (elevation * Math.PI) / 180;
+        const verticalHalfExtent =
+          Math.abs(Math.sin(elevationRadians) * Math.sin(azimuth)) * halfX +
+          Math.abs(Math.sin(elevationRadians) * Math.cos(azimuth)) * halfY +
+          Math.abs(Math.cos(elevationRadians)) * halfZ;
+        viewHeight = Math.max(
+          viewHeight,
+          verticalHalfExtent * 2.2,
+          (horizontalHalfExtent * 2.2) / aspect,
+        );
+      }
+    }
     const viewWidth = viewHeight * aspect;
     const centerX = (drawingBounds.x0 + drawingBounds.x1) / 2;
-    const centerZ = (drawingBounds.z0 + drawingBounds.z1) / 2 - 0.8;
+    const centerY = (drawingBounds.y0 + drawingBounds.y1) / 2;
+    const centerZ = (drawingBounds.z0 + drawingBounds.z1) / 2;
     scene.scale.x = -1;
     scene.position.x = centerX * 2;
     const camera = new THREE.OrthographicCamera(
@@ -210,15 +254,29 @@ const FloorPlanFacades3D = {
       centerZ + viewHeight / 2,
       centerZ - viewHeight / 2,
       0.1,
-      200,
-    );
-    camera.position.set(
-      (roomBounds.x0 + roomBounds.x1) / 2 + 8,
-      direction === "front" ? -45 : 45,
-      centerZ + 18,
+      Math.max(200, Math.hypot(halfX, halfY, halfZ) * 8),
     );
     camera.up.set(0, 0, 1);
-    camera.lookAt((roomBounds.x0 + roomBounds.x1) / 2, 0, centerZ);
+    const cameraState = plan.facade3dCamera ?? {
+      azimuthStep: 0,
+      elevationStep: 0,
+      zoom: 1,
+    };
+    const orbitRadius = Math.max(12, Math.hypot(halfX, halfY, halfZ) * 3);
+    const positionCamera = () => {
+      const azimuth = (cameraState.azimuthStep * Math.PI) / 4;
+      const elevation = (cameraState.elevationStep === 1 ? 45 : 20) * (Math.PI / 180);
+      const horizontalRadius = orbitRadius * Math.cos(elevation);
+      camera.position.set(
+        centerX + horizontalRadius * Math.sin(azimuth),
+        centerY - horizontalRadius * Math.cos(azimuth),
+        centerZ + orbitRadius * Math.sin(elevation),
+      );
+      camera.zoom = cameraState.zoom;
+      camera.lookAt(centerX, centerY, centerZ);
+      camera.updateProjectionMatrix();
+    };
+    positionCamera();
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.shadowMap.enabled = true;
@@ -226,7 +284,8 @@ const FloorPlanFacades3D = {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(width, height, false);
     renderer.domElement.className = "facade-3d-canvas";
-    renderer.domElement.setAttribute("aria-label", "Fachada frontal alternativa em 3D");
+    renderer.domElement.setAttribute("aria-label", "Modelo arquitetônico 3D; use as setas e os controles de zoom");
+    renderer.domElement.tabIndex = 0;
     container.append(renderer.domElement);
 
     const wallMaterial = new THREE.MeshLambertMaterial({
@@ -329,7 +388,35 @@ const FloorPlanFacades3D = {
     FloorPlan3DElements.render(context);
     FloorPlan3DRoofs.render(context);
 
-    renderer.render(scene, camera);
+    const updateCamera = () => {
+      positionCamera();
+      renderer.render(scene, camera);
+      plan.facade3dCameraControls?.querySelectorAll("button[data-camera-action]").forEach((button) => {
+        button.disabled =
+          (button.dataset.cameraAction === "elevation-up" && cameraState.elevationStep === 1) ||
+          (button.dataset.cameraAction === "elevation-down" && cameraState.elevationStep === 0) ||
+          (button.dataset.cameraAction === "zoom-in" && cameraState.zoom >= 2.5) ||
+          (button.dataset.cameraAction === "zoom-out" && cameraState.zoom <= 0.65);
+      });
+    };
+    container._updateFacadeCamera = updateCamera;
+    renderer.domElement.addEventListener("keydown", (event) => {
+      const keyboardActions = {
+        ArrowLeft: "azimuth-left",
+        ArrowRight: "azimuth-right",
+        ArrowUp: "elevation-up",
+        ArrowDown: "elevation-down",
+        "+": "zoom-in",
+        "=": "zoom-in",
+        "-": "zoom-out",
+        "_": "zoom-out",
+      };
+      const action = keyboardActions[event.key];
+      if (!action) return;
+      event.preventDefault();
+      plan.adjustFacade3DCamera(action);
+    });
+    updateCamera();
     if (solarPosition) {
       const caption = document.createElement("p");
       caption.className = "facade-3d-sun-caption";

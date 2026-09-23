@@ -6,7 +6,7 @@ class FloorPlan {
    * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
    * @param {number} [options.scale=56] Escala inicial em pixels por metro.
    */
-  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, solarSeasonSelect = null, solarTimeSelect = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, facade3dCameraControls = null, solarSeasonSelect = null, solarTimeSelect = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
@@ -14,6 +14,8 @@ class FloorPlan {
     this.facadeLayer = facadeLayer;
     this.secondaryFacadeLayer = secondaryFacadeLayer;
     this.facade3dLayer = facade3dLayer;
+    this.facade3dCameraControls = facade3dCameraControls;
+    this.facade3dCamera = { azimuthStep: 0, elevationStep: 0, zoom: 1 };
     this.solarSeasonSelect = solarSeasonSelect;
     this.solarTimeSelect = solarTimeSelect;
     this.solarSeason = solarSeasonSelect?.value || "equinox";
@@ -148,7 +150,7 @@ class FloorPlan {
         if (activeFloor >= 0) {
           this.load(
             { ...this.currentConfig, activeFloor },
-            { preserveSolarPresentation: true },
+            { preservePresentation: true },
           );
         }
       });
@@ -157,6 +159,12 @@ class FloorPlan {
       solarSeasonSelect.addEventListener("change", () => {
         this.solarSeason = solarSeasonSelect.value;
         if (this.currentConfig) this.renderFacade3D();
+      });
+    }
+    if (facade3dCameraControls) {
+      facade3dCameraControls.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-camera-action]");
+        if (button) this.adjustFacade3DCamera(button.dataset.cameraAction);
       });
     }
     if (solarTimeSelect) {
@@ -407,6 +415,19 @@ class FloorPlan {
     return window.FloorPlanFacades3D?.render(this, { direction: "front" });
   }
 
+  adjustFacade3DCamera(action) {
+    const camera = this.facade3dCamera;
+    if (!camera) return;
+    if (action === "azimuth-left") camera.azimuthStep = (camera.azimuthStep + 7) % 8;
+    else if (action === "azimuth-right") camera.azimuthStep = (camera.azimuthStep + 1) % 8;
+    else if (action === "elevation-up") camera.elevationStep = 1;
+    else if (action === "elevation-down") camera.elevationStep = 0;
+    else if (action === "zoom-in") camera.zoom = Math.min(2.5, camera.zoom * 1.25);
+    else if (action === "zoom-out") camera.zoom = Math.max(0.65, camera.zoom / 1.25);
+    else return;
+    this.facade3dLayer?._updateFacadeCamera?.();
+  }
+
   renderRoofs(roofs = []) {
     return FloorPlanRoofs.render(this, roofs);
   }
@@ -587,10 +608,10 @@ class FloorPlan {
    * Carrega uma configuração JSON e renderiza todos os seus dados.
    * @param {Object} config Configuração da planta, incluindo pisos e objetos.
    * @param {Object} [options] Opções para preservar estado de apresentação.
-   * @param {boolean} [options.preserveSolarPresentation=false] Mantém estação e hora solares atuais.
+   * @param {boolean} [options.preservePresentation=false] Mantém o estado de apresentação atual.
    * @returns {FloorPlan} A própria instância, para encadeamento.
    */
-  load(config, { preserveSolarPresentation = false } = {}) {
+  load(config, { preservePresentation = false } = {}) {
     this.references ??= new Map();
     this.rooms ??= new Map();
     this.roomReferences ??= new Map();
@@ -602,7 +623,8 @@ class FloorPlan {
     this.validZoneIds ??= new Set();
     this.model = FloorPlanModel.fromConfig(config);
     this.currentConfig = config;
-    if (!preserveSolarPresentation) {
+    if (!preservePresentation) {
+      this.facade3dCamera = { azimuthStep: 0, elevationStep: 0, zoom: 1 };
       this.solarSeason = config.solar?.season ?? "equinox";
       this.solarTime = config.solar?.time ?? "15:00";
     }
