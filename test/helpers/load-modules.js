@@ -11,4 +11,4 @@ const src = (module) =>
   require(path.resolve(__dirname, "../../src", `${module}.js`));
 
 // Keep this list in the same relative order as floor-plan.html.
-src("floor-plan-geometry-box");
+src("models/geometry-box");
