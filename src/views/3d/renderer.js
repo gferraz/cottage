@@ -158,7 +158,9 @@ const FloorPlanFacades3D = {
     (plan.allRoofs || []).forEach((roof) => {
       if (roof.type !== "gable") return;
       try {
-        const base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+        const baseDefinition = roof.base ?? roof;
+        const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
+        const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
         const longitudinal = roof.orientation === "longitudinal";
         const [overhang0, overhang1] = FloorPlanRoofs.overhangPair(
           longitudinal ? roof.eave : roof.rake,
@@ -170,7 +172,7 @@ const FloorPlanFacades3D = {
           : Number(base.y1()) - Number(base.y0());
         const pitch = Number(roof.pitch);
         const z0 = roof.z0 === undefined
-          ? FloorPlanRoofs.baseCeilingZ(plan, base, 0)
+          ? FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor)
           : plan.resolve(roof.z0);
         const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
         const x0 = baseX0 - overhang0;

@@ -4940,9 +4940,11 @@ const FloorPlan3DRoofs = {
   }) {
     (plan.allRoofs || []).forEach((roof) => {
       if (roof.type !== "gable") return;
+      const baseDefinition = roof.base ?? roof;
+      const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
       let base;
       try {
-        base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+        base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
       } catch {
         return;
       }
@@ -4959,7 +4961,7 @@ const FloorPlan3DRoofs = {
       const rise = (span / 2) * Math.tan((pitch * Math.PI) / 180);
       const pitchTangent = Math.tan((pitch * Math.PI) / 180);
       const z0 = roof.z0 === undefined
-        ? FloorPlanRoofs.baseCeilingZ(plan, base, 0)
+        ? FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor)
         : plan.resolve(roof.z0);
       if (!finite(baseX0, baseX1, baseY0, baseY1, span, rise, z0) || span <= 0 || rise < 0) {
         reportInvalid("telhado", roof.id);
@@ -5332,7 +5334,9 @@ const FloorPlanFacades3D = {
     (plan.allRoofs || []).forEach((roof) => {
       if (roof.type !== "gable") return;
       try {
-        const base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+        const baseDefinition = roof.base ?? roof;
+        const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
+        const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
         const longitudinal = roof.orientation === "longitudinal";
         const [overhang0, overhang1] = FloorPlanRoofs.overhangPair(
           longitudinal ? roof.eave : roof.rake,
@@ -5344,7 +5348,7 @@ const FloorPlanFacades3D = {
           : Number(base.y1()) - Number(base.y0());
         const pitch = Number(roof.pitch);
         const z0 = roof.z0 === undefined
-          ? FloorPlanRoofs.baseCeilingZ(plan, base, 0)
+          ? FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor)
           : plan.resolve(roof.z0);
         const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
         const x0 = baseX0 - overhang0;
@@ -5496,12 +5500,73 @@ const FloorPlanRoofs = {
     });
   },
 
-  baseCeilingZ(plan, base, fallback = 0) {
+  floorForRoof(plan, roof, baseDefinition) {
+    const floors = plan.currentConfig?.floors ?? [plan.currentConfig ?? {}];
+    if (roof.floorId) {
+      const matchingFloor = floors.find((floor) => floor.id === roof.floorId);
+      if (matchingFloor) return matchingFloor;
+    }
+    if (typeof baseDefinition === "string") {
+      const room = plan.roomDefinitions?.get(baseDefinition);
+      const owner = floors.find((floor) => (floor.rooms ?? []).includes(room));
+      if (owner) return owner;
+    }
+
+    let best = null;
+    floors.forEach((floor) => {
+      try {
+        const base = plan.normalizeGeometryAtFloor(baseDefinition, floor);
+        const overlap = (floor.rooms ?? []).reduce((total, definition) => {
+          const reference = plan.roomReferences?.get(definition.id);
+          if (!reference) return total;
+          const width = Math.max(
+            0,
+            Math.min(base.x + base.w, reference.x1()) -
+              Math.max(base.x, reference.x0()),
+          );
+          const length = Math.max(
+            0,
+            Math.min(base.y + base.l, reference.y1()) -
+              Math.max(base.y, reference.y0()),
+          );
+          return total + width * length;
+        }, 0);
+        if (
+          overlap > 0 &&
+          (!best || overlap > best.overlap ||
+            (overlap === best.overlap && Number(floor.z0 ?? 0) > Number(best.floor.z0 ?? 0)))
+        ) {
+          best = { floor, overlap };
+        }
+      } catch {
+        // A geometry may depend on references that are unavailable in this floor context.
+      }
+    });
+    return best?.floor ?? floors[0];
+  },
+
+  baseCeilingZ(plan, base, fallback = 0, floorConfig) {
     const baseZ0 = typeof base?.z0 === "function" ? Number(base.z0()) : 0;
     const baseZ1 = typeof base?.z1 === "function" ? Number(base.z1()) : NaN;
     if (Number.isFinite(baseZ1) && baseZ1 > baseZ0) return baseZ1;
 
-    const candidates = (plan.zoneElements ?? [])
+    const floors = plan.currentConfig?.floors ?? [plan.currentConfig ?? {}];
+    const owningFloor = floorConfig ?? floors[0];
+    const zoneDefinitions = [
+      ...(plan.currentConfig?.floors ? plan.currentConfig.zones ?? [] : []),
+      ...(owningFloor?.zones ?? []),
+    ];
+    const candidates = zoneDefinitions
+      .map((definition) => {
+        try {
+          return FloorPlanRoofs.asGeometryBox(
+            plan.normalizeGeometryAtFloor(definition, owningFloor),
+          );
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean)
       .filter(
         (zone) =>
           typeof zone.x0 === "function" &&
@@ -5519,18 +5584,14 @@ const FloorPlanRoofs = {
 
     if (candidates[0]) return candidates[0].z1();
 
-    const activeFloor = (plan.currentConfig?.floors ?? [plan.currentConfig]).find(
-      (floor) => Number(floor?.z0) === Number(plan.currentFloorHeight),
-    );
-    const wallMaxHeight = Number(activeFloor?.wall_max_height);
-    if (baseZ0 > 0) return baseZ0;
+    const wallMaxHeight = Number(owningFloor?.wall_max_height);
     if (Number.isFinite(wallMaxHeight) && wallMaxHeight > 0) {
       return baseZ0 + wallMaxHeight;
     }
     return fallback;
   },
 
-  resolveBase(plan, baseDefinition) {
+  resolveBase(plan, baseDefinition, floorConfig) {
     if (typeof baseDefinition === "string") {
       const base = plan.references.get(baseDefinition);
       if (!base) throw new Error(`Unknown roof base reference: ${baseDefinition}`);
@@ -5539,7 +5600,9 @@ const FloorPlanRoofs = {
     if (!baseDefinition || typeof baseDefinition !== "object") {
       throw new Error("A roof base must be an object or a reference ID");
     }
-    const base = plan.normalizeGeometry(baseDefinition);
+    const base = floorConfig
+      ? plan.normalizeGeometryAtFloor(baseDefinition, floorConfig)
+      : plan.normalizeGeometry(baseDefinition);
     return FloorPlanRoofs.asGeometryBox(base);
   },
 
@@ -6820,6 +6883,7 @@ const FloorPlanReferences = {
     plan.globalObjectIds ??= new Set();
     plan.validZoneIds ??= new Set();
     plan.roomDefinitions.clear();
+    plan.roomFloorConfigs = new Map();
     plan.roomGeometryCache.clear();
     plan.roomGeometryStack.clear();
     plan.invalidRoomIds.clear();
@@ -6839,12 +6903,23 @@ const FloorPlanReferences = {
       plan.roomReferences.set(id, reference);
       plan.references.set(id, reference);
     });
+    const floors = config.floors ?? [config];
+    const roomFloors = new Map();
+    floors.forEach((floor) => {
+      (floor.rooms ?? []).forEach((room) => {
+        roomFloors.set(room.id, floor);
+        plan.roomFloorConfigs.set(room.id, floor);
+      });
+    });
     plan.registerGlobalPartReferences();
     plan.registerFloorReferences(config);
     plan.registerStaticGuideReferences(config);
     plan.registerStaticZoneReferences(config);
     plan.registerRoofReferences(config);
+    const previousFloorHeight = plan.currentFloorHeight;
     plan.roomDefinitions.forEach((_room, id) => {
+      const floor = roomFloors.get(id) ?? floors[0];
+      plan.currentFloorHeight = Number(floor?.z0 ?? 0);
       try {
         plan.getRoomGeometry(id);
       } catch (error) {
@@ -6855,6 +6930,8 @@ const FloorPlanReferences = {
           opening: plan.roomDefinitions.get(id),
           message: error.message,
         });
+      } finally {
+        plan.currentFloorHeight = previousFloorHeight;
       }
     });
     FloorPlanWalls.normalizeRoomWalls(plan, config);
@@ -7015,15 +7092,15 @@ const FloorPlanReferences = {
   },
 
   registerStaticZoneReferences(plan, config) {
-    const floorZones = (config.floors ?? [config]).flatMap(
-      (floorConfig) => floorConfig.zones ?? [],
-    );
-    const zones = config.floors
-      ? [...(config.zones ?? []), ...floorZones]
-      : floorZones;
-    zones.forEach((zone) => {
+    const floors = config.floors ?? [config];
+    const globalFloor = floors[0];
+    const zones = [
+      ...(config.floors ? (config.zones ?? []).map((zone) => ({ zone, floor: globalFloor })) : []),
+      ...floors.flatMap((floor) => (floor.zones ?? []).map((zone) => ({ zone, floor }))),
+    ];
+    zones.forEach(({ zone, floor }) => {
       if (!zone.id || plan.references?.has(zone.id)) return;
-      const geometry = () => plan.normalizeGeometry(zone);
+      const geometry = () => plan.normalizeGeometryAtFloor(zone, floor);
       plan.references.set(zone.id, {
         x0: () => geometry().x,
         x1: () => geometry().x + geometry().w,
@@ -7056,7 +7133,9 @@ const FloorPlanReferences = {
         return;
       }
       try {
-        const base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+        const baseDefinition = roof.base ?? roof;
+        const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
+        const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
         plan.references.set(roof.id, base);
       } catch (error) {
         plan.errors.push({
@@ -7408,8 +7487,11 @@ const FloorPlanReferences = {
       throw new Error(`Circular room reference: ${id}`);
 
     plan.roomGeometryStack.add(id);
+    const previousFloorHeight = plan.currentFloorHeight;
     try {
       const room = plan.roomDefinitions.get(id);
+      const owningFloor = plan.roomFloorConfigs?.get(id);
+      if (owningFloor) plan.currentFloorHeight = Number(owningFloor.z0 ?? 0);
       const parts = room.parts?.length
         ? plan.normalizeParts(room.parts)
         : undefined;
@@ -7477,6 +7559,7 @@ const FloorPlanReferences = {
       plan.roomGeometryCache.set(id, reference);
       return reference;
     } finally {
+      plan.currentFloorHeight = previousFloorHeight;
       plan.roomGeometryStack.delete(id);
     }
   },

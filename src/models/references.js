@@ -13,6 +13,7 @@ const FloorPlanReferences = {
     plan.globalObjectIds ??= new Set();
     plan.validZoneIds ??= new Set();
     plan.roomDefinitions.clear();
+    plan.roomFloorConfigs = new Map();
     plan.roomGeometryCache.clear();
     plan.roomGeometryStack.clear();
     plan.invalidRoomIds.clear();
@@ -32,12 +33,23 @@ const FloorPlanReferences = {
       plan.roomReferences.set(id, reference);
       plan.references.set(id, reference);
     });
+    const floors = config.floors ?? [config];
+    const roomFloors = new Map();
+    floors.forEach((floor) => {
+      (floor.rooms ?? []).forEach((room) => {
+        roomFloors.set(room.id, floor);
+        plan.roomFloorConfigs.set(room.id, floor);
+      });
+    });
     plan.registerGlobalPartReferences();
     plan.registerFloorReferences(config);
     plan.registerStaticGuideReferences(config);
     plan.registerStaticZoneReferences(config);
     plan.registerRoofReferences(config);
+    const previousFloorHeight = plan.currentFloorHeight;
     plan.roomDefinitions.forEach((_room, id) => {
+      const floor = roomFloors.get(id) ?? floors[0];
+      plan.currentFloorHeight = Number(floor?.z0 ?? 0);
       try {
         plan.getRoomGeometry(id);
       } catch (error) {
@@ -48,6 +60,8 @@ const FloorPlanReferences = {
           opening: plan.roomDefinitions.get(id),
           message: error.message,
         });
+      } finally {
+        plan.currentFloorHeight = previousFloorHeight;
       }
     });
     FloorPlanWalls.normalizeRoomWalls(plan, config);
@@ -208,15 +222,15 @@ const FloorPlanReferences = {
   },
 
   registerStaticZoneReferences(plan, config) {
-    const floorZones = (config.floors ?? [config]).flatMap(
-      (floorConfig) => floorConfig.zones ?? [],
-    );
-    const zones = config.floors
-      ? [...(config.zones ?? []), ...floorZones]
-      : floorZones;
-    zones.forEach((zone) => {
+    const floors = config.floors ?? [config];
+    const globalFloor = floors[0];
+    const zones = [
+      ...(config.floors ? (config.zones ?? []).map((zone) => ({ zone, floor: globalFloor })) : []),
+      ...floors.flatMap((floor) => (floor.zones ?? []).map((zone) => ({ zone, floor }))),
+    ];
+    zones.forEach(({ zone, floor }) => {
       if (!zone.id || plan.references?.has(zone.id)) return;
-      const geometry = () => plan.normalizeGeometry(zone);
+      const geometry = () => plan.normalizeGeometryAtFloor(zone, floor);
       plan.references.set(zone.id, {
         x0: () => geometry().x,
         x1: () => geometry().x + geometry().w,
@@ -249,7 +263,9 @@ const FloorPlanReferences = {
         return;
       }
       try {
-        const base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+        const baseDefinition = roof.base ?? roof;
+        const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
+        const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
         plan.references.set(roof.id, base);
       } catch (error) {
         plan.errors.push({
@@ -601,8 +617,11 @@ const FloorPlanReferences = {
       throw new Error(`Circular room reference: ${id}`);
 
     plan.roomGeometryStack.add(id);
+    const previousFloorHeight = plan.currentFloorHeight;
     try {
       const room = plan.roomDefinitions.get(id);
+      const owningFloor = plan.roomFloorConfigs?.get(id);
+      if (owningFloor) plan.currentFloorHeight = Number(owningFloor.z0 ?? 0);
       const parts = room.parts?.length
         ? plan.normalizeParts(room.parts)
         : undefined;
@@ -670,6 +689,7 @@ const FloorPlanReferences = {
       plan.roomGeometryCache.set(id, reference);
       return reference;
     } finally {
+      plan.currentFloorHeight = previousFloorHeight;
       plan.roomGeometryStack.delete(id);
     }
   },

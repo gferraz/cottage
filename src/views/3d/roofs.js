@@ -6,9 +6,11 @@ const FloorPlan3DRoofs = {
   }) {
     (plan.allRoofs || []).forEach((roof) => {
       if (roof.type !== "gable") return;
+      const baseDefinition = roof.base ?? roof;
+      const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
       let base;
       try {
-        base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+        base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
       } catch {
         return;
       }
@@ -25,7 +27,7 @@ const FloorPlan3DRoofs = {
       const rise = (span / 2) * Math.tan((pitch * Math.PI) / 180);
       const pitchTangent = Math.tan((pitch * Math.PI) / 180);
       const z0 = roof.z0 === undefined
-        ? FloorPlanRoofs.baseCeilingZ(plan, base, 0)
+        ? FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor)
         : plan.resolve(roof.z0);
       if (!finite(baseX0, baseX1, baseY0, baseY1, span, rise, z0) || span <= 0 || rise < 0) {
         reportInvalid("telhado", roof.id);

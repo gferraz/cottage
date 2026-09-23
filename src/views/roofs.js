@@ -14,12 +14,73 @@ const FloorPlanRoofs = {
     });
   },
 
-  baseCeilingZ(plan, base, fallback = 0) {
+  floorForRoof(plan, roof, baseDefinition) {
+    const floors = plan.currentConfig?.floors ?? [plan.currentConfig ?? {}];
+    if (roof.floorId) {
+      const matchingFloor = floors.find((floor) => floor.id === roof.floorId);
+      if (matchingFloor) return matchingFloor;
+    }
+    if (typeof baseDefinition === "string") {
+      const room = plan.roomDefinitions?.get(baseDefinition);
+      const owner = floors.find((floor) => (floor.rooms ?? []).includes(room));
+      if (owner) return owner;
+    }
+
+    let best = null;
+    floors.forEach((floor) => {
+      try {
+        const base = plan.normalizeGeometryAtFloor(baseDefinition, floor);
+        const overlap = (floor.rooms ?? []).reduce((total, definition) => {
+          const reference = plan.roomReferences?.get(definition.id);
+          if (!reference) return total;
+          const width = Math.max(
+            0,
+            Math.min(base.x + base.w, reference.x1()) -
+              Math.max(base.x, reference.x0()),
+          );
+          const length = Math.max(
+            0,
+            Math.min(base.y + base.l, reference.y1()) -
+              Math.max(base.y, reference.y0()),
+          );
+          return total + width * length;
+        }, 0);
+        if (
+          overlap > 0 &&
+          (!best || overlap > best.overlap ||
+            (overlap === best.overlap && Number(floor.z0 ?? 0) > Number(best.floor.z0 ?? 0)))
+        ) {
+          best = { floor, overlap };
+        }
+      } catch {
+        // A geometry may depend on references that are unavailable in this floor context.
+      }
+    });
+    return best?.floor ?? floors[0];
+  },
+
+  baseCeilingZ(plan, base, fallback = 0, floorConfig) {
     const baseZ0 = typeof base?.z0 === "function" ? Number(base.z0()) : 0;
     const baseZ1 = typeof base?.z1 === "function" ? Number(base.z1()) : NaN;
     if (Number.isFinite(baseZ1) && baseZ1 > baseZ0) return baseZ1;
 
-    const candidates = (plan.zoneElements ?? [])
+    const floors = plan.currentConfig?.floors ?? [plan.currentConfig ?? {}];
+    const owningFloor = floorConfig ?? floors[0];
+    const zoneDefinitions = [
+      ...(plan.currentConfig?.floors ? plan.currentConfig.zones ?? [] : []),
+      ...(owningFloor?.zones ?? []),
+    ];
+    const candidates = zoneDefinitions
+      .map((definition) => {
+        try {
+          return FloorPlanRoofs.asGeometryBox(
+            plan.normalizeGeometryAtFloor(definition, owningFloor),
+          );
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean)
       .filter(
         (zone) =>
           typeof zone.x0 === "function" &&
@@ -37,18 +98,14 @@ const FloorPlanRoofs = {
 
     if (candidates[0]) return candidates[0].z1();
 
-    const activeFloor = (plan.currentConfig?.floors ?? [plan.currentConfig]).find(
-      (floor) => Number(floor?.z0) === Number(plan.currentFloorHeight),
-    );
-    const wallMaxHeight = Number(activeFloor?.wall_max_height);
-    if (baseZ0 > 0) return baseZ0;
+    const wallMaxHeight = Number(owningFloor?.wall_max_height);
     if (Number.isFinite(wallMaxHeight) && wallMaxHeight > 0) {
       return baseZ0 + wallMaxHeight;
     }
     return fallback;
   },
 
-  resolveBase(plan, baseDefinition) {
+  resolveBase(plan, baseDefinition, floorConfig) {
     if (typeof baseDefinition === "string") {
       const base = plan.references.get(baseDefinition);
       if (!base) throw new Error(`Unknown roof base reference: ${baseDefinition}`);
@@ -57,7 +114,9 @@ const FloorPlanRoofs = {
     if (!baseDefinition || typeof baseDefinition !== "object") {
       throw new Error("A roof base must be an object or a reference ID");
     }
-    const base = plan.normalizeGeometry(baseDefinition);
+    const base = floorConfig
+      ? plan.normalizeGeometryAtFloor(baseDefinition, floorConfig)
+      : plan.normalizeGeometry(baseDefinition);
     return FloorPlanRoofs.asGeometryBox(base);
   },
 
