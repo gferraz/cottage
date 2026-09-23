@@ -78,6 +78,8 @@ const FloorPlan3DRoofs = {
       geometry.setIndex([0, 1, 2, 0, 2, 3]);
       geometry.computeVertexNormals();
       const mesh = new THREE.Mesh(geometry, roofMaterial);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
       mesh.renderOrder = 7;
       scene.add(mesh);
     };
@@ -155,6 +157,8 @@ const FloorPlan3DRoofs = {
     });
     const geometry = new THREE.ShapeGeometry(shape);
     const mesh = new THREE.Mesh(geometry, wallMaterial);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     mesh.rotation.x = Math.PI / 2;
     mesh.position.y = direction === "front" ? baseY0 - 0.08 : baseY1 + 0.08;
     mesh.renderOrder = 3;
@@ -218,6 +222,8 @@ const FloorPlan3DRoofs = {
       geometry.setIndex([0, 1, 2, 0, 2, 3]);
       geometry.computeVertexNormals();
       const mesh = new THREE.Mesh(geometry, roofMaterial);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
       mesh.renderOrder = 7;
       scene.add(mesh);
     };

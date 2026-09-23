@@ -1,6 +1,18 @@
 // Planta Cottage Ferraz-César.
 {
   title: "Cottage Ferraz-César",
+  coordinates: ["25°45'06.7\"S", "49°15'29.1\"W"],
+  solar: {
+    season: "equinox",
+    date: "2026-03-20",
+    dates: {
+      "summer-solstice": "2026-12-21",
+      equinox: "2026-03-20",
+      "winter-solstice": "2026-06-21",
+    },
+    time: "15:00",
+    utc_offset: -3,
+  },
   viewport: {
     size: [24.0, 32.0],
     origin: [1.0, 1.0]

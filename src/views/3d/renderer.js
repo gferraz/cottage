@@ -6,6 +6,8 @@ const FloorPlanFacades3D = {
   render(plan, { direction = "front" } = {}) {
     const container = plan.facade3dLayer;
     if (!container) return;
+    container._threeRenderer?.dispose();
+    container._threeRenderer = null;
     container.replaceChildren();
 
     if (!window.THREE) {
@@ -219,38 +221,65 @@ const FloorPlanFacades3D = {
     camera.lookAt((roomBounds.x0 + roomBounds.x1) / 2, 0, centerZ);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(width, height, false);
     renderer.domElement.className = "facade-3d-canvas";
     renderer.domElement.setAttribute("aria-label", "Fachada frontal alternativa em 3D");
     container.append(renderer.domElement);
 
-    const wallMaterial = new THREE.MeshBasicMaterial({
+    const wallMaterial = new THREE.MeshLambertMaterial({
       color: "#e7e7e1",
       side: THREE.DoubleSide,
     });
     const wallLineMaterial = new THREE.LineBasicMaterial({ color: "#30302d" });
-    const roofMaterial = new THREE.MeshBasicMaterial({
+    const roofMaterial = new THREE.MeshLambertMaterial({
       color: "#b45c3d",
       transparent: true,
       opacity: 0.55,
       side: THREE.DoubleSide,
     });
     const roofLineMaterial = new THREE.LineBasicMaterial({ color: "#8c432d" });
-    const windowMaterial = new THREE.MeshBasicMaterial({
+    const windowMaterial = new THREE.MeshLambertMaterial({
       color: "#b9d5e5",
       transparent: true,
       opacity: 0.40,
       depthWrite: false,
       side: THREE.DoubleSide,
     });
-    const doorMaterial = new THREE.MeshBasicMaterial({
+    const doorMaterial = new THREE.MeshLambertMaterial({
       color: "#8b6b4f",
       side: THREE.DoubleSide,
     });
-    const terrainMaterial = new THREE.MeshBasicMaterial({
+    const terrainMaterial = new THREE.MeshLambertMaterial({
       color: "#9dbb8b",
       side: THREE.DoubleSide,
+    });
+    const solarConfig = {
+      ...plan.currentConfig,
+      solar: {
+        ...plan.currentConfig.solar,
+        season: plan.solarSeason ?? plan.currentConfig.solar?.season ?? "equinox",
+        time: plan.solarTime ?? plan.currentConfig.solar?.time ?? "15:00",
+      },
+    };
+    const solarPosition = FloorPlan3DSun.position(
+      solarConfig,
+      plan.terrainReference,
+    );
+    FloorPlan3DSun.addToScene({
+      THREE,
+      scene,
+      position: solarPosition,
+      bounds: {
+        x0: roomBounds.x0,
+        x1: roomBounds.x1,
+        y0: Math.min(...rooms.map((room) => room.y0())),
+        y1: Math.max(...rooms.map((room) => room.y1())),
+        z0: drawingBounds.z0,
+        z1: drawingBounds.z1,
+      },
     });
     const outdoorIds = new Set(
       [...(plan.roomDefinitions?.entries() ?? [])]
@@ -301,6 +330,22 @@ const FloorPlanFacades3D = {
     FloorPlan3DRoofs.render(context);
 
     renderer.render(scene, camera);
+    if (solarPosition) {
+      const caption = document.createElement("p");
+      caption.className = "facade-3d-sun-caption";
+      const dateLabel = solarPosition.date.split("-").reverse().join("/");
+      const seasonLabels = {
+        "summer-solstice": "Solstício de verão",
+        equinox: "Equinócio",
+        "winter-solstice": "Solstício de inverno",
+      };
+      caption.textContent =
+        `Sol · ${seasonLabels[solarPosition.season] ?? solarPosition.season} ` +
+        `(${dateLabel}), ${solarPosition.time} · ` +
+        `azimute ${solarPosition.azimuth.toFixed(0)}° · ` +
+        `elevação ${solarPosition.elevation.toFixed(0)}°`;
+      container.append(caption);
+    }
     container._threeRenderer = renderer;
   },
 };

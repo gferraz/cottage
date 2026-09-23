@@ -194,7 +194,35 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   background: var(--theme-surface);
   margin-bottom: 32px;
 }
+.solar-controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0 0 8px;
+}
+.solar-control {
+  display: grid;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+.solar-control select {
+  min-width: 88px;
+  padding: 4px 8px;
+  border: 1px solid var(--theme-border);
+  border-radius: 4px;
+  background: var(--theme-surface);
+  color: inherit;
+  font: inherit;
+}
 .facade-3d-canvas { display: block; width: 100%; height: 420px; }
+.facade-3d-sun-caption {
+  margin: 0;
+  padding: 6px 10px;
+  color: var(--theme-muted, #666);
+  font-size: 0.82rem;
+  text-align: right;
+}
 .facade-3d-error {
   margin: 0;
   padding: 12px;
@@ -1633,6 +1661,26 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
 
     <section class="facade-section facade-3d-section" id="facade-3d-section" hidden aria-labelledby="facade-3d-list-title">
       <h2 id="facade-3d-list-title">Fachada frontal alternativa — Three.js</h2>
+      <div class="solar-controls">
+        <label class="solar-control" for="solar-season">
+          <span>Época do ano</span>
+          <select id="solar-season">
+            <option value="summer-solstice">Solstício de verão</option>
+            <option value="equinox" selected>Equinócio</option>
+            <option value="winter-solstice">Solstício de inverno</option>
+          </select>
+        </label>
+        <label class="solar-control" for="solar-time">
+          <span>Hora do sol</span>
+          <select id="solar-time">
+          <option value="06:00">06:00</option>
+          <option value="09:00">09:00</option>
+          <option value="12:00">12:00</option>
+          <option value="15:00" selected>15:00</option>
+          <option value="18:00">18:00</option>
+          </select>
+        </label>
+      </div>
       <div id="facade-3d-list"></div>
     </section>
 
@@ -2962,6 +3010,22 @@ const FloorPlanTerrain = {
       vx *= -1;
       vy *= -1;
     }
+    const normalizeAzimuth = (degrees) => (degrees + 360) % 360;
+    const gridBearing = (easting, northing) =>
+      normalizeAzimuth((Math.atan2(easting, northing) * 180) / Math.PI);
+    const frontGridAzimuth = gridBearing(frontEasting, frontNorthing);
+    const frontSegment = terrain.segments?.find(
+      (segment) =>
+        (segment.from === first.id && segment.to === second.id) ||
+        (segment.from === second.id && segment.to === first.id),
+    );
+    const frontTrueAzimuth = frontSegment
+      ? normalizeAzimuth(
+          Number(frontSegment.azimuth_deg) +
+            (frontSegment.from === first.id ? 0 : 180),
+        )
+      : frontGridAzimuth;
+    const convergence = frontTrueAzimuth - frontGridAzimuth;
 
     const localCorners = corners.map((point) => {
       const easting = point.easting - first.easting;
@@ -3006,6 +3070,8 @@ const FloorPlanTerrain = {
       rearY: edgeMean(rearEdge, "y"),
       frontZ: edgeMean(frontEdge, "z"),
       rearZ: edgeMean(rearEdge, "z"),
+      localXAxisAzimuth: normalizeAzimuth(gridBearing(ux, uy) + convergence),
+      localYAxisAzimuth: normalizeAzimuth(gridBearing(vx, vy) + convergence),
     };
     plan.updateTerrainViewport();
     plan.terrainLayer.setAttribute("preserveAspectRatio", "xMidYMid meet");
@@ -4699,6 +4765,7 @@ const FloorPlan3DSite = {
       ),
       terrainMaterial,
     );
+    terrain.receiveShadow = true;
     terrain.position.set(
       (terrainBounds.x0 + terrainBounds.x1) / 2,
       (terrainBounds.y0 + terrainBounds.y1) / 2,
@@ -4744,7 +4811,7 @@ const FloorPlan3DWalls = {
           ? wallOpenings
           : wallOpenings.filter((opening) => opening.wallSegment === wall.pathSegment);
         const material = wall.color
-          ? new context.THREE.MeshBasicMaterial({
+          ? new context.THREE.MeshLambertMaterial({
               color: plan.themeFillColor(wall.color),
               side: context.THREE.DoubleSide,
             })
@@ -4827,6 +4894,8 @@ const FloorPlan3DWalls = {
         );
     geometry.applyMatrix4(transform);
     const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     mesh.userData.domainId = wall.id;
     if (wall.pathSegment !== undefined) mesh.userData.pathSegment = wall.pathSegment;
     mesh.renderOrder = 1;
@@ -4899,6 +4968,8 @@ const FloorPlan3DElements = {
           new THREE.BoxGeometry(...dimensions),
           wallMaterial,
         );
+        step.castShadow = true;
+        step.receiveShadow = true;
         step.position.set(...center);
         step.userData.domainId = stair.id;
         step.userData.stepIndex = index;
@@ -4920,6 +4991,8 @@ const FloorPlan3DElements = {
           new THREE.BoxGeometry(width, length, height),
           wallLineMaterial,
         );
+        railing.castShadow = true;
+        railing.receiveShadow = true;
         railing.position.set(x + width / 2, y + length / 2, z0 + height / 2);
         railing.renderOrder = 5;
         scene.add(railing);
@@ -5008,6 +5081,8 @@ const FloorPlan3DRoofs = {
       geometry.setIndex([0, 1, 2, 0, 2, 3]);
       geometry.computeVertexNormals();
       const mesh = new THREE.Mesh(geometry, roofMaterial);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
       mesh.renderOrder = 7;
       scene.add(mesh);
     };
@@ -5085,6 +5160,8 @@ const FloorPlan3DRoofs = {
     });
     const geometry = new THREE.ShapeGeometry(shape);
     const mesh = new THREE.Mesh(geometry, wallMaterial);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     mesh.rotation.x = Math.PI / 2;
     mesh.position.y = direction === "front" ? baseY0 - 0.08 : baseY1 + 0.08;
     mesh.renderOrder = 3;
@@ -5148,6 +5225,8 @@ const FloorPlan3DRoofs = {
       geometry.setIndex([0, 1, 2, 0, 2, 3]);
       geometry.computeVertexNormals();
       const mesh = new THREE.Mesh(geometry, roofMaterial);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
       mesh.renderOrder = 7;
       scene.add(mesh);
     };
@@ -5170,6 +5249,164 @@ const FloorPlan3DRoofs = {
 };
 
 
+const FloorPlan3DSun = {
+  parseAngle(value) {
+    if (typeof value === "number") return value;
+    const text = String(value ?? "").trim();
+    const components = text.match(/\d+(?:\.\d+)?/g)?.map(Number) ?? [];
+    if (!components.length) return NaN;
+    const magnitude =
+      components[0] + (components[1] ?? 0) / 60 + (components[2] ?? 0) / 3600;
+    return /[SW]/i.test(text) || text.startsWith("-") ? -magnitude : magnitude;
+  },
+
+  position(config, terrainReference) {
+    const coordinates = config.coordinates;
+    const solar = config.solar ?? {};
+    if (!Array.isArray(coordinates) || coordinates.length < 2) return null;
+    const latitude = this.parseAngle(coordinates[0]);
+    const longitude = this.parseAngle(coordinates[1]);
+    const [hours, minutes] = String(solar.time ?? "15:00")
+      .split(":")
+      .map(Number);
+    const season = solar.season ?? "equinox";
+    const date = solar.dates?.[season] ?? solar.date ?? "2026-03-20";
+    const utcOffset = Number(solar.utc_offset ?? -3);
+    if (
+      ![latitude, longitude, hours, minutes, utcOffset].every(Number.isFinite) ||
+      Math.abs(latitude) > 90 ||
+      Math.abs(longitude) > 180
+    ) {
+      return null;
+    }
+
+    // NOAA's compact solar-position equations, using the configured local time
+    // and UTC offset. Azimuth is measured clockwise from true north.
+    const localDate = new Date(`${date}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00Z`);
+    if (!Number.isFinite(localDate.getTime())) return null;
+    const utcDate = new Date(localDate.getTime() - utcOffset * 60 * 60 * 1000);
+    const julianDay = utcDate.getTime() / 86400000 + 2440587.5;
+    const century = (julianDay - 2451545) / 36525;
+    const degrees = Math.PI / 180;
+    const meanLongitude =
+      (280.46646 + century * (36000.76983 + century * 0.0003032)) % 360;
+    const meanAnomaly =
+      357.52911 + century * (35999.05029 - 0.0001537 * century);
+    const eccentricity =
+      0.016708634 - century * (0.000042037 + 0.0000001267 * century);
+    const anomalyRadians = meanAnomaly * degrees;
+    const equationOfCenter =
+      Math.sin(anomalyRadians) *
+        (1.914602 - century * (0.004817 + 0.000014 * century)) +
+      Math.sin(2 * anomalyRadians) * (0.019993 - 0.000101 * century) +
+      Math.sin(3 * anomalyRadians) * 0.000289;
+    const trueLongitude = meanLongitude + equationOfCenter;
+    const omega = (125.04 - 1934.136 * century) * degrees;
+    const apparentLongitude =
+      (trueLongitude - 0.00569 - 0.00478 * Math.sin(omega)) * degrees;
+    const meanObliquity =
+      23 +
+      (26 +
+        (21.448 -
+          century *
+            (46.815 + century * (0.00059 - century * 0.001813))) /
+          60) /
+        60;
+    const obliquity = (meanObliquity + 0.00256 * Math.cos(omega)) * degrees;
+    const declination = Math.asin(
+      Math.sin(obliquity) * Math.sin(apparentLongitude),
+    );
+    const y = Math.tan(obliquity / 2) ** 2;
+    const longitudeRadians = meanLongitude * degrees;
+    const equationOfTime =
+      4 *
+      ((y * Math.sin(2 * longitudeRadians) -
+        2 * eccentricity * Math.sin(anomalyRadians) +
+        4 * eccentricity * y *
+          Math.sin(anomalyRadians) *
+          Math.cos(2 * longitudeRadians) -
+        0.5 * y ** 2 * Math.sin(4 * longitudeRadians) -
+        1.25 * eccentricity ** 2 * Math.sin(2 * anomalyRadians)) /
+        degrees);
+    const utcMinutes =
+      utcDate.getUTCHours() * 60 +
+      utcDate.getUTCMinutes() +
+      utcDate.getUTCSeconds() / 60;
+    const solarMinutes =
+      ((utcMinutes + equationOfTime + 4 * longitude + 1440) % 1440);
+    let hourAngle = solarMinutes / 4 - 180;
+    if (hourAngle < -180) hourAngle += 360;
+    const hourAngleRadians = hourAngle * degrees;
+    const latitudeRadians = latitude * degrees;
+    const elevation = Math.asin(
+      Math.sin(latitudeRadians) * Math.sin(declination) +
+        Math.cos(latitudeRadians) *
+          Math.cos(declination) *
+          Math.cos(hourAngleRadians),
+    );
+    const azimuth =
+      ((Math.atan2(
+        Math.sin(hourAngleRadians),
+        Math.cos(hourAngleRadians) * Math.sin(latitudeRadians) -
+          Math.tan(declination) * Math.cos(latitudeRadians),
+      ) /
+        degrees +
+        180 +
+        360) %
+        360);
+    const localXAxisAzimuth =
+      Number(terrainReference?.localXAxisAzimuth ?? 90) * degrees;
+    const localYAxisAzimuth =
+      Number(terrainReference?.localYAxisAzimuth ?? 0) * degrees;
+    const azimuthRadians = azimuth * degrees;
+    return {
+      azimuth,
+      elevation: elevation / degrees,
+      direction: [
+        Math.cos(azimuthRadians - localXAxisAzimuth),
+        Math.cos(azimuthRadians - localYAxisAzimuth),
+        Math.sin(elevation),
+      ],
+      season,
+      time: solar.time ?? "15:00",
+      date,
+    };
+  },
+
+  addToScene({ THREE, scene, position, bounds }) {
+    if (!position) return;
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x7d776b, 1.25));
+    if (position.elevation <= 0) return;
+    const target = new THREE.Object3D();
+    target.position.set(
+      (bounds.x0 + bounds.x1) / 2,
+      (bounds.y0 + bounds.y1) / 2,
+      (bounds.z0 + bounds.z1) / 2,
+    );
+    scene.add(target);
+    const distance = Math.max(bounds.x1 - bounds.x0, bounds.y1 - bounds.y0, 12) * 3;
+    const sunlight = new THREE.DirectionalLight(0xfff1d2, 2.2);
+    sunlight.position.set(
+      target.position.x + position.direction[0] * distance,
+      target.position.y + position.direction[1] * distance,
+      target.position.z + position.direction[2] * distance,
+    );
+    sunlight.target = target;
+    sunlight.castShadow = true;
+    sunlight.shadow.mapSize.set(2048, 2048);
+    sunlight.shadow.camera.left = -distance / 2;
+    sunlight.shadow.camera.right = distance / 2;
+    sunlight.shadow.camera.top = distance / 2;
+    sunlight.shadow.camera.bottom = -distance / 2;
+    sunlight.shadow.camera.updateProjectionMatrix();
+    sunlight.shadow.bias = -0.0002;
+    scene.add(sunlight);
+  },
+};
+
+window.FloorPlan3DSun = FloorPlan3DSun;
+
+
 /* Experimental architectural facade renderer.
  * It consumes normalized FloorPlan geometry and delegates each architectural
  * element group to a focused renderer in this directory.
@@ -5178,6 +5415,8 @@ const FloorPlanFacades3D = {
   render(plan, { direction = "front" } = {}) {
     const container = plan.facade3dLayer;
     if (!container) return;
+    container._threeRenderer?.dispose();
+    container._threeRenderer = null;
     container.replaceChildren();
 
     if (!window.THREE) {
@@ -5391,38 +5630,65 @@ const FloorPlanFacades3D = {
     camera.lookAt((roomBounds.x0 + roomBounds.x1) / 2, 0, centerZ);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setSize(width, height, false);
     renderer.domElement.className = "facade-3d-canvas";
     renderer.domElement.setAttribute("aria-label", "Fachada frontal alternativa em 3D");
     container.append(renderer.domElement);
 
-    const wallMaterial = new THREE.MeshBasicMaterial({
+    const wallMaterial = new THREE.MeshLambertMaterial({
       color: "#e7e7e1",
       side: THREE.DoubleSide,
     });
     const wallLineMaterial = new THREE.LineBasicMaterial({ color: "#30302d" });
-    const roofMaterial = new THREE.MeshBasicMaterial({
+    const roofMaterial = new THREE.MeshLambertMaterial({
       color: "#b45c3d",
       transparent: true,
       opacity: 0.55,
       side: THREE.DoubleSide,
     });
     const roofLineMaterial = new THREE.LineBasicMaterial({ color: "#8c432d" });
-    const windowMaterial = new THREE.MeshBasicMaterial({
+    const windowMaterial = new THREE.MeshLambertMaterial({
       color: "#b9d5e5",
       transparent: true,
       opacity: 0.40,
       depthWrite: false,
       side: THREE.DoubleSide,
     });
-    const doorMaterial = new THREE.MeshBasicMaterial({
+    const doorMaterial = new THREE.MeshLambertMaterial({
       color: "#8b6b4f",
       side: THREE.DoubleSide,
     });
-    const terrainMaterial = new THREE.MeshBasicMaterial({
+    const terrainMaterial = new THREE.MeshLambertMaterial({
       color: "#9dbb8b",
       side: THREE.DoubleSide,
+    });
+    const solarConfig = {
+      ...plan.currentConfig,
+      solar: {
+        ...plan.currentConfig.solar,
+        season: plan.solarSeason ?? plan.currentConfig.solar?.season ?? "equinox",
+        time: plan.solarTime ?? plan.currentConfig.solar?.time ?? "15:00",
+      },
+    };
+    const solarPosition = FloorPlan3DSun.position(
+      solarConfig,
+      plan.terrainReference,
+    );
+    FloorPlan3DSun.addToScene({
+      THREE,
+      scene,
+      position: solarPosition,
+      bounds: {
+        x0: roomBounds.x0,
+        x1: roomBounds.x1,
+        y0: Math.min(...rooms.map((room) => room.y0())),
+        y1: Math.max(...rooms.map((room) => room.y1())),
+        z0: drawingBounds.z0,
+        z1: drawingBounds.z1,
+      },
     });
     const outdoorIds = new Set(
       [...(plan.roomDefinitions?.entries() ?? [])]
@@ -5473,6 +5739,22 @@ const FloorPlanFacades3D = {
     FloorPlan3DRoofs.render(context);
 
     renderer.render(scene, camera);
+    if (solarPosition) {
+      const caption = document.createElement("p");
+      caption.className = "facade-3d-sun-caption";
+      const dateLabel = solarPosition.date.split("-").reverse().join("/");
+      const seasonLabels = {
+        "summer-solstice": "Solstício de verão",
+        equinox: "Equinócio",
+        "winter-solstice": "Solstício de inverno",
+      };
+      caption.textContent =
+        `Sol · ${seasonLabels[solarPosition.season] ?? solarPosition.season} ` +
+        `(${dateLabel}), ${solarPosition.time} · ` +
+        `azimute ${solarPosition.azimuth.toFixed(0)}° · ` +
+        `elevação ${solarPosition.elevation.toFixed(0)}°`;
+      container.append(caption);
+    }
     container._threeRenderer = renderer;
   },
 };
@@ -9793,7 +10075,7 @@ class FloorPlan {
    * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
    * @param {number} [options.scale=56] Escala inicial em pixels por metro.
    */
-  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, solarSeasonSelect = null, solarTimeSelect = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
@@ -9801,6 +10083,10 @@ class FloorPlan {
     this.facadeLayer = facadeLayer;
     this.secondaryFacadeLayer = secondaryFacadeLayer;
     this.facade3dLayer = facade3dLayer;
+    this.solarSeasonSelect = solarSeasonSelect;
+    this.solarTimeSelect = solarTimeSelect;
+    this.solarSeason = solarSeasonSelect?.value || "equinox";
+    this.solarTime = solarTimeSelect?.value || "15:00";
     this.viewportSummary = viewportSummary;
     this.titleElement = titleElement;
     this.floorOptions = floorOptions;
@@ -9928,7 +10214,24 @@ class FloorPlan {
         const activeFloor = floors.findIndex(
           (floorConfig) => String(floorConfig.id) === event.target.value,
         );
-        if (activeFloor >= 0) this.load({ ...this.currentConfig, activeFloor });
+        if (activeFloor >= 0) {
+          this.load(
+            { ...this.currentConfig, activeFloor },
+            { preserveSolarPresentation: true },
+          );
+        }
+      });
+    }
+    if (solarSeasonSelect) {
+      solarSeasonSelect.addEventListener("change", () => {
+        this.solarSeason = solarSeasonSelect.value;
+        if (this.currentConfig) this.renderFacade3D();
+      });
+    }
+    if (solarTimeSelect) {
+      solarTimeSelect.addEventListener("change", () => {
+        this.solarTime = solarTimeSelect.value;
+        if (this.currentConfig) this.renderFacade3D();
       });
     }
     if (jsonInput) {
@@ -10352,9 +10655,11 @@ class FloorPlan {
   /**
    * Carrega uma configuração JSON e renderiza todos os seus dados.
    * @param {Object} config Configuração da planta, incluindo pisos e objetos.
+   * @param {Object} [options] Opções para preservar estado de apresentação.
+   * @param {boolean} [options.preserveSolarPresentation=false] Mantém estação e hora solares atuais.
    * @returns {FloorPlan} A própria instância, para encadeamento.
    */
-  load(config) {
+  load(config, { preserveSolarPresentation = false } = {}) {
     this.references ??= new Map();
     this.rooms ??= new Map();
     this.roomReferences ??= new Map();
@@ -10366,6 +10671,24 @@ class FloorPlan {
     this.validZoneIds ??= new Set();
     this.model = FloorPlanModel.fromConfig(config);
     this.currentConfig = config;
+    if (!preserveSolarPresentation) {
+      this.solarSeason = config.solar?.season ?? "equinox";
+      this.solarTime = config.solar?.time ?? "15:00";
+    }
+    if (this.solarSeasonSelect) {
+      const availableSeason = [...this.solarSeasonSelect.options].some(
+        (option) => option.value === this.solarSeason,
+      );
+      this.solarSeasonSelect.value = availableSeason ? this.solarSeason : "equinox";
+      this.solarSeason = this.solarSeasonSelect.value;
+    }
+    if (this.solarTimeSelect) {
+      const availableTime = [...this.solarTimeSelect.options].some(
+        (option) => option.value === this.solarTime,
+      );
+      this.solarTimeSelect.value = availableTime ? this.solarTime : "15:00";
+      this.solarTime = this.solarTimeSelect.value;
+    }
     this.itemTypes = { ...(this.catalog.items || {}), ...(config["item-types"] || {}) };
     this.theme = {
       ...this.theme,
@@ -10679,6 +11002,8 @@ const floor = new FloorPlan({
   facadeLayer: document.querySelector("#facade-list"),
   secondaryFacadeLayer: document.querySelector("#secondary-facade-list"),
   facade3dLayer: document.querySelector("#facade-3d-list"),
+  solarSeasonSelect: document.querySelector("#solar-season"),
+  solarTimeSelect: document.querySelector("#solar-time"),
   viewportSummary: document.querySelector("#viewport-summary"),
   titleElement: document.querySelector("h1"),
   floorOptions: document.querySelector("#floor-options"),

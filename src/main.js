@@ -6,7 +6,7 @@ class FloorPlan {
    * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
    * @param {number} [options.scale=56] Escala inicial em pixels por metro.
    */
-  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, solarSeasonSelect = null, solarTimeSelect = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
@@ -14,6 +14,10 @@ class FloorPlan {
     this.facadeLayer = facadeLayer;
     this.secondaryFacadeLayer = secondaryFacadeLayer;
     this.facade3dLayer = facade3dLayer;
+    this.solarSeasonSelect = solarSeasonSelect;
+    this.solarTimeSelect = solarTimeSelect;
+    this.solarSeason = solarSeasonSelect?.value || "equinox";
+    this.solarTime = solarTimeSelect?.value || "15:00";
     this.viewportSummary = viewportSummary;
     this.titleElement = titleElement;
     this.floorOptions = floorOptions;
@@ -141,7 +145,24 @@ class FloorPlan {
         const activeFloor = floors.findIndex(
           (floorConfig) => String(floorConfig.id) === event.target.value,
         );
-        if (activeFloor >= 0) this.load({ ...this.currentConfig, activeFloor });
+        if (activeFloor >= 0) {
+          this.load(
+            { ...this.currentConfig, activeFloor },
+            { preserveSolarPresentation: true },
+          );
+        }
+      });
+    }
+    if (solarSeasonSelect) {
+      solarSeasonSelect.addEventListener("change", () => {
+        this.solarSeason = solarSeasonSelect.value;
+        if (this.currentConfig) this.renderFacade3D();
+      });
+    }
+    if (solarTimeSelect) {
+      solarTimeSelect.addEventListener("change", () => {
+        this.solarTime = solarTimeSelect.value;
+        if (this.currentConfig) this.renderFacade3D();
       });
     }
     if (jsonInput) {
@@ -565,9 +586,11 @@ class FloorPlan {
   /**
    * Carrega uma configuração JSON e renderiza todos os seus dados.
    * @param {Object} config Configuração da planta, incluindo pisos e objetos.
+   * @param {Object} [options] Opções para preservar estado de apresentação.
+   * @param {boolean} [options.preserveSolarPresentation=false] Mantém estação e hora solares atuais.
    * @returns {FloorPlan} A própria instância, para encadeamento.
    */
-  load(config) {
+  load(config, { preserveSolarPresentation = false } = {}) {
     this.references ??= new Map();
     this.rooms ??= new Map();
     this.roomReferences ??= new Map();
@@ -579,6 +602,24 @@ class FloorPlan {
     this.validZoneIds ??= new Set();
     this.model = FloorPlanModel.fromConfig(config);
     this.currentConfig = config;
+    if (!preserveSolarPresentation) {
+      this.solarSeason = config.solar?.season ?? "equinox";
+      this.solarTime = config.solar?.time ?? "15:00";
+    }
+    if (this.solarSeasonSelect) {
+      const availableSeason = [...this.solarSeasonSelect.options].some(
+        (option) => option.value === this.solarSeason,
+      );
+      this.solarSeasonSelect.value = availableSeason ? this.solarSeason : "equinox";
+      this.solarSeason = this.solarSeasonSelect.value;
+    }
+    if (this.solarTimeSelect) {
+      const availableTime = [...this.solarTimeSelect.options].some(
+        (option) => option.value === this.solarTime,
+      );
+      this.solarTimeSelect.value = availableTime ? this.solarTime : "15:00";
+      this.solarTime = this.solarTimeSelect.value;
+    }
     this.itemTypes = { ...(this.catalog.items || {}), ...(config["item-types"] || {}) };
     this.theme = {
       ...this.theme,

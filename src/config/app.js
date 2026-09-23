@@ -6,6 +6,8 @@ const floor = new FloorPlan({
   facadeLayer: document.querySelector("#facade-list"),
   secondaryFacadeLayer: document.querySelector("#secondary-facade-list"),
   facade3dLayer: document.querySelector("#facade-3d-list"),
+  solarSeasonSelect: document.querySelector("#solar-season"),
+  solarTimeSelect: document.querySelector("#solar-time"),
   viewportSummary: document.querySelector("#viewport-summary"),
   titleElement: document.querySelector("h1"),
   floorOptions: document.querySelector("#floor-options"),

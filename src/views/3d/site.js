@@ -16,6 +16,7 @@ const FloorPlan3DSite = {
       ),
       terrainMaterial,
     );
+    terrain.receiveShadow = true;
     terrain.position.set(
       (terrainBounds.x0 + terrainBounds.x1) / 2,
       (terrainBounds.y0 + terrainBounds.y1) / 2,

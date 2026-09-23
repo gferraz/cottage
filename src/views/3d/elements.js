@@ -37,6 +37,8 @@ const FloorPlan3DElements = {
           new THREE.BoxGeometry(...dimensions),
           wallMaterial,
         );
+        step.castShadow = true;
+        step.receiveShadow = true;
         step.position.set(...center);
         step.userData.domainId = stair.id;
         step.userData.stepIndex = index;
@@ -58,6 +60,8 @@ const FloorPlan3DElements = {
           new THREE.BoxGeometry(width, length, height),
           wallLineMaterial,
         );
+        railing.castShadow = true;
+        railing.receiveShadow = true;
         railing.position.set(x + width / 2, y + length / 2, z0 + height / 2);
         railing.renderOrder = 5;
         scene.add(railing);

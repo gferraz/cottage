@@ -9,7 +9,7 @@ const FloorPlan3DWalls = {
           ? wallOpenings
           : wallOpenings.filter((opening) => opening.wallSegment === wall.pathSegment);
         const material = wall.color
-          ? new context.THREE.MeshBasicMaterial({
+          ? new context.THREE.MeshLambertMaterial({
               color: plan.themeFillColor(wall.color),
               side: context.THREE.DoubleSide,
             })
@@ -92,6 +92,8 @@ const FloorPlan3DWalls = {
         );
     geometry.applyMatrix4(transform);
     const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     mesh.userData.domainId = wall.id;
     if (wall.pathSegment !== undefined) mesh.userData.pathSegment = wall.pathSegment;
     mesh.renderOrder = 1;

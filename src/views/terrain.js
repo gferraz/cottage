@@ -93,6 +93,22 @@ const FloorPlanTerrain = {
       vx *= -1;
       vy *= -1;
     }
+    const normalizeAzimuth = (degrees) => (degrees + 360) % 360;
+    const gridBearing = (easting, northing) =>
+      normalizeAzimuth((Math.atan2(easting, northing) * 180) / Math.PI);
+    const frontGridAzimuth = gridBearing(frontEasting, frontNorthing);
+    const frontSegment = terrain.segments?.find(
+      (segment) =>
+        (segment.from === first.id && segment.to === second.id) ||
+        (segment.from === second.id && segment.to === first.id),
+    );
+    const frontTrueAzimuth = frontSegment
+      ? normalizeAzimuth(
+          Number(frontSegment.azimuth_deg) +
+            (frontSegment.from === first.id ? 0 : 180),
+        )
+      : frontGridAzimuth;
+    const convergence = frontTrueAzimuth - frontGridAzimuth;
 
     const localCorners = corners.map((point) => {
       const easting = point.easting - first.easting;
@@ -137,6 +153,8 @@ const FloorPlanTerrain = {
       rearY: edgeMean(rearEdge, "y"),
       frontZ: edgeMean(frontEdge, "z"),
       rearZ: edgeMean(rearEdge, "z"),
+      localXAxisAzimuth: normalizeAzimuth(gridBearing(ux, uy) + convergence),
+      localYAxisAzimuth: normalizeAzimuth(gridBearing(vx, vy) + convergence),
     };
     plan.updateTerrainViewport();
     plan.terrainLayer.setAttribute("preserveAspectRatio", "xMidYMid meet");
