@@ -9,6 +9,7 @@ const FloorPlanFacades3D = {
     container._threeRenderer?.dispose();
     container._threeRenderer = null;
     container._updateFacadeCamera = null;
+    container._captureFacadeImage = null;
     container.replaceChildren();
 
     if (!window.THREE) {
@@ -400,6 +401,10 @@ const FloorPlanFacades3D = {
       });
     };
     container._updateFacadeCamera = updateCamera;
+    container._captureFacadeImage = () => {
+      updateCamera();
+      return renderer.domElement.toDataURL("image/png");
+    };
     renderer.domElement.addEventListener("keydown", (event) => {
       const keyboardActions = {
         ArrowLeft: "azimuth-left",

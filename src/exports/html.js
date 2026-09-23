@@ -39,13 +39,25 @@ const FloorPlanHtmlExport = {
     );
     const originalMultiFloorMode = plan.multiFloorMode;
     const floorSnapshots = [];
+    const hasFacade3DCanvas = Boolean(
+      plan.facade3dLayer?.querySelector("canvas.facade-3d-canvas"),
+    );
+    const facade3DImage = hasFacade3DCanvas
+      ? plan.facade3dLayer._captureFacadeImage?.()
+      : null;
+    if (hasFacade3DCanvas && !facade3DImage?.startsWith("data:image/png;base64,")) {
+      throw new Error("Não foi possível capturar a perspectiva 3D para o HTML.");
+    }
 
     // Capture one rendered diagram per floor. The exported file is static, so
     // the snapshots are assembled without carrying the application scripts.
     try {
       plan.multiFloorMode = false;
       for (let floorIndex = 0; floorIndex < floors.length; floorIndex += 1) {
-        plan.load({ ...sourceConfig, activeFloor: floorIndex });
+        plan.load(
+          { ...sourceConfig, activeFloor: floorIndex },
+          { preservePresentation: true },
+        );
         const livePlan = document.querySelector("#floor-plan");
         if (!livePlan) throw new Error("A área da planta não foi encontrada.");
         floorSnapshots.push({
@@ -58,13 +70,31 @@ const FloorPlanHtmlExport = {
       }
     } finally {
       plan.multiFloorMode = originalMultiFloorMode;
-      plan.load({ ...sourceConfig, activeFloor: originalFloorIndex });
+      plan.load(
+        { ...sourceConfig, activeFloor: originalFloorIndex },
+        { preservePresentation: true },
+      );
       plan.multiFloorMode = originalMultiFloorMode;
       plan.renderMultiFloorUnderlay();
     }
 
     const exportedDocument = document.cloneNode(true);
     const exportedPlan = exportedDocument.querySelector("#floor-plan");
+    const exportedFacade3D = exportedDocument.querySelector("#facade-3d-section");
+
+    if (exportedFacade3D && facade3DImage) {
+      const canvas = exportedFacade3D.querySelector("canvas.facade-3d-canvas");
+      const image = exportedDocument.createElement("img");
+      image.className = "facade-3d-canvas facade-3d-export-image";
+      image.src = facade3DImage;
+      image.alt = "Perspectiva 3D da casa com a posição solar selecionada";
+      if (canvas?.width) image.width = canvas.width;
+      if (canvas?.height) image.height = canvas.height;
+      canvas?.replaceWith(image);
+      exportedFacade3D.hidden = false;
+    } else {
+      exportedFacade3D?.remove();
+    }
 
     if (exportedPlan) {
       const stack = exportedDocument.createElement("div");
@@ -89,7 +119,7 @@ const FloorPlanHtmlExport = {
 
     exportedDocument
       .querySelectorAll(
-        ".plan-controls, #json-file, #load-json, #layer-button, #download-html, #download-markdown, #download-dxf, #show-roofs, #show-multi-floor, #floor-select, .floor-selector, .visibility-heading, .visibility-switch, #plan-status, #terrain-compass-rose-data",
+        ".plan-controls, .solar-controls, .facade-3d-controls, #json-file, #load-json, #layer-button, #download-html, #download-markdown, #download-dxf, #show-roofs, #show-multi-floor, #floor-select, .floor-selector, .visibility-heading, .visibility-switch, #plan-status, #terrain-compass-rose-data",
       )
       .forEach((element) => {
         element.remove();
