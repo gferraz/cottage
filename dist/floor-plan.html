@@ -5318,8 +5318,8 @@ const FloorPlanFacades3D = {
     );
     const drawingBounds = { ...roomBounds };
     (plan.independentWalls || new Map()).forEach((wall) => {
-      drawingBounds.x0 = Math.min(drawingBounds.x0, wall.x0);
-      drawingBounds.x1 = Math.max(drawingBounds.x1, wall.x1);
+      drawingBounds.x0 = Math.min(drawingBounds.x0, wall.x0());
+      drawingBounds.x1 = Math.max(drawingBounds.x1, wall.x1());
       drawingBounds.z0 = Math.min(drawingBounds.z0, wall.z0);
       drawingBounds.z1 = Math.max(drawingBounds.z1, wall.topZ);
     });

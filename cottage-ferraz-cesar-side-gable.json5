@@ -56,24 +56,23 @@
     { id: "hall-roof-base", from: ["hall.x0", "porch.y0"], to: ["hall.x1", "porch.y1"], visible: false }
   ],
   walls: [
-    // {
-    //   id: "front-wall",
-    //   base: { level: "ground.z0" },
-    //   top: { level: "ground.z1" },
-    //   thickness: 0.12,
-    //   color: "terracotta",
-    //   path: {
-    //     points: [
-    //       ["office.x0", "office.y0"],
-    //       ["office.x1", "office.y0"],
-    //       ["hall.x0", "hall.y0"],
-    //       ["hall.x1", "hall.y0"],
-    //       ["hall.x1", "right.y0"],
-    //       ["right.x1",  "right.y0"]
-    //     ],
-    //   }
-    // }
-    // ,
+    {
+      id: "front-wall",
+      base: { level: "ground.z0" },
+      top: { level: "ground.z1" },
+      thickness: 0.12,
+      color: "terracotta",
+      path: {
+        points: [
+          ["office.x0", "office.y0"],
+          ["office.x1", "office.y0"],
+          ["hall.x0", "hall.y0"],
+          ["hall.x1", "hall.y0"],
+          ["hall.x1", "right.y0"],
+          ["right.x1",  "right.y0"]
+        ]
+      }
+    },
     {
       id: "right-wall",
       base: { level: "ground.z0" },
@@ -83,35 +82,35 @@
         points: [
           ["right.x1", "dining.y0"],
           ["right.x1", "mudroom.y1"]
-        ],
+        ]
+      }
+    },
+    {
+      id: "rear-wall",
+      base: { level: "ground.z0" },
+      top: { level: "ground.z1" },
+      thickness: 0.12,
+      path: {
+        points: [
+          ["kitchen.x0", "kitchen.y1"],
+          ["kitchen.x1", "kitchen.y1"],
+          ["pantry.x0", "pantry.y1"],
+          ["mudroom.x1", "mudroom.y1"]
+        ]
+      }
+    },
+    {
+      id: "left-wall",
+      base: { level: "ground.z0" },
+      top: { level: "ground.z1" },
+      thickness: 0.12,
+      path: {
+        points: [
+          ["left.x0", "office.y0"],
+          ["left.x0", "kitchen.y1"]
+        ]
       }
     }
-    // {
-    //   id: "rear-wall",
-    //   base: { level: "ground.z0" },
-    //   top: { level: "ground.z1" },
-    //   thickness: 0.12,
-    //   path: {
-    //     points: [
-    //       ["kitchen.x0", "kitchen.y1"],
-    //       ["kitchen.x1", "kitchen.y1"],
-    //       ["pantry.x0", "pantry.y1"],
-    //       ["mudroom.x1", "mudroom.y1"]
-    //     ],
-    //   }
-    // },
-    // {
-    //   id: "left-wall",
-    //   base: { level: "ground.z0" },
-    //   top: { level: "ground.z1" },
-    //   thickness: 0.12,
-    //   path: {
-    //     points: [
-    //       ["left.x0", "office.y0"],
-    //       ["left.x0", "kitchen.y1"]
-    //     ],
-    //   }
-    // }
   ],
   roofs: [
     {
