@@ -1,36 +1,84 @@
 const FloorPlanWalls = {
   resolveRoomSide(plan, roomId, side, opening) {
-    const candidates = [...plan.walls.values()].filter((wall) =>
+    const roomWalls = [...plan.walls.values()].filter((wall) =>
       wall.sourceSides.some(
         (source) => source.roomId === roomId && source.side === side,
       ),
     );
-    if (candidates.length !== 1) {
-      throw new Error(
-        candidates.length === 0
-          ? `No independent wall corresponds to ${roomId}.${side}`
-          : `More than one independent wall corresponds to ${roomId}.${side}`,
+    const epsilon = 1e-7;
+    const coversOpening = (wall, axis, from, to, coordinate) => {
+      const alongStart = axis === "x" ? from[0] : from[1];
+      const alongEnd = axis === "x" ? to[0] : to[1];
+      const openingStart = axis === "x" ? opening.x : opening.y;
+      const openingEnd = openingStart + opening.w;
+      const openingCoordinate = axis === "x" ? opening.y : opening.x;
+      return (
+        Math.abs(openingCoordinate - coordinate) <= Math.max(epsilon, wall.thickness / 2) &&
+        openingStart >= Math.min(alongStart, alongEnd) - epsilon &&
+        openingEnd <= Math.max(alongStart, alongEnd) + epsilon &&
+        opening.z0 >= wall.z0 - epsilon &&
+        opening.z0 + opening.h <= wall.z1 + epsilon
       );
+    };
+
+    const independentCandidates = [];
+    const room = plan.rooms.get(roomId);
+    const horizontalSide = side === "top" || side === "bottom";
+    const axis = horizontalSide ? "x" : "y";
+    const sideCoordinate = side === "top" ? room?.y0() : side === "bottom" ? room?.y1() : side === "left" ? room?.x0() : room?.x1();
+    plan.independentWalls?.forEach((wall) => {
+      const points = wall.path?.points ?? [];
+      for (let index = 0; index < points.length - 1; index += 1) {
+        const from = points[index];
+        const to = points[index + 1];
+        const horizontal = Math.abs(to[1] - from[1]) <= epsilon;
+        const vertical = Math.abs(to[0] - from[0]) <= epsilon;
+        if (!horizontal && !vertical) continue;
+        const segmentAxis = horizontal ? "x" : "y";
+        if (segmentAxis !== axis) continue;
+        const coordinate = axis === "x" ? from[1] : from[0];
+        const sideStart = axis === "x" ? room?.x0() : room?.y0();
+        const sideEnd = axis === "x" ? room?.x1() : room?.y1();
+        const segmentStart = axis === "x" ? from[0] : from[1];
+        const segmentEnd = axis === "x" ? to[0] : to[1];
+        if (
+          Math.abs(coordinate - sideCoordinate) > Math.max(epsilon, wall.thickness / 2) ||
+          Math.min(Math.max(segmentStart, segmentEnd), sideEnd) -
+            Math.max(Math.min(segmentStart, segmentEnd), sideStart) <= epsilon ||
+          !coversOpening(wall, axis, from, to, coordinate)
+        ) continue;
+        independentCandidates.push({
+          ...wall,
+          id: wall.id,
+          sourceWallId: wall.id,
+          pathSegment: index,
+          axis,
+          from: axis === "x"
+            ? [Math.min(from[0], to[0]), coordinate, wall.z0]
+            : [coordinate, Math.min(from[1], to[1]), wall.z0],
+          to: axis === "x"
+            ? [Math.max(from[0], to[0]), coordinate, wall.z0]
+            : [coordinate, Math.max(from[1], to[1]), wall.z0],
+          z1: wall.topZ,
+        });
+      }
+    });
+
+    if (independentCandidates.length === 1) return independentCandidates[0];
+    if (independentCandidates.length > 1) {
+      throw new Error(`A abertura ${opening.id} encontra mais de uma parede independente em ${roomId}.${side}`);
     }
 
-    const [wall] = candidates;
-    const epsilon = 1e-7;
-    const alongStart = wall.axis === "x" ? wall.from[0] : wall.from[1];
-    const alongEnd = wall.axis === "x" ? wall.to[0] : wall.to[1];
-    const openingStart = wall.axis === "x" ? opening.x : opening.y;
-    const openingEnd = openingStart + opening.w;
-    const wallCoordinate = wall.axis === "x" ? wall.from[1] : wall.from[0];
-    const openingCoordinate = wall.axis === "x" ? opening.y : opening.x;
-    if (
-      Math.abs(openingCoordinate - wallCoordinate) > epsilon ||
-      openingStart < Math.min(alongStart, alongEnd) - epsilon ||
-      openingEnd > Math.max(alongStart, alongEnd) + epsilon ||
-      opening.z0 < wall.z0 - epsilon ||
-      opening.z0 + opening.h > wall.z1 + epsilon
-    ) {
+    if (roomWalls.length !== 1) {
       throw new Error(
-        `A abertura está fora dos limites geométricos da parede ${wall.id}`,
+        roomWalls.length === 0
+          ? `Nenhuma parede corresponde a ${roomId}.${side}`
+          : `Mais de uma parede corresponde a ${roomId}.${side}`,
       );
+    }
+    const [wall] = roomWalls;
+    if (!coversOpening(wall, wall.axis, wall.from, wall.to, wall.axis === "x" ? wall.from[1] : wall.from[0])) {
+      throw new Error(`A abertura está fora dos limites geométricos da parede ${wall.id}`);
     }
     return wall;
   },
@@ -46,6 +94,7 @@ const FloorPlanWalls = {
         const element = plan.add({
           id: `${wall.id}-segment-${index + 1}`,
           label: "",
+          color: wall.color,
           pos: [
             (x0 + x1) / 2 - length / 2,
             (y0 + y1) / 2 - wall.thickness / 2,
@@ -254,6 +303,10 @@ const FloorPlanWalls = {
     });
 
     const groundLevel = Number(floors[0]?.z0 ?? 0);
+    const terrainElevations = Object.values(config.terrain?.corners ?? {})
+      .map((corner) => Number(corner.z))
+      .filter(Number.isFinite);
+    const terrainMinimumZ = Math.min(groundLevel, ...terrainElevations);
     (config.walls ?? []).forEach((definition) => {
       try {
         if (!definition.id) throw new Error("Parede independente precisa de id");
@@ -280,8 +333,16 @@ const FloorPlanWalls = {
         const thickness = Number(
           definition.thickness ?? plan.catalog.walls?.thickness ?? 0.12,
         );
+        const baseDefinition = definition.base ?? "terrain";
+        const base = baseDefinition === "terrain" ? "terrain" : "level";
+        const baseZ = base === "terrain"
+          ? terrainMinimumZ
+          : plan.resolve(baseDefinition?.level);
         const topZ = plan.resolve(definition.top?.level ?? groundLevel);
-        if (!Number.isFinite(thickness) || thickness <= 0 || !Number.isFinite(topZ)) {
+        if (
+          !Number.isFinite(thickness) || thickness <= 0 ||
+          !Number.isFinite(baseZ) || !Number.isFinite(topZ)
+        ) {
           throw new Error("Parede precisa de thickness positiva e cota superior numérica");
         }
         const x0 = Math.min(...resolvedPoints.map(([x]) => x)) - thickness / 2;
@@ -293,7 +354,8 @@ const FloorPlanWalls = {
           id: definition.id,
           type: "wall",
           path: { ...definition.path, points: resolvedPoints },
-          base: definition.base ?? "terrain",
+          base,
+          baseZ,
           top: { ...definition.top, level: topZ },
           topZ,
           thickness,
@@ -305,21 +367,23 @@ const FloorPlanWalls = {
           x1,
           y0,
           y1,
-          z0: groundLevel,
+          // This is the lower bound of the compound wall volume. For a
+          // terrain-based wall it encloses the varying base elevations.
+          z0: baseZ,
           z1: topZ,
-          h: topZ - groundLevel,
+          h: topZ - baseZ,
           touchedRoomIds: roomVolumes
             .filter((room) =>
               room.x0 < x1 && room.x1 > x0 &&
               room.y0 < y1 && room.y1 > y0 &&
-              room.z0 <= topZ && room.z1 >= groundLevel,
+              room.z0 <= topZ && room.z1 >= baseZ,
             )
             .map((room) => room.id),
         };
-        if (wall.base !== "terrain") {
-          throw new Error('Por ora, a base de parede independente aceita apenas "terrain"');
+        if (wall.base !== "terrain" && wall.base !== "level") {
+          throw new Error('A base da parede precisa ser "terrain" ou { level: "referência.z0" }');
         }
-        if (wall.h < 0) throw new Error("A cota superior da parede não pode ficar abaixo do piso térreo");
+        if (wall.h <= 0) throw new Error("A cota superior da parede precisa ficar acima da base");
         FloorPlanGeometryBox.attach(wall, { compound: true, label: wall.id });
         plan.independentWalls.set(wall.id, wall);
         plan.references.set(wall.id, wall);
@@ -333,107 +397,6 @@ const FloorPlanWalls = {
       }
     });
 
-    const enclosedGroundRooms = roomVolumes.filter(
-      (room) => !room.outdoor && Math.abs(room.z0 - groundLevel) <= epsilon,
-    );
-    const boundaries = [];
-    enclosedGroundRooms.forEach((room) => {
-      boundaries.push(
-        { room, axis: "x", side: "left", coordinate: room.x0, start: room.y0, end: room.y1, negative: true },
-        { room, axis: "x", side: "right", coordinate: room.x1, start: room.y0, end: room.y1, negative: false },
-        { room, axis: "y", side: "top", coordinate: room.y0, start: room.x0, end: room.x1, negative: true },
-        { room, axis: "y", side: "bottom", coordinate: room.y1, start: room.x0, end: room.x1, negative: false },
-      );
-    });
-    const boundarySegments = [];
-    boundaries.forEach((boundary) => {
-      const { room, axis, coordinate, start, end, negative } = boundary;
-      const breaks = new Set([start, end]);
-      enclosedGroundRooms.forEach((other) => {
-        if (other.id === room.id) return;
-        const perpendicularStart = axis === "x" ? other.x0 : other.y0;
-        const perpendicularEnd = axis === "x" ? other.x1 : other.y1;
-        const alongStart = axis === "x" ? other.y0 : other.x0;
-        const alongEnd = axis === "x" ? other.y1 : other.x1;
-        if (
-          perpendicularStart < coordinate + epsilon &&
-          perpendicularEnd > coordinate - epsilon
-        ) {
-          breaks.add(Math.max(start, alongStart));
-          breaks.add(Math.min(end, alongEnd));
-        }
-      });
-      const sortedBreaks = [...breaks]
-        .filter((value) => value >= start && value <= end)
-        .sort((a, b) => a - b);
-      for (let index = 0; index < sortedBreaks.length - 1; index += 1) {
-        const segmentStart = sortedBreaks[index];
-        const segmentEnd = sortedBreaks[index + 1];
-        if (segmentEnd - segmentStart <= epsilon) continue;
-        const midpoint = (segmentStart + segmentEnd) / 2;
-        const hasRoomOutside = enclosedGroundRooms.some((other) => {
-          if (other.id === room.id) return false;
-          const otherAlongStart = axis === "x" ? other.y0 : other.x0;
-          const otherAlongEnd = axis === "x" ? other.y1 : other.x1;
-          const otherPerpendicularStart = axis === "x" ? other.x0 : other.y0;
-          const otherPerpendicularEnd = axis === "x" ? other.x1 : other.y1;
-          const crossesBoundary = negative
-            ? otherPerpendicularStart < coordinate - epsilon &&
-              otherPerpendicularEnd >= coordinate - epsilon
-            : otherPerpendicularStart <= coordinate + epsilon &&
-              otherPerpendicularEnd > coordinate + epsilon;
-          return (
-            midpoint > otherAlongStart + epsilon &&
-            midpoint < otherAlongEnd - epsilon &&
-            crossesBoundary
-          );
-        });
-        if (!hasRoomOutside) {
-          boundarySegments.push({ ...boundary, start: segmentStart, end: segmentEnd });
-        }
-      }
-    });
-
-    const uniqueBoundarySegments = new Map();
-    boundarySegments.forEach((segment) => {
-      const key = [
-        segment.axis,
-        segment.coordinate,
-        segment.start,
-        segment.end,
-      ].map((value) => Number(value).toFixed(6)).join(":");
-      if (!uniqueBoundarySegments.has(key)) uniqueBoundarySegments.set(key, segment);
-    });
-    const foundationThickness = Number(plan.catalog.walls?.thickness ?? 0.12);
-    plan.foundationWalls = [...uniqueBoundarySegments.values()].map((segment, index) => {
-      const { room, axis, side, coordinate, start, end } = segment;
-      const alongX = axis === "y";
-      const x = alongX ? start : coordinate - foundationThickness / 2;
-      const y = alongX ? coordinate - foundationThickness / 2 : start;
-      const width = alongX ? end - start : foundationThickness;
-      const depth = alongX ? foundationThickness : end - start;
-      const from = axis === "y"
-        ? [start, coordinate, groundLevel]
-        : [coordinate, start, groundLevel];
-      const to = axis === "y"
-        ? [end, coordinate, groundLevel]
-        : [coordinate, end, groundLevel];
-      return {
-        id: `foundation-${room.id}-${side}-${index + 1}`,
-        type: "wall",
-        sourceRoomIds: [room.id],
-        axis: axis === "y" ? "x" : "y",
-        from,
-        to,
-        pos: [x, y, groundLevel],
-        size: [width, depth],
-        topZ: groundLevel,
-        base: "terrain",
-        top: { level: groundLevel },
-        thickness: foundationThickness,
-        touchedRoomIds: [room.id],
-      };
-    });
   },
 };
 

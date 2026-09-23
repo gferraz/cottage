@@ -42,7 +42,7 @@ Os IDs dos cômodos são obrigatórios, globais e únicos. IDs de zonas, itens, 
 
 ## Catálogo compartilhado
 
-Tipos reutilizáveis de itens, padrões de portas/janelas e tokens de cor ficam em [`src/floor-plan-catalog.js`](src/floor-plan-catalog.js). Uma planta pode sobrescrever tipos em `item-types`, valores de abertura no próprio objeto e cores em `theme.colors`. A prioridade é: definição explícita da planta, catálogo compartilhado e padrão interno.
+Tipos reutilizáveis de itens, padrões de portas/janelas e tokens de cor ficam em [`src/config/catalog.js`](src/config/catalog.js). Uma planta pode sobrescrever tipos em `item-types`, valores de abertura no próprio objeto e cores em `theme.colors`. A prioridade é: definição explícita da planta, catálogo compartilhado e padrão interno.
 
 ## Geometria e referências
 
@@ -124,15 +124,10 @@ planta continua sendo escolhido pelo botão “Carregar JSON”.
 
 - `floor-plan.html`: shell, interface e template de CSS portátil.
 - `src/floor-plan.css`: estilos da aplicação.
-- `src/floor-plan.js`: fachada pública `FloorPlan` e orquestração no navegador.
-- `src/floor-plan-geometry.js`: avaliação de expressões, aliases locais e referências geométricas.
-- `src/floor-plan-dom.js`: criação de elementos HTML e cômodos.
-- `src/floor-plan-geometry-domain.js`: normalização geométrica, paredes e escadas.
-- `src/floor-plan-terrain.js`, `src/floor-plan-guides.js`, `src/floor-plan-roofs.js`: terreno e desenhos SVG.
-- `src/floor-plan-openings.js`, `src/floor-plan-elements.js`: aberturas, itens e zonas.
-- `src/floor-plan-references.js`, `src/floor-plan-layers.js`: referências globais, camadas e sobreposições.
-- `src/floor-plan-lists.js`, `src/floor-plan-text-export.js`, `src/floor-plan-html-export.js`: listas e exportações.
-- `src/floor-plan-model.js`, `src/floor-plan-validation.js`, `src/floor-plan-renderer.js`, `src/floor-plan-legend.js`, `src/floor-plan-export.js`: serviços auxiliares.
-- `src/floor-plan-parser.js`: parser JSON/JSON5/JSONC embutido.
-- `src/floor-plan-config.js`: inicialização, carregamento por arquivo e comando `floor`.
+- `src/main.js`: fachada pública `FloorPlan` e orquestração no navegador.
+- `src/models/`: modelo, validação, geometria, métricas, aberturas, paredes, referências e camadas.
+- `src/views/`: desenho da planta, terreno, fachadas, telhados, cômodos, controles e listas.
+- `src/exports/`: exportadores DXF, HTML e Markdown/ASCII.
+- `src/config/`: catálogo de tipos e cores, tema, parser JSON5 e inicialização da aplicação.
+- `src/floor-plan.css`: estilos gerais da página.
 - `cottage-ferraz-cesar.json`: exemplo com terreno e múltiplos pisos.

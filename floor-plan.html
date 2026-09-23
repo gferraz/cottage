@@ -4,8 +4,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Planta térrea — separada por módulos</title>
-    <link rel="stylesheet" href="src/floor-plan-theme.css" />
-    <link rel="stylesheet" href="src/floor-plan.css?v=walls-1" />
+    <link rel="stylesheet" href="src/config/theme.css" />
+    <link rel="stylesheet" href="src/floor-plan.css?v=walls-2" />
   </head>
   <body>
 <template id="portable-export-css"><style>
@@ -856,33 +856,33 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
       window.THREE = THREE;
       window.dispatchEvent(new Event("three-ready"));
     </script>
-    <script src="src/floor-plan-parser.js?v=parser-1" defer></script>
-    <script src="src/floor-plan-model.js?v=modules-14" defer></script>
-    <script src="src/floor-plan-validation.js?v=modules-9" defer></script>
-    <script src="src/floor-plan-renderer.js?v=modules-9" defer></script>
-    <script src="src/floor-plan-legend.js?v=modules-9" defer></script>
-    <script src="src/floor-plan-export.js?v=modules-9" defer></script>
-    <script src="src/floor-plan-geometry.js?v=modules-10" defer></script>
-    <script src="src/floor-plan-geometry-box.js?v=geometry-box-1" defer></script>
-    <script src="src/floor-plan-metrics.js?v=modules-9" defer></script>
-    <script src="src/floor-plan-viewport.js?v=modules-9" defer></script>
-    <script src="src/floor-plan-terrain.js?v=terrain-1" defer></script>
-    <script src="src/floor-plan-guides.js?v=modules-9" defer></script>
-    <script src="src/floor-plan-facades.js?v=facades-27" defer></script>
-    <script src="src/floor-plan-facades-3d.js?v=facades-3d-40" defer></script>
-    <script src="src/floor-plan-roofs.js?v=modules-10" defer></script>
-    <script src="src/floor-plan-openings.js?v=modules-18" defer></script>
-    <script src="src/floor-plan-walls.js?v=walls-6" defer></script>
-    <script src="src/floor-plan-elements.js?v=modules-9" defer></script>
-    <script src="src/floor-plan-references.js?v=modules-17" defer></script>
-    <script src="src/floor-plan-layers.js?v=modules-17" defer></script>
-    <script src="src/floor-plan-lists.js?v=modules-12" defer></script>
-    <script src="src/floor-plan-text-export.js?v=modules-14" defer></script>
-    <script src="src/floor-plan-geometry-domain.js?v=modules-10" defer></script>
-    <script src="src/floor-plan-dom.js?v=modules-10" defer></script>
-    <script src="src/floor-plan-html-export.js?v=modules-9" defer></script>
-    <script src="src/floor-plan.js?v=modules-25" defer></script>
-    <script src="src/floor-plan-catalog.js?v=catalog-1" defer></script>
-    <script src="src/floor-plan-config.js?v=cli-3" defer></script>
+    <script src="src/config/parser.js?v=parser-1" defer></script>
+    <script src="src/models/model.js?v=modules-14" defer></script>
+    <script src="src/models/validation.js?v=modules-9" defer></script>
+    <script src="src/views/renderer.js?v=modules-9" defer></script>
+    <script src="src/views/legend.js?v=modules-9" defer></script>
+    <script src="src/exports/dxf.js?v=modules-9" defer></script>
+    <script src="src/models/geometry.js?v=modules-10" defer></script>
+    <script src="src/models/geometry-box.js?v=geometry-box-1" defer></script>
+    <script src="src/models/metrics.js?v=modules-9" defer></script>
+    <script src="src/views/viewport.js?v=modules-9" defer></script>
+    <script src="src/views/terrain.js?v=terrain-1" defer></script>
+    <script src="src/views/guides.js?v=modules-9" defer></script>
+    <script src="src/views/facades.js?v=facades-30" defer></script>
+    <script src="src/views/facades-3d.js?v=facades-3d-43" defer></script>
+    <script src="src/views/roofs.js?v=modules-10" defer></script>
+    <script src="src/models/openings.js?v=modules-19" defer></script>
+    <script src="src/models/walls.js?v=walls-10" defer></script>
+    <script src="src/views/elements.js?v=modules-9" defer></script>
+    <script src="src/models/references.js?v=modules-17" defer></script>
+    <script src="src/models/layers.js?v=modules-17" defer></script>
+    <script src="src/views/lists.js?v=modules-12" defer></script>
+    <script src="src/exports/text.js?v=modules-14" defer></script>
+    <script src="src/models/geometry-domain.js?v=modules-10" defer></script>
+    <script src="src/views/dom.js?v=modules-10" defer></script>
+    <script src="src/exports/html.js?v=modules-9" defer></script>
+    <script src="src/main.js?v=modules-26" defer></script>
+    <script src="src/config/catalog.js?v=catalog-1" defer></script>
+    <script src="src/config/app.js?v=cli-3" defer></script>
   </body>
 </html>

@@ -146,19 +146,10 @@ const FloorPlanFacades3D = {
       { x0: Infinity, x1: -Infinity, z0: Infinity, z1: -Infinity },
     );
     const drawingBounds = { ...roomBounds };
-    (plan.foundationWalls || []).forEach((wall) => {
-      const startZ = terrainElevationAt(Number(wall.from?.[1]));
-      const endZ = terrainElevationAt(Number(wall.to?.[1]));
-      if (Number.isFinite(startZ)) drawingBounds.z0 = Math.min(drawingBounds.z0, startZ);
-      if (Number.isFinite(endZ)) drawingBounds.z0 = Math.min(drawingBounds.z0, endZ);
-    });
     (plan.independentWalls || new Map()).forEach((wall) => {
       drawingBounds.x0 = Math.min(drawingBounds.x0, wall.x0);
       drawingBounds.x1 = Math.max(drawingBounds.x1, wall.x1);
-      wall.path.points.forEach(([, y]) => {
-        const baseZ = terrainElevationAt(y);
-        if (Number.isFinite(baseZ)) drawingBounds.z0 = Math.min(drawingBounds.z0, baseZ);
-      });
+      drawingBounds.z0 = Math.min(drawingBounds.z0, wall.z0);
       drawingBounds.z1 = Math.max(drawingBounds.z1, wall.topZ);
     });
     stairFlights.forEach((stair) => {
@@ -389,95 +380,20 @@ const FloorPlanFacades3D = {
     terrain.renderOrder = -10;
     scene.add(terrain);
 
-    (plan.foundationWalls || []).forEach((wall) => {
-      const [x, y, z0] = wall.pos;
-      const [width, depth] = wall.size;
-      const topZ = Number(wall.topZ);
-      const alongX = wall.axis === "x";
-      const length = alongX ? width : depth;
-      const thickness = Number(wall.thickness);
-      const startY = Number(wall.from[1]);
-      const endY = Number(wall.to[1]);
-      let baseStart = terrainElevationAt(startY);
-      let baseEnd = terrainElevationAt(endY);
-      if (
-        !finite(x, y, z0, topZ, length, thickness, startY, endY) ||
-        !Number.isFinite(baseStart) ||
-        !Number.isFinite(baseEnd) ||
-        length <= 0 || thickness <= 0
-      ) {
-        reportInvalid("parede de embasamento", wall.id);
-        return;
-      }
-
-      let start = 0;
-      let end = length;
-      const originalBaseStart = baseStart;
-      const originalBaseEnd = baseEnd;
-      if (baseStart >= topZ && baseEnd >= topZ) return;
-      if (baseStart >= topZ) {
-        const crossing = (topZ - baseStart) / (baseEnd - baseStart);
-        start = length * crossing;
-        baseStart = topZ;
-      } else if (baseEnd >= topZ) {
-        const crossing = (topZ - baseStart) / (baseEnd - baseStart);
-        end = length * crossing;
-        baseEnd = topZ;
-      }
-      const visibleLength = end - start;
-      if (visibleLength <= 1e-9) return;
-
-      const shape = new THREE.Shape();
-      const startBaseZ = alongX
-        ? originalBaseStart
-        : originalBaseStart + ((originalBaseEnd - originalBaseStart) * start) / length;
-      const endBaseZ = alongX
-        ? originalBaseEnd
-        : originalBaseStart + ((originalBaseEnd - originalBaseStart) * end) / length;
-      shape.moveTo(0, 0);
-      shape.lineTo(visibleLength, endBaseZ - startBaseZ);
-      shape.lineTo(visibleLength, topZ - startBaseZ);
-      shape.lineTo(0, topZ - startBaseZ);
-      shape.closePath();
-
-      const geometry = new THREE.ExtrudeGeometry(shape, {
-        depth: thickness,
-        bevelEnabled: false,
-      });
-      const segmentX = alongX ? x + start : x;
-      const segmentY = alongX ? y : y + start;
-      const transform = alongX
-        ? new THREE.Matrix4().set(
-            1, 0, 0, segmentX,
-            0, 0, -1, segmentY + thickness,
-            0, 1, 0, startBaseZ,
-            0, 0, 0, 1,
-          )
-        : new THREE.Matrix4().set(
-            0, 0, 1, segmentX,
-            1, 0, 0, segmentY,
-            0, 1, 0, startBaseZ,
-            0, 0, 0, 1,
-          );
-      geometry.applyMatrix4(transform);
-      const foundation = new THREE.Mesh(geometry, wallMaterial);
-      foundation.userData.domainId = wall.id;
-      foundation.userData.sourceWallId = wall.sourceWallId;
-      foundation.renderOrder = 1;
-      scene.add(foundation);
-      scene.add(new THREE.LineSegments(new THREE.EdgesGeometry(geometry), wallLineMaterial));
-    });
-
     (plan.independentWalls || new Map()).forEach((wall) => {
       const { points } = wall.path;
+      const independentWallMaterial = new THREE.MeshBasicMaterial({
+        color: wall.color ? plan.themeFillColor(wall.color) : wallMaterial.color,
+        side: THREE.DoubleSide,
+      });
       for (let index = 0; index < points.length - 1; index += 1) {
         const [x0, y0] = points[index];
         const [x1, y1] = points[index + 1];
         const dx = x1 - x0;
         const dy = y1 - y0;
         const length = Math.hypot(dx, dy);
-        let baseStart = terrainElevationAt(y0);
-        let baseEnd = terrainElevationAt(y1);
+        let baseStart = wall.base === "terrain" ? terrainElevationAt(y0) : wall.baseZ;
+        let baseEnd = wall.base === "terrain" ? terrainElevationAt(y1) : wall.baseZ;
         if (
           !finite(x0, y0, x1, y1, length, wall.topZ, wall.thickness) ||
           !Number.isFinite(baseStart) ||
@@ -506,45 +422,87 @@ const FloorPlanFacades3D = {
         const uy = dy / length;
         const nx = -uy;
         const ny = ux;
-        const startX = x0 + ux * start;
-        const startY = y0 + uy * start;
         const startBaseZ = originalBaseStart + (originalBaseEnd - originalBaseStart) * start / length;
         const endBaseZ = originalBaseStart + (originalBaseEnd - originalBaseStart) * end / length;
-        const profile = [
-          [0, 0],
-          [segmentLength, endBaseZ - startBaseZ],
-          [segmentLength, wall.topZ - startBaseZ],
-          [0, wall.topZ - startBaseZ],
-        ];
-        const polygon = profile.filter(([px, py], pointIndex) => {
-          const previous = profile[(pointIndex + profile.length - 1) % profile.length];
-          return Math.hypot(px - previous[0], py - previous[1]) > 1e-9;
-        });
-        const area = Math.abs(polygon.reduce((sum, [px, py], pointIndex) => {
-          const next = polygon[(pointIndex + 1) % polygon.length];
-          return sum + px * next[1] - next[0] * py;
-        }, 0)) / 2;
-        if (polygon.length < 3 || area <= 1e-9) continue;
         const shape = new THREE.Shape();
-        shape.moveTo(...polygon[0]);
-        polygon.slice(1).forEach((point) => shape.lineTo(...point));
+        shape.moveTo(0, 0);
+        shape.lineTo(segmentLength, endBaseZ - startBaseZ);
+        shape.lineTo(segmentLength, wall.topZ - startBaseZ);
+        shape.lineTo(0, wall.topZ - startBaseZ);
         shape.closePath();
+        const segmentOpenings = (openingsByWall.get(wall.id) || [])
+          .filter((opening) => opening.wallSegment === index);
+        segmentOpenings.forEach((opening) => {
+          const part = opening.void || opening;
+          const horizontal = Math.abs(dx) >= Math.abs(dy);
+          const openingStart = horizontal ? Number(part.x) : Number(part.y);
+          const wallStart = horizontal ? x0 : y0;
+          const openingDistance = dx < -1e-9 || (!horizontal && dy < -1e-9)
+            ? wallStart - openingStart - Number(part.w)
+            : openingStart - wallStart;
+          const holeX = openingDistance - start;
+          const baseAtOpening = originalBaseStart +
+            (originalBaseEnd - originalBaseStart) * openingDistance / length;
+          const holeZ = Number(part.z0) - baseAtOpening;
+          const holeWidth = Number(part.w);
+          const holeHeight = Number(part.h);
+          if (
+            !finite(holeX, holeZ, holeWidth, holeHeight) ||
+            holeX < 0 || holeZ < 0 || holeWidth <= 0 || holeHeight <= 0 ||
+            holeX + holeWidth > segmentLength ||
+            baseAtOpening + holeZ + holeHeight > wall.topZ + 1e-7
+          ) {
+            reportInvalid("recorte de parede independente", opening.id);
+            return;
+          }
+          const hole = new THREE.Path();
+          hole.moveTo(holeX, holeZ);
+          hole.lineTo(holeX + holeWidth, holeZ);
+          hole.lineTo(holeX + holeWidth, holeZ + holeHeight);
+          hole.lineTo(holeX, holeZ + holeHeight);
+          hole.closePath();
+          shape.holes.push(hole);
+        });
         const geometry = new THREE.ExtrudeGeometry(shape, {
           depth: wall.thickness,
           bevelEnabled: false,
         });
-        geometry.applyMatrix4(new THREE.Matrix4().set(
-          ux, 0, nx, startX - nx * wall.thickness / 2,
-          uy, 0, ny, startY - ny * wall.thickness / 2,
+        const matrix = new THREE.Matrix4().set(
+          ux, 0, nx, x0 + ux * start - nx * wall.thickness / 2,
+          uy, 0, ny, y0 + uy * start - ny * wall.thickness / 2,
           0, 1, 0, startBaseZ,
           0, 0, 0, 1,
-        ));
-        const mesh = new THREE.Mesh(geometry, wallMaterial);
+        );
+        geometry.applyMatrix4(matrix);
+        const mesh = new THREE.Mesh(geometry, independentWallMaterial);
         mesh.userData.domainId = wall.id;
         mesh.userData.pathSegment = index;
         mesh.renderOrder = 1;
         scene.add(mesh);
         scene.add(new THREE.LineSegments(new THREE.EdgesGeometry(geometry), wallLineMaterial));
+        segmentOpenings.forEach((opening) => {
+          if (!opening.element) return;
+          const part = opening.element;
+          const horizontal = Math.abs(dx) >= Math.abs(dy);
+          const openingStart = horizontal ? Number(part.x) : Number(part.y);
+          const wallStart = horizontal ? x0 : y0;
+          const openingDistance = dx < -1e-9 || (!horizontal && dy < -1e-9)
+            ? wallStart - openingStart - Number(part.w)
+            : openingStart - wallStart;
+          const centerDistance = openingDistance + Number(part.w) / 2;
+          const feature = new THREE.Mesh(
+            new THREE.BoxGeometry(Number(part.w), 0.035, Number(part.h)),
+            part.type === "window" ? windowMaterial : doorMaterial,
+          );
+          feature.position.set(
+            x0 + ux * centerDistance - nx * wall.thickness * 0.52,
+            y0 + uy * centerDistance - ny * wall.thickness * 0.52,
+            Number(part.z0) + Number(part.h) / 2,
+          );
+          feature.rotation.z = Math.atan2(dy, dx);
+          feature.renderOrder = 9;
+          scene.add(feature);
+        });
       }
     });
 

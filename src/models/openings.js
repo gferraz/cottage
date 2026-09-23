@@ -270,9 +270,6 @@ const FloorPlanOpenings = {
     const [, roomId, wall] = match;
     const room = plan.rooms.get(roomId);
     if (!room) throw new Error(`Unknown opening room reference: ${roomId}`);
-    if (!room.hasWall(wall))
-      throw new Error(`Room ${roomId} has no solid ${wall} wall`);
-
     const target = String(opening.to ?? "exterior").trim() || "exterior";
     if (target !== "exterior" && !plan.rooms?.has(target)) {
       throw new Error(`Unknown opening target: ${target}`);
@@ -415,6 +412,7 @@ const FloorPlanOpenings = {
     };
     const wallObject = FloorPlanWalls.resolveRoomSide(plan, roomId, wall, normalized);
     normalized.wallId = wallObject.id;
+    normalized.wallSegment = wallObject.pathSegment ?? null;
     const openingGeometry = {
       x: normalized.x,
       y: normalized.y,

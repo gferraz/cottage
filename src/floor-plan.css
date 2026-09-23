@@ -152,6 +152,14 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   margin-bottom: 32px;
 }
 .facade-3d-canvas { display: block; width: 100%; height: 420px; }
+.facade-3d-error {
+  margin: 0;
+  padding: 12px;
+  color: #842b25;
+  background: #fff2ef;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 .facade-terrain-front { stroke-linecap: round; }
 .facade-room { fill: var(--theme-surface); fill-opacity: 0.45; stroke: var(--theme-wall); stroke-width: 1.5; }
 .facade-occluder { fill: var(--theme-wall-fill, #f7f7f4); fill-opacity: 1; stroke: none; }

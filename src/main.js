@@ -695,7 +695,20 @@ class FloorPlan {
     this.renderFacades(facades);
     if (this.facade3dLayer) {
       this.facade3dLayer.closest(".facade-3d-section")?.toggleAttribute("hidden", false);
-      this.renderFacade3D();
+      try {
+        this.renderFacade3D();
+      } catch (error) {
+        const detail = error?.stack || error?.message || String(error);
+        this.errors.push({
+          category: "presentation",
+          message: `Falha ao renderizar a fachada 3D: ${detail}`,
+        });
+        this.facade3dLayer.replaceChildren();
+        const message = document.createElement("pre");
+        message.className = "facade-3d-error";
+        message.textContent = `Falha ao renderizar a fachada 3D:\n${detail}`;
+        this.facade3dLayer.append(message);
+      }
     }
     this.updateSummary();
     [this.downloadButton, this.markdownButton, this.dxfButton].forEach(

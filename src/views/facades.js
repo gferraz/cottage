@@ -125,7 +125,12 @@ const FloorPlanFacades = {
       const facadeAxis = side ? "x" : "y";
       const facadeEdge =
         direction === "front" || direction === "left" ? "min" : "max";
-      const edgeValues = rooms.map((room) =>
+      const facadeDatumRooms = rooms.filter((room) =>
+        !String(
+          plan.roomDefinitions?.get(String(room.dataset.id || ""))?.classes || "",
+        ).split(/\s+/).includes("stair-flight"),
+      );
+      const edgeValues = (facadeDatumRooms.length ? facadeDatumRooms : rooms).map((room) =>
         facadeAxis === "x"
           ? facadeEdge === "min"
             ? room.x0()
@@ -1210,6 +1215,85 @@ const FloorPlanFacades = {
         }
 
       });
+
+      const terrainElevationAt = (y) => {
+        const profile = plan.terrainReference;
+        if (
+          !profile ||
+          ![profile.frontY, profile.rearY, profile.frontZ, profile.rearZ].every(Number.isFinite) ||
+          profile.frontY === profile.rearY
+        ) return null;
+        const offset = Number.parseFloat(
+          getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
+        ) || 0;
+        const progress = Math.max(0, Math.min(1,
+          (y + offset - profile.frontY) / (profile.rearY - profile.frontY),
+        ));
+        return profile.frontZ + progress * (profile.rearZ - profile.frontZ);
+      };
+      const projectedIndependentWalls = [];
+      plan.independentWalls?.forEach((wall) => {
+        const points = wall.path?.points ?? [];
+        points.slice(0, -1).forEach(([x0, y0], segmentIndex) => {
+          const [x1, y1] = points[segmentIndex + 1];
+          const dx = x1 - x0;
+          const dy = y1 - y0;
+          const length = Math.hypot(dx, dy);
+          if (length <= 1e-9) return;
+          const projectedLength = side ? Math.abs(dy) : Math.abs(dx);
+          if (projectedLength <= 1e-7) return;
+          const depth = side ? (x0 + x1) / 2 : (y0 + y1) / 2;
+          const inFacadeDepth = facadeEdge === "min"
+            ? depth <= edge + facadeDepth
+            : depth >= edge - facadeDepth;
+          if (!inFacadeDepth) return;
+          const start = side ? Math.min(y0, y1) : Math.min(x0, x1);
+          const end = side ? Math.max(y0, y1) : Math.max(x0, x1);
+          const startPoint = side
+            ? y0 <= y1 ? [x0, y0] : [x1, y1]
+            : x0 <= x1 ? [x0, y0] : [x1, y1];
+          const endPoint = side
+            ? y0 <= y1 ? [x1, y1] : [x0, y0]
+            : x0 <= x1 ? [x1, y1] : [x0, y0];
+          const startBase = wall.base === "terrain"
+            ? terrainElevationAt(startPoint[1])
+            : wall.baseZ;
+          const endBase = wall.base === "terrain"
+            ? terrainElevationAt(endPoint[1])
+            : wall.baseZ;
+          if (![startBase, endBase, wall.topZ].every(Number.isFinite)) return;
+          projectedIndependentWalls.push({ wall, segmentIndex, depth, start, end, startBase, endBase });
+        });
+      });
+      projectedIndependentWalls
+        .sort((first, second) => facadeEdge === "min"
+          ? second.depth - first.depth
+          : first.depth - second.depth)
+        .forEach(({ wall, segmentIndex, start, end, startBase, endBase }) => {
+          const xStart = (start - min + padding) * scale;
+          const xEnd = (end - min + padding) * scale;
+          const startBottom = (floorHeight - startBase + padding) * scale;
+          const endBottom = (floorHeight - endBase + padding) * scale;
+          const top = (floorHeight - wall.topZ + padding) * scale;
+          const face = document.createElementNS(svgNamespace, "polygon");
+          face.setAttribute("points", [
+            `${xStart},${startBottom}`,
+            `${xEnd},${endBottom}`,
+            `${xEnd},${top}`,
+            `${xStart},${top}`,
+          ].join(" "));
+          face.classList.add("facade-independent-wall");
+          face.dataset.wallId = wall.id;
+          face.dataset.segment = String(segmentIndex);
+          face.style.fill = wall.color
+            ? plan.themeFillColor(wall.color)
+            : getComputedStyle(plan.root)
+                .getPropertyValue("--theme-wall-fill").trim() || "#f7f7f4";
+          face.style.stroke = getComputedStyle(plan.root)
+            .getPropertyValue("--theme-wall").trim() || "#222";
+          face.style.strokeWidth = "1.5";
+          svg.append(face);
+        });
 
       const foregroundRoofSelector =
         ".facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label, .facade-gable-wall";
