@@ -29,4 +29,18 @@
   --theme-button-hover: #e6e6e6;
   --theme-danger: #9b2c2c;
   --theme-danger-dark: #6b2020;
+
+  /* Paleta de pintura Cidadela / Sherwin-Williams. */
+  --color-casca-de-pinus: #6e5241;
+  --color-jangada-de-bambu: #ad9b8c;
+  --color-mate-amargo: #606b4a;
+  --color-prosa-ao-entardecer: #989192;
+  --color-tacho-de-cobre: #b27147;
+  --color-leite-maltado: #decabd;
+  --color-endro: #7c9067;
+  --color-malva-exotica: #afa7ac;
+  --color-sertao-nordestino: #cd7d4c;
+  --color-desejo-ambar: #f2cb96;
+  --color-abobrinha-italiana: #9ea67d;
+  --color-aroma-de-uva: #c5c0c9;
 }
