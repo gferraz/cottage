@@ -119,7 +119,7 @@ const FloorPlanHtmlExport = {
 
     exportedDocument
       .querySelectorAll(
-        ".plan-controls, .solar-controls, .facade-3d-controls, #json-file, #load-json, #layer-button, #download-html, #download-markdown, #download-dxf, #show-roofs, #show-multi-floor, #floor-select, .floor-selector, .visibility-heading, .visibility-switch, #plan-status, #terrain-compass-rose-data",
+        ".plan-controls, .solar-controls, .facade-3d-controls, #json-file, #load-json, #layer-button, #download-html, #download-markdown, #download-dxf, #show-roofs, #show-multi-floor, #floor-select, .floor-selector, .visibility-heading, .visibility-switch, #terrain-compass-rose-data",
       )
       .forEach((element) => {
         element.remove();

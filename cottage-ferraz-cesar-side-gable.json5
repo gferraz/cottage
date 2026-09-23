@@ -299,7 +299,7 @@
           id: "masterbath",
           label: "Banheiro Master",
           from: ["left.x0", "closet.y1"],
-          to: ["left.x1", "knee-bottom."],
+          to: ["left.x1", "knee-bottom.y0"],
           walls: ["top", "bottom", "right"],
           classes: "wet"
         },

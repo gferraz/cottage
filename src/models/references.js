@@ -477,7 +477,13 @@ const FloorPlanReferences = {
     plan.allRoofs = [];
     const globalRoofs = config.floors ? (config.roofs ?? []) : [];
     globalRoofs.forEach((roof) => {
-      plan.allRoofs.push({ ...roof, floorId: null, floorLabel: null });
+      const baseDefinition = roof.base ?? roof;
+      const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
+      plan.allRoofs.push({
+        ...roof,
+        floorId: floor?.id ?? null,
+        floorLabel: floor?.label ?? null,
+      });
     });
     floors.forEach((floorConfig) => {
       const previousFloorHeight = plan.currentFloorHeight;

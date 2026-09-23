@@ -26,14 +26,85 @@ const FloorPlanLists = {
           : "Área calculada do terreno: —";
     }
     this.updateProjectOverview(plan);
-    plan.updateRoomList();
-    plan.updateFloorSummary();
-    plan.updateItemList();
-    plan.updateRoofList();
-    plan.updateOpeningList();
-    plan.updateWindowList();
-    plan.updateNaturalList();
-    plan.updateErrorList();
+    this.updateTechnicalSections(plan);
+  },
+
+  updateTechnicalSections(plan) {
+    const root = document.querySelector("#technical-floor-sections");
+    if (!root) return;
+    root.replaceChildren();
+    const floors = plan.model?.floors ?? [
+      { id: null, label: plan.currentConfig?.label || "Planta", rooms: [] },
+    ];
+    const floorRows = FloorPlanModel.floorRows(
+      floors,
+      plan.roomDefinitions,
+      plan.roomReferences,
+    );
+    const groups = [
+      ["rooms", "Cômodos"],
+      ["items", "Itens"],
+      ["roofs", "Telhados"],
+      ["openings", "Passagens"],
+      ["windows", "Janelas"],
+      ["natural", "Comunicações naturais"],
+    ];
+    const renderers = {
+      rooms: (target, floor) => this.updateRoomList(plan, target, floor),
+      items: (target, floor) => this.updateItemList(plan, target, floor),
+      roofs: (target, floor) => this.updateRoofList(plan, target, floor),
+      openings: (target, floor) => this.updateOpeningList(plan, target, floor),
+      windows: (target, floor) => this.updateWindowList(plan, target, floor),
+      natural: (target, floor) => this.updateNaturalList(plan, target, floor),
+    };
+
+    floors.forEach((floor, index) => {
+      const section = document.createElement("section");
+      section.className = "technical-floor-section";
+      section.setAttribute("aria-labelledby", `technical-floor-${index + 1}-title`);
+      const heading = document.createElement("h3");
+      heading.id = `technical-floor-${index + 1}-title`;
+      heading.textContent = `05.${index + 1} — ${floor.label || floor.id || "Piso"}`;
+      section.append(heading);
+
+      const row = floorRows[index];
+      const floorRooms = plan.allRooms.filter((room) => room.floorId === floor.id);
+      const grossAreaTotal = floorRooms.reduce(
+        (total, room) => total + room.reference.area(),
+        0,
+      );
+      const summary = document.createElement("p");
+      summary.className = "technical-floor-summary";
+      summary.textContent = `${row?.count ?? 0} cômodos · área bruta somada: ${plan.formatFixed(grossAreaTotal)} m² · envelope: ${plan.formatFixed(row?.width ?? 0)} × ${plan.formatFixed(row?.height ?? 0)} m`;
+      section.append(summary);
+
+      const categories = document.createElement("div");
+      categories.className = "technical-floor-categories";
+      groups.forEach(([key, label]) => {
+        const card = document.createElement("section");
+        card.className = `technical-category technical-category-${key}`;
+        const title = document.createElement("h4");
+        title.textContent = label;
+        const list = document.createElement("div");
+        list.className = "technical-category-list";
+        card.append(title, list);
+        categories.append(card);
+        renderers[key](list, floor);
+      });
+      section.append(categories);
+      root.append(section);
+    });
+
+    if (plan.errors.length) {
+      const errors = document.createElement("section");
+      errors.className = "technical-global-errors";
+      const heading = document.createElement("h3");
+      heading.textContent = "Itens com erro";
+      const list = document.createElement("div");
+      errors.append(heading, list);
+      this.updateErrorList(plan, list);
+      root.append(errors);
+    }
   },
 
   updateProjectOverview(plan) {
@@ -155,10 +226,10 @@ const FloorPlanLists = {
       });
   },
 
-  updateRoomList(plan) {
-    if (!plan.roomList) return;
+  updateRoomList(plan, target = plan.roomList, floor = null) {
+    if (!target) return;
 
-    plan.roomList.replaceChildren();
+    target.replaceChildren();
     const header = document.createElement("div");
     header.className = "room-list-header";
     [
@@ -172,14 +243,16 @@ const FloorPlanLists = {
       cell.textContent = text;
       header.append(cell);
     });
-    plan.roomList.append(header);
-    const rooms = plan.allRooms.length
+    target.append(header);
+    const rooms = (plan.allRooms.length
       ? plan.allRooms
       : plan.roomElements.map((reference) => ({
           id: reference.dataset.id,
           label: reference.dataset.label,
           reference,
-        }));
+        }))).filter((entry) => !floor || entry.floorId === floor.id);
+    let grossTotal = 0;
+    let netTotal = 0;
     rooms.forEach((roomEntry, index) => {
       const room = roomEntry.reference || roomEntry;
       const activeRoom = plan.roomElements.find(
@@ -189,15 +262,16 @@ const FloorPlanLists = {
       item.className = "room-list-item";
 
       const label = document.createElement("span");
-      label.textContent = `${index + 1}. ${roomEntry.label || room.dataset.label || "Cômodo"}${roomEntry.floorLabel ? ` (${roomEntry.floorLabel})` : ""}`;
+      label.textContent = `${index + 1}. ${roomEntry.label || room.dataset.label || "Cômodo"}`;
 
       const grossArea = document.createElement("span");
-      grossArea.textContent = plan.formatFixed(room.area());
-
       const netArea = document.createElement("span");
-      netArea.textContent = plan.formatFixed(
-        activeRoom?.netArea ?? room.area(),
-      );
+      const roomGrossArea = room.area();
+      const roomNetArea = activeRoom?.netArea ?? roomGrossArea;
+      grossTotal += roomGrossArea;
+      netTotal += roomNetArea;
+      grossArea.textContent = plan.formatFixed(roomGrossArea);
+      netArea.textContent = plan.formatFixed(roomNetArea);
 
       const width = document.createElement("span");
       width.textContent = plan.formatFixed(room.w());
@@ -206,8 +280,18 @@ const FloorPlanLists = {
       height.textContent = plan.formatFixed(room.l());
 
       item.append(label, width, height, grossArea, netArea);
-      plan.roomList.append(item);
+      target.append(item);
     });
+    if (floor && rooms.length) {
+      const total = document.createElement("div");
+      total.className = "room-list-item room-list-total";
+      ["Total do piso", "—", "—", plan.formatFixed(grossTotal), plan.formatFixed(netTotal)].forEach((value) => {
+        const cell = document.createElement("span");
+        cell.textContent = value;
+        total.append(cell);
+      });
+      target.append(total);
+    }
   },
 
   updateFloorSummary(plan) {
@@ -262,36 +346,38 @@ const FloorPlanLists = {
     plan.floorSummary.replaceChildren(table);
   },
 
-  updateItemList(plan) {
-    if (!plan.itemList) return;
+  updateItemList(plan, target = plan.itemList, floor = null) {
+    if (!target) return;
 
-    plan.itemList.replaceChildren();
-    if (plan.allItems.length === 0) {
-      plan.itemList.textContent = "Nenhum item carregado.";
+    target.replaceChildren();
+    const items = plan.allItems.filter((item) => !floor || item.floorId === floor.id);
+    if (items.length === 0) {
+      target.textContent = "Nenhum item carregado.";
       return;
     }
-    plan.allItems.forEach((item, index) => {
+    items.forEach((item, index) => {
       const entry = document.createElement("div");
       entry.className = "opening-list-item";
       const title = document.createElement("strong");
       title.textContent = `${index + 1}. ${item.label || item.title || "Item"}`;
       const details = document.createElement("span");
-      details.textContent = `${plan.formatMeters(item.w)}m × ${plan.formatMeters(item.l)}m${item.floorLabel ? ` — ${item.floorLabel}` : ""}`;
+      details.textContent = `${plan.formatMeters(item.w)}m × ${plan.formatMeters(item.l)}m`;
       entry.append(title, details);
-      plan.itemList.append(entry);
+      target.append(entry);
     });
   },
 
-  updateRoofList(plan) {
-    if (!plan.roofList) return;
+  updateRoofList(plan, target = plan.roofList, floor = null) {
+    if (!target) return;
 
-    plan.roofList.replaceChildren();
-    if (plan.allRoofs.length === 0) {
-      plan.roofList.textContent = "Nenhum telhado carregado.";
+    target.replaceChildren();
+    const roofs = plan.allRoofs.filter((roof) => !floor || roof.floorId === floor.id);
+    if (roofs.length === 0) {
+      target.textContent = "Nenhum telhado carregado.";
       return;
     }
 
-    plan.allRoofs.forEach((roof, index) => {
+    roofs.forEach((roof, index) => {
       const item = document.createElement("div");
       item.className = "opening-list-item";
       const title = document.createElement("strong");
@@ -313,7 +399,7 @@ const FloorPlanLists = {
             : roof.inset
               ? `inset de ${roof.inset[0]}`
               : "geometria inline";
-        details.textContent = `base: ${baseLabel}${roof.floorLabel ? ` — ${roof.floorLabel}` : ""}`;
+        details.textContent = `base: ${baseLabel}`;
       } else {
         const longitudinal = roof.orientation === "longitudinal";
         const baseWidth = base.w();
@@ -339,20 +425,21 @@ const FloorPlanLists = {
             : base.z1
               ? base.z1()
               : 0;
-        details.textContent = `Tipo: ${plan.roofTypeLabel(roof.type)} — Cumeeira: ${plan.roofOrientationLabel(roof.orientation)} (${plan.formatMeters(ridgeLength)}m) — ${plan.formatMeters(roofWidth)}m × ${plan.formatMeters(roofLength)}m — Cota base: ${plan.formatMeters(baseElevation)}m — Altura: ${plan.formatMeters(rise)}m — Superfície: ${plan.formatMeters(roofSurfaceArea)}m² — Inclinação: ${plan.formatMeters(pitch)}° — Beiral: ${FloorPlanRoofs.formatOverhang(plan, roof.eave)}m — Empena: ${FloorPlanRoofs.formatOverhang(plan, roof.rake)}m${roof.floorLabel ? ` — ${roof.floorLabel}` : ""}`;
+        details.textContent = `Tipo: ${plan.roofTypeLabel(roof.type)} — Cumeeira: ${plan.roofOrientationLabel(roof.orientation)} (${plan.formatMeters(ridgeLength)}m) — ${plan.formatMeters(roofWidth)}m × ${plan.formatMeters(roofLength)}m — Cota base: ${plan.formatMeters(baseElevation)}m — Altura: ${plan.formatMeters(rise)}m — Superfície: ${plan.formatMeters(roofSurfaceArea)}m² — Inclinação: ${plan.formatMeters(pitch)}° — Beiral: ${FloorPlanRoofs.formatOverhang(plan, roof.eave)}m — Empena: ${FloorPlanRoofs.formatOverhang(plan, roof.rake)}m`;
       }
       item.append(title, details);
-      plan.roofList.append(item);
+      target.append(item);
     });
   },
 
-  updateOpeningList(plan) {
-    if (!plan.openingList) return;
+  updateOpeningList(plan, target = plan.openingList, floor = null) {
+    if (!target) return;
 
-    plan.openingList.replaceChildren();
-    const openings = plan.allOpenings.length ? plan.allOpenings : plan.openings;
+    target.replaceChildren();
+    const openings = (plan.allOpenings.length ? plan.allOpenings : plan.openings)
+      .filter((opening) => !floor || opening.floorId === floor.id);
     if (openings.length === 0) {
-      plan.openingList.textContent = "Nenhuma passagem carregada.";
+      target.textContent = "Nenhuma passagem carregada.";
       return;
     }
 
@@ -365,25 +452,26 @@ const FloorPlanLists = {
 
       const details = document.createElement("span");
       const from =
-        plan.rooms.get(opening.roomId)?.dataset.label || opening.roomId;
+        plan.roomDefinitions.get(opening.roomId)?.label || opening.roomId;
       const to =
         opening.to === "exterior"
           ? "EXTERIOR"
-          : plan.rooms.get(opening.to)?.dataset.label || opening.to;
-      details.textContent = `${opening.type} — ${from} → ${to} (${plan.formatMeters(opening.w)}m)${opening.floorLabel ? ` — ${opening.floorLabel}` : ""}`;
+          : plan.roomDefinitions.get(opening.to)?.label || opening.to;
+      details.textContent = `${opening.type} — ${from} → ${to} (${plan.formatMeters(opening.w)}m)`;
 
       item.append(title, details);
-      plan.openingList.append(item);
+      target.append(item);
     });
   },
 
-  updateWindowList(plan) {
-    if (!plan.windowList) return;
+  updateWindowList(plan, target = plan.windowList, floor = null) {
+    if (!target) return;
 
-    plan.windowList.replaceChildren();
-    const windows = plan.allWindows.length ? plan.allWindows : plan.windows;
+    target.replaceChildren();
+    const windows = (plan.allWindows.length ? plan.allWindows : plan.windows)
+      .filter((window) => !floor || window.floorId === floor.id);
     if (windows.length === 0) {
-      plan.windowList.textContent = "Nenhuma janela carregada.";
+      target.textContent = "Nenhuma janela carregada.";
       return;
     }
 
@@ -394,31 +482,31 @@ const FloorPlanLists = {
       title.textContent = window.id;
       const details = document.createElement("span");
       const from =
-        plan.rooms.get(window.roomId)?.dataset.label || window.roomId;
+        plan.roomDefinitions.get(window.roomId)?.label || window.roomId;
       const to =
         window.to === "exterior"
           ? "EXTERIOR"
-          : plan.rooms.get(window.to)?.dataset.label || window.to;
-      details.textContent = `${from} → ${to} (${plan.formatMeters(window.w)}m)${window.floorLabel ? ` — ${window.floorLabel}` : ""}`;
+          : plan.roomDefinitions.get(window.to)?.label || window.to;
+      details.textContent = `${from} → ${to} (${plan.formatMeters(window.w)}m)`;
       item.append(title, details);
-      plan.windowList.append(item);
+      target.append(item);
     });
   },
 
-  findNaturalCommunications(plan) {
+  findNaturalCommunications(plan, rooms = plan.roomElements) {
     const communications = [];
     const pairs = [
       ["right", "left", "vertical"],
       ["bottom", "top", "horizontal"],
     ];
-    for (let index = 0; index < plan.roomElements.length; index += 1) {
+    for (let index = 0; index < rooms.length; index += 1) {
       for (
         let otherIndex = index + 1;
-        otherIndex < plan.roomElements.length;
+        otherIndex < rooms.length;
         otherIndex += 1
       ) {
-        const first = plan.roomElements[index];
-        const second = plan.roomElements[otherIndex];
+        const first = rooms[index];
+        const second = rooms[otherIndex];
 
         for (const [firstSide, secondSide, orientation] of pairs) {
           if (
@@ -456,17 +544,21 @@ const FloorPlanLists = {
     return communications;
   },
 
-  updateNaturalList(plan) {
-    if (!plan.naturalList) return;
+  updateNaturalList(plan, target = plan.naturalList, floor = null) {
+    if (!target) return;
 
-    plan.naturalCommunications = plan.findNaturalCommunications();
-    plan.naturalList.replaceChildren();
-    if (plan.naturalCommunications.length === 0) {
-      plan.naturalList.textContent = "Nenhuma comunicação natural detectada.";
+    const rooms = floor
+      ? plan.allRooms.filter((room) => room.floorId === floor.id).map((room) => room.reference)
+      : plan.roomElements;
+    const communications = this.findNaturalCommunications(plan, rooms);
+    if (!floor) plan.naturalCommunications = communications;
+    target.replaceChildren();
+    if (communications.length === 0) {
+      target.textContent = "Nenhuma comunicação natural detectada.";
       return;
     }
 
-    plan.naturalCommunications.forEach((communication) => {
+    communications.forEach((communication) => {
       const item = document.createElement("div");
       item.className = "natural-list-item";
 
@@ -477,16 +569,16 @@ const FloorPlanLists = {
       details.textContent = `abertura sem parede — ${communication.firstLabel} → ${communication.secondLabel} (${plan.formatMeters(communication.length)}m)`;
 
       item.append(title, details);
-      plan.naturalList.append(item);
+      target.append(item);
     });
   },
 
-  updateErrorList(plan) {
-    if (!plan.errorList) return;
+  updateErrorList(plan, target = plan.errorList) {
+    if (!target) return;
 
-    plan.errorList.replaceChildren();
+    target.replaceChildren();
     if (plan.errors.length === 0) {
-      plan.errorList.textContent = "Nenhum erro.";
+      target.textContent = "Nenhum erro.";
       return;
     }
 
@@ -512,7 +604,7 @@ const FloorPlanLists = {
         const source = document.createElement("code");
         if (opening !== undefined) source.textContent = JSON.stringify(opening);
         item.append(source);
-        plan.errorList.append(item);
+        target.append(item);
       },
     );
   },
