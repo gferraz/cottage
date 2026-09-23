@@ -239,13 +239,6 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 }
 .facade-3d-canvas { display: block; width: 100%; height: 420px; }
 .facade-3d-export-image { object-fit: contain; }
-.facade-3d-sun-caption {
-  margin: 0;
-  padding: 6px 10px;
-  color: var(--theme-muted, #666);
-  font-size: 0.82rem;
-  text-align: right;
-}
 .facade-3d-error {
   margin: 0;
   padding: 12px;
