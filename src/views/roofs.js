@@ -99,6 +99,7 @@ const FloorPlanRoofs = {
     if (candidates[0]) return candidates[0].z1();
 
     const wallMaxHeight = Number(owningFloor?.wall_max_height);
+    if (baseZ0 > 0) return baseZ0;
     if (Number.isFinite(wallMaxHeight) && wallMaxHeight > 0) {
       return baseZ0 + wallMaxHeight;
     }
@@ -207,7 +208,6 @@ const FloorPlanRoofs = {
             `Rectangular-prism geometry does not apply to roof "${roof.id || index + 1}"; use bounds()`,
           );
         };
-        const projectionScale = 1;
         const offsetX =
           Number.parseFloat(
             getComputedStyle(plan.root).getPropertyValue("--building-offset-x"),
@@ -220,10 +220,6 @@ const FloorPlanRoofs = {
         const px1 = x1 + offsetX;
         const py0 = y0 + offsetY;
         const py1 = y1 + offsetY;
-        const basePx0 = base.x0() + offsetX;
-        const basePx1 = base.x1() + offsetX;
-        const basePy0 = base.y0() + offsetY;
-        const basePy1 = base.y1() + offsetY;
         const pridgex = ridgeX + offsetX;
         const ridgey = ridgeY + offsetY;
         const pridgex2 = ridgeEndX + offsetX;
@@ -266,22 +262,6 @@ const FloorPlanRoofs = {
         defs.append(gradient);
         polygon.style.setProperty("fill", `url(#${gradientId})`);
 
-        const projectedRise = rise * projectionScale;
-        const endTriangles = longitudinal
-          ? [
-              `${basePx0},${basePy0} ${basePx1},${basePy0} ${pridgex},${basePy0 - projectedRise}`,
-              `${basePx0},${basePy1} ${basePx1},${basePy1} ${pridgex},${basePy1 - projectedRise}`,
-            ]
-          : [
-              `${basePx0},${basePy0} ${basePx0},${basePy1} ${basePx0 - projectedRise},${ridgey}`,
-              `${basePx1},${basePy0} ${basePx1},${basePy1} ${basePx1 + projectedRise},${ridgey}`,
-            ];
-        const triangleElements = endTriangles.map((points) =>
-          create("polygon", {
-            points,
-            class: "roof-slope-triangle",
-          }),
-        );
         const ridge = create("line", {
           x1: pridgex,
           y1: ridgey,
@@ -301,8 +281,7 @@ const FloorPlanRoofs = {
         group.dataset.rake = JSON.stringify([rake0, rake1]);
         group.dataset.baseZ = String(z0);
         group.dataset.ridgeZ = String(z0 + rise);
-        group.dataset.projectionScale = String(projectionScale);
-        group.append(defs, polygon, ...triangleElements, ridge);
+        group.append(defs, polygon, ridge);
         if (roof.label) {
           const label = create("text", {
             x: (pridgex + pridgex2) / 2,

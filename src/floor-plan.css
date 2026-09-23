@@ -217,12 +217,6 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   stroke-width: 0.08;
   stroke-dasharray: 0.18 0.12;
 }
-.roof-slope-triangle {
-  fill: none;
-  stroke: var(--theme-roof-line, rgba(75, 55, 35, 0.9));
-  stroke-width: 0.05;
-  stroke-dasharray: 0.14 0.10;
-}
 .roof-label {
   fill: var(--theme-roof-line, rgba(75, 55, 35, 0.9));
   font-size: 0.22px;
