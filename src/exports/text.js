@@ -575,11 +575,11 @@ const FloorPlanTextExport = {
         "",
         "### Itens",
         "",
-        "| # | Nome | x | y | Largura | Comprimento | Área | Classes | Sobrepõe |",
-        "|---:|---|---:|---:|---:|---:|---:|---|---|",
+        "| # | Nome | x | y | Largura | Comprimento | Rotação (°) | Área | Classes | Sobrepõe |",
+        "|---:|---|---:|---:|---:|---:|---:|---:|---|---|",
       );
       if (floorItems.length === 0) {
-        lines.push("| — | Nenhum item definido |  |  |  |  |  |  |  |");
+        lines.push("| — | Nenhum item definido |  |  |  |  |  |  |  |  |");
       } else {
         floorItems.forEach((item, index) => {
           const classes =
@@ -599,7 +599,7 @@ const FloorPlanTextExport = {
           const l = item.l instanceof Function ? item.l() : item.l;
           const area = item.area instanceof Function ? item.area() : w * l;
           lines.push(
-            `| ${index + 1} | ${plan.markdownText(item.label || item.dataset?.label || item.title || "Item")} | ${plan.formatMeters(x)} | ${plan.formatMeters(y)} | ${plan.formatMeters(w)} | ${plan.formatMeters(l)} | ${plan.formatMeters(area)} | ${plan.markdownText(classes)} | ${plan.markdownText(overlaps)} |`,
+            `| ${index + 1} | ${plan.markdownText(item.label || item.dataset?.label || item.title || "Item")} | ${plan.formatMeters(x)} | ${plan.formatMeters(y)} | ${plan.formatMeters(w)} | ${plan.formatMeters(l)} | ${plan.formatMeters(item.rotation ?? 0)} | ${plan.formatMeters(area)} | ${plan.markdownText(classes)} | ${plan.markdownText(overlaps)} |`,
           );
         });
       }

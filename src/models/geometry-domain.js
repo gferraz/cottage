@@ -75,6 +75,11 @@ const FloorPlanGeometryDomain = {
         title: data.title ?? itemType.title ?? itemType.label,
       };
     }
+    const rotation = plan.resolve(data.rotation ?? 0);
+    if (!Number.isFinite(rotation)) {
+      throw new Error("Rotation precisa ser um ângulo numérico em graus");
+    }
+    data = { ...data, rotation: ((rotation % 360) + 360) % 360 };
     const isStair = data.classes?.split(/\s+/).includes("stair-flight");
     if (data.inset !== undefined && data.outset !== undefined) {
       throw new Error("Uma geometria não pode combinar inset e outset");

@@ -201,38 +201,28 @@ const FloorPlanExport = {
         }
       });
       const addRectangle = (layer, geometry, label = "") => {
-        line(
-          layer,
-          geometry.x,
-          geometry.y,
-          geometry.x + geometry.w,
-          geometry.y,
-          geometry.z0,
-        );
-        line(
-          layer,
-          geometry.x + geometry.w,
-          geometry.y,
-          geometry.x + geometry.w,
-          geometry.y + geometry.l,
-          geometry.z0,
-        );
-        line(
-          layer,
-          geometry.x + geometry.w,
-          geometry.y + geometry.l,
-          geometry.x,
-          geometry.y + geometry.l,
-          geometry.z0,
-        );
-        line(
-          layer,
-          geometry.x,
-          geometry.y + geometry.l,
-          geometry.x,
-          geometry.y,
-          geometry.z0,
-        );
+        const centerX = geometry.x + geometry.w / 2;
+        const centerY = geometry.y + geometry.l / 2;
+        const angle = (Number(geometry.rotation ?? 0) * Math.PI) / 180;
+        const cosine = Math.cos(angle);
+        const sine = Math.sin(angle);
+        const points = [
+          [geometry.x, geometry.y],
+          [geometry.x + geometry.w, geometry.y],
+          [geometry.x + geometry.w, geometry.y + geometry.l],
+          [geometry.x, geometry.y + geometry.l],
+        ].map(([x, y]) => {
+          const dx = x - centerX;
+          const dy = y - centerY;
+          return [
+            centerX + dx * cosine - dy * sine,
+            centerY + dx * sine + dy * cosine,
+          ];
+        });
+        points.forEach((point, index) => {
+          const next = points[(index + 1) % points.length];
+          line(layer, point[0], point[1], next[0], next[1], geometry.z0);
+        });
         if (label && geometry.w >= 1 && geometry.l >= 1) {
           text(
             `${layer}_LABELS`,

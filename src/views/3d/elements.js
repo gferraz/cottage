@@ -63,6 +63,7 @@ const FloorPlan3DElements = {
         railing.castShadow = true;
         railing.receiveShadow = true;
         railing.position.set(x + width / 2, y + length / 2, z0 + height / 2);
+        railing.rotation.z = (Number(item.rotation ?? 0) * Math.PI) / 180;
         railing.renderOrder = 5;
         scene.add(railing);
       });

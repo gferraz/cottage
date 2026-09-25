@@ -18,6 +18,7 @@ const FloorPlanDom = {
       z0,
       z1,
       h,
+      rotation = 0,
       stairAxis,
       stairDirection = "forward",
       stairRise = h > 0 ? "up" : "flat",
@@ -33,6 +34,10 @@ const FloorPlanDom = {
     element.style.setProperty("--z0", z0);
     element.style.setProperty("--z1", z1);
     element.style.setProperty("--h", h);
+    if (rotation) {
+      element.style.transform = `rotate(${rotation}deg)`;
+      element.style.transformOrigin = "center";
+    }
     element.dataset.z0 = String(z0);
     element.dataset.z1 = String(z1);
     element.dataset.height = String(h);

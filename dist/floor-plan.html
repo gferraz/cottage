@@ -3160,38 +3160,28 @@ const FloorPlanExport = {
         }
       });
       const addRectangle = (layer, geometry, label = "") => {
-        line(
-          layer,
-          geometry.x,
-          geometry.y,
-          geometry.x + geometry.w,
-          geometry.y,
-          geometry.z0,
-        );
-        line(
-          layer,
-          geometry.x + geometry.w,
-          geometry.y,
-          geometry.x + geometry.w,
-          geometry.y + geometry.l,
-          geometry.z0,
-        );
-        line(
-          layer,
-          geometry.x + geometry.w,
-          geometry.y + geometry.l,
-          geometry.x,
-          geometry.y + geometry.l,
-          geometry.z0,
-        );
-        line(
-          layer,
-          geometry.x,
-          geometry.y + geometry.l,
-          geometry.x,
-          geometry.y,
-          geometry.z0,
-        );
+        const centerX = geometry.x + geometry.w / 2;
+        const centerY = geometry.y + geometry.l / 2;
+        const angle = (Number(geometry.rotation ?? 0) * Math.PI) / 180;
+        const cosine = Math.cos(angle);
+        const sine = Math.sin(angle);
+        const points = [
+          [geometry.x, geometry.y],
+          [geometry.x + geometry.w, geometry.y],
+          [geometry.x + geometry.w, geometry.y + geometry.l],
+          [geometry.x, geometry.y + geometry.l],
+        ].map(([x, y]) => {
+          const dx = x - centerX;
+          const dy = y - centerY;
+          return [
+            centerX + dx * cosine - dy * sine,
+            centerY + dx * sine + dy * cosine,
+          ];
+        });
+        points.forEach((point, index) => {
+          const next = points[(index + 1) % points.length];
+          line(layer, point[0], point[1], next[0], next[1], geometry.z0);
+        });
         if (label && geometry.w >= 1 && geometry.l >= 1) {
           text(
             `${layer}_LABELS`,
@@ -5836,6 +5826,7 @@ const FloorPlan3DElements = {
         railing.castShadow = true;
         railing.receiveShadow = true;
         railing.position.set(x + width / 2, y + length / 2, z0 + height / 2);
+        railing.rotation.z = (Number(item.rotation ?? 0) * Math.PI) / 180;
         railing.renderOrder = 5;
         scene.add(railing);
       });
@@ -9534,7 +9525,8 @@ const FloorPlanLists = {
       const title = document.createElement("strong");
       title.textContent = `${index + 1}. ${item.label || item.title || "Item"}`;
       const details = document.createElement("span");
-      details.textContent = `${plan.formatMeters(item.w)}m × ${plan.formatMeters(item.l)}m`;
+      const rotation = Number(item.rotation ?? 0);
+      details.textContent = `${plan.formatMeters(item.w)}m × ${plan.formatMeters(item.l)}m${rotation ? ` · Rotação: ${plan.formatMeters(rotation)}°` : ""}`;
       entry.append(title, details);
       target.append(entry);
     });
@@ -10413,11 +10405,11 @@ const FloorPlanTextExport = {
         "",
         "### Itens",
         "",
-        "| # | Nome | x | y | Largura | Comprimento | Área | Classes | Sobrepõe |",
-        "|---:|---|---:|---:|---:|---:|---:|---|---|",
+        "| # | Nome | x | y | Largura | Comprimento | Rotação (°) | Área | Classes | Sobrepõe |",
+        "|---:|---|---:|---:|---:|---:|---:|---:|---|---|",
       );
       if (floorItems.length === 0) {
-        lines.push("| — | Nenhum item definido |  |  |  |  |  |  |  |");
+        lines.push("| — | Nenhum item definido |  |  |  |  |  |  |  |  |");
       } else {
         floorItems.forEach((item, index) => {
           const classes =
@@ -10437,7 +10429,7 @@ const FloorPlanTextExport = {
           const l = item.l instanceof Function ? item.l() : item.l;
           const area = item.area instanceof Function ? item.area() : w * l;
           lines.push(
-            `| ${index + 1} | ${plan.markdownText(item.label || item.dataset?.label || item.title || "Item")} | ${plan.formatMeters(x)} | ${plan.formatMeters(y)} | ${plan.formatMeters(w)} | ${plan.formatMeters(l)} | ${plan.formatMeters(area)} | ${plan.markdownText(classes)} | ${plan.markdownText(overlaps)} |`,
+            `| ${index + 1} | ${plan.markdownText(item.label || item.dataset?.label || item.title || "Item")} | ${plan.formatMeters(x)} | ${plan.formatMeters(y)} | ${plan.formatMeters(w)} | ${plan.formatMeters(l)} | ${plan.formatMeters(item.rotation ?? 0)} | ${plan.formatMeters(area)} | ${plan.markdownText(classes)} | ${plan.markdownText(overlaps)} |`,
           );
         });
       }
@@ -10615,6 +10607,11 @@ const FloorPlanGeometryDomain = {
         title: data.title ?? itemType.title ?? itemType.label,
       };
     }
+    const rotation = plan.resolve(data.rotation ?? 0);
+    if (!Number.isFinite(rotation)) {
+      throw new Error("Rotation precisa ser um ângulo numérico em graus");
+    }
+    data = { ...data, rotation: ((rotation % 360) + 360) % 360 };
     const isStair = data.classes?.split(/\s+/).includes("stair-flight");
     if (data.inset !== undefined && data.outset !== undefined) {
       throw new Error("Uma geometria não pode combinar inset e outset");
@@ -10931,6 +10928,7 @@ const FloorPlanDom = {
       z0,
       z1,
       h,
+      rotation = 0,
       stairAxis,
       stairDirection = "forward",
       stairRise = h > 0 ? "up" : "flat",
@@ -10946,6 +10944,10 @@ const FloorPlanDom = {
     element.style.setProperty("--z0", z0);
     element.style.setProperty("--z1", z1);
     element.style.setProperty("--h", h);
+    if (rotation) {
+      element.style.transform = `rotate(${rotation}deg)`;
+      element.style.transformOrigin = "center";
+    }
     element.dataset.z0 = String(z0);
     element.dataset.z1 = String(z1);
     element.dataset.height = String(h);
@@ -12392,6 +12394,12 @@ window.FloorPlanCatalog = {
       label: "Cama Queen",
       size: [1.6, 2.0, 0.55],
       classes: "furniture queen-bed",
+      color: "furniture",
+    },
+    "twin-bed": {
+      label: "Cama Twin",
+      size: [0.97, 1.91, 0.55],
+      classes: "furniture twin-bed",
       color: "furniture",
     },
     "three-seat-sofa": {

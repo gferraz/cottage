@@ -124,6 +124,19 @@
       }
     },
     {
+      id: "left-knee-wall",
+      base: { level: "ground.z0" },
+      top: { level: "ground.z1" },
+      thickness: 0.12,
+      color: "blue",
+      path: {
+        points: [
+          ["knee-left.x0", "main.y0"],
+          ["knee-left.x0", "knee-bottom.y0"]
+        ]
+      }
+    },
+    {
       id: "knee-wall-front-left",
       base: { level: "upper.z0" },
       top: { level: "upper.z0 + 1" },
@@ -137,7 +150,7 @@
       }
     },
     {
-      id: "knee-wall-front-right",
+      id: "knee-corner-front-right",
       base: { level: "upper.z0" },
       top: { level: "upper.z0 + 1" },
       thickness: 0.12,
@@ -171,7 +184,7 @@
       color: "blue",
       path: {
         points: [
-          ["central.x1", "w-axis.y0"],
+          ["knee-right.x0", "w-axis.y0"],
           ["right.x1",   "w-axis.y0"]
         ]
       }
@@ -306,7 +319,7 @@
           id: "master",
           label: "Suíte Master",
           rectangle: ["left.x0", "office.y1", "left.x1 + 0.3", "y0 + 3.2"],
-          walls: ["top", "right", "bottom"]
+          walls: ["top", "right"]
         },
         { id: "closet", label: "Closet", from: ["left.x0", "master.y1"], to: ["x0 + 3.2", "y0 + 2.4"] },
         {
@@ -459,21 +472,10 @@
         { type: "washing-machine", pos: ["laundry.x1 - 0.7", "laundry.y0"] },
         { type: "washing-machine", pos: ["laundry.x1 - 1.4", "laundry.y0"] },
         { type: "queen-bed", pos: ["master.x0 + 1", "master.y0"] },
-        {
-          type: "railing",
-          pos: ["porch.x0", "porch.y0"],
-          size: ["hall.xc - 0.9 - porch.x0", 0.08, 1.1]
-        },
-        {
-          type: "railing",
-          pos: ["hall.xc + 0.9", "porch.y0"],
-          size: ["porch.x1 - hall.xc - 0.9", 0.08, 1.1]
-        },
-        {
-          type: "railing",
-          pos: ["porch.x1 - 0.08", "porch.y0"],
-          size: [0.08, "porch.l", 1.1]
-        }
+
+        { type: "railing", pos: ["porch.x0",        "porch.y0"], size: ["hall.xc - 0.9 - porch.x0", 0.08, 1.1] },
+        { type: "railing", pos: ["hall.xc + 0.9",   "porch.y0"], size: ["porch.x1 - hall.xc - 0.9", 0.08, 1.1] },
+        { type: "railing", pos: ["porch.x1 - 0.08", "porch.y0"], size: [0.08, "porch.l", 1.1] }
       ],
       openings: [
         //{ from: "porch.top", to: "exterior", type: "opening", w: 1.8, dx: "hall.xc - porch.x0 - 0.9" },
@@ -502,7 +504,16 @@
       label: "Dormitórios",
       z0: 3,
       wall_max_height: 3,
+
       rooms: [
+        {
+          id: "unused-n",
+          label: "Sem uso",
+          from: ["office.x0 + 0.8", "office.y0"],
+          to: ["office.x1 - 0.8 ", "dorm-top.y0"],
+          openings: [{ type: "door", from: "bottom", to: "bedroom-n", dy: 3 }],
+          walls: ["top", "right", "left"]
+        },
         {
           id: "bedroom-n",
           label: "Quarto N",
@@ -514,7 +525,7 @@
         {
           id: "prayer-room",
           label: "Sala de oração",
-          from: ["dorm-top.x1 - 3.6", "dorm-top-right.y0"],
+          from: ["dorm-top.x1 - 3.6", "main.y0"],
           to: ["dorm-top.x1 - 0.8", "y0 +1.2"],
         },
         {
@@ -566,7 +577,10 @@
           classes: "circulation"
         }
       ],
-      items: [],
+      items: [
+        { type: "twin-bed", pos: ["bedroom-e.x1 - 1.4", "bedroom-e.y0"], "rotation": 90 },
+        { type: "twin-bed", pos: ["bedroom-e.x1 - 1.4", "bedroom-e.y0 + 1.5"], "rotation": 90 },
+      ],
       openings: [
         { type: "opening", from: "upper", to: "ground", pos: ["stairs.x0", "stairs.y0"], size: [4, 1.4] }
       ]

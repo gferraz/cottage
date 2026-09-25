@@ -361,7 +361,8 @@ const FloorPlanLists = {
       const title = document.createElement("strong");
       title.textContent = `${index + 1}. ${item.label || item.title || "Item"}`;
       const details = document.createElement("span");
-      details.textContent = `${plan.formatMeters(item.w)}m × ${plan.formatMeters(item.l)}m`;
+      const rotation = Number(item.rotation ?? 0);
+      details.textContent = `${plan.formatMeters(item.w)}m × ${plan.formatMeters(item.l)}m${rotation ? ` · Rotação: ${plan.formatMeters(rotation)}°` : ""}`;
       entry.append(title, details);
       target.append(entry);
     });

@@ -35,6 +35,12 @@ window.FloorPlanCatalog = {
       classes: "furniture queen-bed",
       color: "furniture",
     },
+    "twin-bed": {
+      label: "Cama Twin",
+      size: [0.97, 1.91, 0.55],
+      classes: "furniture twin-bed",
+      color: "furniture",
+    },
     "three-seat-sofa": {
       label: "Sofá de 3 lugares",
       size: [2.1, 0.9, 0.85],
