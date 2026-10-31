@@ -233,7 +233,7 @@
       to: ["top.x1", "top.y1 + 0.8", "z0"],
       orientation: "transverse",
       pitch: 51,
-      eave: [0.0, 0.5],
+      eave: [0, 0],
       rake: 0.5,
     },
 
@@ -245,7 +245,7 @@
       to: ["bottom.x1", "bottom.y1", "z0"],
       orientation: "transverse",
       pitch: 51,
-      eave: [0.5, 0.0],
+      eave: [0, 0],
       rake: [0.5],
     }
   ],

@@ -1,4 +1,124 @@
 const FloorPlanRoofs = {
+  clipPolygon(points, plane) {
+    if (!points.length) return [];
+    const distances = points.map((point) => plane.slice(0, 3).reduce((sum, value, i) => sum + value * point[i], plane[3]));
+    if (distances.every((value) => value <= 1e-8)) return points;
+    if (distances.every((value) => value >= -1e-8)) return [];
+    const result = [];
+    points.forEach((point, i) => {
+      const next = points[(i + 1) % points.length];
+      const a = distances[i], b = distances[(i + 1) % points.length];
+      if (a <= 1e-8) result.push(point);
+      if ((a < -1e-8 && b > 1e-8) || (a > 1e-8 && b < -1e-8)) {
+        result.push(point.map((value, axis) => value + (next[axis] - value) * a / (a - b)));
+      }
+    });
+    return result.length >= 3 ? result : [];
+  },
+
+  intersectingSurfaces(plan, roofs = plan.allRoofs ?? []) {
+    const definitions = roofs.flatMap((roof) => {
+      if (roof.type !== "gable" || !["longitudinal", "transverse"].includes(roof.orientation)) return [];
+      try {
+        const floor = this.floorForRoof(plan, roof, roof.base ?? roof);
+        const base = this.resolveBase(plan, roof.base ?? roof, floor);
+        const longitudinal = roof.orientation === "longitudinal";
+        const [e0, e1] = this.overhangPair(roof.eave);
+        const [r0, r1] = this.overhangPair(roof.rake);
+        const x0 = base.x0() - (longitudinal ? e0 : r0), x1 = base.x1() + (longitudinal ? e1 : r1);
+        const y0 = base.y0() - (longitudinal ? r0 : e0), y1 = base.y1() + (longitudinal ? r1 : e1);
+        const start = longitudinal ? base.x0() : base.y0();
+        const end = longitudinal ? base.x1() : base.y1();
+        const tangent = Math.tan(Number(roof.pitch) * Math.PI / 180);
+        const z = roof.z0 === undefined ? this.baseCeilingZ(plan, base, 0, floor) : plan.resolve(roof.z0);
+        if (![x0, x1, y0, y1, tangent, z].every(Number.isFinite) || tangent < 0 || x1 <= x0 || y1 <= y0) return [];
+        const ridge = (start + end) / 2;
+        const rise = (end - start) * tangent / 2;
+        const slopes = longitudinal
+          ? [[-tangent, 0, 1, start * tangent - z], [tangent, 0, 1, -end * tangent - z]]
+          : [[0, -tangent, 1, start * tangent - z], [0, tangent, 1, -end * tangent - z]];
+        const at = (x, y) => [x, y, z + rise - Math.abs((longitudinal ? x : y) - ridge) * tangent];
+        const polygons = longitudinal ? [
+          [at(x0, y0), at(ridge, y0), at(ridge, y1), at(x0, y1)],
+          [at(ridge, y0), at(x1, y0), at(x1, y1), at(ridge, y1)],
+        ] : [
+          [at(x0, y0), at(x1, y0), at(x1, ridge), at(x0, ridge)],
+          [at(x0, ridge), at(x1, ridge), at(x1, y1), at(x0, y1)],
+        ];
+        return [{ roof, polygons, planes: [[-1, 0, 0, x0], [1, 0, 0, -x1], [0, -1, 0, y0], [0, 1, 0, -y1], ...slopes] }];
+      } catch {
+        return [];
+      }
+    });
+    return definitions.map((definition, index) => {
+      let polygons = definition.polygons;
+      definitions.forEach((other, otherIndex) => {
+        if (otherIndex === index) return;
+        polygons = polygons.flatMap((polygon) => {
+          // Coplanar overlap belongs to the earlier definition only.
+          let inside = polygon;
+          const outside = [];
+          for (const plane of other.planes) {
+            const distance = (point) => plane.slice(0, 3).reduce((sum, value, axis) => sum + value * point[axis], plane[3]);
+            if (otherIndex > index && plane[2] === 1 && inside.length && inside.every((point) => Math.abs(distance(point)) <= 1e-8)) {
+              outside.push(inside);
+              inside = [];
+              break;
+            }
+            const next = this.clipPolygon(inside, plane);
+            const remainder = this.clipPolygon(inside, plane.map((value) => -value));
+            if (remainder.length && !(next === inside && remainder === inside)) outside.push(remainder);
+            inside = next;
+            if (!inside.length) break;
+          }
+          return outside;
+        });
+      });
+      return { roof: definition.roof, polygons };
+    });
+  },
+
+  surfaceEdges(polygons) {
+    const vertices = polygons.flat();
+    const edges = new Map();
+    const key = (point) => point.map((value) => Math.round(value * 1e7)).join(",");
+    polygons.forEach((polygon) => {
+      const u = polygon[1].map((value, axis) => value - polygon[0][axis]);
+      const v = polygon[2].map((value, axis) => value - polygon[0][axis]);
+      const normal = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+      const magnitude = Math.hypot(...normal);
+      if (magnitude < 1e-10) return;
+      const unit = normal.map((value) => value / magnitude);
+      polygon.forEach((from, i) => {
+        const to = polygon[(i + 1) % polygon.length];
+        const delta = to.map((value, axis) => value - from[axis]);
+        const length2 = delta.reduce((sum, value) => sum + value * value, 0);
+        if (length2 < 1e-14) return;
+        const cuts = [0, 1];
+        vertices.forEach((point) => {
+          const t = delta.reduce((sum, value, axis) => sum + value * (point[axis] - from[axis]), 0) / length2;
+          if (t > 1e-8 && t < 1 - 1e-8 && point.every((value, axis) => Math.abs(value - from[axis] - t * delta[axis]) < 1e-7)) cuts.push(t);
+        });
+        cuts.sort((a, b) => a - b);
+        for (let j = 0; j < cuts.length - 1; j += 1) {
+          if (cuts[j + 1] - cuts[j] < 1e-8) continue;
+          const a = from.map((value, axis) => value + cuts[j] * delta[axis]);
+          const b = from.map((value, axis) => value + cuts[j + 1] * delta[axis]);
+          const id = [key(a), key(b)].sort().join(":");
+          const edge = edges.get(id);
+          if (!edge) edges.set(id, { a, b, count: 1, normal: unit, crease: false });
+          else {
+            edge.count += 1;
+            if (Math.abs(edge.normal.reduce((sum, value, axis) => sum + value * unit[axis], 0)) < 0.999999) edge.crease = true;
+          }
+        }
+      });
+    });
+    // Shared edges between slopes are ridges/valleys; shared coplanar edges
+    // are harmless subdivision seams and need no extra line.
+    return [...edges.values()].filter((edge) => edge.count === 1 || edge.crease).flatMap(({ a, b }) => [a, b]);
+  },
+
   asGeometryBox(base, label = "roof base") {
     if (typeof base?.w === "function" && typeof base?.l === "function") {
       return base;
@@ -143,6 +263,7 @@ const FloorPlanRoofs = {
       return element;
     };
 
+    const clippedRoofs = this.intersectingSurfaces(plan, plan.allRoofs?.length ? plan.allRoofs : roofs);
     roofs.forEach((roof, index) => {
       try {
         if (roof.type !== "gable")
@@ -225,10 +346,25 @@ const FloorPlanRoofs = {
         const pridgex2 = ridgeEndX + offsetX;
         const ridgey2 = ridgeEndY + offsetY;
 
-        const polygon = create("polygon", {
-          points: `${px0},${py0} ${px1},${py0} ${px1},${py1} ${px0},${py1}`,
+        const surfaces = clippedRoofs.find((entry) => entry.roof === roof || (roof.id && entry.roof.id === roof.id))
+          ?? this.intersectingSurfaces(plan, [roof])[0];
+        if (!surfaces?.polygons.length) return;
+        const point = ([x, y]) => `${x + offsetX},${y + offsetY}`;
+        const polygon = create("path", {
+          d: surfaces.polygons.map((vertices) => vertices.map((vertex, i) => `${i ? "L" : "M"}${point(vertex)}`).join(" ") + " Z").join(" "),
           class: "roof-surface",
         });
+        polygon.style.stroke = "none";
+        const edges = this.surfaceEdges(surfaces.polygons);
+        const boundarySegments = [], ridgeSegments = [];
+        for (let edge = 0; edge < edges.length; edge += 2) {
+          const a = edges[edge], b = edges[edge + 1];
+          const segment = `M${point(a)} L${point(b)}`;
+          if (Math.abs(a[2] - z0 - rise) < 1e-7 && Math.abs(b[2] - z0 - rise) < 1e-7) ridgeSegments.push(segment);
+          else boundarySegments.push(segment);
+        }
+        const boundary = create("path", { d: boundarySegments.join(" "), class: "roof-surface", fill: "none" });
+        boundary.style.fill = "none";
         const gradientId = `roof-gradient-${index + 1}`;
         const roofStyle = getComputedStyle(plan.root);
         const gradientDark =
@@ -262,13 +398,7 @@ const FloorPlanRoofs = {
         defs.append(gradient);
         polygon.style.setProperty("fill", `url(#${gradientId})`);
 
-        const ridge = create("line", {
-          x1: pridgex,
-          y1: ridgey,
-          x2: pridgex2,
-          y2: ridgey2,
-          class: "roof-ridge",
-        });
+        const ridge = create("path", { d: ridgeSegments.join(" "), class: "roof-ridge", fill: "none" });
         const group = create("g", {
           class: "roof-plan",
           "data-id": roof.id || `roof-${index + 1}`,
@@ -281,7 +411,7 @@ const FloorPlanRoofs = {
         group.dataset.rake = JSON.stringify([rake0, rake1]);
         group.dataset.baseZ = String(z0);
         group.dataset.ridgeZ = String(z0 + rise);
-        group.append(defs, polygon, ridge);
+        group.append(defs, polygon, boundary, ridge);
         if (roof.label) {
           const label = create("text", {
             x: (pridgex + pridgex2) / 2,
