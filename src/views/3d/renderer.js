@@ -397,6 +397,7 @@ const FloorPlanFacades3D = {
     FloorPlan3DSite.render(context);
     FloorPlan3DWalls.render(context);
     FloorPlan3DElements.render(context);
+    FloorPlan3DElements.renderItems(context);
     if (plan.showRoofs) FloorPlan3DRoofs.render(context);
 
     const updateCamera = () => {

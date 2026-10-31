@@ -370,7 +370,7 @@
           label: "Escada",
           overlaps: ["powder", "laundry"],
           overlays: ["powder", "laundry"],
-          walls: ["top", "bottom", "left"],
+          walls: [],
           parts: [
             {
               id: "upper-flight",
