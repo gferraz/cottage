@@ -5,7 +5,7 @@
 const FloorPlanFacades3D = {
   floorView(plan) {
     const floors = plan.currentConfig?.floors;
-    if (!floors?.length) return plan;
+    if (!floors?.length || plan.showAllFloors) return plan;
     const index = Math.max(0, floors.findIndex((floor) => floor.id === plan.currentFloorId));
     const floor = floors[index];
     const z0 = Number(floor.z0);

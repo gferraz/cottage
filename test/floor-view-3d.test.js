@@ -39,3 +39,14 @@ test('single-floor legacy configuration is unchanged', () => {
   const source = { currentConfig: { rooms: [] } };
   assert.equal(renderer.floorView(source), source);
 });
+
+test('all-floors mode restores the complete model without clipping wall heights', () => {
+  const source = plan(); source.showAllFloors = true; source.currentFloorId = 'upper';
+  const view = renderer.floorView(source);
+  assert.equal(view, source);
+  assert.equal(view.allRooms.length, 2);
+  assert.equal(view.allItems.length, 2);
+  assert.equal(view.wallRenderParts[0].size[2], 7);
+  source.showAllFloors = false;
+  assert.equal(renderer.floorView(source).allRooms[0].id, 'up');
+});

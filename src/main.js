@@ -61,6 +61,7 @@ class FloorPlan {
     this.errors = [];
     this.currentConfig = null;
     this.currentFloorId = null;
+    this.showAllFloors = false;
     this.currentFloorHeight = 0;
     this.currentSourceText = null;
     this.model = null;
@@ -147,6 +148,12 @@ class FloorPlan {
       floorOptions.addEventListener("change", (event) => {
         const floors = this.currentConfig?.floors;
         if (!Array.isArray(floors)) return;
+        if (event.target.value === "__all_floors__") {
+          this.showAllFloors = true;
+          this.renderFacade3D();
+          return;
+        }
+        this.showAllFloors = false;
         const activeFloor = floors.findIndex(
           (floorConfig) => String(floorConfig.id) === event.target.value,
         );
@@ -693,6 +700,7 @@ class FloorPlan {
     document.body?.classList.remove("page-empty");
     document.body?.classList.add("page-has-plan");
     if (!preservePresentation) {
+      this.showAllFloors = false;
       this.facade3dCamera = { azimuthStep: 0, elevation: 30, zoom: 1 };
       this.solarSeason = config.solar?.season ?? "equinox";
       this.solarTime = config.solar?.time ?? "15:00";
@@ -734,12 +742,27 @@ class FloorPlan {
           input.name = "floor-selection";
           input.value = String(availableFloor.id || "");
           input.id = optionId;
-          input.checked = String(availableFloor.id) === String(this.currentFloorId);
+          input.checked = !this.showAllFloors && String(availableFloor.id) === String(this.currentFloorId);
           const text = document.createElement("span");
           text.textContent = availableFloor.label || availableFloor.id || "Pavimento";
           label.append(input, text);
           this.floorOptions.append(label);
         });
+        if (config.floors.length > 1) {
+          const label = document.createElement("label");
+          label.className = "floor-option";
+          label.title = "Mostrar todos os pisos na perspectiva 3D";
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = "floor-selection";
+          input.value = "__all_floors__";
+          input.id = "floor-option-all";
+          input.checked = this.showAllFloors;
+          const text = document.createElement("span");
+          text.textContent = "Todos os pisos";
+          label.append(input, text);
+          this.floorOptions.append(label);
+        }
         this.floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", config.floors.length < 2);
       } else {
         this.floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", true);
