@@ -113,6 +113,8 @@ const FloorPlanFacades = {
       3,
     );
 
+    const roofLimits = FloorPlanWalls.roofLimits(plan);
+
     facades.forEach((facade, index) => {
       const direction = facade.direction || "front";
       const side = ["left", "right"].includes(direction);
@@ -297,25 +299,6 @@ const FloorPlanFacades = {
           baseSpan,
           pitchTangent: Math.tan((pitch * Math.PI) / 180),
         };
-      };
-      const roofCeilingAt = (geometry, x, y) => {
-        if (
-          !geometry ||
-          x < geometry.baseX0 ||
-          x > geometry.baseX1 ||
-          y < geometry.baseY0 ||
-          y > geometry.baseY1
-        )
-          return null;
-        const coordinate = geometry.longitudinal ? x : y;
-        const baseStart = geometry.longitudinal
-          ? geometry.baseX0
-          : geometry.baseY0;
-        const baseEnd = geometry.longitudinal
-          ? geometry.baseX1
-          : geometry.baseY1;
-        const distanceFromRidge = Math.abs(coordinate - (baseStart + baseEnd) / 2);
-        return geometry.z0 + Math.max(0, geometry.baseSpan / 2 - distanceFromRidge) * geometry.pitchTangent;
       };
       const roofs = plan.allRoofs ?? [];
       const facadeRoofs = [...roofs].sort((first, second) => {
@@ -944,6 +927,23 @@ const FloorPlanFacades = {
           }
         });
 
+      const sectionPath = (start, end, from, to, baseStart, baseEnd, top) => {
+        const polygons = FloorPlanWalls.roofSection(
+          [[0, baseStart], [1, baseEnd], [1, top], [0, top]], from, to, roofLimits,
+        );
+        const path = polygons.map((polygon) => polygon.map(([t, z], i) =>
+          `${i ? "L" : "M"}${(start + (end - start) * t - min + padding) * scale},${(floorHeight - z + padding) * scale}`,
+        ).join(" ") + " Z").join(" ");
+        return { path, polygons };
+      };
+      const roomSection = (room, start, end, base, top) => {
+        const depth = side
+          ? facadeEdge === "min" ? room.x0() : room.x1()
+          : facadeEdge === "min" ? room.y0() : room.y1();
+        return sectionPath(start, end, side ? [depth, start] : [start, depth],
+          side ? [depth, end] : [end, depth], base, base, top);
+      };
+
       const roofBehindRoom = (room) => {
         const [roomStart, roomEnd] = roomFacadeSpan(room);
         const roomDepth = roomFacadeDepth(room);
@@ -980,11 +980,8 @@ const FloorPlanFacades = {
             : room.x1();
         const z0 = compoundPart ? geometry.z0 : room.z0();
         const z1 = compoundPart ? geometry.z1 : room.z1();
-        const occluder = document.createElementNS(svgNamespace, "rect");
-        occluder.setAttribute("x", `${(start - min + padding) * scale}`);
-        occluder.setAttribute("y", `${(floorHeight - z1 + padding) * scale}`);
-        occluder.setAttribute("width", `${(end - start) * scale}`);
-        occluder.setAttribute("height", `${(z1 - z0) * scale}`);
+        const occluder = document.createElementNS(svgNamespace, "path");
+        occluder.setAttribute("d", roomSection(room, start, end, z0, z1).path);
         occluder.classList.add("facade-occluder");
         svg.append(occluder);
       });
@@ -1015,54 +1012,13 @@ const FloorPlanFacades = {
           (compoundPart ? geometry.z1 : geometry.z1()) - z0,
           0,
         );
-        const depth = side
-          ? facadeEdge === "min"
-            ? room.x0()
-            : room.x1()
-          : facadeEdge === "min"
-            ? room.y0()
-            : room.y1();
-        const roofCandidates = facadeRoofs
-          .map(roofGeometry)
-          .filter((roof) => {
-            if (!roof || roof.z0 <= z0 + 0.001) return false;
-            const roofIsSurfaceOnFacade = roof.longitudinal ? side : !side;
-            if (!roofIsSurfaceOnFacade) return false;
-            return isAtOrInFront(roofFacadeDepth(roof), depth);
-          });
-        const roofHeightAt = (coordinate) => {
-          const x = side ? depth : coordinate;
-          const y = side ? coordinate : depth;
-          return roofCandidates
-            .map((roof) => roofCeilingAt(roof, x, y))
-            .filter((value) => Number.isFinite(value))
-            .reduce((lowest, value) => Math.min(lowest, value), z0 + height);
-        };
-        const topStart = Math.min(z0 + height, roofHeightAt(start));
-        const topEnd = Math.min(z0 + height, roofHeightAt(end));
-        const bottom = floorHeight + padding;
+        const section = roomSection(room, start, end, z0, z0 + height);
+        if (!section.polygons.length) return;
+        const tops = section.polygons.flat().map(([, z]) => z);
+        const topStart = Math.max(...tops);
         const topStartY = (floorHeight - topStart + padding) * scale;
-        const topEndY = (floorHeight - topEnd + padding) * scale;
-        const rect = document.createElementNS(
-          svgNamespace,
-          Math.abs(topStartY - topEndY) < 0.001 ? "rect" : "polygon",
-        );
-        if (rect.nodeName === "rect") {
-          rect.setAttribute("x", `${(start - min + padding) * scale}`);
-          rect.setAttribute("y", `${topStartY}`);
-          rect.setAttribute("width", `${(end - start) * scale}`);
-          rect.setAttribute("height", `${Math.max(0, bottom * scale - topStartY)}`);
-        } else {
-          rect.setAttribute(
-            "points",
-            [
-              `${(start - min + padding) * scale},${bottom * scale}`,
-              `${(end - min + padding) * scale},${bottom * scale}`,
-              `${(end - min + padding) * scale},${topEndY}`,
-              `${(start - min + padding) * scale},${topStartY}`,
-            ].join(" "),
-          );
-        }
+        const rect = document.createElementNS(svgNamespace, "path");
+        rect.setAttribute("d", section.path);
         rect.classList.add("facade-room");
         rect.dataset.id = compoundPart
           ? `${room.dataset.id || ""}.${geometry.id || "part"}`
@@ -1076,7 +1032,7 @@ const FloorPlanFacades = {
         if (roomLabel) {
           const label = document.createElementNS(svgNamespace, "text");
           const labelX = (start - min + padding + 0.12) * scale;
-          const displayedHeight = Math.max(0, Math.min(topStart, topEnd) - z0);
+          const displayedHeight = Math.max(0, topStart - z0);
           const labelY = topStartY + 0.22 * scale;
           label.setAttribute("x", `${labelX}`);
           label.setAttribute("y", `${labelY}`);
@@ -1143,26 +1099,18 @@ const FloorPlanFacades = {
             ? terrainElevationAt(endPoint[1])
             : wall.baseZ;
           if (![startBase, endBase, wall.topZ].every(Number.isFinite)) return;
-          projectedIndependentWalls.push({ wall, segmentIndex, depth, start, end, startBase, endBase });
+          projectedIndependentWalls.push({ wall, segmentIndex, depth, start, end, startBase, endBase, startPoint, endPoint });
         });
       });
       projectedIndependentWalls
         .sort((first, second) => facadeEdge === "min"
           ? second.depth - first.depth
           : first.depth - second.depth)
-        .forEach(({ wall, segmentIndex, start, end, startBase, endBase }) => {
-          const xStart = (start - min + padding) * scale;
-          const xEnd = (end - min + padding) * scale;
-          const startBottom = (floorHeight - startBase + padding) * scale;
-          const endBottom = (floorHeight - endBase + padding) * scale;
-          const top = (floorHeight - wall.topZ + padding) * scale;
-          const face = document.createElementNS(svgNamespace, "polygon");
-          face.setAttribute("points", [
-            `${xStart},${startBottom}`,
-            `${xEnd},${endBottom}`,
-            `${xEnd},${top}`,
-            `${xStart},${top}`,
-          ].join(" "));
+        .forEach(({ wall, segmentIndex, start, end, startBase, endBase, startPoint, endPoint }) => {
+          const section = sectionPath(start, end, startPoint, endPoint, startBase, endBase, wall.topZ);
+          if (!section.polygons.length) return;
+          const face = document.createElementNS(svgNamespace, "path");
+          face.setAttribute("d", section.path);
           face.classList.add("facade-independent-wall");
           face.dataset.wallId = wall.id;
           face.dataset.segment = String(segmentIndex);
@@ -1189,6 +1137,20 @@ const FloorPlanFacades = {
           const height = Number(opening.h ?? opening.z1 - z0);
           const featureWidth = Number(opening.w ?? 0.8);
           if (![start, z0, height, featureWidth].every(Number.isFinite)) return;
+          const depth = side ? opening.x : opening.y;
+          const clipId = `facade-${index}-opening-${svg.querySelectorAll("clipPath").length}`;
+          const clip = document.createElementNS(svgNamespace, "clipPath");
+          clip.id = clipId;
+          const clipShape = document.createElementNS(svgNamespace, "path");
+          clipShape.setAttribute("d", sectionPath(start, start + featureWidth,
+            side ? [depth, start] : [start, depth],
+            side ? [depth, start + featureWidth] : [start + featureWidth, depth],
+            z0, z0, z0 + height).path);
+          clip.append(clipShape);
+          svg.append(clip);
+          const featureGroup = document.createElementNS(svgNamespace, "g");
+          featureGroup.setAttribute("clip-path", `url(#${clipId})`);
+          svg.append(featureGroup);
           const rect = document.createElementNS(svgNamespace, "rect");
           rect.setAttribute("x", `${(start - min + padding) * scale}`);
           rect.setAttribute("y", `${(floorHeight - z0 - height + padding) * scale}`);
@@ -1202,7 +1164,7 @@ const FloorPlanFacades = {
           const title = document.createElementNS(svgNamespace, "title");
           title.textContent = `${opening.type || "Abertura"}: ${opening.id || "sem id"}`;
           rect.append(title);
-          svg.append(rect);
+          featureGroup.append(rect);
           if (opening.type === "window") {
             const windowX = (start - min + padding) * scale;
             const windowY = (floorHeight - z0 - height + padding) * scale;
@@ -1220,7 +1182,7 @@ const FloorPlanFacades = {
                 getComputedStyle(plan.root).getPropertyValue("--theme-window-line").trim() || "#a7adb3",
               );
               vertical.setAttribute("stroke-width", "1");
-              svg.append(vertical);
+              featureGroup.append(vertical);
 
               const horizontal = document.createElementNS(svgNamespace, "line");
               const horizontalY = windowY + (windowHeight * division) / 4;
@@ -1233,7 +1195,7 @@ const FloorPlanFacades = {
                 getComputedStyle(plan.root).getPropertyValue("--theme-window-line").trim() || "#a7adb3",
               );
               horizontal.setAttribute("stroke-width", "1");
-              svg.append(horizontal);
+              featureGroup.append(horizontal);
             }
           }
         });

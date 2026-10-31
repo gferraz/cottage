@@ -69,6 +69,44 @@ const FloorPlanWalls = {
     }), [faces]);
   },
 
+  roofSection(polygon, from, to, roofs) {
+    const clip = (points, plane) => {
+      const distance = ([t, z]) => plane[0] * (from[0] + (to[0] - from[0]) * t) +
+        plane[1] * (from[1] + (to[1] - from[1]) * t) + plane[2] * z + plane[3];
+      if (!points.length) return [];
+      const distances = points.map(distance);
+      if (distances.every((value) => value <= 1e-9)) return points;
+      if (distances.every((value) => value >= -1e-9)) return [];
+      const result = [];
+      points.forEach((point, i) => {
+        const next = points[(i + 1) % points.length];
+        const a = distances[i], b = distances[(i + 1) % points.length];
+        if (a <= 1e-9) result.push(point);
+        if ((a < -1e-9 && b > 1e-9) || (a > 1e-9 && b < -1e-9)) {
+          result.push(point.map((value, axis) => value + (next[axis] - value) * a / (a - b)));
+        }
+      });
+      return result.length >= 3 ? result : [];
+    };
+    return roofs.reduce((polygons, roof) => polygons.flatMap((points) => {
+      const outside = [];
+      let inside = points;
+      for (const plane of roof.bounds) {
+        const extendsOutside = inside.some(([t, z]) =>
+          plane[0] * (from[0] + (to[0] - from[0]) * t) +
+          plane[1] * (from[1] + (to[1] - from[1]) * t) + plane[2] * z + plane[3] > 1e-9,
+        );
+        const remainder = extendsOutside ? clip(inside, plane.map((value) => -value)) : [];
+        if (remainder.length) outside.push(remainder);
+        inside = clip(inside, plane);
+        if (!inside.length) break;
+      }
+      for (const plane of roof.slopes) inside = clip(inside, plane);
+      if (inside.length) outside.push(inside);
+      return outside;
+    }), [polygon]);
+  },
+
   roofLimits(plan) {
     return (plan.allRoofs ?? []).flatMap((roof) => {
       if (roof.type !== "gable" || !["longitudinal", "transverse"].includes(roof.orientation)) return [];

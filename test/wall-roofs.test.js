@@ -56,3 +56,31 @@ test('diagonal wall solids are clipped in world coordinates', () => {
   };
   assert.ok(Math.abs(volume(walls.roofSolids(diagonal, [limit])) - 60) < 1e-8);
 });
+
+const sectionArea = (polygons) => polygons.reduce((sum, polygon) => sum + Math.abs(polygon.reduce((area, [x, z], i) => {
+  const next = polygon[(i + 1) % polygon.length];
+  return area + x * next[1] - next[0] * z;
+}, 0)) / 2, 0);
+
+test('elevation retains uncovered ends and follows the ridge inside the wall span', () => {
+  const polygons = walls.roofSection([[0, 0], [1, 0], [1, 8], [0, 8]], [0, 0], [10, 0], [roof]);
+  assert.ok(Math.abs(sectionArea(polygons) - 5.9) < 1e-8);
+  assert.ok(polygons.flat().some(([t, z]) => Math.abs(t - 0.5) < 1e-8 && Math.abs(z - 6) < 1e-8));
+});
+test('elevation uses the lowest roof and leaves walls at other depths intact', () => {
+  const polygon = [[0, 0], [1, 0], [1, 8], [0, 8]];
+  const lower = { ...roof, slopes: [[0, 0, 1, -2]] };
+  assert.ok(Math.abs(sectionArea(walls.roofSection(polygon, [0, 0], [10, 0], [roof, lower])) - 4.4) < 1e-8);
+  assert.equal(sectionArea(walls.roofSection(polygon, [0, 4], [10, 4], [roof])), 8);
+});
+test('elevation clips diagonal walls with sloping bases and removes covered walls above roof', () => {
+  const limit = { bounds: [], slopes: [[0, 0, 1, -3]] };
+  const polygons = walls.roofSection([[0, 0], [1, 1], [1, 8], [0, 8]], [0, 0], [10, 10], [limit]);
+  assert.ok(Math.abs(sectionArea(polygons) - 2.5) < 1e-8);
+  assert.deepEqual(walls.roofSection([[0, 4], [1, 4], [1, 8], [0, 8]], [0, 0], [10, 0], [limit]), []);
+});
+test('wall exactly on the roof footprint boundary is still clipped once', () => {
+  const polygon = [[0, 0], [1, 0], [1, 8], [0, 8]];
+  const boundedRoof = { ...roof, bounds: [[-1, 0, 0, 2], [1, 0, 0, -8], [0, -1, 0, 0], [0, 1, 0, -1]] };
+  assert.ok(Math.abs(sectionArea(walls.roofSection(polygon, [0, 0], [10, 0], [boundedRoof])) - 5.9) < 1e-8);
+});
