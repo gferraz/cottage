@@ -125,8 +125,8 @@
     },
     {
       id: "left-knee-wall",
-      base: { level: "ground.z1" },
-      top: { level: "ground.z1" },
+      base: { level: "upper.z0" },
+      top: "roof",
       thickness: 0.12,
       color: "blue",
       path: {
@@ -139,7 +139,7 @@
     {
       id: "knee-wall-front-left",
       base: { level: "upper.z0" },
-      top: { level: "upper.z0 + 1" },
+      top: "roof",
       thickness: 0.12,
       color: "blue",
       path: {
@@ -152,7 +152,7 @@
     {
       id: "knee-corner-front-right",
       base: { level: "upper.z0" },
-      top: { level: "upper.z0 + 1" },
+      top: "roof",
       thickness: 0.12,
       color: "blue",
       path: {
@@ -166,7 +166,7 @@
     {
       id: "knee-wall-middle-left",
       base: { level: "upper.z0" },
-      top: { level: "upper.z0 + 1" },
+      top: "roof",
       thickness: 0.12,
       color: "blue",
       path: {
@@ -179,7 +179,7 @@
     {
       id: "knee-wall-middle-right",
       base: { level: "upper.z0" },
-      top: { level: "upper.z0 + 1" },
+      top: "roof",
       thickness: 0.12,
       color: "blue",
       path: {
@@ -192,7 +192,7 @@
     {
       id: "knee-wall-back",
       base: { level: "upper.z0" },
-      top: { level: "upper.z0 + 1" },
+      top: "roof",
       thickness: 0.12,
       color: "blue",
       path: {
