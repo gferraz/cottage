@@ -50,7 +50,29 @@ const FloorPlanWalls = {
     return Math.abs(volume) > 1e-10 ? result : [];
   },
 
-  roofSolids(faces, roofs) {
+  coveredParts(parts, roofs, clip) {
+    const covered = [];
+    let remaining = parts;
+    roofs.forEach((roof) => {
+      remaining = remaining.flatMap((part) => {
+        let inside = part;
+        const outside = [];
+        for (const plane of roof.bounds) {
+          const next = clip(inside, plane);
+          const remainder = clip(inside, plane.map((value) => -value));
+          // A section lying exactly on the footprint edge belongs inside.
+          if (remainder.length && !(next === inside && remainder === inside)) outside.push(remainder);
+          inside = next;
+          if (!inside.length) break;
+        }
+        if (inside.length) covered.push(inside);
+        return outside;
+      });
+    });
+    return covered;
+  },
+
+  roofSolids(faces, roofs, roofOnly = false) {
     return roofs.reduce((solids, roof) => solids.flatMap((solid) => {
       // Partition the footprint first: only the covered portion is cut vertically.
       let inside = solid;
@@ -66,10 +88,10 @@ const FloorPlanWalls = {
         if (inside.length) outside.push(inside);
       }
       return outside;
-    }), [faces]);
+    }), roofOnly ? this.coveredParts([faces], roofs, (part, plane) => this.clipSolid(part, plane)) : [faces]);
   },
 
-  roofSection(polygon, from, to, roofs) {
+  roofSection(polygon, from, to, roofs, roofOnly = false) {
     const clip = (points, plane) => {
       const distance = ([t, z]) => plane[0] * (from[0] + (to[0] - from[0]) * t) +
         plane[1] * (from[1] + (to[1] - from[1]) * t) + plane[2] * z + plane[3];
@@ -104,11 +126,15 @@ const FloorPlanWalls = {
       for (const plane of roof.slopes) inside = clip(inside, plane);
       if (inside.length) outside.push(inside);
       return outside;
-    }), [polygon]);
+    }), roofOnly ? this.coveredParts([polygon], roofs, clip) : [polygon]);
   },
 
-  roofLimits(plan) {
-    return (plan.allRoofs ?? []).flatMap((roof) => {
+  roofLimits(plan, config = null) {
+    const roofs = config
+      ? [...(config.roofs ?? []), ...(config.floors ?? []).flatMap((floor) =>
+          (floor.roofs ?? []).map((roof) => ({ ...roof, floorId: floor.id }))) ]
+      : plan.allRoofs ?? [];
+    return roofs.flatMap((roof) => {
       if (roof.type !== "gable" || !["longitudinal", "transverse"].includes(roof.orientation)) return [];
       try {
         const floor = FloorPlanRoofs.floorForRoof(plan, roof, roof.base ?? roof);
@@ -126,6 +152,7 @@ const FloorPlanWalls = {
         const z = roof.z0 === undefined ? FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor) : plan.resolve(roof.z0);
         if (![x0, x1, y0, y1, tangent, z].every(Number.isFinite) || tangent < 0) return [];
         return [{
+          peakZ: z + (end - start) * tangent / 2,
           bounds: [[-1, 0, 0, x0], [1, 0, 0, -x1], [0, -1, 0, y0], [0, 1, 0, -y1]],
           slopes: longitudinal
             ? [[-tangent, 0, 1, tangent * start - z], [tangent, 0, 1, -tangent * end - z]]
@@ -508,6 +535,7 @@ const FloorPlanWalls = {
       .map((corner) => Number(corner.z))
       .filter(Number.isFinite);
     const terrainMinimumZ = Math.min(groundLevel, ...terrainElevations);
+    const roofLimits = this.roofLimits(plan, config);
     (config.walls ?? []).forEach((definition) => {
       try {
         if (!definition.id) throw new Error("Parede independente precisa de id");
@@ -539,7 +567,13 @@ const FloorPlanWalls = {
         const baseZ = base === "terrain"
           ? terrainMinimumZ
           : plan.resolve(baseDefinition?.level);
-        const topZ = plan.resolve(definition.top?.level ?? groundLevel);
+        const roofOnly = definition.top === "roof";
+        if (roofOnly && !roofLimits.length) {
+          throw new Error('A parede com top: "roof" precisa de um telhado válido acima da base');
+        }
+        const topZ = roofOnly
+          ? Math.max(...roofLimits.map((roof) => roof.peakZ))
+          : plan.resolve(definition.top?.level ?? groundLevel);
         if (
           !Number.isFinite(thickness) || thickness <= 0 ||
           !Number.isFinite(baseZ) || !Number.isFinite(topZ)
@@ -557,7 +591,7 @@ const FloorPlanWalls = {
           path: { ...definition.path, points: resolvedPoints },
           base,
           baseZ,
-          top: { ...definition.top, level: topZ },
+          top: roofOnly ? "roof" : { ...definition.top, level: topZ },
           topZ,
           thickness,
           x: x0,
@@ -585,7 +619,13 @@ const FloorPlanWalls = {
           throw new Error('A base da parede precisa ser "terrain" ou { level: "referência.z0" }');
         }
         if (wall.h <= 0) throw new Error("A cota superior da parede precisa ficar acima da base");
-        wall.geometryParts = this.geometryParts(wall);
+        wall.geometryParts = this.geometryParts(wall).map((part) => ({ ...part, roofOnly }));
+        if (roofOnly) {
+          const covered = resolvedPoints.slice(0, -1).some((from, i) =>
+            this.roofSection([[0, baseZ], [1, baseZ], [1, topZ], [0, topZ]],
+              from, resolvedPoints[i + 1], roofLimits, true).length > 0);
+          if (!covered) throw new Error('A parede com top: "roof" não encontra nenhum telhado acima da base ao longo do seu caminho');
+        }
         FloorPlanGeometryBox.attach(wall, { compound: true, label: wall.id });
         plan.independentWalls.set(wall.id, wall);
         plan.references.set(wall.id, wall);

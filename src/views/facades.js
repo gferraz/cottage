@@ -927,9 +927,9 @@ const FloorPlanFacades = {
           }
         });
 
-      const sectionPath = (start, end, from, to, baseStart, baseEnd, top) => {
+      const sectionPath = (start, end, from, to, baseStart, baseEnd, top, roofOnly = false) => {
         const polygons = FloorPlanWalls.roofSection(
-          [[0, baseStart], [1, baseEnd], [1, top], [0, top]], from, to, roofLimits,
+          [[0, baseStart], [1, baseEnd], [1, top], [0, top]], from, to, roofLimits, roofOnly,
         );
         const path = polygons.map((polygon) => polygon.map(([t, z], i) =>
           `${i ? "L" : "M"}${(start + (end - start) * t - min + padding) * scale},${(floorHeight - z + padding) * scale}`,
@@ -1107,7 +1107,7 @@ const FloorPlanFacades = {
           ? second.depth - first.depth
           : first.depth - second.depth)
         .forEach(({ wall, segmentIndex, start, end, startBase, endBase, startPoint, endPoint }) => {
-          const section = sectionPath(start, end, startPoint, endPoint, startBase, endBase, wall.topZ);
+          const section = sectionPath(start, end, startPoint, endPoint, startBase, endBase, wall.topZ, wall.top === "roof");
           if (!section.polygons.length) return;
           const face = document.createElementNS(svgNamespace, "path");
           face.setAttribute("d", section.path);
@@ -1251,6 +1251,25 @@ const FloorPlanFacades = {
           profileLine.setAttribute("stroke-width", "2");
           svg.append(profileLine);
         }
+      }
+
+      if (direction === "front") {
+        // Looking at the front reverses the plan's horizontal axis. Keep text
+        // readable while reflecting every geometric layer in the same frame.
+        const drawing = document.createElementNS(svgNamespace, "g");
+        drawing.classList.add("facade-front-projection");
+        drawing.setAttribute("transform", `translate(${viewWidth} 0) scale(-1 1)`);
+        svg.querySelectorAll("text").forEach((label) => {
+          const x = Number(label.getAttribute("x") ?? 0);
+          const transform = label.getAttribute("transform") || "";
+          label.setAttribute("transform", `${transform} translate(${2 * x} 0) scale(-1 1)`.trim());
+          const anchor = label.getAttribute("text-anchor") || "start";
+          if (anchor !== "middle") label.setAttribute("text-anchor", anchor === "start" ? "end" : "start");
+        });
+        [...svg.children].forEach((element) => {
+          if (element !== defs) drawing.append(element);
+        });
+        svg.append(drawing);
       }
 
       const figure = document.createElement("figure");

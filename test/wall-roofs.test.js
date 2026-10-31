@@ -84,3 +84,48 @@ test('wall exactly on the roof footprint boundary is still clipped once', () => 
   const boundedRoof = { ...roof, bounds: [[-1, 0, 0, 2], [1, 0, 0, -8], [0, -1, 0, 0], [0, 1, 0, -1]] };
   assert.ok(Math.abs(sectionArea(walls.roofSection(polygon, [0, 0], [10, 0], [boundedRoof])) - 5.9) < 1e-8);
 });
+
+test('roof top omits uncovered portions in solids and elevations', () => {
+  assert.ok(Math.abs(volume(walls.roofSolids(box(), [roof], true)) - 27) < 1e-8);
+  const polygon = [[0, 0], [1, 0], [1, 8], [0, 8]];
+  assert.ok(Math.abs(sectionArea(walls.roofSection(polygon, [0, 0], [10, 0], [roof], true)) - 2.7) < 1e-8);
+  assert.deepEqual(walls.roofSolids(box(), [], true), []);
+  assert.deepEqual(walls.roofSection(polygon, [0, 4], [10, 4], [roof], true), []);
+});
+
+test('roof coverage is the union of footprints, with the lowest overlapping slope', () => {
+  const second = { bounds: [[-1, 0, 0, 6], [1, 0, 0, -10]], slopes: [[0, 0, 1, -2]] };
+  const result = walls.roofSolids(box(), [roof, second], true);
+  assert.ok(Math.abs(volume(result) - 27) < 1e-8);
+  assert.ok(Math.abs(volume(walls.roofSolids(box(), [second, roof], true)) - 27) < 1e-8);
+});
+
+require('../src/models/geometry-box.js');
+require('../src/models/validation.js');
+require('../src/views/roofs.js');
+const normalizeRoofWall = (withRoof = true, points = [[0, 0], [4, 0]]) => {
+  const base = globalThis.FloorPlanGeometryBox.fromValues({ x: 0, y: 0, w: 4, l: 4, z0: 0, h: 3 });
+  const config = {
+    floors: [{ id: 'ground', z0: 0, wall_max_height: 3, rooms: [] }],
+    roofs: withRoof ? [{ id: 'roof', base: 'base', type: 'gable', orientation: 'longitudinal', pitch: 45 }] : [],
+    walls: [{ id: 'front-wall', base: { level: 0 }, top: 'roof', path: { points } }],
+  };
+  const plan = { currentConfig: config, references: new Map([['base', base]]),
+    catalog: {}, roomDefinitions: new Map(), errors: [], allRoofs: [{ id: 'stale' }],
+    resolve: Number };
+  walls.normalizeRoomWalls(plan, config);
+  return plan;
+};
+
+test('normalization resolves roof top from current config before global lists exist', () => {
+  const plan = normalizeRoofWall();
+  assert.deepEqual(plan.errors, []);
+  const wall = plan.independentWalls.get('front-wall');
+  assert.equal(wall.top, 'roof');
+  assert.ok(Math.abs(wall.topZ - 5) < 1e-8);
+  assert.equal(wall.geometryParts[0].roofOnly, true);
+});
+test('roof top reports absent roofs and paths without coverage', () => {
+  assert.match(normalizeRoofWall(false).errors[0].message, /telhado válido/);
+  assert.match(normalizeRoofWall(true, [[10, 10], [12, 10]]).errors[0].message, /não encontra nenhum telhado/);
+});

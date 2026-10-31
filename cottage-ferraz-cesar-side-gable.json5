@@ -72,7 +72,7 @@
     {
       id: "front-wall",
       base: { level: "ground.z0" },
-      top: { level: "ground.z1" },
+      top: "roof",
       thickness: 0.12,
       path: {
         points: [
@@ -510,7 +510,7 @@
           from: ["office.x0 + 0.8", "office.y0"],
           to: ["office.x1 - 0.8 ", "dorm-top.y0"],
           openings: [{ type: "door", from: "bottom", to: "bedroom-n", dy: 3 }],
-          walls: ["top", "right", "left"]
+          walls: ["right", "left"]
         },
         {
           id: "bedroom-n",

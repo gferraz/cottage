@@ -60,6 +60,20 @@ Também é possível criar cômodos diretamente no console do navegador: `const 
 
 Na perspectiva 3D, todas as paredes (inclusive independentes e diagonais) têm sua altura recortada pelas superfícies dos telhados nas áreas cobertas, considerando beirais, espessura e vãos. Nos encontros de telhados, prevalece a superfície mais baixa; trechos sem cobertura mantêm a altura definida.
 
+Para paredes independentes, use `top: "roof"` para alcançar automaticamente a cobertura, tanto no 3D quanto nas elevações:
+
+```js
+{
+  id: "front-wall",
+  base: { level: "ground.z0" },
+  top: "roof",
+  thickness: 0.12,
+  path: { points: [["office.x0", "office.y0"], ["office.x1", "office.y0"]] }
+}
+```
+
+Nesse modo, somente os trechos cobertos são desenhados; nos encontros prevalece o telhado mais baixo. Se nenhum telhado válido cobrir o caminho acima da base, a parede aparece em **Itens com erro**. A forma `top: { level: ... }` continua disponível para limitar a parede a uma cota explícita.
+
 O padrão é quatro paredes sólidas. Use `walls` com `solid`, `open` ou `virtual`:
 
 ```json
