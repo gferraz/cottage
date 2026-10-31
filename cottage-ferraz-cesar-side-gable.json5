@@ -100,7 +100,7 @@
     {
       id: "rear-wall",
       base: { level: "ground.z0" },
-      top: "roof",
+      top: { level: "ground.z1" },
       thickness: 0.12,
       path: {
         points: [

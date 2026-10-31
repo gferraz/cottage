@@ -171,12 +171,11 @@ const FloorPlanWalls = {
         const floor = FloorPlanRoofs.floorForRoof(plan, roof, roof.base ?? roof);
         const base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof, floor);
         const longitudinal = roof.orientation === "longitudinal";
-        const [e0, e1] = FloorPlanRoofs.overhangPair(roof.eave);
         const [r0, r1] = FloorPlanRoofs.overhangPair(roof.rake);
-        const x0 = base.x0() - (longitudinal ? e0 : r0);
-        const x1 = base.x1() + (longitudinal ? e1 : r1);
-        const y0 = base.y0() - (longitudinal ? r0 : e0);
-        const y1 = base.y1() + (longitudinal ? r1 : e1);
+        const x0 = base.x0() - (longitudinal ? 0 : r0);
+        const x1 = base.x1() + (longitudinal ? 0 : r1);
+        const y0 = base.y0() - (longitudinal ? r0 : 0);
+        const y1 = base.y1() + (longitudinal ? r1 : 0);
         const start = longitudinal ? base.x0() : base.y0();
         const end = longitudinal ? base.x1() : base.y1();
         const tangent = Math.tan(Number(roof.pitch) * Math.PI / 180);

@@ -147,3 +147,27 @@ test('elevation silhouettes retain diagonal walls and terrain base elevations', 
   assert.equal(Math.min(...polygons[0].map(([, z]) => z)), 0);
   assert.ok(polygons[0].some(([, z]) => z === 1));
 });
+
+test('wall limits ignore asymmetric eaves in both roof orientations, preserving rake', () => {
+  const base = globalThis.FloorPlanGeometryBox.fromValues({ x: 0, y: 0, w: 4, l: 4, z0: 0, h: 3 });
+  for (const orientation of ['longitudinal', 'transverse']) {
+    const roof = { id: 'roof', base: 'base', type: 'gable', orientation, pitch: 45, eave: [2, 3], rake: [0.5, 1] };
+    const plan = { allRoofs: [roof], currentConfig: { wall_max_height: 3 }, references: new Map([['base', base]]) };
+    const limits = walls.roofLimits(plan);
+    const original = walls.roofLimits({ ...plan, allRoofs: [{ ...roof, eave: 0 }] });
+    assert.deepEqual(limits, original);
+    const outside = orientation === 'longitudinal'
+      ? walls.boxFaces(-1, 1, 0, -0.5, 2, 8)
+      : walls.boxFaces(1, -1, 0, 2, -0.5, 8);
+    assert.deepEqual(walls.roofSolids(outside, limits), [outside]);
+    assert.deepEqual(walls.roofSolids(outside, limits, true), []);
+    const from = orientation === 'longitudinal' ? [-1, 1] : [1, -1];
+    const to = orientation === 'longitudinal' ? [-0.5, 1] : [2, -1];
+    const polygon = [[0, 0], [1, 0], [1, 8], [0, 8]];
+    assert.deepEqual(walls.roofSection(polygon, from, to, limits), [polygon]);
+    assert.deepEqual(walls.roofSection(polygon, from, to, limits, true), []);
+    assert.deepEqual(limits[0].bounds, orientation === 'longitudinal'
+      ? [[-1, 0, 0, 0], [1, 0, 0, -4], [0, -1, 0, -0.5], [0, 1, 0, -5]]
+      : [[-1, 0, 0, -0.5], [1, 0, 0, -5], [0, -1, 0, 0], [0, 1, 0, -4]]);
+  }
+});
