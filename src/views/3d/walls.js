@@ -1,6 +1,7 @@
 const FloorPlan3DWalls = {
   render(context) {
     const { plan, openingsByWall } = context;
+    const roofLimits = FloorPlanWalls.roofLimits(plan);
     (plan.wallRenderParts || []).forEach((wall) => {
       try {
         const sourceWallId = wall.sourceWallId || wall.id;
@@ -14,11 +15,7 @@ const FloorPlan3DWalls = {
               side: context.THREE.DoubleSide,
             })
           : context.wallMaterial;
-        if (wall.axis === "path") {
-          context.reportInvalid("parede independente diagonal não representada como prisma", wall.id);
-          return;
-        }
-        this.renderRoomWall({ ...context, wall, openings, material });
+        this.renderRoomWall({ ...context, wall, openings, material, roofLimits });
       } catch (error) {
         console.error(`Fachada 3D: falha ao desenhar parede ${wall.id}.`, error);
       }
@@ -27,11 +24,15 @@ const FloorPlan3DWalls = {
 
   renderRoomWall({
     THREE, scene, wall, openings, material, wallLineMaterial,
-    windowMaterial, doorMaterial, finite, reportInvalid,
+    windowMaterial, doorMaterial, finite, reportInvalid, roofLimits,
   }) {
-    const [x0, y0, z0] = wall.pos;
-    const [width, depth, height] = wall.size;
-    const alongX = wall.axis === "x";
+    const diagonal = wall.axis === "path";
+    const angle = diagonal ? Math.atan2(wall.to[1] - wall.from[1], wall.to[0] - wall.from[0]) : 0;
+    const [x0, y0, z0] = diagonal ? [0, -wall.thickness / 2, wall.z0] : wall.pos;
+    const [width, depth, height] = diagonal
+      ? [Math.hypot(wall.to[0] - wall.from[0], wall.to[1] - wall.from[1]), wall.thickness, wall.h]
+      : wall.size;
+    const alongX = diagonal || wall.axis === "x";
     const length = alongX ? width : depth;
     if (!finite(x0, y0, z0, width, depth, height, length) || length <= 0 || height <= 0) {
       reportInvalid("parede", wall.id);
@@ -73,24 +74,45 @@ const FloorPlan3DWalls = {
       shape.holes.push(hole);
     });
 
-    const geometry = new THREE.ExtrudeGeometry(shape, {
-      depth: alongX ? depth : width,
-      bevelEnabled: false,
-    });
-    const transform = alongX
-      ? new THREE.Matrix4().set(
-          1, 0, 0, x0,
-          0, 0, -1, y0 + depth,
-          0, 1, 0, z0,
-          0, 0, 0, 1,
-        )
-      : new THREE.Matrix4().set(
-          0, 0, 1, x0,
-          1, 0, 0, y0,
-          0, 1, 0, z0,
-          0, 0, 0, 1,
+    // Divide around opening edges before clipping; every piece remains a closed
+    // convex solid, including openings that reach the sloping roof.
+    const holes = shape.holes.map((hole) => hole.getPoints()).map((points) => ({
+      x0: Math.min(...points.map((point) => point.x)),
+      x1: Math.max(...points.map((point) => point.x)),
+      z0: Math.min(...points.map((point) => point.y)),
+      z1: Math.max(...points.map((point) => point.y)),
+    }));
+    const cuts = [...new Set([0, length, ...holes.flatMap((hole) => [hole.x0, hole.x1])])].sort((a, b) => a - b);
+    const vertices = [];
+    for (let i = 0; i < cuts.length - 1; i += 1) {
+      const start = cuts[i], end = cuts[i + 1];
+      const active = holes.filter((hole) => hole.x0 < end && hole.x1 > start).sort((a, b) => a.z0 - b.z0);
+      let bottom = 0;
+      const bands = [];
+      active.forEach((hole) => {
+        if (hole.z0 > bottom) bands.push([bottom, hole.z0]);
+        bottom = Math.max(bottom, hole.z1);
+      });
+      if (bottom < height) bands.push([bottom, height]);
+      bands.forEach(([low, high]) => {
+        const faces = FloorPlanWalls.boxFaces(
+          alongX ? x0 + start : x0, alongX ? y0 : y0 + start, z0 + low,
+          alongX ? x0 + end : x0 + width, alongX ? y0 + depth : y0 + end, z0 + high,
         );
-    geometry.applyMatrix4(transform);
+        const worldFaces = diagonal ? faces.map((face) => face.map(([x, y, z]) => [
+          wall.from[0] + x * Math.cos(angle) - y * Math.sin(angle),
+          wall.from[1] + x * Math.sin(angle) + y * Math.cos(angle), z,
+        ])) : faces;
+        FloorPlanWalls.roofSolids(worldFaces, roofLimits).forEach((solid) => {
+          solid.forEach((face) => {
+            for (let j = 1; j < face.length - 1; j += 1) vertices.push(...face[0], ...face[j], ...face[j + 1]);
+          });
+        });
+      });
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.computeVertexNormals();
     const mesh = new THREE.Mesh(geometry, material);
     mesh.castShadow = true;
     mesh.receiveShadow = true;

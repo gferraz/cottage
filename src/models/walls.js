@@ -1,4 +1,110 @@
 const FloorPlanWalls = {
+  // Clip a convex solid, closing the cut with a face ordered around its normal.
+  clipSolid(faces, plane) {
+    const distance = (point) => plane.slice(0, 3).reduce((sum, n, i) => sum + n * point[i], plane[3]);
+    const distances = faces.flat().map(distance);
+    if (distances.every((value) => value <= 1e-9)) return faces;
+    if (distances.every((value) => value >= -1e-9)) return [];
+    const cuts = [];
+    const result = faces.map((face) => {
+      const polygon = [];
+      face.forEach((point, i) => {
+        const next = face[(i + 1) % face.length];
+        const a = distance(point);
+        const b = distance(next);
+        if (a <= 1e-9) polygon.push(point);
+        if ((a < -1e-9 && b > 1e-9) || (a > 1e-9 && b < -1e-9)) {
+          const cut = point.map((value, axis) => value + (next[axis] - value) * a / (a - b));
+          polygon.push(cut);
+          cuts.push(cut);
+        } else if (Math.abs(a) <= 1e-9) cuts.push(point);
+      });
+      return polygon;
+    }).filter((face) => face.length >= 3);
+    const unique = cuts.filter((point, i) => cuts.findIndex((other) =>
+      point.every((value, axis) => Math.abs(value - other[axis]) < 1e-8)) === i);
+    if (unique.length >= 3) {
+      const center = unique[0].map((_, axis) => unique.reduce((sum, point) => sum + point[axis], 0) / unique.length);
+      const normal = plane.slice(0, 3);
+      const magnitude = Math.hypot(...normal);
+      const n = normal.map((value) => value / magnitude);
+      const seed = Math.abs(n[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+      const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+      const u = cross(n, seed);
+      const v = cross(n, u);
+      const angle = (point) => {
+        const delta = point.map((value, axis) => value - center[axis]);
+        return Math.atan2(delta.reduce((sum, value, axis) => sum + value * v[axis], 0), delta.reduce((sum, value, axis) => sum + value * u[axis], 0));
+      };
+      unique.sort((a, b) => angle(a) - angle(b));
+      result.push(unique);
+    }
+    const volume = result.reduce((sum, face) => {
+      const a = face[0];
+      for (let i = 1; i < face.length - 1; i += 1) {
+        const b = face[i], c = face[i + 1];
+        sum += a[0] * (b[1] * c[2] - b[2] * c[1]) + a[1] * (b[2] * c[0] - b[0] * c[2]) + a[2] * (b[0] * c[1] - b[1] * c[0]);
+      }
+      return sum;
+    }, 0);
+    return Math.abs(volume) > 1e-10 ? result : [];
+  },
+
+  roofSolids(faces, roofs) {
+    return roofs.reduce((solids, roof) => solids.flatMap((solid) => {
+      // Partition the footprint first: only the covered portion is cut vertically.
+      let inside = solid;
+      const outside = [];
+      for (const plane of roof.bounds) {
+        const remainder = this.clipSolid(inside, plane.map((value) => -value));
+        if (remainder.length) outside.push(remainder);
+        inside = this.clipSolid(inside, plane);
+        if (!inside.length) break;
+      }
+      if (inside.length) {
+        for (const plane of roof.slopes) inside = this.clipSolid(inside, plane);
+        if (inside.length) outside.push(inside);
+      }
+      return outside;
+    }), [faces]);
+  },
+
+  roofLimits(plan) {
+    return (plan.allRoofs ?? []).flatMap((roof) => {
+      if (roof.type !== "gable" || !["longitudinal", "transverse"].includes(roof.orientation)) return [];
+      try {
+        const floor = FloorPlanRoofs.floorForRoof(plan, roof, roof.base ?? roof);
+        const base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof, floor);
+        const longitudinal = roof.orientation === "longitudinal";
+        const [e0, e1] = FloorPlanRoofs.overhangPair(roof.eave);
+        const [r0, r1] = FloorPlanRoofs.overhangPair(roof.rake);
+        const x0 = base.x0() - (longitudinal ? e0 : r0);
+        const x1 = base.x1() + (longitudinal ? e1 : r1);
+        const y0 = base.y0() - (longitudinal ? r0 : e0);
+        const y1 = base.y1() + (longitudinal ? r1 : e1);
+        const start = longitudinal ? base.x0() : base.y0();
+        const end = longitudinal ? base.x1() : base.y1();
+        const tangent = Math.tan(Number(roof.pitch) * Math.PI / 180);
+        const z = roof.z0 === undefined ? FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor) : plan.resolve(roof.z0);
+        if (![x0, x1, y0, y1, tangent, z].every(Number.isFinite) || tangent < 0) return [];
+        return [{
+          bounds: [[-1, 0, 0, x0], [1, 0, 0, -x1], [0, -1, 0, y0], [0, 1, 0, -y1]],
+          slopes: longitudinal
+            ? [[-tangent, 0, 1, tangent * start - z], [tangent, 0, 1, -tangent * end - z]]
+            : [[0, -tangent, 1, tangent * start - z], [0, tangent, 1, -tangent * end - z]],
+        }];
+      } catch {
+        return [];
+      }
+    });
+  },
+
+  boxFaces(x0, y0, z0, x1, y1, z1) {
+    const a = [x0, y0, z0], b = [x1, y0, z0], c = [x1, y1, z0], d = [x0, y1, z0];
+    const e = [x0, y0, z1], f = [x1, y0, z1], g = [x1, y1, z1], h = [x0, y1, z1];
+    return [[a, d, c, b], [e, f, g, h], [a, b, f, e], [b, c, g, f], [c, d, h, g], [d, a, e, h]];
+  },
+
   geometryParts(wall) {
     const epsilon = 1e-9;
     return wall.path.points.slice(0, -1).flatMap((from, index) => {

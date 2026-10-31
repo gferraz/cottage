@@ -58,6 +58,8 @@ Também é possível criar cômodos diretamente no console do navegador: `const 
 
 ## Cômodos, paredes e sobreposições
 
+Na perspectiva 3D, todas as paredes (inclusive independentes e diagonais) têm sua altura recortada pelas superfícies dos telhados nas áreas cobertas, considerando beirais, espessura e vãos. Nos encontros de telhados, prevalece a superfície mais baixa; trechos sem cobertura mantêm a altura definida.
+
 O padrão é quatro paredes sólidas. Use `walls` com `solid`, `open` ou `virtual`:
 
 ```json
