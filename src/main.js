@@ -500,6 +500,7 @@ class FloorPlan {
     this.root.querySelectorAll(".roof-plan").forEach((roof) => {
       roof.classList.toggle("roof-hidden", !this.showRoofs);
     });
+    FloorPlanFacades.updateRoofVisibility(this);
     this.updateVisibilityHeading();
   }
 

@@ -1,4 +1,12 @@
 const FloorPlanFacades = {
+  updateRoofVisibility(plan) {
+    [plan.facadeLayer, plan.secondaryFacadeLayer].forEach((layer) => {
+      layer?.querySelectorAll(".facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label")
+        .forEach((element) => element.classList.toggle("roof-hidden", !plan.showRoofs));
+    });
+  },
+
+
   render(plan, facades = []) {
     if (!plan.facadeLayer) return;
     plan.facadeLayer.replaceChildren();
@@ -1321,6 +1329,7 @@ const FloorPlanFacades = {
           : plan.secondaryFacadeLayer || plan.facadeLayer;
       target.append(figure);
     });
+    this.updateRoofVisibility(plan);
   },
 };
 

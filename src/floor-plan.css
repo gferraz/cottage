@@ -433,7 +433,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .roof-plan {
   pointer-events: none;
 }
-.roof-plan.roof-hidden { display: none; }
+.roof-plan.roof-hidden, .facade-view .roof-hidden { display: none; }
 .roof-surface {
   fill: var(--theme-roof-fill, rgba(130, 105, 75, 0.16));
   stroke: var(--theme-roof-line, rgba(90, 70, 45, 0.62));
