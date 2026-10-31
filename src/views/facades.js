@@ -1107,10 +1107,17 @@ const FloorPlanFacades = {
           ? second.depth - first.depth
           : first.depth - second.depth)
         .forEach(({ wall, segmentIndex, start, end, startBase, endBase, startPoint, endPoint }) => {
-          const section = sectionPath(start, end, startPoint, endPoint, startBase, endBase, wall.topZ, wall.top === "roof");
-          if (!section.polygons.length) return;
+          const polygons = FloorPlanWalls.wallElevation({
+            from: startPoint, to: endPoint, thickness: wall.thickness,
+            baseStart: startBase, baseEnd: endBase, top: wall.topZ,
+            roofOnly: wall.top === "roof",
+          }, roofLimits, side);
+          if (!polygons.length) return;
+          const path = polygons.map((polygon) => polygon.map(([coordinate, z], i) =>
+            `${i ? "L" : "M"}${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`,
+          ).join(" ") + " Z").join(" ");
           const face = document.createElementNS(svgNamespace, "path");
-          face.setAttribute("d", section.path);
+          face.setAttribute("d", path);
           face.classList.add("facade-independent-wall");
           face.dataset.wallId = wall.id;
           face.dataset.segment = String(segmentIndex);

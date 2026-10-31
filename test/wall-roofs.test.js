@@ -129,3 +129,21 @@ test('roof top reports absent roofs and paths without coverage', () => {
   assert.match(normalizeRoofWall(false).errors[0].message, /telhado válido/);
   assert.match(normalizeRoofWall(true, [[10, 10], [12, 10]]).errors[0].message, /não encontra nenhum telhado/);
 });
+
+test('elevation projects the full wall thickness at an overlapping roof boundary', () => {
+  const low = { bounds: [[-1, 0, 0, -1], [1, 0, 0, -5], [0, -1, 0, 0], [0, 1, 0, -4]], slopes: [[0, 0, 1, -3]] };
+  const high = { bounds: [[-1, 0, 0, -1], [1, 0, 0, -5], [0, -1, 0, -1], [0, 1, 0, -4]], slopes: [[0, 0, 1, -6]] };
+  const wall = { from: [0, 0], to: [4, 0], thickness: 0.12, baseStart: 0, baseEnd: 0, top: 8, roofOnly: true };
+  const polygons = walls.wallElevation(wall, [low, high], false);
+  assert.equal(Math.max(...polygons.flat().map(([, z]) => z)), 6);
+  const center = walls.roofSection([[0, 0], [1, 0], [1, 8], [0, 8]], wall.from, wall.to, [low, high], true);
+  assert.equal(Math.max(...center.flat().map(([, z]) => z)), 3);
+});
+
+test('elevation silhouettes retain diagonal walls and terrain base elevations', () => {
+  const polygons = walls.wallElevation({ from: [0, 0], to: [4, 4], thickness: 0.12, baseStart: 0, baseEnd: 1, top: 6 }, [], true);
+  assert.equal(polygons.length, 1);
+  assert.equal(Math.max(...polygons[0].map(([, z]) => z)), 6);
+  assert.equal(Math.min(...polygons[0].map(([, z]) => z)), 0);
+  assert.ok(polygons[0].some(([, z]) => z === 1));
+});

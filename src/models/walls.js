@@ -91,6 +91,37 @@ const FloorPlanWalls = {
     }), roofOnly ? this.coveredParts([faces], roofs, (part, plane) => this.clipSolid(part, plane)) : [faces]);
   },
 
+  wallElevation({ from, to, thickness, baseStart, baseEnd, top, roofOnly }, roofs, side) {
+    const dx = to[0] - from[0], dy = to[1] - from[1];
+    const length = Math.hypot(dx, dy);
+    if (length <= 1e-9) return [];
+    const ux = dx / length, uy = dy / length;
+    const faces = this.boxFaces(0, -thickness / 2, baseStart, length, thickness / 2, top)
+      .map((face) => face.map(([x, y, z]) => [
+        from[0] + ux * x - uy * y,
+        from[1] + uy * x + ux * y,
+        z === baseStart && x === length ? baseEnd : z,
+      ]));
+    return this.roofSolids(faces, roofs, roofOnly).flatMap((solid) => {
+      // A clipped piece is convex, so its orthographic silhouette is the hull
+      // of its projected vertices, including both faces across the thickness.
+      const points = solid.flat().map(([x, y, z]) => [side ? y : x, z])
+        .sort((a, b) => a[0] - b[0] || a[1] - b[1])
+        .filter((point, i, all) => !i || point.some((value, axis) => Math.abs(value - all[i - 1][axis]) > 1e-9));
+      const cross = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+      const half = (vertices) => {
+        const hull = [];
+        vertices.forEach((point) => {
+          while (hull.length > 1 && cross(hull[hull.length - 2], hull[hull.length - 1], point) <= 1e-9) hull.pop();
+          hull.push(point);
+        });
+        return hull.slice(0, -1);
+      };
+      const hull = [...half(points), ...half([...points].reverse())];
+      return hull.length >= 3 ? [hull] : [];
+    });
+  },
+
   roofSection(polygon, from, to, roofs, roofOnly = false) {
     const clip = (points, plane) => {
       const distance = ([t, z]) => plane[0] * (from[0] + (to[0] - from[0]) * t) +
