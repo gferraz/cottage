@@ -56,6 +56,8 @@ Portas, janelas e vãos aceitam `z0` e `h` para a projeção vertical: `z1 = z0 
 
 Também é possível criar cômodos diretamente no console do navegador: `const porch = floor.addRoom({ pos: [3.4, 2], size: [4.3, 2.3], label: "Varanda" })`. O objeto retornado expõe `x0()`, `x1()`, `xc()`, `y0()`, `y1()`, `yc()`, `z0()`, `z1()`, `zc()`, `w()`, `l()`, `h()` e `area()`.
 
+A perspectiva 3D acompanha o piso selecionado no controle **Piso**: cômodos, itens, aberturas e escadas são filtrados, e paredes que atravessam pavimentos são recortadas nas cotas do piso. No último piso, o topo continua limitado pelos telhados. O terreno e as coberturas continuam como contexto, com os telhados controlados pela opção **Telhados**.
+
 Na perspectiva 3D, os itens são representados por volumes esquemáticos, respeitando posição, piso, dimensões, cor e rotação. Camas, carro, mesa, sofás, poltronas, lavadoras e lareira têm formas próprias; outros itens usam um volume genérico. A terceira dimensão de `size` define a altura. Sem altura positiva, usam-se valores de visualização: carro 1,45 m, mesa 0,75 m, lareira 1,80 m e demais itens 0,60 m.
 
 ## Cômodos, paredes e sobreposições

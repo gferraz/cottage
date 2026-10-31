@@ -3,7 +3,41 @@
  * element group to a focused renderer in this directory.
  */
 const FloorPlanFacades3D = {
+  floorView(plan) {
+    const floors = plan.currentConfig?.floors;
+    if (!floors?.length) return plan;
+    const index = Math.max(0, floors.findIndex((floor) => floor.id === plan.currentFloorId));
+    const floor = floors[index];
+    const z0 = Number(floor.z0);
+    const z1 = index + 1 < floors.length ? Number(floors[index + 1].z0) : Infinity;
+    const inFloor = (entry) => entry.floorId === floor.id;
+    const clipWall = (wall) => {
+      const bottom = Math.max(Number(wall.z0), z0);
+      const top = Math.min(Number(wall.z1), z1);
+      if (top - bottom <= 1e-9) return [];
+      return [{ ...wall, z0: bottom, z1: top, h: top - bottom,
+        from: [wall.from[0], wall.from[1], bottom],
+        to: [wall.to[0], wall.to[1], bottom],
+        ...(wall.pos ? { pos: [wall.pos[0], wall.pos[1], bottom], size: [wall.size[0], wall.size[1], top - bottom] } : {}),
+      }];
+    };
+    const view = Object.create(plan);
+    view.allRooms = (plan.allRooms ?? []).filter(inFloor);
+    view.allItems = (plan.allItems ?? []).filter(inFloor);
+    view.allOpenings = (plan.allOpenings ?? []).filter(inFloor);
+    view.allWindows = (plan.allWindows ?? []).filter(inFloor);
+    view.wallRenderParts = (plan.wallRenderParts ?? []).flatMap(clipWall);
+    view.independentWalls = new Map([...(plan.independentWalls ?? [])].flatMap(([id, wall]) => {
+      const bottom = Math.max(wall.z0, z0), top = Math.min(wall.topZ, z1);
+      return top - bottom > 1e-9 ? [[id, { ...wall, z0: bottom, topZ: top }]] : [];
+    }));
+    view.visibleFloor = floor;
+    view.visibleFloorRange = [z0, z1];
+    return view;
+  },
+
   render(plan, { direction = "front" } = {}) {
+    plan = this.floorView(plan);
     const container = plan.facade3dLayer;
     if (!container) return;
     container._threeRenderer?.dispose();
@@ -115,7 +149,7 @@ const FloorPlanFacades3D = {
 
     const stairFlights = [];
     const stairLandings = [];
-    floors.forEach((floor) => {
+    floors.filter((floor) => !plan.visibleFloor || floor === plan.visibleFloor).forEach((floor) => {
       (floor?.rooms ?? []).forEach((definition) => {
         if (isStairFlight(definition)) {
           stairFlights.push(plan.normalizeGeometryAtFloor(definition, floor));
@@ -138,8 +172,18 @@ const FloorPlanFacades3D = {
       });
     });
 
+    if (plan.visibleFloorRange) {
+      const [bottom, top] = plan.visibleFloorRange;
+      for (const parts of [stairFlights, stairLandings]) {
+        for (let i = parts.length - 1; i >= 0; i -= 1) {
+          const part = parts[i];
+          if (part.z0 >= top || part.z1 < bottom) parts.splice(i, 1);
+        }
+      }
+    }
+
     if (!rooms.length) {
-      container.textContent = "Nenhum cômodo disponível para esta fachada.";
+      container.textContent = "Nenhum cômodo disponível para este piso.";
       return;
     }
 
