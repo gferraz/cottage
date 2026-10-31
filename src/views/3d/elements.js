@@ -1,5 +1,5 @@
 const FloorPlan3DElements = {
-  render({ plan, THREE, scene, stairFlights, wallMaterial, wallLineMaterial, finite, reportInvalid }) {
+  render({ plan, THREE, scene, stairFlights, stairLandings = [], wallMaterial, wallLineMaterial, finite, reportInvalid }) {
     stairFlights.forEach((stair) => {
       const x = Number(stair.x);
       const y = Number(stair.y);
@@ -45,6 +45,39 @@ const FloorPlan3DElements = {
         scene.add(step);
       }
     });
+
+    if (stairLandings.length) {
+      stairLandings.forEach((landing) => {
+        const { x, y, w, l, z0 } = landing;
+        if (!finite(x, y, w, l, z0) || w <= 0 || l <= 0) {
+          reportInvalid("patamar de escada", landing.id);
+          return;
+        }
+        const landingMaterial = wallMaterial.clone();
+        landingMaterial.side = THREE.DoubleSide;
+        if (landing.color) {
+          const color = plan.themeFillColor(landing.color).replace(
+            /var\((--[\w-]+)\)/g,
+            (_match, property) => getComputedStyle(plan.root).getPropertyValue(property).trim(),
+          );
+          const rgba = color.match(/^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/i);
+          landingMaterial.color.set(rgba ? `rgb(${rgba[1]}, ${rgba[2]}, ${rgba[3]})` : color);
+          if (rgba) {
+            landingMaterial.opacity *= Number(rgba[4]);
+            landingMaterial.transparent = landingMaterial.opacity < 1;
+          }
+        }
+        const surface = new THREE.Mesh(
+          new THREE.PlaneGeometry(w, l),
+          landingMaterial,
+        );
+        surface.position.set(x + w / 2, y + l / 2, z0);
+        surface.castShadow = true;
+        surface.receiveShadow = true;
+        surface.userData.domainId = landing.id;
+        scene.add(surface);
+      });
+    }
 
     (plan.allItems || [])
       .filter((item) => String(item.classes || "").split(/\s+/).includes("railing"))

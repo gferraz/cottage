@@ -380,13 +380,16 @@
             },
             {
               id: "upper-landing",
-              from: ["upper-flight.x1", "upper-flight.y0", "upper-flight.z1"],
+              classes: "stair-landing",
+              // z0 é a extremidade inferior do lance, pois as cotas são normalizadas.
+              from: ["upper-flight.x1", "upper-flight.y0", "upper-flight.z0"],
               to: ["right.x1", "upper-flight.y1", "z0"],
-              color: "hazel"
+              color: "terracotta"
             },
             {
               id: "lower-landing",
-              from: ["right.x1", "upper-landing.y1", "upper-flight.z1"],
+              classes: "stair-landing",
+              from: ["right.x1", "upper-landing.y1", "upper-landing.z0"],
               to: ["x0 - 1.4", "y0 + upper-flight.l", "z0"],
               walls: ["bottom"],
               color: "terracotta"
@@ -579,7 +582,7 @@
         { type: "twin-bed", pos: ["bedroom-e.x1 - 1.4", "bedroom-e.y0 + 1.5"], "rotation": 90 },
       ],
       openings: [
-        { type: "opening", from: "upper", to: "ground", pos: ["stairs.x0", "stairs.y0"], size: [4, 1.4] }
+        { type: "opening", from: "upper", to: "ground", pos: ["stairs.x0", "stairs.y0"], size: ["stairs.w", "stairs.l"] }
       ]
     }
   ]

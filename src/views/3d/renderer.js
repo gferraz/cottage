@@ -114,18 +114,24 @@ const FloorPlanFacades3D = {
       .filter(Boolean);
 
     const stairFlights = [];
+    const stairLandings = [];
     floors.forEach((floor) => {
       (floor?.rooms ?? []).forEach((definition) => {
         if (isStairFlight(definition)) {
           stairFlights.push(plan.normalizeGeometryAtFloor(definition, floor));
         }
+        if (String(definition.classes || "").split(/\s+/).includes("stair-landing")) {
+          stairLandings.push(plan.normalizeGeometryAtFloor(definition, floor));
+        }
         if (!Array.isArray(definition.parts)) return;
         const previousHeight = plan.currentFloorHeight;
         plan.currentFloorHeight = Number(floor?.z0 ?? 0);
         try {
-          stairFlights.push(
-            ...plan.normalizeParts(definition.parts).filter(isStairFlight),
-          );
+          const parts = plan.normalizeParts(definition.parts);
+          stairFlights.push(...parts.filter(isStairFlight));
+          stairLandings.push(...parts.filter((part) =>
+            String(part.classes || "").split(/\s+/).includes("stair-landing"),
+          ));
         } finally {
           plan.currentFloorHeight = previousHeight;
         }
@@ -157,7 +163,7 @@ const FloorPlanFacades3D = {
       drawingBounds.y0 = Math.min(drawingBounds.y0, wall.y0());
       drawingBounds.y1 = Math.max(drawingBounds.y1, wall.y1());
     });
-    stairFlights.forEach((stair) => {
+    [...stairFlights, ...stairLandings].forEach((stair) => {
       drawingBounds.x0 = Math.min(drawingBounds.x0, Number(stair.x));
       drawingBounds.x1 = Math.max(drawingBounds.x1, Number(stair.x) + Number(stair.w));
       drawingBounds.z0 = Math.min(drawingBounds.z0, Number(stair.z0));
@@ -372,6 +378,7 @@ const FloorPlanFacades3D = {
       scene,
       rooms,
       stairFlights,
+      stairLandings,
       terrainProfile: hasTerrainProfile ? terrainProfile : null,
       buildingOffsetY,
       terrainElevationAt,
