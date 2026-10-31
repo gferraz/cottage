@@ -84,6 +84,7 @@ const FloorPlan3DWalls = {
     }));
     const cuts = [...new Set([0, length, ...holes.flatMap((hole) => [hole.x0, hole.x1])])].sort((a, b) => a - b);
     const vertices = [];
+    const wallSolids = [];
     for (let i = 0; i < cuts.length - 1; i += 1) {
       const start = cuts[i], end = cuts[i + 1];
       const active = holes.filter((hole) => hole.x0 < end && hole.x1 > start).sort((a, b) => a.z0 - b.z0);
@@ -104,6 +105,7 @@ const FloorPlan3DWalls = {
           wall.from[1] + x * Math.sin(angle) + y * Math.cos(angle), z,
         ])) : faces;
         FloorPlanWalls.roofSolids(worldFaces, roofLimits, wall.roofOnly).forEach((solid) => {
+          wallSolids.push(solid);
           solid.forEach((face) => {
             for (let j = 1; j < face.length - 1; j += 1) vertices.push(...face[0], ...face[j], ...face[j + 1]);
           });
@@ -120,8 +122,12 @@ const FloorPlan3DWalls = {
     if (wall.pathSegment !== undefined) mesh.userData.pathSegment = wall.pathSegment;
     mesh.renderOrder = 1;
     scene.add(mesh);
+    const outlineGeometry = new THREE.BufferGeometry();
+    outlineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(
+      FloorPlanWalls.outlineSegments(wallSolids).flat(), 3,
+    ));
     const outline = new THREE.LineSegments(
-      new THREE.EdgesGeometry(geometry),
+      outlineGeometry,
       wallLineMaterial,
     );
     scene.add(outline);

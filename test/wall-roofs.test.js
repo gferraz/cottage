@@ -185,3 +185,32 @@ test('highest roof switches at crossing slopes and respects the configured wall 
     assert.ok(silhouette.flat().every(([, z]) => z <= 8 + 1e-8));
   }
 });
+
+test('wall outline suppresses subdivisions above and below a window while retaining jambs', () => {
+  const solids = [
+    walls.boxFaces(0, 0, 0, 1, 0.12, 3),
+    walls.boxFaces(1, 0, 0, 2, 0.12, 1),
+    walls.boxFaces(1, 0, 2, 2, 0.12, 3),
+    walls.boxFaces(2, 0, 0, 3, 0.12, 3),
+  ];
+  const points = walls.outlineSegments(solids);
+  const verticals = [];
+  for (let i = 0; i < points.length; i += 2) {
+    const a = points[i], b = points[i + 1];
+    if (Math.abs(a[0] - b[0]) < 1e-8 && Math.abs(a[1] - b[1]) < 1e-8 &&
+      (a[0] === 1 || a[0] === 2) && Math.abs(a[2] - b[2]) > 1e-8) verticals.push([a, b]);
+  }
+  assert.equal(verticals.length, 4);
+  verticals.flat().forEach(([, , z]) => assert.ok(z >= 1 && z <= 2));
+  assert.ok(points.some(([x, y, z]) => x === 0 && y === 0 && z === 3));
+});
+
+test('wall outline removes seams between adjoining coplanar boxes', () => {
+  const points = walls.outlineSegments([
+    walls.boxFaces(0, 0, 0, 1, 0.12, 3), walls.boxFaces(1, 0, 0, 3, 0.12, 3),
+  ]);
+  for (let i = 0; i < points.length; i += 2) {
+    assert.ok(!(points[i][0] === 1 && points[i + 1][0] === 1));
+  }
+  assert.ok(points.length > 0);
+});

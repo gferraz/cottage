@@ -50,6 +50,71 @@ const FloorPlanWalls = {
     return Math.abs(volume) > 1e-10 ? result : [];
   },
 
+  outlineSegments(solids) {
+    const epsilon = 1e-7;
+    const offset = 1e-5;
+    const dot = (a, b) => a.reduce((sum, value, i) => sum + value * b[i], 0);
+    const subtract = (a, b) => a.map((value, i) => value - b[i]);
+    const add = (a, b, factor) => a.map((value, i) => value + b[i] * factor);
+    const normalize = (vector) => {
+      const length = Math.hypot(...vector);
+      return length > epsilon ? vector.map((value) => value / length) : null;
+    };
+    const parts = solids.map((faces) => faces.flatMap((face) => {
+      const a = subtract(face[1], face[0]);
+      let normal;
+      for (let i = 2; i < face.length && !normal; i += 1) {
+        const b = subtract(face[i], face[0]);
+        normal = normalize([a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]);
+      }
+      if (!normal) return [];
+      const center = face[0].map((_, axis) => face.reduce((sum, point) => sum + point[axis], 0) / face.length);
+      return [{ face, normal, center, distance: -dot(normal, face[0]) }];
+    }));
+    const faces = parts.flat();
+    const contains = (part, point) => part.every(({ normal, distance }) => dot(normal, point) + distance <= epsilon);
+    const inUnion = (point) => parts.some((part) => contains(part, point));
+    const result = [];
+    const seen = new Set();
+    faces.forEach(({ face }) => face.forEach((from, index) => {
+      const to = face[(index + 1) % face.length];
+      const delta = subtract(to, from);
+      const direction = normalize(delta);
+      if (!direction) return;
+      const cuts = [0, 1];
+      faces.forEach(({ normal, distance }) => {
+        const denominator = dot(normal, delta);
+        if (Math.abs(denominator) <= epsilon) return;
+        const t = -(dot(normal, from) + distance) / denominator;
+        if (t > epsilon && t < 1 - epsilon) cuts.push(t);
+      });
+      cuts.sort((a, b) => a - b);
+      for (let i = 0; i < cuts.length - 1; i += 1) {
+        if (cuts[i + 1] - cuts[i] <= epsilon) continue;
+        const start = add(from, delta, cuts[i]);
+        const end = add(from, delta, cuts[i + 1]);
+        const key = [start, end].map((point) => point.map((value) => Math.round(value / epsilon)).join(",")).sort().join(":");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const midpoint = add(from, delta, (cuts[i] + cuts[i + 1]) / 2);
+        const normals = [];
+        parts.forEach((part) => part.forEach(({ normal, distance, center }) => {
+          if (Math.abs(dot(normal, midpoint) + distance) > epsilon) return;
+          const towardCenter = subtract(center, midpoint);
+          const tangent = normalize(add(towardCenter, direction, -dot(towardCenter, direction)));
+          const sample = tangent ? add(midpoint, tangent, offset) : midpoint;
+          // Probe just inside the face, so concave corners remain visible too.
+          if (!contains(part, add(sample, normal, -offset)) || inUnion(add(sample, normal, offset))) return;
+          if (!normals.some((other) => dot(other, normal) > 0.999)) normals.push(normal);
+        }));
+        if (normals.some((normal, j) => normals.slice(j + 1).some((other) => Math.abs(dot(normal, other)) < 0.999))) {
+          result.push(start, end);
+        }
+      }
+    }));
+    return result;
+  },
+
   roofParts(part, roofs, clip, roofOnly) {
     const split = (piece, planes) => {
       let inside = piece;
