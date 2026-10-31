@@ -332,7 +332,23 @@ const FloorPlanFacades = {
           facadeEdge === "min"
             ? roofNear <= edge + facadeDepth
             : roofFar >= edge - facadeDepth;
-        if (!reachesFacadeDepth) return false;
+        // A setback roof must remain visible when it limits a projected wall;
+        // otherwise that wall appears to end without any roof above it.
+        const coversProjectedWall = surfaceRooms.some(({ geometry: roomGeometry, compoundPart }) => {
+          const x0 = compoundPart ? roomGeometry.x : roomGeometry.x0();
+          const x1 = compoundPart ? roomGeometry.x + roomGeometry.w : roomGeometry.x1();
+          const y0 = compoundPart ? roomGeometry.y : roomGeometry.y0();
+          const y1 = compoundPart ? roomGeometry.y + roomGeometry.l : roomGeometry.y1();
+          const coordinate = side
+            ? facadeEdge === "min" ? x0 : x1
+            : facadeEdge === "min" ? y0 : y1;
+          const [roofStart, roofEnd] = roofFacadeSpan(geometry);
+          const start = side ? y0 : x0;
+          const end = side ? y1 : x1;
+          return coordinate >= roofNear - 0.01 && coordinate <= roofFar + 0.01 &&
+            Math.min(end, roofEnd) - Math.max(start, roofStart) > 0.001;
+        });
+        if (!reachesFacadeDepth && !coversProjectedWall) return false;
         return rooms.some((room) => {
           const roomNear = side ? room.x0() : room.y0();
           const roomFar = side ? room.x1() : room.y1();
@@ -936,12 +952,27 @@ const FloorPlanFacades = {
         ).join(" ") + " Z").join(" ");
         return { path, polygons };
       };
-      const roomSection = (room, start, end, base, top) => {
+      const roomSection = (room, geometry, compoundPart, start, end, base, top) => {
+        const value = (property) => compoundPart
+          ? property === "x0" ? geometry.x : property === "x1" ? geometry.x + geometry.w
+            : property === "y0" ? geometry.y : geometry.y + geometry.l
+          : geometry[property]();
         const depth = side
-          ? facadeEdge === "min" ? room.x0() : room.x1()
-          : facadeEdge === "min" ? room.y0() : room.y1();
-        return sectionPath(start, end, side ? [depth, start] : [start, depth],
-          side ? [depth, end] : [end, depth], base, base, top);
+          ? facadeEdge === "min" ? value("x0") : value("x1")
+          : facadeEdge === "min" ? value("y0") : value("y1");
+        const roomId = String(room.dataset.id || "");
+        const wall = [...(plan.walls?.values() ?? [])].find((candidate) =>
+          candidate.sourceSides?.some((source) => source.roomId === roomId && source.side === facadeWall));
+        const polygons = FloorPlanWalls.wallElevation({
+          from: side ? [depth, start] : [start, depth],
+          to: side ? [depth, end] : [end, depth],
+          thickness: wall?.thickness ?? Number(plan.catalog.walls?.thickness ?? 0.12),
+          baseStart: base, baseEnd: base, top,
+        }, roofLimits, side);
+        const path = polygons.map((polygon) => polygon.map(([coordinate, z], i) =>
+          `${i ? "L" : "M"}${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`,
+        ).join(" ") + " Z").join(" ");
+        return { path, polygons };
       };
 
       const roofBehindRoom = (room) => {
@@ -981,7 +1012,7 @@ const FloorPlanFacades = {
         const z0 = compoundPart ? geometry.z0 : room.z0();
         const z1 = compoundPart ? geometry.z1 : room.z1();
         const occluder = document.createElementNS(svgNamespace, "path");
-        occluder.setAttribute("d", roomSection(room, start, end, z0, z1).path);
+        occluder.setAttribute("d", roomSection(room, geometry, compoundPart, start, end, z0, z1).path);
         occluder.classList.add("facade-occluder");
         svg.append(occluder);
       });
@@ -1012,7 +1043,7 @@ const FloorPlanFacades = {
           (compoundPart ? geometry.z1 : geometry.z1()) - z0,
           0,
         );
-        const section = roomSection(room, start, end, z0, z0 + height);
+        const section = roomSection(room, geometry, compoundPart, start, end, z0, z0 + height);
         if (!section.polygons.length) return;
         const tops = section.polygons.flat().map(([, z]) => z);
         const topStart = Math.max(...tops);

@@ -214,3 +214,12 @@ test('wall outline removes seams between adjoining coplanar boxes', () => {
   }
   assert.ok(points.length > 0);
 });
+
+test('room-part elevation is clipped at its own position rather than the compound room edge', () => {
+  const limit = { bounds: [[-1, 0, 0, 0], [1, 0, 0, -4], [0, -1, 0, 2], [0, 1, 0, -4]], slopes: [[0, 0, 1, -2]] };
+  const part = { from: [0, 3], to: [4, 3], thickness: 0.12, baseStart: 0, baseEnd: 0, top: 6 };
+  const clipped = walls.wallElevation(part, [limit], false);
+  assert.equal(Math.max(...clipped.flat().map(([, z]) => z)), 2);
+  const outerEdge = walls.wallElevation({ ...part, from: [0, 0], to: [4, 0] }, [limit], false);
+  assert.equal(Math.max(...outerEdge.flat().map(([, z]) => z)), 6);
+});

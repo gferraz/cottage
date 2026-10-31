@@ -360,7 +360,7 @@
         {
           id: "laundry",
           label: "Lavanderia",
-          rectangle: ["right.x0", "stairs.y1 - 1.2", "right.x1", "y0 + 1.6"],
+          rectangle: ["right.x0", "upper-flight.y1", "right.x1", "y0 + 1.6"],
           classes: "service laundry wet",
           walls: ["left"]
         },
