@@ -21,6 +21,7 @@ const FloorPlanReferences = {
     plan.roomReferences.clear();
     plan.references.clear();
     plan.errors.push(...FloorPlanValidation.validateFloors(config));
+    plan.errors.push(...FloorPlanValidation.validateRoofOpenings(config));
     const collected = FloorPlanValidation.collectRoomDefinitions(
       plan.model || FloorPlanModel.fromConfig(config),
     );

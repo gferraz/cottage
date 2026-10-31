@@ -1,7 +1,6 @@
 const FloorPlan3DRoofs = {
   render({
-    plan, THREE, scene, direction, roofMaterial, roofLineMaterial,
-    wallMaterial, windowMaterial, doorMaterial, externalOpenings, facadeSide,
+    plan, THREE, scene, roofMaterial, roofLineMaterial,
     finite, reportInvalid,
   }) {
     (plan.allRoofs || []).forEach((roof) => {
@@ -36,10 +35,9 @@ const FloorPlan3DRoofs = {
 
       if (roof.orientation === "longitudinal") {
         this.renderLongitudinal({
-          plan, THREE, scene, direction, roof, base, baseX0, baseX1, baseY0, baseY1,
-          eave0, eave1, rake0, rake1, span, rise, pitch, pitchTangent, z0,
-          roofMaterial, roofLineMaterial, wallMaterial, windowMaterial, doorMaterial,
-          externalOpenings, facadeSide, finite, reportInvalid,
+          THREE, scene, baseX0, baseX1, baseY0, baseY1,
+          eave0, eave1, rake0, rake1, rise, pitchTangent, z0,
+          roofMaterial, roofLineMaterial,
         });
       } else {
         this.renderTransverse({
@@ -51,10 +49,9 @@ const FloorPlan3DRoofs = {
   },
 
   renderLongitudinal({
-    plan, THREE, scene, direction, roof, base, baseX0, baseX1, baseY0, baseY1,
-    eave0, eave1, rake0, rake1, rise, pitch, pitchTangent, z0,
-    roofMaterial, roofLineMaterial, wallMaterial, windowMaterial, doorMaterial,
-    externalOpenings, facadeSide, finite, reportInvalid,
+    THREE, scene, baseX0, baseX1, baseY0, baseY1,
+    eave0, eave1, rake0, rake1, rise, pitchTangent, z0,
+    roofMaterial, roofLineMaterial,
   }) {
     const roofX0 = baseX0 - eave0;
     const roofX1 = baseX1 + eave1;
@@ -96,103 +93,6 @@ const FloorPlan3DRoofs = {
       );
       rakeEdge.renderOrder = 8;
       scene.add(rakeEdge);
-    });
-
-    const shape = new THREE.Shape();
-    shape.moveTo(base.x0(), z0);
-    shape.lineTo(ridgeX, z0 + rise);
-    shape.lineTo(baseX1, z0);
-    shape.closePath();
-    const roofWall = direction === "front" ? "top" : "bottom";
-    const gableRidgeX = (baseX0 + baseX1) / 2;
-    const roofOpeningCandidates = [
-      ...externalOpenings.filter((opening) => {
-        const part = opening.void || opening;
-        const openingX = Number(part.x);
-        const openingZ = Number(part.z0);
-        return opening.wall === roofWall &&
-          finite(openingX, openingZ, part.w, part.h) &&
-          openingX >= baseX0 && openingX + Number(part.w) <= baseX1 && openingZ >= z0;
-      }),
-      ...(Array.isArray(roof.openings) ? roof.openings : []).map((opening) => {
-        const openingWidth = Number(opening.w ?? 0.9);
-        const openingHeight = Number(opening.h ?? 1.5);
-        const offset = opening.dx === undefined
-          ? (baseX1 - baseX0 - openingWidth) / 2
-          : plan.resolve(opening.dx);
-        return {
-          ...opening,
-          wall: roofWall,
-          void: {
-            x: baseX0 + offset,
-            z0: opening.z0 === undefined
-              ? z0 + Math.max(0, (rise - openingHeight) / 2)
-              : plan.resolve(opening.z0),
-            w: openingWidth,
-            h: openingHeight,
-          },
-        };
-      }),
-    ];
-    roofOpeningCandidates.forEach((opening) => {
-      const part = opening.void || opening;
-      const holeX = Number(part.x);
-      const holeZ = Number(part.z0);
-      const holeWidth = Number(part.w);
-      const holeHeight = Number(part.h);
-      const roofTop = z0 + rise -
-        Math.abs(holeX + holeWidth / 2 - gableRidgeX) * Math.tan((pitch * Math.PI) / 180);
-      if (!finite(holeX, holeZ, holeWidth, holeHeight, roofTop) || holeX < 0 || holeZ < z0 ||
-        holeWidth <= 0 || holeHeight <= 0 || holeZ + holeHeight > roofTop) {
-        reportInvalid("recorte do frontão", opening.id);
-        return;
-      }
-      const hole = new THREE.Path();
-      hole.moveTo(holeX, holeZ);
-      hole.lineTo(holeX + holeWidth, holeZ);
-      hole.lineTo(holeX + holeWidth, holeZ + holeHeight);
-      hole.lineTo(holeX, holeZ + holeHeight);
-      hole.closePath();
-      shape.holes.push(hole);
-    });
-    const geometry = new THREE.ShapeGeometry(shape);
-    const mesh = new THREE.Mesh(geometry, wallMaterial);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    mesh.rotation.x = Math.PI / 2;
-    mesh.position.y = direction === "front" ? baseY0 - 0.08 : baseY1 + 0.08;
-    mesh.renderOrder = 3;
-    scene.add(mesh);
-    const wallOutline = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(baseX0, mesh.position.y - 0.01, z0),
-        new THREE.Vector3(ridgeX, mesh.position.y - 0.01, z0 + rise),
-        new THREE.Vector3(baseX1, mesh.position.y - 0.01, z0),
-        new THREE.Vector3(baseX0, mesh.position.y - 0.01, z0),
-      ]),
-      roofLineMaterial,
-    );
-    wallOutline.renderOrder = 4;
-    scene.add(wallOutline);
-    roofOpeningCandidates.forEach((opening) => {
-      if (!opening.element && !opening.type) return;
-      const part = opening.element || opening.void || opening;
-      const openingX = Number(part.x);
-      const openingZ = Number(part.z0);
-      const openingWidth = Number(part.w);
-      const openingHeight = Number(part.h);
-      if (!finite(openingX, openingZ, openingWidth, openingHeight) || openingWidth <= 0 || openingHeight <= 0) return;
-      const feature = new THREE.Mesh(
-        new THREE.BoxGeometry(openingWidth, 0.04, openingHeight),
-        opening.type === "window" ? windowMaterial : doorMaterial,
-      );
-      feature.position.set(
-        openingX + openingWidth / 2,
-        direction === "front" ? baseY0 - 0.025 : baseY1 + 0.025,
-        openingZ + openingHeight / 2,
-      );
-      feature.renderOrder = 9;
-      scene.add(feature);
     });
   },
 

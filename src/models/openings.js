@@ -269,7 +269,14 @@ const FloorPlanOpenings = {
 
     const [, roomId, wall] = match;
     const room = plan.rooms.get(roomId);
-    if (!room) throw new Error(`Unknown opening room reference: ${roomId}`);
+    if (!room) {
+      const config = plan.currentConfig ?? {};
+      const roofs = [...(config.roofs ?? []), ...(config.floors ?? []).flatMap((floor) => floor.roofs ?? [])];
+      const roof = roofs.find((candidate) => candidate.id === roomId);
+      const surfaceError = roof && FloorPlanValidation.roofOpeningSurfaceError(roof, wall);
+      if (surfaceError) throw new Error(surfaceError);
+      throw new Error(`Unknown opening room reference: ${roomId}`);
+    }
     const target = String(opening.to ?? "exterior").trim() || "exterior";
     if (target !== "exterior" && !plan.rooms?.has(target)) {
       throw new Error(`Unknown opening target: ${target}`);

@@ -317,65 +317,6 @@ const FloorPlanFacades = {
         const distanceFromRidge = Math.abs(coordinate - (baseStart + baseEnd) / 2);
         return geometry.z0 + Math.max(0, geometry.baseSpan / 2 - distanceFromRidge) * geometry.pitchTangent;
       };
-      const roofFacadeSide = () =>
-        side
-          ? facadeEdge === "min"
-            ? "left"
-            : "right"
-          : facadeEdge === "min"
-            ? "top"
-            : "bottom";
-      const roofWallState = (roof) => {
-        const walls =
-          roof.walls === undefined
-            ? {
-                top: "solid",
-                right: "open",
-                bottom: "solid",
-                left: "open",
-              }
-            : plan.normalizeWalls(roof.walls);
-        return walls[roofFacadeSide()];
-      };
-      const facadeGableWalls = [];
-      const appendGableWall = (
-        roof,
-        start,
-        ridge,
-        end,
-        baseY,
-        ridgeY,
-        roofInFront = false,
-        roofCovered = false,
-      ) => {
-        const state = roofWallState(roof);
-        if (state === "open") return;
-        const wall = document.createElementNS(svgNamespace, "polygon");
-        wall.setAttribute(
-          "points",
-          [
-            `${(start - min + padding) * scale},${baseY}`,
-            `${(ridge - min + padding) * scale},${ridgeY}`,
-            `${(end - min + padding) * scale},${baseY}`,
-          ].join(" "),
-        );
-        wall.classList.add("facade-gable-wall", `facade-wall-${state}`);
-        if (state === "virtual") {
-          wall.style.fill = "none";
-        } else {
-          wall.style.fill =
-            getComputedStyle(plan.root)
-              .getPropertyValue("--theme-wall-fill")
-              .trim() || "#f7f7f4";
-          wall.style.fillOpacity = "1";
-        }
-        wall.style.stroke =
-          getComputedStyle(plan.root).getPropertyValue("--theme-wall").trim() ||
-          "#222";
-        wall.dataset.roofInFront = String(roofInFront);
-        wall.dataset.roofCovered = String(roofCovered);
-        facadeGableWalls.push(wall);
-      };
       const roofs = plan.allRoofs ?? [];
       const facadeRoofs = [...roofs].sort((first, second) => {
         const firstGeometry = roofGeometry(first);
@@ -689,9 +630,6 @@ const FloorPlanFacades = {
             }
           });
         };
-        // Roof visibility is determined by facade depth and SVG order. Do
-        // not discard a complete roof based on room intersection alone.
-        const roofCovered = false;
         const {
           x0,
           x1,
@@ -725,16 +663,6 @@ const FloorPlanFacades = {
         if (longitudinal && !side) {
           const ridgeCoordinate =
             (floorHeight - roofZ0 - rise + padding) * scale;
-          appendGableWall(
-            roof,
-            baseStart,
-            baseRidge,
-            baseEnd,
-            baseY,
-            ridgeCoordinate,
-            roofIsInFront,
-            roofCovered,
-          );
           const appendRoofLine = (start, startY, end, endY) => {
             const line = document.createElementNS(svgNamespace, "line");
             line.setAttribute("x1", `${(start - min + padding) * scale}`);
@@ -860,8 +788,6 @@ const FloorPlanFacades = {
           markRoofElements();
           return;
         }
-        const ridgeCoordinate =
-          (floorHeight - roofZ0 - rise + padding) * scale;
         const polygon = document.createElementNS(svgNamespace, "polygon");
         const points = [
           `${(baseStart - min + padding) * scale},${baseY}`,
@@ -871,16 +797,6 @@ const FloorPlanFacades = {
         polygon.setAttribute("points", points);
         polygon.classList.add("facade-roof");
         svg.append(polygon);
-        appendGableWall(
-          roof,
-          baseStart,
-          baseRidge,
-          baseEnd,
-          baseY,
-          ridgeCoordinate,
-          roofIsInFront,
-          roofCovered,
-        );
 
         [
           [baseStart, baseY, roofStart, eaveStartY],
@@ -934,7 +850,6 @@ const FloorPlanFacades = {
         }
         markRoofElements();
       });
-      facadeGableWalls.forEach((wall) => svg.append(wall));
 
       const facadeWalls = [facadeWall];
       const facadeRoomIds = new Set(
@@ -957,45 +872,6 @@ const FloorPlanFacades = {
           facadeWalls.includes(opening.wall) &&
           facadeRoomIds.has(String(opening.roomId || "")),
       );
-      facadeRoofs.forEach((roof) => {
-        if (roof.type !== "gable" || !roof.openings?.length) return;
-        const geometry = roofGeometry(roof);
-        if (!roofReachesFacade(geometry) || roofWallState(roof) === "open") return;
-        const wallSide = roofFacadeSide();
-        const longitudinal = roof.orientation === "longitudinal";
-        const matchesFacade = roof.openings.filter(
-          (opening) => String(opening.from ?? "").trim() === wallSide,
-        );
-        const baseStart = longitudinal ? geometry.baseX0 : geometry.baseY0;
-        const baseEnd = longitudinal ? geometry.baseX1 : geometry.baseY1;
-        matchesFacade.forEach((opening, openingIndex) => {
-          const width = Number(opening.w ?? 0.9);
-          const height = Number(opening.h ?? 1.5);
-          const offset =
-            opening.dx !== undefined
-              ? plan.resolve(opening.dx)
-              : (baseEnd - baseStart - width) / 2;
-          const start = baseStart + offset;
-          const z0 =
-            opening.z0 !== undefined
-              ? plan.resolve(opening.z0)
-              : geometry.z0 + Math.max(0, (geometry.rise - height) / 2);
-          if (![start, z0, width, height].every(Number.isFinite)) return;
-          facadeOpenings.push({
-            ...opening,
-            id: opening.id || `${roof.id}-opening-${openingIndex + 1}`,
-            type: opening.type || "window",
-            x: longitudinal ? start : 0,
-            y: longitudinal ? 0 : start,
-            w: width,
-            z0,
-            h: height,
-            to: "exterior",
-            roomId: null,
-          });
-        });
-      });
-
       const facadeItems = plan.allItems.length
         ? plan.allItems
         : plan.itemElements;
@@ -1301,7 +1177,7 @@ const FloorPlanFacades = {
         });
 
       const foregroundRoofSelector =
-        ".facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label, .facade-gable-wall";
+        ".facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label";
       svg.querySelectorAll(foregroundRoofSelector).forEach((element) => {
         if (element.dataset.roofInFront === "true") svg.append(element);
       });

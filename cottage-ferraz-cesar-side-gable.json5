@@ -212,8 +212,7 @@
       orientation: "longitudinal",
       pitch: 51,
       eave: [0.0, 0.5],
-      rake: [2.5, 2.5],
-      openings: [{ type: "window", from: "top" }],
+      rake: [2.5, 2.5]
     },
     {
       id: "office-roof",
@@ -223,8 +222,7 @@
       orientation: "longitudinal",
       pitch: 51,
       eave: 0.5,
-      rake: 0.5,
-      openings: [{ type: "window", from: "top",  w: 0.4, h: 0.7 }],
+      rake: 0.5
     },
 
     {
@@ -541,7 +539,6 @@
           label: "Sala de Jogos",
           from: ["bedroom-n.x1", "dorm-top-right.y0"],
           to: ["bedroom-e.x0", "dorm-top.y1"],
-          walls: ["top"],
           classes: "circulation"
         },
         {
