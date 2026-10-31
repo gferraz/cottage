@@ -50,45 +50,40 @@ const FloorPlanWalls = {
     return Math.abs(volume) > 1e-10 ? result : [];
   },
 
-  coveredParts(parts, roofs, clip) {
-    const covered = [];
-    let remaining = parts;
+  roofParts(part, roofs, clip, roofOnly) {
+    const split = (piece, planes) => {
+      let inside = piece;
+      const outside = [];
+      for (const plane of planes) {
+        const next = clip(inside, plane);
+        const remainder = clip(inside, plane.map((value) => -value));
+        if (remainder.length && !(next === inside && remainder === inside)) outside.push(remainder);
+        inside = next;
+        if (!inside.length) break;
+      }
+      return { inside, outside };
+    };
+    const result = [];
+    const previous = [];
+    let uncovered = [part];
     roofs.forEach((roof) => {
-      remaining = remaining.flatMap((part) => {
-        let inside = part;
-        const outside = [];
-        for (const plane of roof.bounds) {
-          const next = clip(inside, plane);
-          const remainder = clip(inside, plane.map((value) => -value));
-          // A section lying exactly on the footprint edge belongs inside.
-          if (remainder.length && !(next === inside && remainder === inside)) outside.push(remainder);
-          inside = next;
-          if (!inside.length) break;
-        }
-        if (inside.length) covered.push(inside);
-        return outside;
+      const planes = [...roof.bounds, ...roof.slopes];
+      const candidate = split(part, planes).inside;
+      // Union the volumes below each roof. Subtract earlier volumes to avoid
+      // duplicate faces and count overlapping coverage only once.
+      let additions = candidate.length ? [candidate] : [];
+      previous.forEach((earlier) => {
+        additions = additions.flatMap((piece) => split(piece, earlier).outside);
       });
+      result.push(...additions);
+      previous.push(planes);
+      uncovered = uncovered.flatMap((piece) => split(piece, roof.bounds).outside);
     });
-    return covered;
+    return roofOnly ? result : [...result, ...uncovered];
   },
 
   roofSolids(faces, roofs, roofOnly = false) {
-    return roofs.reduce((solids, roof) => solids.flatMap((solid) => {
-      // Partition the footprint first: only the covered portion is cut vertically.
-      let inside = solid;
-      const outside = [];
-      for (const plane of roof.bounds) {
-        const remainder = this.clipSolid(inside, plane.map((value) => -value));
-        if (remainder.length) outside.push(remainder);
-        inside = this.clipSolid(inside, plane);
-        if (!inside.length) break;
-      }
-      if (inside.length) {
-        for (const plane of roof.slopes) inside = this.clipSolid(inside, plane);
-        if (inside.length) outside.push(inside);
-      }
-      return outside;
-    }), roofOnly ? this.coveredParts([faces], roofs, (part, plane) => this.clipSolid(part, plane)) : [faces]);
+    return this.roofParts(faces, roofs, (part, plane) => this.clipSolid(part, plane), roofOnly);
   },
 
   wallElevation({ from, to, thickness, baseStart, baseEnd, top, roofOnly }, roofs, side) {
@@ -141,23 +136,7 @@ const FloorPlanWalls = {
       });
       return result.length >= 3 ? result : [];
     };
-    return roofs.reduce((polygons, roof) => polygons.flatMap((points) => {
-      const outside = [];
-      let inside = points;
-      for (const plane of roof.bounds) {
-        const extendsOutside = inside.some(([t, z]) =>
-          plane[0] * (from[0] + (to[0] - from[0]) * t) +
-          plane[1] * (from[1] + (to[1] - from[1]) * t) + plane[2] * z + plane[3] > 1e-9,
-        );
-        const remainder = extendsOutside ? clip(inside, plane.map((value) => -value)) : [];
-        if (remainder.length) outside.push(remainder);
-        inside = clip(inside, plane);
-        if (!inside.length) break;
-      }
-      for (const plane of roof.slopes) inside = clip(inside, plane);
-      if (inside.length) outside.push(inside);
-      return outside;
-    }), roofOnly ? this.coveredParts([polygon], roofs, clip) : [polygon]);
+    return this.roofParts(polygon, roofs, clip, roofOnly);
   },
 
   roofLimits(plan, config = null) {

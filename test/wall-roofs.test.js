@@ -24,9 +24,9 @@ test('partial roof preserves uncovered wall and follows both slopes', () => {
     if (x > 2 + 1e-8 && x < 8 - 1e-8) assert.ok(z <= Math.min(x + 1, 11 - x) + 1e-8);
   });
 });
-test('overlapping roofs apply the lowest ceiling', () => {
+test('overlapping roofs apply the highest ceiling', () => {
   const lower = { ...roof, slopes: [[0, 0, 1, -2]] };
-  assert.ok(Math.abs(volume(walls.roofSolids(box(), [roof, lower])) - 44) < 1e-8);
+  assert.ok(Math.abs(volume(walls.roofSolids(box(), [roof, lower])) - 59) < 1e-8);
 });
 test('roof outside wall and coplanar boundary leave its volume intact', () => {
   const outside = { ...roof, bounds: [[1, 0, 0, 0]] };
@@ -67,10 +67,10 @@ test('elevation retains uncovered ends and follows the ridge inside the wall spa
   assert.ok(Math.abs(sectionArea(polygons) - 5.9) < 1e-8);
   assert.ok(polygons.flat().some(([t, z]) => Math.abs(t - 0.5) < 1e-8 && Math.abs(z - 6) < 1e-8));
 });
-test('elevation uses the lowest roof and leaves walls at other depths intact', () => {
+test('elevation uses the highest roof and leaves walls at other depths intact', () => {
   const polygon = [[0, 0], [1, 0], [1, 8], [0, 8]];
   const lower = { ...roof, slopes: [[0, 0, 1, -2]] };
-  assert.ok(Math.abs(sectionArea(walls.roofSection(polygon, [0, 0], [10, 0], [roof, lower])) - 4.4) < 1e-8);
+  assert.ok(Math.abs(sectionArea(walls.roofSection(polygon, [0, 0], [10, 0], [roof, lower])) - 5.9) < 1e-8);
   assert.equal(sectionArea(walls.roofSection(polygon, [0, 4], [10, 4], [roof])), 8);
 });
 test('elevation clips diagonal walls with sloping bases and removes covered walls above roof', () => {
@@ -93,11 +93,11 @@ test('roof top omits uncovered portions in solids and elevations', () => {
   assert.deepEqual(walls.roofSection(polygon, [0, 4], [10, 4], [roof], true), []);
 });
 
-test('roof coverage is the union of footprints, with the lowest overlapping slope', () => {
+test('roof coverage is the union of footprints, with the highest overlapping slope', () => {
   const second = { bounds: [[-1, 0, 0, 6], [1, 0, 0, -10]], slopes: [[0, 0, 1, -2]] };
   const result = walls.roofSolids(box(), [roof, second], true);
-  assert.ok(Math.abs(volume(result) - 27) < 1e-8);
-  assert.ok(Math.abs(volume(walls.roofSolids(box(), [second, roof], true)) - 27) < 1e-8);
+  assert.ok(Math.abs(volume(result) - 31) < 1e-8);
+  assert.ok(Math.abs(volume(walls.roofSolids(box(), [second, roof], true)) - 31) < 1e-8);
 });
 
 require('../src/models/geometry-box.js');
@@ -137,7 +137,7 @@ test('elevation projects the full wall thickness at an overlapping roof boundary
   const polygons = walls.wallElevation(wall, [low, high], false);
   assert.equal(Math.max(...polygons.flat().map(([, z]) => z)), 6);
   const center = walls.roofSection([[0, 0], [1, 0], [1, 8], [0, 8]], wall.from, wall.to, [low, high], true);
-  assert.equal(Math.max(...center.flat().map(([, z]) => z)), 3);
+  assert.equal(Math.max(...center.flat().map(([, z]) => z)), 6);
 });
 
 test('elevation silhouettes retain diagonal walls and terrain base elevations', () => {
@@ -169,5 +169,19 @@ test('wall limits ignore asymmetric eaves in both roof orientations, preserving 
     assert.deepEqual(limits[0].bounds, orientation === 'longitudinal'
       ? [[-1, 0, 0, 0], [1, 0, 0, -4], [0, -1, 0, -0.5], [0, 1, 0, -5]]
       : [[-1, 0, 0, -0.5], [1, 0, 0, -5], [0, -1, 0, 0], [0, 1, 0, -4]]);
+  }
+});
+
+test('highest roof switches at crossing slopes and respects the configured wall top', () => {
+  const rising = { bounds: [], slopes: [[-1, 0, 1, -2]] };
+  const falling = { bounds: [], slopes: [[1, 0, 1, -12]] };
+  const polygon = [[0, 0], [1, 0], [1, 8], [0, 8]];
+  for (const roofs of [[rising, falling], [falling, rising]]) {
+    assert.ok(Math.abs(volume(walls.roofSolids(box(), roofs)) - 79) < 1e-8);
+    assert.ok(Math.abs(sectionArea(walls.roofSection(polygon, [0, 0], [10, 0], roofs)) - 7.9) < 1e-8);
+    const silhouette = walls.wallElevation({ from: [0, 0], to: [10, 0], thickness: 0.12,
+      baseStart: 0, baseEnd: 0, top: 8, roofOnly: true }, roofs, false);
+    assert.ok(silhouette.flat().some(([x, z]) => Math.abs(x - 5) < 1e-8 && Math.abs(z - 7) < 1e-8));
+    assert.ok(silhouette.flat().every(([, z]) => z <= 8 + 1e-8));
   }
 });
