@@ -123,19 +123,19 @@
         ]
       }
     },
-    {
-      id: "left-knee-wall",
-      base: { level: "upper.z0" },
-      top: "roof",
-      thickness: 0.12,
-      color: "blue",
-      path: {
-        points: [
-          ["knee-left.x0", "main.y0"],
-          ["knee-left.x0", "knee-bottom.y0"]
-        ]
-      }
-    },
+    // {
+    //   id: "left-knee-wall",
+    //   base: { level: "upper.z0" },
+    //   top: "roof",
+    //   thickness: 0.12,
+    //   color: "blue",
+    //   path: {
+    //     points: [
+    //       ["knee-left.x0", "main.y0"],
+    //       ["knee-left.x0", "knee-bottom.y0"]
+    //     ]
+    //   }
+    // },
     {
       id: "knee-wall-front-left",
       base: { level: "upper.z0" },
@@ -208,7 +208,7 @@
       id: "front-dorms-gable",
       label: "Circulação dos domitórios",
       type: "gable",
-      rectangle: ["hall.x0", "hall.y0", "main.x1", "main.y1"],
+      rectangle: ["office.x1 - 1.6", "hall.y0", "main.x1", "main.y1"],
       orientation: "longitudinal",
       pitch: 51,
       eave: [0.0, 0.5],
@@ -280,7 +280,7 @@
         {
           id: "office",
           label: "Escritório",
-          from: ["left.x0", "left.y0  - 2.5"],
+          from: ["left.x0 - 0.8", "left.y0  - 2.5"],
           to: ["left.x1 - 1.1", "left.y0 + 1.5"],
           openings: [
             { type: "door",   from: "right", to: "hall"  },
@@ -515,71 +515,71 @@
           openings: [{ type: "door", from: "bottom", to: "bedroom-n", dy: 3 }],
           walls: ["right", "left"]
         },
-        {
-          id: "bedroom-n",
-          label: "Quarto N",
-          from: ["dorm-top.x0", "dorm-top.y0"],
-          to: ["knee-left.x0", "dorm-top.y1"],
-          openings: [{ type: "door", from: "right", to: "playroom", dy: 3 }],
-          walls: ["right"]
-        },
-        {
-          id: "prayer-room",
-          label: "Sala de oração",
-          from: ["dorm-top.x1 - 3.6", "main.y0"],
-          to: ["dorm-top.x1 - 0.8", "y0 +1.2"],
-        },
-        {
-          id: "bedroom-e",
-          label: "Quarto E",
-          from: ["dorm-top.x1 - 3.6", "prayer-room.y1"],
-          to: ["dorm-top.x1", "dorm-top.y1"],
-          walls: ["top", "left"],
-          openings: [{ type: "door", from: "left", to: "playroom", dy: 2.6 }]
-        },
-        {
-          id: "playroom",
-          label: "Sala de Jogos",
-          from: ["bedroom-n.x1", "dorm-top-right.y0"],
-          to: ["bedroom-e.x0", "dorm-top.y1"],
-          classes: "circulation"
-        },
-        {
-          id: "bedroom-w",
-          label: "Quarto W",
-          from: ["dorm-bottom.x0", "dorm-bottom.y0"],
-          to: ["knee-left.x0", "y0 + 2.5"],
-          openings: [{ type: "door", from: "right", to: "c-2-1" }],
-          walls: ["right"]
-        },
-        {
-          id: "bathroom",
-          label: "Banheiro",
-          from: ["dorm-bottom.x0", "bedroom-w.y1"],
-          to: ["knee-left.x0", "dorm-bottom.y1"],
-          openings: [{ type: "door", from: "right", to: "c-2-1" }],
-          walls: ["top", "right"]
-        },
-        {
-          id: "bedroom-s",
-          label: "Quarto S",
-          from: ["stairs.x0", "dorm-bottom.y0"],
-          to: ["dorm-bottom.x1", "stairs.y0"],
-          walls: ["bottom", "left"],
-          openings: [{ type: "door", from: "left", to: "c-2-1" }]
-        },
-        {
-          id: "c-2-1",
-          label: "Circ.",
-          from: ["bedroom-w.x1", "dorm-bottom.y0"],
-          to: ["bedroom-s.x0", "dorm-bottom.y1"],
-          walls: ["bottom"],
-          classes: "circulation"
-        }
+        // {
+        //   id: "bedroom-n",
+        //   label: "Quarto N",
+        //   from: ["dorm-top.x0", "dorm-top.y0"],
+        //   to: ["knee-left.x0", "dorm-top.y1"],
+        //   openings: [{ type: "door", from: "right", to: "playroom", dy: 3 }],
+        //   walls: []
+        // },
+        // {
+        //   id: "prayer-room",
+        //   label: "Sala de oração",
+        //   from: ["dorm-top.x1 - 3.6", "main.y0"],
+        //   to: ["dorm-top.x1 - 0.8", "y0 +1.2"],
+        // },
+        // {
+        //   id: "bedroom-e",
+        //   label: "Quarto E",
+        //   from: ["dorm-top.x1 - 3.6", "prayer-room.y1"],
+        //   to: ["dorm-top.x1", "dorm-top.y1"],
+        //   walls: ["top", "left"],
+        //   openings: [{ type: "door", from: "left", to: "playroom", dy: 2.6 }]
+        // },
+        // {
+        //   id: "playroom",
+        //   label: "Sala de Jogos",
+        //   from: ["bedroom-n.x1", "dorm-top-right.y0"],
+        //   to: ["bedroom-e.x0", "dorm-top.y1"],
+        //   classes: "circulation"
+        // },
+        // {
+        //   id: "bedroom-w",
+        //   label: "Quarto W",
+        //   from: ["dorm-bottom.x0", "dorm-bottom.y0"],
+        //   to: ["knee-left.x0", "y0 + 2.5"],
+        //   openings: [{ type: "door", from: "right", to: "c-2-1" }],
+        //   walls: ["right"]
+        // },
+        // {
+        //   id: "bathroom",
+        //   label: "Banheiro",
+        //   from: ["dorm-bottom.x0", "bedroom-w.y1"],
+        //   to: ["knee-left.x0", "dorm-bottom.y1"],
+        //   openings: [{ type: "door", from: "right", to: "c-2-1" }],
+        //   walls: ["top", "right"]
+        // },
+        // {
+        //   id: "bedroom-s",
+        //   label: "Quarto S",
+        //   from: ["stairs.x0", "dorm-bottom.y0"],
+        //   to: ["dorm-bottom.x1", "stairs.y0"],
+        //   walls: ["bottom", "left"],
+        //   openings: [{ type: "door", from: "left", to: "c-2-1" }]
+        // },
+        // {
+        //   id: "c-2-1",
+        //   label: "Circ.",
+        //   from: ["bedroom-w.x1", "dorm-bottom.y0"],
+        //   to: ["bedroom-s.x0", "dorm-bottom.y1"],
+        //   walls: ["bottom"],
+        //   classes: "circulation"
+        // }
       ],
       items: [
-        { type: "twin-bed", pos: ["bedroom-e.x1 - 1.4", "bedroom-e.y0"], "rotation": 90 },
-        { type: "twin-bed", pos: ["bedroom-e.x1 - 1.4", "bedroom-e.y0 + 1.5"], "rotation": 90 },
+        // { type: "twin-bed", pos: ["bedroom-e.x1 - 1.4", "bedroom-e.y0"], "rotation": 90 },
+        // { type: "twin-bed", pos: ["bedroom-e.x1 - 1.4", "bedroom-e.y0 + 1.5"], "rotation": 90 },
       ],
       openings: [
         { type: "opening", from: "upper", to: "ground", pos: ["stairs.x0", "stairs.y0"], size: ["stairs.w", "stairs.l"] }

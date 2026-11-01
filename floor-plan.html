@@ -865,6 +865,10 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
         <input id="show-roofs" type="checkbox" />
         <span>Telhados</span>
       </label>
+      <label class="visibility-switch" hidden title="Isolar os telhados na perspectiva 3D">
+        <input id="show-only-roofs" type="checkbox" />
+        <span>Somente telhado (3D)</span>
+      </label>
       <label class="visibility-switch" hidden>
         <input id="show-multi-floor" type="checkbox" />
         <span>Multi-pisos</span>
@@ -956,7 +960,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
     <script src="src/views/3d/elements.js?v=furniture-1" defer></script>
     <script src="src/views/3d/roofs.js?v=intersections-1" defer></script>
     <script src="src/views/3d/sun.js?v=facades-3d-sun-3" defer></script>
-    <script src="src/views/3d/renderer.js?v=all-floors-1" defer></script>
+    <script src="src/views/3d/renderer.js?v=roof-only-1" defer></script>
     <script src="src/views/roofs.js?v=intersections-1" defer></script>
     <script src="src/models/openings.js?v=modules-20" defer></script>
     <script src="src/models/walls.js?v=walls-17" defer></script>
@@ -968,8 +972,8 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
     <script src="src/models/geometry-domain.js?v=rotation-1" defer></script>
     <script src="src/views/dom.js?v=rotation-1" defer></script>
     <script src="src/exports/html.js?v=viewport-summary-1" defer></script>
-    <script src="src/main.js?v=all-floors-1" defer></script>
+    <script src="src/main.js?v=roof-only-1" defer></script>
     <script src="src/config/catalog.js?v=catalog-2" defer></script>
-    <script src="src/config/app.js?v=cli-7" defer></script>
+    <script src="src/config/app.js?v=roof-only-1" defer></script>
   </body>
 </html>

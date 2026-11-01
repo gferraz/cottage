@@ -438,11 +438,13 @@ const FloorPlanFacades3D = {
       finite,
       reportInvalid,
     };
-    FloorPlan3DSite.render(context);
-    FloorPlan3DWalls.render(context);
-    FloorPlan3DElements.render(context);
-    FloorPlan3DElements.renderItems(context);
-    if (plan.showRoofs) FloorPlan3DRoofs.render(context);
+    if (!plan.showOnlyRoofs) {
+      FloorPlan3DSite.render(context);
+      FloorPlan3DWalls.render(context);
+      FloorPlan3DElements.render(context);
+      FloorPlan3DElements.renderItems(context);
+    }
+    if (plan.showRoofs || plan.showOnlyRoofs) FloorPlan3DRoofs.render(context);
 
     const updateCamera = () => {
       positionCamera();

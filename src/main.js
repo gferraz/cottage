@@ -6,7 +6,7 @@ class FloorPlan {
    * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
    * @param {number} [options.scale=56] Escala inicial em pixels por metro.
    */
-  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, facade3dCameraControls = null, solarSeasonSelect = null, solarTimeDisplay = null, solarTimePrevious = null, solarTimeNext = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, facade3dCameraControls = null, solarSeasonSelect = null, solarTimeDisplay = null, solarTimePrevious = null, solarTimeNext = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, roofOnlySwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
@@ -43,6 +43,7 @@ class FloorPlan {
     this.dxfButton = dxfButton;
     this.multiFloorSwitch = multiFloorSwitch;
     this.roofSwitch = roofSwitch;
+    this.roofOnlySwitch = roofOnlySwitch;
     this.visibilityHeading = visibilityHeading;
     this.jsonInput = jsonInput;
     this.layerOptions = layerOptions;
@@ -96,6 +97,7 @@ class FloorPlan {
     root.prepend(this.multiFloorLayer);
     this.multiFloorMode = false;
     this.showRoofs = false;
+    this.showOnlyRoofs = false;
 
     root.style.setProperty("--m", `${scale}px`);
     root.addEventListener("pointerdown", (event) => this.beginViewportPan(event));
@@ -130,7 +132,23 @@ class FloorPlan {
       roofSwitch.checked = false;
       roofSwitch.addEventListener("change", () => {
         this.showRoofs = roofSwitch.checked;
+        if (!this.showRoofs) {
+          this.showOnlyRoofs = false;
+          if (this.roofOnlySwitch) this.roofOnlySwitch.checked = false;
+        }
         this.updateRoofVisibility();
+        if (this.currentConfig) this.renderFacade3D();
+      });
+    }
+    if (roofOnlySwitch) {
+      roofOnlySwitch.checked = false;
+      roofOnlySwitch.addEventListener("change", () => {
+        this.showOnlyRoofs = roofOnlySwitch.checked;
+        if (this.showOnlyRoofs) {
+          this.showRoofs = true;
+          if (this.roofSwitch) this.roofSwitch.checked = true;
+          this.updateRoofVisibility();
+        }
         if (this.currentConfig) this.renderFacade3D();
       });
     }
@@ -701,6 +719,7 @@ class FloorPlan {
     document.body?.classList.add("page-has-plan");
     if (!preservePresentation) {
       this.showAllFloors = false;
+      this.showOnlyRoofs = false;
       this.facade3dCamera = { azimuthStep: 0, elevation: 30, zoom: 1 };
       this.solarSeason = config.solar?.season ?? "equinox";
       this.solarTime = config.solar?.time ?? "15:00";
@@ -832,6 +851,12 @@ class FloorPlan {
       this.roofSwitch.closest(".visibility-switch")?.toggleAttribute("hidden", !hasRoofs);
     }
     this.updateRoofVisibility();
+    if (this.roofOnlySwitch) {
+      const hasRoofs = this.allRoofs.length > 0;
+      this.roofOnlySwitch.checked = this.showOnlyRoofs;
+      this.roofOnlySwitch.disabled = !hasRoofs;
+      this.roofOnlySwitch.closest(".visibility-switch")?.toggleAttribute("hidden", !hasRoofs);
+    }
     this.renderGuides(this.visibleGuides(config, floorConfig));
     const defaultFacades = [
       { id: "front", label: "Fachada frontal", direction: "front" },
