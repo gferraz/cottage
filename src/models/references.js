@@ -127,7 +127,7 @@ const FloorPlanReferences = {
       )
         return;
       const height = Number(floorConfig.z0 ?? 0);
-      const wallMaxHeight = Number(floorConfig.wall_max_height ?? 0);
+      const wallMaxHeight = Number(floorConfig.ceiling_height ?? floorConfig.wall_max_height ?? 0);
       plan.references.set(floorConfig.id, {
         z0: () => height,
         z1: () => height + wallMaxHeight,

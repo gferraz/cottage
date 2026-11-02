@@ -50,7 +50,7 @@ const FloorPlanFacades = {
           const floorIndex = floorConfigs.indexOf(floorConfig);
           const floorZ0 = Number(floorConfig?.z0 ?? 0);
           const nextFloorZ0 = Number(floorConfigs[floorIndex + 1]?.z0);
-          const wallMaxHeight = Number(floorConfig?.wall_max_height ?? 0);
+          const wallMaxHeight = Number(floorConfig?.ceiling_height ?? floorConfig?.wall_max_height ?? 0);
           const defaultWallHeight = Number.isFinite(nextFloorZ0)
             ? Math.min(Math.max(0, nextFloorZ0 - floorZ0), wallMaxHeight)
             : wallMaxHeight;

@@ -23,7 +23,7 @@ const FloorPlanTextExport = {
       const nextZ0 = Number(floors[index + 1]?.z0);
       const floorTop = Number.isFinite(nextZ0)
         ? nextZ0
-        : floorZ0 + Number(floor.wall_max_height ?? 0);
+        : floorZ0 + Number(floor.ceiling_height ?? floor.wall_max_height ?? 0);
       return wall.baseZ < floorTop && wall.topZ > floorZ0;
     });
     return intersectingFloor >= 0 ? intersectingFloor : null;

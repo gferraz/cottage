@@ -1,9 +1,30 @@
 const FloorPlanModel = {
+  applyDefaults(config) {
+    const defaults = config.config ?? {};
+    const roofDefaults = Object.fromEntries(
+      ["type", "pitch", "eave", "rake"].filter((key) => defaults.roofs?.[key] !== undefined)
+        .map((key) => [key, defaults.roofs[key]]),
+    );
+    const expand = (floor) => {
+      const ceilingHeight = floor.ceiling_height ?? floor.wall_max_height ??
+        defaults.floors?.ceiling_height ?? defaults.floors?.wall_max_height;
+      return {
+        ...floor,
+        ...(ceilingHeight !== undefined ? { ceiling_height: ceilingHeight } : {}),
+        ...(floor.roofs ? { roofs: floor.roofs.map((roof) => ({ ...roofDefaults, ...roof })) } : {}),
+      };
+    };
+    const result = expand(config);
+    if (config.floors) result.floors = config.floors.map(expand);
+    return result;
+  },
+
   fromText(sourceText) {
     return FloorPlanModel.fromConfig(FloorPlanParser.parse(sourceText));
   },
 
   fromConfig(config) {
+    config = this.applyDefaults(config);
     const floors = config.floors ?? [config];
     const viewport = config.viewport ?? {
       size: [20, 20],
@@ -150,3 +171,5 @@ const FloorPlanModel = {
     });
   },
 };
+
+window.FloorPlanModel = FloorPlanModel;

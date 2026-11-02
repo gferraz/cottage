@@ -218,7 +218,7 @@ const FloorPlanRoofs = {
 
     if (candidates[0]) return candidates[0].z1();
 
-    const wallMaxHeight = Number(owningFloor?.wall_max_height);
+    const wallMaxHeight = Number(owningFloor?.ceiling_height ?? owningFloor?.wall_max_height);
     if (baseZ0 > 0) return baseZ0;
     if (Number.isFinite(wallMaxHeight) && wallMaxHeight > 0) {
       return baseZ0 + wallMaxHeight;

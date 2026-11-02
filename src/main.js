@@ -712,6 +712,7 @@ class FloorPlan {
     this.globalObjectIds ??= new Set();
     this.validZoneIds ??= new Set();
     this.model = FloorPlanModel.fromConfig(config);
+    config = this.model.config;
     this.currentConfig = config;
     document.querySelector("#empty-state")?.setAttribute("hidden", "");
     document.querySelector("#plan-workspace")?.removeAttribute("hidden");

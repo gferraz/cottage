@@ -1,4 +1,21 @@
 const FloorPlanOpenings = {
+  verticalDefaults(plan) {
+    const defaults = {
+      door: { w: 0.8, z0: 0, h: 2.1 },
+      opening: { w: 1.0, z0: 0, h: 2.1 },
+      window: { w: 0.9, z0: 0.9, h: 1.5 },
+      ...(plan.catalog.openings || {}),
+    };
+    for (const type of Object.keys(defaults)) {
+      const configured = plan.currentConfig?.config?.openings?.[type] ?? {};
+      defaults[type] = { ...defaults[type] };
+      for (const key of ["w", "h", "z0"]) {
+        if (configured[key] !== undefined) defaults[type][key] = configured[key];
+      }
+    }
+    return defaults;
+  },
+
   roomOpenings(plan, floorConfig) {
     return (floorConfig.rooms ?? []).flatMap((room) =>
       (room.openings ?? []).map((opening) => {
@@ -282,12 +299,7 @@ const FloorPlanOpenings = {
       throw new Error(`Unknown opening target: ${target}`);
     }
 
-    const verticalDefaults = {
-      door: { w: 0.8, z0: 0, h: 2.1 },
-      opening: { w: 1.0, z0: 0, h: 2.1 },
-      window: { w: 0.9, z0: 0.9, h: 1.5 },
-      ...(plan.catalog.openings || {}),
-    };
+    const verticalDefaults = this.verticalDefaults(plan);
     const defaults = Object.fromEntries(
       Object.entries(verticalDefaults).map(([key, definition]) => [
         key,

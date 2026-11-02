@@ -111,7 +111,7 @@ const FloorPlanFacades3D = {
         const floor = floors[floorIndex] || floors[0] || {};
         const floorZ0 = Number(floor.z0 ?? 0);
         const nextZ0 = Number(floors[floorIndex + 1]?.z0);
-        const wallMaxHeight = Number(floor.wall_max_height ?? 0);
+        const wallMaxHeight = Number(floor.ceiling_height ?? floor.wall_max_height ?? 0);
         const defaultHeight = Number.isFinite(nextZ0)
           ? Math.min(Math.max(0, nextZ0 - floorZ0), wallMaxHeight)
           : wallMaxHeight;

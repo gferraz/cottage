@@ -505,7 +505,7 @@ const FloorPlanWalls = {
         const floorZ0 = Number(floor.z0 ?? 0);
         const nextFloorIndex = floors.indexOf(floor) + 1;
         const nextFloorZ0 = Number(floors[nextFloorIndex]?.z0);
-        const configuredMaxHeight = Number(floor.wall_max_height);
+        const configuredMaxHeight = Number(floor.ceiling_height ?? floor.wall_max_height);
         const floorHeight = Number.isFinite(nextFloorZ0)
           ? Math.min(nextFloorZ0 - floorZ0, configuredMaxHeight)
           : configuredMaxHeight;

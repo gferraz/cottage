@@ -2,7 +2,7 @@
 //
 // ÍNDICE DE EDIÇÃO — use Ctrl+F / Cmd+F para buscar os marcadores abaixo.
 // [01] Metadados e apresentação: título, resumo, coordenadas e viewport.
-//      [01.1] Configuração — config.walls: padrões das paredes independentes.
+//      [01.1] Configuração — padrões de paredes, telhados, aberturas e pavimentos.
 // [02] Terreno e implantação: terrain (limites/cotas) e building (posição).
 // [03] Zonas de referência: main, central, top, bottom, left, right e dorm.
 // [04] Pavimentos e cômodos:
@@ -30,11 +30,26 @@
 
   // [01.1] Configuração
   config: {
-    // Aplicados somente a walls. Propriedades de cada parede têm prioridade.
+    // Propriedades de cada elemento têm prioridade sobre os padrões.
+    // walls aplica-se somente às paredes independentes.
     walls: {
       base: { level: "ground.z0" },
       top: "roof",
       thickness: 0.12
+    },
+    roofs: {
+      type: "gable",
+      pitch: 51,
+      eave: 0.5,
+      rake: 0.5
+    },
+    openings: {
+      door: { w: 0.8, h: 2.1, z0: 0 },
+      window: { w: 0.9, h: 1.5, z0: 0.9 },
+      opening: { w: 1.0, h: 2.1, z0: 0 }
+    },
+    floors: {
+      ceiling_height: 3
     }
   },
 
@@ -103,7 +118,6 @@
       id: "ground",
       label: "Térreo",
       z0: 0,
-      wall_max_height: 3,
       // Cômodos e circulações; as referências podem apontar para blocos posteriores.
       rooms: [
         {
@@ -336,7 +350,6 @@
       id: "upper",
       label: "Dormitórios",
       z0: 3,
-      wall_max_height: 3,
 
       rooms: [
         {
@@ -476,34 +489,25 @@
     {
       id: "main-roof",
       label: "Telhado Principal",
-      type: "gable",
       rectangle: ["office.x1 - 1.6", "hall.y0", "main.x1", "main.y1"],
       orientation: "longitudinal",
-      pitch: 51,
       eave: [0.0, 0.5],
       rake: [0.5, 0.5]
     },
     {
       id: "office-roof",
       label: "Escritório",
-      type: "gable",
       base: "office",
       orientation: "longitudinal",
-      pitch: 51,
-      eave: 0.5,
-      rake: 0.5
     },
 
     {
       id: "lateral-gable",
       label: "Telhado Transversal",
-      type: "gable",
       from: ["top.x0", "top.y0 + 2", "upper.z0"],
       to: ["top.x1", "bottom.y1 - 1", "z0"],
       orientation: "transverse",
-      pitch: 51,
       eave: [0, 0],
-      rake: 0.5,
     }
   ],
 
