@@ -422,6 +422,19 @@ const FloorPlanWalls = {
       throw new Error(`A abertura ${opening.id} encontra mais de uma parede independente em ${roomId}.${side}`);
     }
 
+    // A shared boundary may be declared only by the neighboring room.
+    if (roomWalls.length === 0 && room) {
+      const sharedWalls = [...plan.walls.values()].filter((wall) =>
+        wall.axis === axis &&
+        Math.abs((axis === "x" ? wall.from[1] : wall.from[0]) - sideCoordinate) <= epsilon &&
+        coversOpening(wall, axis, wall.from, wall.to, sideCoordinate),
+      );
+      if (sharedWalls.length === 1) return sharedWalls[0];
+      if (sharedWalls.length > 1) {
+        throw new Error(`Mais de uma parede corresponde a ${roomId}.${side}`);
+      }
+    }
+
     if (roomWalls.length !== 1) {
       throw new Error(
         roomWalls.length === 0

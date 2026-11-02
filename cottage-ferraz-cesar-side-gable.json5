@@ -159,7 +159,7 @@
       thickness: 0.12,
       color: "blue",
       from: ["office.x0 + 0.8", "office.y0"],
-      to: ["x0", "knee-top.y0"]
+      to: ["x0", "office.y1"]
     },
     {
       id: "knee-wall-unused-right",
@@ -170,7 +170,7 @@
       path: {
         points: [
           ["office.x1 - 0.8", "office.y0"],
-          ["office.x1 - 0.8", "knee-top.y0"]
+          ["office.x1 - 0.8", "office.y1"]
         ]
       }
     },
@@ -536,7 +536,7 @@
           id: "unused-n",
           label: "Sem uso",
           from: ["office.x0 + 0.8", "office.y0"],
-          to: ["office.x1", "dorm-top.y0"]
+          to: ["office.x1 - 0.8", "dorm-top.y0"]
         },
         {
           id: "bedroom-n",

@@ -3,6 +3,24 @@ const assert = require('node:assert/strict');
 globalThis.window = globalThis;
 require('../src/models/walls.js');
 const walls = globalThis.FloorPlanWalls;
+test('opening finds a shared wall declared only by the neighboring room', () => {
+  const sharedWall = {
+    id: 'hall-left', axis: 'y', thickness: 0.12, z0: 0, z1: 3,
+    from: [3, 2.5, 0], to: [3, 4, 0],
+    sourceSides: [{ roomId: 'hall', side: 'left' }],
+  };
+  const plan = {
+    walls: new Map([[sharedWall.id, sharedWall]]), independentWalls: new Map(),
+    rooms: new Map([['office', { x0: () => -0.8, x1: () => 3, y0: () => 0, y1: () => 4 }]]),
+  };
+  const opening = { id: 'office-door', x: 3, y: 2.85, w: 0.8, z0: 0, h: 2.1 };
+  assert.equal(walls.resolveRoomSide(plan, 'office', 'right', opening), sharedWall);
+  for (const change of [{ y: 0 }, { x: 2 }, { z0: 2 }, { w: 2 }]) {
+    assert.throws(() => walls.resolveRoomSide(plan, 'office', 'right', { ...opening, ...change }), /Nenhuma parede/);
+  }
+  plan.walls.set('duplicate', { ...sharedWall, id: 'duplicate' });
+  assert.throws(() => walls.resolveRoomSide(plan, 'office', 'right', opening), /Mais de uma parede/);
+});
 const box = () => walls.boxFaces(0, 0, 0, 10, 1, 8);
 const roof = {
   bounds: [[-1, 0, 0, 2], [1, 0, 0, -8], [0, -1, 0, -1], [0, 1, 0, -2]],
