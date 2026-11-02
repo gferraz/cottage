@@ -1,4 +1,9 @@
 const FloorPlan3DSun = {
+  seasonDates: {
+    "summer-solstice": "2026-12-21",
+    equinox: "2026-03-20",
+    "winter-solstice": "2026-06-21",
+  },
   parseAngle(value) {
     if (typeof value === "number") return value;
     const text = String(value ?? "").trim();
@@ -19,7 +24,7 @@ const FloorPlan3DSun = {
       .split(":")
       .map(Number);
     const season = solar.season ?? "equinox";
-    const date = solar.dates?.[season] ?? solar.date ?? "2026-03-20";
+    const date = solar.dates?.[season] ?? solar.date ?? this.seasonDates[season] ?? this.seasonDates.equinox;
     const utcOffset = Number(solar.utc_offset ?? -3);
     if (
       ![latitude, longitude, hours, minutes, utcOffset].every(Number.isFinite) ||
