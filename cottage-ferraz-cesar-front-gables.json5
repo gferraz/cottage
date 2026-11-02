@@ -9,6 +9,7 @@
 // [04] Pavimentos e cômodos:
 //      [04.1] Térreo — ground; office, hall, master, stairs, kitchen e garage.
 //      [04.2] Dormitórios — upper; unused-n e bedroom-n.
+//      Setores: entrada/trabalho, íntimo, circulações, serviços, social e externos.
 //      Aberturas laterais ficam em rooms[].openings; vãos entre pisos em floors[].openings.
 // [05] Paredes independentes:
 //      [05.1] Fachadas — front-wall, right-wall, rear-wall e left-wall.
@@ -60,8 +61,11 @@
   // [01.2] Parâmetros
   // Use params.nome nas medidas e expressões. Valores em metros.
   parameters: {
+    // Estrutura e pé-direito
     wall_thickness: 0.12,
     ground_height: 3,
+
+    // Aproveitamento do espaço sob a cobertura
     knee_setback: 0.8
   },
 
@@ -130,17 +134,19 @@
       id: "ground",
       label: "Térreo",
       z0: 0,
-      // Cômodos e circulações; as referências podem apontar para blocos posteriores.
+      // Ordem das propriedades: identidade, geometria, paredes, aberturas e aparência.
+      // As referências podem apontar para blocos posteriores.
       rooms: [
+        // Entrada e trabalho — escritório, varanda, acesso e hall
         {
           id: "office",
           label: "Escritório",
           from: ["left.x0 - 0.8", "left.y0  - 2.5"],
           to: ["left.x1 - 1.1", "left.y0 + 1.5"],
           openings: [
-            { type: "door",   from: "right", to: "hall"  },
-            { type: "window", from: "top",  dx: 0.9, w: 0.6 },
-            { type: "window", from: "top",  dx: 1.5, w: 0.6 },
+            { type: "door", from: "right", to: "hall" },
+            { type: "window", from: "top", w: 0.6, dx: 0.9 },
+            { type: "window", from: "top", w: 0.6, dx: 1.5 },
             { type: "window", from: "left" }
           ],
           classes: "office"
@@ -150,13 +156,13 @@
           label: "Varanda",
           from: ["office.x1", "right.y0 - 2.5"],
           to: ["right.x1", "right.y0"],
-          classes: "outdoor porch",
+          classes: "outdoor porch"
         },
         {
           id: "front-stairs",
           label: "Escada da varanda",
           from: ["porch.x0 + 0.2", "porch.y0 - 1", "porch.z0 - 0.45"],
-          to: ["x0 + 2.1", "porch.y0", 0.0],
+          to: ["x0 + 2.1", "porch.y0", 0],
           orientation: "longitudinal",
           classes: "stair-flight"
         },
@@ -165,20 +171,22 @@
           label: "Hall",
           from: ["office.x1", "main.y0"],
           to: ["right.x0", "office.y1"],
-          classes: "circulation",
           walls: ["left"],
           openings: [
-            { from: "top", to: "porch", type: "door", w: 1 }
-          ]
+            { type: "door", from: "top", to: "porch", w: 1 }
+          ],
+          classes: "circulation"
         },
+
+        // Setor íntimo — suíte, closet, vestíbulo e banheiro
         {
           id: "master",
           label: "Suíte Master",
           rectangle: ["left.x0", "office.y1", "left.x1 + 0.3", "y0 + 3.2"],
           walls: ["top", "right"],
           openings: [
-            { from: "left", to: "exterior", type: "window", dy: 0.6 },
-            { from: "left", to: "exterior", type: "window", dy: 2.1 }
+            { type: "window", from: "left", to: "exterior", dy: 0.6 },
+            { type: "window", from: "left", to: "exterior", dy: 2.1 }
           ]
         },
         {
@@ -187,7 +195,7 @@
           from: ["left.x0", "master.y1"],
           to: ["x0 + 3.2", "y0 + 2.4"],
           openings: [
-            { from: "right", to: "vestibule", type: "opening" }
+            { type: "opening", from: "right", to: "vestibule" }
           ]
         },
         {
@@ -197,60 +205,61 @@
           walls: ["right", "bottom", "left"],
           overlaps: "corridor-2",
           openings: [
-            { from: "right", to: "living", type: "door", dy: 1.3 }
+            { type: "door", from: "right", to: "living", dy: 1.3 }
           ]
         },
-
         {
           id: "masterbath",
           label: "Banheiro Master",
           from: ["left.x0", "closet.y1"],
           to: ["left.x1", "knee-bottom.y0"],
           walls: ["top", "bottom", "right"],
-          classes: "wet",
           openings: [
-            { from: "top", to: "vestibule", type: "door" },
-            { from: "left", to: "exterior", type: "window" }
-          ]
+            { type: "door", from: "top", to: "vestibule" },
+            { type: "window", from: "left", to: "exterior" }
+          ],
+          classes: "wet"
         },
+
+        // Circulações internas
         {
           id: "corridor-1",
           label: "C-1.",
           rectangle: ["master.x1", "hall.y1", "central.x1", "living.y0"],
-          classes: "circulation",
-          walls: ["left"]
+          walls: ["left"],
+          classes: "circulation"
         },
         {
           id: "corridor-2",
           label: "C-2.",
           rectangle: ["central.x0", "living.y1", "central.x1", "kitchen.y0"],
-          classes: "circulation",
-          walls: ["left"]
+          walls: ["left"],
+          classes: "circulation"
         },
+
+        // Sanitários e serviços — lavabo e lavanderia
         {
           id: "powder",
           label: "Lavabo",
           rectangle: ["right.x0", "living.y1", "x0 + 2.4", "y0 + 1.2"],
-          classes: "powder wet",
           walls: ["top", "left"],
           openings: [
-            { from: "left", to: "corridor-2", type: "door" }
-          ]
+            { type: "door", from: "left", to: "corridor-2" }
+          ],
+          classes: "powder wet"
         },
         {
           id: "laundry",
           label: "Lavanderia",
           rectangle: ["right.x0", "upper-flight.y1", "right.x1", "y0 + 1.6"],
-          classes: "service laundry wet",
-          walls: ["left"]
+          walls: ["left"],
+          classes: "service laundry wet"
         },
 
+        // Circulação vertical — lances e patamares
         {
           id: "stairs",
           label: "Escada",
-          overlaps: ["powder", "laundry"],
-          overlays: ["powder", "laundry"],
-          walls: [],
           parts: [
             {
               id: "upper-flight",
@@ -260,18 +269,18 @@
             },
             {
               id: "upper-landing",
-              classes: "stair-landing",
               // z0 é a extremidade inferior do lance, pois as cotas são normalizadas.
               from: ["upper-flight.x1", "upper-flight.y0", "upper-flight.z0"],
               to: ["right.x1", "upper-flight.y1", "z0"],
+              classes: "stair-landing",
               color: "terracotta"
             },
             {
               id: "lower-landing",
-              classes: "stair-landing",
               from: ["right.x1", "upper-landing.y1", "upper-landing.z0"],
               to: ["x0 - 1.2", "y0 + upper-flight.l", "z0"],
               walls: ["bottom"],
+              classes: "stair-landing",
               color: "terracotta"
             },
             {
@@ -281,16 +290,20 @@
               walls: ["top", "bottom"],
               classes: "stair-flight"
             }
-          ]
+          ],
+          walls: [],
+          overlaps: ["powder", "laundry"],
+          overlays: ["powder", "laundry"]
         },
 
+        // Setor social — jantar e estar
         {
           id: "dining",
           label: "Jantar",
           from: ["right.x0", "porch.y1"],
           to: ["right.x1", "y0 + 3.4"],
           openings: [
-            { from: "top", to: "exterior", type: "window", w: 2.4, h: 1.5 }
+            { type: "window", from: "top", to: "exterior", w: 2.4, h: 1.5 }
           ]
         },
         {
@@ -300,18 +313,20 @@
           to: ["right.x1", "y0 + 4"]
         },
 
+        // Serviços — cozinha
         {
           id: "kitchen",
           label: "Cozinha",
           from: ["dorm.x0", "masterbath.y1"],
           to: ["right.x0", "y0 + 3.9"],
-          classes: "wet",
           openings: [
-            { from: "left", to: "exterior", type: "window", w: 2.4 },
-            { from: "bottom", to: "terrace", type: "door" }
-          ]
+            { type: "window", from: "left", to: "exterior", w: 2.4 },
+            { type: "door", from: "bottom", to: "terrace" }
+          ],
+          classes: "wet"
         },
 
+        // Serviços — circulação, despensa e mudroom
         {
           id: "circulation",
           label: "Circulação",
@@ -322,33 +337,34 @@
           id: "pantry",
           label: "Despensa",
           rectangle: ["right.x0", "circulation.y1", "circulation.x1", "y0 + 1.8"],
-          classes: "service pantry",
           walls: ["top", "right", "left"],
           openings: [
-            { from: "top", to: "circulation", type: "opening" }
-          ]
+            { type: "opening", from: "top", to: "circulation" }
+          ],
+          classes: "service pantry"
         },
         {
           id: "mudroom",
           label: "Mudroom",
           rectangle: ["pantry.x1", "laundry.y1", "right.x1", "pantry.y1"],
-          classes: "service mudroom",
           openings: [
-            { from: "right", to: "garage", type: "door" }
-          ]
+            { type: "door", from: "right", to: "garage" }
+          ],
+          classes: "service mudroom"
         },
 
+        // Garagem e áreas externas
         {
           id: "garage",
           label: "Garagem",
           pos: ["laundry.x1", "laundry.y1"],
-          size: [4.0, 6.5],
-          classes: "service garage",
+          size: [4, 6.5],
           walls: ["top", "right", "bottom"],
           openings: [
-            { from: "top", to: "exterior", type: "door", w: 3.2 },
-            { from: "bottom", to: "exterior", type: "door", w: 3.2 }
-          ]
+            { type: "door", from: "top", to: "exterior", w: 3.2 },
+            { type: "door", from: "bottom", to: "exterior", w: 3.2 }
+          ],
+          classes: "service garage"
         },
         {
           id: "terrace",
@@ -384,20 +400,25 @@
       z0: "params.ground_height",
 
       rooms: [
+        // Área sob a cobertura
         {
           id: "unused-n",
           label: "Sem uso",
           from: ["office.x0 + params.knee_setback", "office.y0"],
           to: ["office.x1 - params.knee_setback", "dorm-top.y0"]
         },
+
+        // Setor íntimo — dormitório
         {
           id: "bedroom-n",
           label: "Quarto N",
           from: ["dorm-top.x0", "dorm-top.y0"],
           to: ["knee-left.x0", "dorm-top.y1"],
-          openings: [{ type: "door", from: "right", to: "playroom", dy: 3 }],
-          walls: []
-        },
+          walls: [],
+          openings: [
+            { type: "door", from: "right", to: "playroom", dy: 3 }
+          ]
+        }
       ],
       // Mobiliário e equipamentos.
       items: [
