@@ -1,8 +1,24 @@
 // Planta Cottage Ferraz-César.
+//
+// ÍNDICE DE EDIÇÃO — use Ctrl+F / Cmd+F para buscar os marcadores abaixo.
+// [01] Metadados e apresentação: título, resumo, coordenadas e viewport.
+// [02] Terreno e implantação: terrain (limites/cotas) e building (posição).
+// [03] Zonas de referência: main, central, top, bottom, left, right e dorm.
+// [04] Pavimentos e cômodos:
+//      [04.1] Térreo — ground; office, hall, master, stairs, kitchen e garage.
+//      [04.2] Dormitórios — upper; unused-n e bedroom-n.
+//      Cada pavimento reúne rooms, items e openings.
+// [05] Paredes independentes:
+//      [05.1] Fachadas — front-wall, right-wall, rear-wall e left-wall.
+//      [05.2] Meias-paredes — IDs com prefixo knee-wall e knee-corner.
+// [06] Telhados: main-roof, office-roof e lateral-gable.
+// [07] Guias de desenho: w-axis, l-axis e referências das knee-walls.
+//
+// Para localizar uma definição por ID, busque, por exemplo: id: "left-wall".
 // Coordenadas em metros. x0/y0/z0 em "to" referem-se à origem de "from".
 // Paredes: top: "roof" termina na cobertura e omite trechos sem telhado acima.
 {
-  // Metadados e apresentação
+  // [01] Metadados e apresentação
   title: "Cottage Ferraz-César",
   summary: "Residência de dois pavimentos em terreno cadastrado com diferença de cota de 6 m entre frente e fundos. O programa reúne ambientes sociais, íntimos e de serviço, além de varanda frontal e terraço posterior.",
   coordinates: ["25°45'06.7\"S", "49°15'29.1\"W"],
@@ -11,7 +27,7 @@
     origin: [1.0, 1.0]
   },
 
-  // Terreno e implantação
+  // [02] Terreno e implantação
   terrain: {
     front: { edge: ["P01", "P02"], position: "top", label: "RUA/FRENTE" },
     rear: { edge: ["P18", "P19"], position: "bottom", label: "JARDIM" },
@@ -33,7 +49,7 @@
   },
   building: { anchor: "terrain.front-start", position: { x: 4, y: 3 } },
 
-  // Zonas de referência
+  // [03] Zonas de referência
   zones: [
     // Implantação, eixos e divisões do volume principal.
     { id: "perimeter", pos: [0, 2.5], size: [9.6, 12.6], visible: false },
@@ -69,8 +85,9 @@
     { id: "hall-roof-base", from: ["hall.x0", "porch.y0"], to: ["hall.x1", "porch.y1"], visible: false }
   ],
 
-  // Pavimentos e cômodos
+  // [04] Pavimentos e cômodos
   floors: [
+    // [04.1] Térreo — ground
     {
       id: "ground",
       label: "Térreo",
@@ -303,6 +320,7 @@
         { from: "kitchen.bottom", to: "terrace", type: "door" }
       ]
     },
+    // [04.2] Dormitórios — upper
     {
       id: "upper",
       label: "Dormitórios",
@@ -336,9 +354,9 @@
     }
   ],
 
-  // Paredes independentes
+  // [05] Paredes independentes
   walls: [
-    // Fachadas externas.
+    // [05.1] Fachadas externas
     {
       id: "front-wall",
       path: {
@@ -391,7 +409,7 @@
       top: "roof",
       thickness: 0.12
     },
-    // Meias-paredes do pavimento superior (knee-walls).
+    // [05.2] Meias-paredes do pavimento superior (knee-walls)
     {
       id: "knee-wall-front-left",
       path: {
@@ -467,7 +485,7 @@
     }
   ],
 
-  // Telhados
+  // [06] Telhados
   roofs: [
     {
       id: "main-roof",
@@ -503,7 +521,7 @@
     }
   ],
 
-  // Guias de desenho
+  // [07] Guias de desenho
   guides: [
     { id: "w-axis", label: "eixo transversal", pos: [-4.0, "main.yc"], w: 20, color: "green" },
     { id: "l-axis", label: "eixo longitudinal", pos: ["central.xc", -2.5], l: 20, color: "green" },
