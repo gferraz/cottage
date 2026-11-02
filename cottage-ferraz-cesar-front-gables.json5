@@ -25,7 +25,7 @@
 
   // [01] Metadados e apresentação
   title: "Cottage Ferraz-César",
-  summary: "Residência de dois pavimentos em terreno cadastrado com diferença de cota de 6 m entre frente e fundos. O programa reúne ambientes sociais, íntimos e de serviço, além de varanda frontal e terraço posterior.",
+  summary: "Residência de dois pavimentos em terreno cadastrado com diferença de cota de 6 m entre frente e fundos.",
   coordinates: ["25°45'06.7\"S", "49°15'29.1\"W"],
   viewport: { size: [24.0, 32.0], origin: [1.0, 1.0] },
 
@@ -417,6 +417,7 @@
     },
     {
       id: "knee-wall-front-left",
+      scope: "unused-north",
       path: {
         points: [
           ["office.x0", "knee-top.y0"],

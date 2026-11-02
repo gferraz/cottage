@@ -72,6 +72,23 @@ Os IDs dos cômodos são obrigatórios, globais e únicos. IDs de zonas, itens, 
 
 Tipos reutilizáveis de itens, padrões de portas/janelas e tokens de cor ficam em [`src/config/catalog.js`](src/config/catalog.js). Uma planta pode sobrescrever tipos em `item-types`, valores de abertura no próprio objeto e cores em `theme.colors`. A prioridade é: definição explícita da planta, catálogo compartilhado e padrão interno.
 
+## Escopo de paredes independentes
+
+Use `scope` com o ID de um pavimento ou cômodo:
+
+```json5
+{
+  id: "knee-wall-front-left",
+  scope: "unused-north", // Também pode ser "upper", o ID do pavimento.
+  base: { level: "upper.z0" },
+  top: "roof",
+  from: ["office.x0", "knee-top.y0"],
+  to: ["left.x0", "knee-top.y0"]
+}
+```
+
+Na planta baixa e na perspectiva 3D com um piso selecionado, a parede aparece somente no piso do escopo. **Todos os pisos** na perspectiva e as elevações completas incluem as paredes de todos os escopos. O escopo associa o elemento; não recorta a parede ao cômodo, não altera suas coordenadas e não muda `base` ou `top`. Paredes sem `scope` mantêm o comportamento anterior. Um ID inexistente gera erro com a localização da definição.
+
 ## Geometria e referências
 
 Para retângulos, use `pos: [x, y]` e `size: [w, l]`, em metros. `x/y/w/l` também são aceitos diretamente. `h` é a altura vertical; `z0` é a cota inicial. `rectangle: [x0, y0, x1, y1]` é uma alternativa. Nos dois últimos valores de `rectangle`, os aliases locais `x0`, `y0` e `z0` representam o ponto inicial: `rectangle: ["main.x0", "main.y0", "x0 + 3", "y0 + 2"]` cria um retângulo de `3 × 2 m`. `from` e `to` também aceitam esses aliases: `from: [4, 8], to: ["x0 + 1", "y0 - 3"]` termina em `[5, 5]`. Para coordenadas absolutas ou referências, use expressões como `to: ["main.x1", "main.y1"]`; arrays numéricos em `to` continuam sendo coordenadas absolutas. `inset: ["id", dx, dy]` cria um retângulo interno e `outset: ["id", dx, dy]` cria um retângulo ampliado para fora, aumentando cada lado em `dx` e `dy`.

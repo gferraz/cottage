@@ -355,3 +355,55 @@ test('elevation keeps hull corners when repeated cut coordinates differ by float
     assert.ok(!(a[0] > 1 && b[0] > 1 && a[1] === 0 && b[1] > 4 && Math.abs(a[0] - b[0]) > 1e-8));
   }
 });
+
+const normalizeScopedWall = (scope) => {
+  const config = {
+    floors: [
+      { id: 'ground', z0: 0, ceiling_height: 3, rooms: [] },
+      { id: 'upper', z0: 3, ceiling_height: 3, rooms: [{ id: 'unused-north' }] },
+    ],
+    walls: [{ id: 'scoped-wall', scope, base: { level: 0 }, top: { level: 5 },
+      from: [0, 0], to: [2, 2] }],
+  };
+  const plan = { catalog: {}, roomDefinitions: new Map(), references: new Map(), errors: [], resolve: Number };
+  walls.normalizeRoomWalls(plan, config);
+  return plan;
+};
+
+test('wall scope resolves room and floor ownership without changing its geometry', () => {
+  for (const scope of ['upper', 'unused-north']) {
+    const plan = normalizeScopedWall(scope);
+    assert.deepEqual(plan.errors, []);
+    const wall = plan.independentWalls.get('scoped-wall');
+    assert.equal(wall.scopeFloorId, 'upper');
+    assert.equal(wall.scopeType, scope === 'upper' ? 'floor' : 'room');
+    assert.equal(wall.scopeRoomId, scope === 'unused-north' ? scope : undefined);
+    assert.equal(wall.baseZ, 0);
+    assert.equal(wall.topZ, 5);
+    assert.deepEqual(wall.path.points, [[0, 0], [2, 2]]);
+    assert.ok(wall.geometryParts.every(part => part.scopeFloorId === 'upper'));
+  }
+  const unscoped = normalizeScopedWall(undefined).independentWalls.get('scoped-wall');
+  assert.equal(unscoped.scopeFloorId, undefined);
+});
+
+test('invalid wall scopes report errors and are excluded', () => {
+  for (const scope of ['', 12, null, 'missing-room']) {
+    const plan = normalizeScopedWall(scope);
+    assert.equal(plan.independentWalls.size, 0);
+    assert.equal(plan.errors.length, 1);
+    assert.match(plan.errors[0].message, /scope|Escopo inexistente/);
+  }
+});
+
+test('floor plan hides walls belonging to another scope while keeping unscoped walls', () => {
+  const plan = normalizeScopedWall('unused-north');
+  const elements = [];
+  plan.add = () => { const element = { style: {}, dataset: {} }; elements.push(element); return element; };
+  plan.currentFloorId = 'ground';
+  walls.renderIndependentWalls(plan);
+  assert.equal(elements.length, 0);
+  plan.currentFloorId = 'upper';
+  walls.renderIndependentWalls(plan);
+  assert.equal(elements.length, 1);
+});

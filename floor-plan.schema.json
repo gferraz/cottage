@@ -2131,6 +2131,11 @@
             "points"
           ],
           "additionalProperties": false
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1,
+          "description": "ID de um cômodo ou pavimento. Associa a parede ao piso do escopo para os filtros; não altera suas coordenadas, base ou altura."
         }
       },
       "required": [

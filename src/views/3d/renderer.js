@@ -12,6 +12,7 @@ const FloorPlanFacades3D = {
     const z1 = index + 1 < floors.length ? Number(floors[index + 1].z0) : Infinity;
     const inFloor = (entry) => entry.floorId === floor.id;
     const clipWall = (wall) => {
+      if (wall.scopeFloorId && wall.scopeFloorId !== floor.id) return [];
       const bottom = Math.max(Number(wall.z0), z0);
       const top = Math.min(Number(wall.z1), z1);
       if (top - bottom <= 1e-9) return [];
@@ -28,6 +29,7 @@ const FloorPlanFacades3D = {
     view.allWindows = (plan.allWindows ?? []).filter(inFloor);
     view.wallRenderParts = (plan.wallRenderParts ?? []).flatMap(clipWall);
     view.independentWalls = new Map([...(plan.independentWalls ?? [])].flatMap(([id, wall]) => {
+      if (wall.scopeFloorId && wall.scopeFloorId !== floor.id) return [];
       const bottom = Math.max(wall.z0, z0), top = Math.min(wall.topZ, z1);
       return top - bottom > 1e-9 ? [[id, { ...wall, z0: bottom, topZ: top }]] : [];
     }));

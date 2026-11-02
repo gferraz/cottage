@@ -50,3 +50,19 @@ test('all-floors mode restores the complete model without clipping wall heights'
   source.showAllFloors = false;
   assert.equal(renderer.floorView(source).allRooms[0].id, 'up');
 });
+
+test('wall scope filters by owning floor even when its volume spans both floors', () => {
+  const source = plan();
+  source.wallRenderParts.push({ ...source.wallRenderParts[0], id: 'scoped', scopeFloorId: 'upper' });
+  source.independentWalls.set('scoped', { ...source.independentWalls.get('wall'), scopeFloorId: 'upper' });
+  const ground = renderer.floorView(source);
+  assert.equal(ground.wallRenderParts.length, 1);
+  assert.equal(ground.independentWalls.has('scoped'), false);
+  source.currentFloorId = 'upper';
+  const upper = renderer.floorView(source);
+  assert.equal(upper.wallRenderParts.length, 2);
+  assert.equal(upper.independentWalls.has('scoped'), true);
+  source.showAllFloors = true;
+  assert.equal(renderer.floorView(source), source);
+  assert.equal(source.independentWalls.size, 2);
+});

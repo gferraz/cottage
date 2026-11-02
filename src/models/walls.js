@@ -380,6 +380,8 @@ const FloorPlanWalls = {
     const axis = horizontalSide ? "x" : "y";
     const sideCoordinate = side === "top" ? room?.y0() : side === "bottom" ? room?.y1() : side === "left" ? room?.x0() : room?.x1();
     plan.independentWalls?.forEach((wall) => {
+      const roomFloorId = plan.roomFloorConfigs?.get(roomId)?.id;
+      if (wall.scopeFloorId && roomFloorId && wall.scopeFloorId !== roomFloorId) return;
       const points = wall.path?.points ?? [];
       for (let index = 0; index < points.length - 1; index += 1) {
         const from = points[index];
@@ -452,6 +454,7 @@ const FloorPlanWalls = {
   renderIndependentWalls(plan) {
     plan.wallElements = [];
     plan.independentWalls.forEach((wall) => {
+      if (wall.scopeFloorId && wall.scopeFloorId !== plan.currentFloorId) return;
       const points = wall.path.points;
       points.slice(0, -1).forEach(([x0, y0], index) => {
         const [x1, y1] = points[index + 1];
@@ -690,6 +693,25 @@ const FloorPlanWalls = {
         if (plan.references.has(definition.id)) {
           throw new Error(`ID global duplicado: ${definition.id}`);
         }
+        let scopeFields = {};
+        if (definition.scope !== undefined) {
+          if (typeof definition.scope !== "string" || !definition.scope.trim()) {
+            throw new Error("scope da parede precisa ser o ID de um piso ou cômodo");
+          }
+          const scope = definition.scope.trim();
+          const scopeFloor = floors.find((floor) => floor.id === scope);
+          const roomFloor = roomFloors.get(scope);
+          if (!scopeFloor && !roomFloor) {
+            throw new Error(`Escopo inexistente: ${scope}. Informe o ID de um piso ou cômodo`);
+          }
+          if (scopeFloor && roomFloor) throw new Error(`Escopo ambíguo: ${scope} identifica um piso e um cômodo`);
+          scopeFields = {
+            scope,
+            scopeType: scopeFloor ? "floor" : "room",
+            scopeFloorId: (scopeFloor ?? roomFloor).id,
+            ...(roomFloor ? { scopeRoomId: scope } : {}),
+          };
+        }
         const hasEndpoints = definition.from !== undefined || definition.to !== undefined;
         if (hasEndpoints && definition.path !== undefined) {
           throw new Error("Use from/to ou path.points para definir a parede, sem combinar os dois formatos");
@@ -740,6 +762,7 @@ const FloorPlanWalls = {
         const y1 = Math.max(...resolvedPoints.map(([, y]) => y)) + thickness / 2;
         const wall = {
           ...definition,
+          ...scopeFields,
           id: definition.id,
           type: "wall",
           path: { ...definition.path, points: resolvedPoints },
@@ -773,7 +796,7 @@ const FloorPlanWalls = {
           throw new Error('A base da parede precisa ser "terrain" ou { level: "referência.z0" }');
         }
         if (wall.h <= 0) throw new Error("A cota superior da parede precisa ficar acima da base");
-        wall.geometryParts = this.geometryParts(wall).map((part) => ({ ...part, roofOnly }));
+        wall.geometryParts = this.geometryParts(wall).map((part) => ({ ...part, ...scopeFields, roofOnly }));
         if (roofOnly) {
           const covered = resolvedPoints.slice(0, -1).some((from, i) =>
             this.roofSection([[0, baseZ], [1, baseZ], [1, topZ], [0, topZ]],
