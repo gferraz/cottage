@@ -122,9 +122,10 @@ require('../src/models/geometry-box.js');
 require('../src/models/geometry.js');
 require('../src/models/validation.js');
 require('../src/views/roofs.js');
-const normalizeRoofWall = (withRoof = true, points = [[0, 0], [4, 0]], geometry = { path: { points } }, resolve = Number) => {
+const normalizeRoofWall = (withRoof = true, points = [[0, 0], [4, 0]], geometry = { path: { points } }, resolve = Number, defaults = undefined) => {
   const base = globalThis.FloorPlanGeometryBox.fromValues({ x: 0, y: 0, w: 4, l: 4, z0: 0, h: 3 });
   const config = {
+    config: { walls: defaults },
     floors: [{ id: 'ground', z0: 0, wall_max_height: 3, rooms: [] }],
     roofs: withRoof ? [{ id: 'roof', base: 'base', type: 'gable', orientation: 'longitudinal', pitch: 45 }] : [],
     walls: [{ id: 'front-wall', base: { level: 0 }, top: 'roof', ...geometry }],
@@ -135,6 +136,27 @@ const normalizeRoofWall = (withRoof = true, points = [[0, 0], [4, 0]], geometry 
   walls.normalizeRoomWalls(plan, config);
   return plan;
 };
+
+test('independent walls inherit config.walls and keep explicit overrides', () => {
+  const defaults = { base: { level: 1 }, top: { level: 4 }, thickness: 0.2, color: 'blue' };
+  const plan = normalizeRoofWall(true, undefined, {
+    from: [0, 0], to: [4, 0], base: undefined, top: undefined,
+  }, Number, defaults);
+  assert.deepEqual(plan.errors, []);
+  const wall = plan.independentWalls.get('front-wall');
+  assert.equal(wall.baseZ, 1);
+  assert.equal(wall.topZ, 4);
+  assert.equal(wall.thickness, 0.2);
+  assert.equal(wall.color, 'blue');
+  const override = normalizeRoofWall(true, undefined, {
+    from: [0, 0], to: [4, 0], thickness: 0.12, color: 'red',
+  }, Number, defaults).independentWalls.get('front-wall');
+  assert.equal(override.baseZ, 0);
+  assert.equal(override.top, 'roof');
+  assert.equal(override.thickness, 0.12);
+  assert.equal(override.color, 'red');
+  assert.deepEqual(defaults, { base: { level: 1 }, top: { level: 4 }, thickness: 0.2, color: 'blue' });
+});
 
 test('normalization resolves roof top from current config before global lists exist', () => {
   const plan = normalizeRoofWall();

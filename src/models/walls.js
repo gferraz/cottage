@@ -676,6 +676,13 @@ const FloorPlanWalls = {
     const roofLimits = this.roofLimits(plan, config);
     (config.walls ?? []).forEach((definition) => {
       try {
+        const defaults = config.config?.walls ?? {};
+        definition = { ...definition };
+        for (const key of ["base", "top", "thickness", "color"]) {
+          if (definition[key] === undefined && defaults[key] !== undefined) {
+            definition[key] = defaults[key];
+          }
+        }
         if (!definition.id) throw new Error("Parede independente precisa de id");
         if (FloorPlanValidation.isReservedId(definition.id)) {
           throw new Error(`ID reservado: ${definition.id}`);

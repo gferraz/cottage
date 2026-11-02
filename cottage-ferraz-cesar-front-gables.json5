@@ -2,6 +2,7 @@
 //
 // ÍNDICE DE EDIÇÃO — use Ctrl+F / Cmd+F para buscar os marcadores abaixo.
 // [01] Metadados e apresentação: título, resumo, coordenadas e viewport.
+//      [01.1] Configuração — config.walls: padrões das paredes independentes.
 // [02] Terreno e implantação: terrain (limites/cotas) e building (posição).
 // [03] Zonas de referência: main, central, top, bottom, left, right e dorm.
 // [04] Pavimentos e cômodos:
@@ -25,6 +26,16 @@
   viewport: {
     size: [24.0, 32.0],
     origin: [1.0, 1.0]
+  },
+
+  // [01.1] Configuração
+  config: {
+    // Aplicados somente a walls. Propriedades de cada parede têm prioridade.
+    walls: {
+      base: { level: "ground.z0" },
+      top: "roof",
+      thickness: 0.12
+    }
   },
 
   // [02] Terreno e implantação
@@ -369,17 +380,11 @@
           ["right.x1", "right.y0"]
         ]
       },
-      base: { level: "ground.z0" },
-      top: "roof",
-      thickness: 0.12
     },
     {
       id: "right-wall",
       from: ["right.x1", "dining.y0"],
       to: ["right.x1", "mudroom.y1"],
-      base: { level: "ground.z0" },
-      top: "roof",
-      thickness: 0.12
     },
     {
       id: "rear-wall",
@@ -391,9 +396,7 @@
           ["mudroom.x1", "mudroom.y1"]
         ]
       },
-      base: { level: "ground.z0" },
       top: { level: "ground.z1" },
-      thickness: 0.12
     },
     {
       id: "left-wall",
@@ -405,9 +408,6 @@
           ["left.x0", "kitchen.y1"]
         ]
       },
-      base: { level: "ground.z0" },
-      top: "roof",
-      thickness: 0.12
     },
     // [05.2] Meias-paredes do pavimento superior (knee-walls)
     {
@@ -420,8 +420,6 @@
         ]
       },
       base: { level: "upper.z0" },
-      top: "roof",
-      thickness: 0.12,
       color: "blue"
     },
     {
@@ -429,8 +427,6 @@
       from: ["office.x0 + 0.8", "office.y0"],
       to: ["x0", "office.y1"],
       base: { level: "upper.z0" },
-      top: "roof",
-      thickness: 0.12,
       color: "blue"
     },
     {
@@ -438,8 +434,6 @@
       from: ["office.x1 - 0.8", "office.y0"],
       to: ["office.x1 - 0.8", "office.y1"],
       base: { level: "upper.z0" },
-      top: "roof",
-      thickness: 0.12,
       color: "blue"
     },
     {
@@ -452,8 +446,6 @@
         ]
       },
       base: { level: "upper.z0" },
-      top: "roof",
-      thickness: 0.12,
       color: "blue"
     },
     {
@@ -461,8 +453,6 @@
       from: ["left.x0", "w-axis.y0"],
       to: ["knee-left.x0", "w-axis.y0"],
       base: { level: "upper.z0" },
-      top: "roof",
-      thickness: 0.12,
       color: "blue"
     },
     {
@@ -470,8 +460,6 @@
       from: ["knee-right.x0", "w-axis.y0"],
       to: ["right.x1", "w-axis.y0"],
       base: { level: "upper.z0" },
-      top: "roof",
-      thickness: 0.12,
       color: "blue"
     },
     {
@@ -479,8 +467,6 @@
       from: ["left.x0", "knee-bottom.y0"],
       to: ["right.x1", "knee-bottom.y0"],
       base: { level: "upper.z0" },
-      top: "roof",
-      thickness: 0.12,
       color: "blue"
     }
   ],
