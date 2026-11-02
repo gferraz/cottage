@@ -151,6 +151,56 @@ const FloorPlanWalls = {
     return this.roofParts(faces, roofs, (part, plane) => this.clipSolid(part, plane), roofOnly);
   },
 
+  elevationOutline(polygons) {
+    const epsilon = 1e-7;
+    const cross = (a, b) => a[0] * b[1] - a[1] * b[0];
+    const subtract = (a, b) => a.map((value, i) => value - b[i]);
+    const at = (a, delta, t) => a.map((value, i) => value + delta[i] * t);
+    const edges = polygons.flatMap((polygon) => polygon.map((a, i) => [a, polygon[(i + 1) % polygon.length]]));
+    const contains = ([x, y]) => polygons.some((polygon) => {
+      let inside = false;
+      polygon.forEach(([ax, ay], i) => {
+        const [bx, by] = polygon[(i + 1) % polygon.length];
+        if ((ay > y) !== (by > y) && x < (bx - ax) * (y - ay) / (by - ay) + ax) inside = !inside;
+      });
+      return inside;
+    });
+    const seen = new Set();
+    const result = [];
+    edges.forEach(([a, b]) => {
+      const delta = subtract(b, a);
+      const length = Math.hypot(...delta);
+      if (length < epsilon) return;
+      const cuts = [0, 1];
+      edges.forEach(([c, d]) => {
+        const other = subtract(d, c);
+        const denominator = cross(delta, other);
+        const offset = subtract(c, a);
+        if (Math.abs(denominator) > epsilon) {
+          const t = cross(offset, other) / denominator;
+          const u = cross(offset, delta) / denominator;
+          if (t > epsilon && t < 1 - epsilon && u >= -epsilon && u <= 1 + epsilon) cuts.push(t);
+        } else if (Math.abs(cross(offset, delta)) < epsilon) {
+          [c, d].forEach((point) => {
+            const t = subtract(point, a).reduce((sum, value, i) => sum + value * delta[i], 0) / (length * length);
+            if (t > epsilon && t < 1 - epsilon) cuts.push(t);
+          });
+        }
+      });
+      cuts.sort((x, y) => x - y);
+      for (let i = 0; i < cuts.length - 1; i += 1) {
+        if ((cuts[i + 1] - cuts[i]) * length < epsilon) continue;
+        const midpoint = at(a, delta, (cuts[i] + cuts[i + 1]) / 2);
+        const normal = [-delta[1] / length * 1e-6, delta[0] / length * 1e-6];
+        if (contains(at(midpoint, normal, 1)) === contains(at(midpoint, normal, -1))) continue;
+        const start = at(a, delta, cuts[i]), end = at(a, delta, cuts[i + 1]);
+        const key = [start, end].map((point) => point.map((value) => Math.round(value / epsilon)).join(",")).sort().join(":");
+        if (!seen.has(key)) { seen.add(key); result.push(start, end); }
+      }
+    });
+    return result;
+  },
+
   wallElevation({ from, to, thickness, baseStart, baseEnd, top, roofOnly }, roofs, side) {
     const dx = to[0] - from[0], dy = to[1] - from[1];
     const length = Math.hypot(dx, dy);
@@ -165,7 +215,8 @@ const FloorPlanWalls = {
     return this.roofSolids(faces, roofs, roofOnly).flatMap((solid) => {
       // A clipped piece is convex, so its orthographic silhouette is the hull
       // of its projected vertices, including both faces across the thickness.
-      const points = solid.flat().map(([x, y, z]) => [side ? y : x, z])
+      const points = solid.flat().map(([x, y, z]) => [side ? y : x, z]
+        .map((value) => Math.round(value * 1e8) / 1e8))
         .sort((a, b) => a[0] - b[0] || a[1] - b[1])
         .filter((point, i, all) => !i || point.some((value, axis) => Math.abs(value - all[i - 1][axis]) > 1e-9));
       const cross = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);

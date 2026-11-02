@@ -765,6 +765,20 @@ const FloorPlanFacades = {
           }
         });
 
+      const appendWallOutline = (polygons, className, id) => {
+        const edges = FloorPlanWalls.elevationOutline(polygons);
+        const outline = document.createElementNS(svgNamespace, "path");
+        outline.setAttribute("d", edges.map(([coordinate, z], i) =>
+          `${i % 2 ? "L" : "M"}${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`,
+        ).join(" "));
+        outline.classList.add(className);
+        outline.dataset.id = id || "";
+        outline.style.fill = "none";
+        outline.style.stroke = getComputedStyle(plan.root).getPropertyValue("--theme-wall").trim() || "#222";
+        outline.style.strokeWidth = "1.5";
+        svg.append(outline);
+      };
+
       const sectionPath = (start, end, from, to, baseStart, baseEnd, top, roofOnly = false) => {
         const polygons = FloorPlanWalls.roofSection(
           [[0, baseStart], [1, baseEnd], [1, top], [0, top]], from, to, roofLimits, roofOnly,
@@ -873,10 +887,12 @@ const FloorPlanFacades = {
         const rect = document.createElementNS(svgNamespace, "path");
         rect.setAttribute("d", section.path);
         rect.classList.add("facade-room");
+        rect.style.stroke = "none";
         rect.dataset.id = compoundPart
           ? `${room.dataset.id || ""}.${geometry.id || "part"}`
           : room.dataset.id || "";
         svg.append(rect);
+        appendWallOutline(section.polygons, "facade-room-outline", rect.dataset.id);
 
         const roomLabel = compoundPart
           ? ""
@@ -955,6 +971,7 @@ const FloorPlanFacades = {
           projectedIndependentWalls.push({ wall, segmentIndex, depth, start, end, startBase, endBase, startPoint, endPoint });
         });
       });
+      const independentWallFaces = new Map();
       projectedIndependentWalls
         .sort((first, second) => facadeEdge === "min"
           ? second.depth - first.depth
@@ -966,23 +983,22 @@ const FloorPlanFacades = {
             roofOnly: wall.top === "roof",
           }, roofLimits, side);
           if (!polygons.length) return;
-          const path = polygons.map((polygon) => polygon.map(([coordinate, z], i) =>
-            `${i ? "L" : "M"}${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`,
-          ).join(" ") + " Z").join(" ");
-          const face = document.createElementNS(svgNamespace, "path");
-          face.setAttribute("d", path);
-          face.classList.add("facade-independent-wall");
-          face.dataset.wallId = wall.id;
-          face.dataset.segment = String(segmentIndex);
-          face.style.fill = wall.color
-            ? plan.themeFillColor(wall.color)
-            : getComputedStyle(plan.root)
-                .getPropertyValue("--theme-wall-fill").trim() || "#f7f7f4";
-          face.style.stroke = getComputedStyle(plan.root)
-            .getPropertyValue("--theme-wall").trim() || "#222";
-          face.style.strokeWidth = "1.5";
-          svg.append(face);
+          if (!independentWallFaces.has(wall.id)) independentWallFaces.set(wall.id, { wall, polygons: [] });
+          independentWallFaces.get(wall.id).polygons.push(...polygons);
         });
+      independentWallFaces.forEach(({ wall, polygons }) => {
+        const face = document.createElementNS(svgNamespace, "path");
+        face.setAttribute("d", polygons.map((polygon) => polygon.map(([coordinate, z], i) =>
+          `${i ? "L" : "M"}${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`,
+        ).join(" ") + " Z").join(" "));
+        face.classList.add("facade-independent-wall");
+        face.dataset.wallId = wall.id;
+        face.style.fill = wall.color ? plan.themeFillColor(wall.color)
+          : getComputedStyle(plan.root).getPropertyValue("--theme-wall-fill").trim() || "#f7f7f4";
+        face.style.stroke = "none";
+        svg.append(face);
+        appendWallOutline(polygons, "facade-independent-wall-outline", wall.id);
+      });
 
       const foregroundRoofSelector =
         ".facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label";

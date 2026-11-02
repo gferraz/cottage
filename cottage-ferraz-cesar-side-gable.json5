@@ -118,7 +118,9 @@
       thickness: 0.12,
       path: {
         points: [
-          ["left.x0", "office.y0"],
+          ["office.x0", "office.y0"],
+          ["office.x0", "office.y1"],
+          ["left.x0", "office.y1"],
           ["left.x0", "kitchen.y1"]
         ]
       }
@@ -511,18 +513,18 @@
           id: "unused-n",
           label: "Sem uso",
           from: ["office.x0 + 0.8", "office.y0"],
-          to: ["office.x1 - 0.8 ", "dorm-top.y0"],
+          to: ["office.x1", "dorm-top.y0"],
           openings: [{ type: "door", from: "bottom", to: "bedroom-n", dy: 3 }],
-          walls: ["right", "left"]
+          walls: ["left"]
         },
-        // {
-        //   id: "bedroom-n",
-        //   label: "Quarto N",
-        //   from: ["dorm-top.x0", "dorm-top.y0"],
-        //   to: ["knee-left.x0", "dorm-top.y1"],
-        //   openings: [{ type: "door", from: "right", to: "playroom", dy: 3 }],
-        //   walls: []
-        // },
+        {
+          id: "bedroom-n",
+          label: "Quarto N",
+          from: ["dorm-top.x0", "dorm-top.y0"],
+          to: ["knee-left.x0", "dorm-top.y1"],
+          openings: [{ type: "door", from: "right", to: "playroom", dy: 3 }],
+          walls: []
+         },
         // {
         //   id: "prayer-room",
         //   label: "Sala de oração",

@@ -223,3 +223,40 @@ test('room-part elevation is clipped at its own position rather than the compoun
   const outerEdge = walls.wallElevation({ ...part, from: [0, 0], to: [4, 0] }, [limit], false);
   assert.equal(Math.max(...outerEdge.flat().map(([, z]) => z)), 6);
 });
+
+test('elevation outline removes shared vertical and sloping subdivision lines', () => {
+  const rectangle = [[0, 0], [4, 0], [4, 3], [0, 3]];
+  const split = [[[0, 0], [2, 0], [2, 3], [0, 3]], [[2, 0], [4, 0], [4, 3], [2, 3]]];
+  const diagonal = [[[0, 0], [4, 0], [0, 3]], [[4, 0], [4, 3], [0, 3]]];
+  for (const polygons of [split, diagonal, [rectangle, [[1, 1], [3, 1], [3, 2], [1, 2]]]]) {
+    const edges = walls.elevationOutline(polygons);
+    assert.ok(edges.length > 0);
+    for (let i = 0; i < edges.length; i += 2) {
+      const a = edges[i], b = edges[i + 1];
+      assert.ok((a[0] === b[0] && [0, 4].includes(a[0])) || (a[1] === b[1] && [0, 3].includes(a[1])));
+    }
+  }
+});
+test('elevation outline preserves the roof profile and concave exterior boundaries', () => {
+  const polygons = [[[0, 0], [2, 0], [2, 2], [1, 3], [0, 2]], [[2, 0], [4, 0], [4, 1], [2, 1]]];
+  const edges = walls.elevationOutline(polygons);
+  assert.ok(edges.some(([x, z]) => x === 1 && z === 3));
+  let forbidden = false;
+  for (let i = 0; i < edges.length; i += 2) {
+    const a = edges[i], b = edges[i + 1];
+    if (a[0] === 2 && b[0] === 2 && Math.max(a[1], b[1]) <= 1) forbidden = true;
+  }
+  assert.equal(forbidden, false);
+});
+
+test('elevation keeps hull corners when repeated cut coordinates differ by floating point noise', () => {
+  const roof = { bounds: [], slopes: [[-1.234897156535051, 0, 1, -3.9879177252280407], [1.234897156535051, 0, 1, -6.704691469605153]] };
+  const partition = { bounds: [[-1, 0, 0, 1.4], [0, -1, 0, 2]], slopes: [[0, 0, 1, -8]] };
+  const polygons = walls.wallElevation({ from: [-0.8, 0], to: [3, 0], thickness: 0.12,
+    baseStart: 0, baseEnd: 0, top: 8, roofOnly: true }, [partition, roof], false);
+  assert.ok(polygons[0].some(([x, z]) => Math.abs(x - 1.4) < 1e-8 && Math.abs(z - 4.97583545) < 1e-8));
+  for (let i = 0; i < polygons[0].length; i += 1) {
+    const a = polygons[0][i], b = polygons[0][(i + 1) % polygons[0].length];
+    assert.ok(!(a[0] > 1 && b[0] > 1 && a[1] === 0 && b[1] > 4 && Math.abs(a[0] - b[0]) > 1e-8));
+  }
+});
