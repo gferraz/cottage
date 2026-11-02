@@ -35,7 +35,8 @@
     walls: {
       base: { level: "ground.z0" },
       top: "roof",
-      thickness: 0.12
+      thickness: 0.12,
+      color: "desejo-ambar"
     },
     roofs: {
       type: "gable",
