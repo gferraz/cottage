@@ -8,13 +8,13 @@
 // [03] Zonas de referência: main, central, top, bottom, left, right e dorm.
 // [04] Pavimentos e cômodos:
 //      [04.1] Térreo — ground; office, hall, master, stairs, kitchen e garage.
-//      [04.2] Dormitórios — upper; unused-n e bedroom-n.
+//      [04.2] Dormitórios — upper; unused-north e bedroom-north.
 //      Cômodos e partes ordenados alfabeticamente pelo id.
 //      Aberturas laterais ficam em rooms[].openings; vãos entre pisos em floors[].openings.
 // [05] Paredes independentes:
 //      Fachadas — front-wall, left-wall, rear-wall e right-wall.
 //      Meias-paredes — IDs com prefixo knee-wall e knee-corner.
-// [06] Telhados: main-roof, office-roof e lateral-gable.
+// [06] Telhados: main-roof, office-roof e transverse-roof.
 // [07] Guias de desenho: w-axis, l-axis e referências das knee-walls.
 //
 // Para localizar uma definição por ID, busque, por exemplo: id: "left-wall".
@@ -27,10 +27,7 @@
   title: "Cottage Ferraz-César",
   summary: "Residência de dois pavimentos em terreno cadastrado com diferença de cota de 6 m entre frente e fundos. O programa reúne ambientes sociais, íntimos e de serviço, além de varanda frontal e terraço posterior.",
   coordinates: ["25°45'06.7\"S", "49°15'29.1\"W"],
-  viewport: {
-    size: [24.0, 32.0],
-    origin: [1.0, 1.0]
-  },
+  viewport: { size: [24.0, 32.0], origin: [1.0, 1.0] },
 
   // [01.1] Configuração
   config: {
@@ -96,7 +93,7 @@
     { id: "attic", inset: ["main", 3.0, 0.0], color: "red", visible: false },
     { id: "bottom",  rectangle: ["main.x0",    "main.y0 + main.l / 2", "main.x1", "main.y1"], visible: false },
     { id: "central", from: ["main.xc - 0.7", "main.y0"], to: ["x0 + 1.4", "main.y1"], visible: false },
-    { id: "confort", inset: ["main", 1.8, 0.0], color: "blue", visible: false },
+    { id: "comfort-zone", inset: ["main", 1.8, 0.0], color: "blue", visible: false },
     {
       id: "dorm",
       rectangle: ["dorm-top.x0", "dorm-top.y0", "dorm-bottom.x1", "dorm-bottom.y1"],
@@ -146,20 +143,6 @@
           ]
         },
         {
-          id: "corridor-1",
-          label: "C-1.",
-          rectangle: ["master.x1", "hall.y1", "central.x1", "living.y0"],
-          walls: ["left"],
-          classes: "circulation"
-        },
-        {
-          id: "corridor-2",
-          label: "C-2.",
-          rectangle: ["central.x0", "living.y1", "central.x1", "kitchen.y0"],
-          walls: ["left"],
-          classes: "circulation"
-        },
-        {
           id: "dining",
           label: "Jantar",
           from: ["right.x0", "porch.y1"],
@@ -167,6 +150,13 @@
           openings: [
             { type: "window", from: "top", to: "exterior", w: 2.4, h: 1.5 }
           ]
+        },
+        {
+          id: "front-corridor",
+          label: "C-1.",
+          rectangle: ["master.x1", "hall.y1", "central.x1", "living.y0"],
+          walls: ["left"],
+          classes: "circulation"
         },
         {
           id: "front-stairs",
@@ -202,7 +192,7 @@
         {
           id: "kitchen",
           label: "Cozinha",
-          from: ["dorm.x0", "masterbath.y1"],
+          from: ["dorm.x0", "master-bath.y1"],
           to: ["right.x0", "y0 + 3.9"],
           openings: [
             { type: "window", from: "left", to: "exterior", w: 2.4 },
@@ -234,7 +224,7 @@
           ]
         },
         {
-          id: "masterbath",
+          id: "master-bath",
           label: "Banheiro Master",
           from: ["left.x0", "closet.y1"],
           to: ["left.x1", "knee-bottom.y0"],
@@ -290,16 +280,23 @@
           rectangle: ["right.x0", "living.y1", "x0 + 2.4", "y0 + 1.2"],
           walls: ["top", "left"],
           openings: [
-            { type: "door", from: "left", to: "corridor-2" }
+            { type: "door", from: "left", to: "rear-corridor" }
           ],
           classes: "powder wet"
+        },
+        {
+          id: "rear-corridor",
+          label: "C-2.",
+          rectangle: ["central.x0", "living.y1", "central.x1", "kitchen.y0"],
+          walls: ["left"],
+          classes: "circulation"
         },
         {
           id: "stairs",
           label: "Escada",
           parts: [
             {
-              id: "flight-down",
+              id: "lower-flight",
               from: ["lower-landing.x0", "lower-landing.y0", "lower-landing.z0"],
               to: ["x0 - 2.7", "lower-landing.y1", 0],
               walls: ["top", "bottom"],
@@ -344,7 +341,7 @@
           label: "Vest.",
           rectangle: ["closet.x1", "closet.y0", "master.x1", "closet.y1"],
           walls: ["right", "bottom", "left"],
-          overlaps: "corridor-2",
+          overlaps: "rear-corridor",
           openings: [
             { type: "door", from: "right", to: "living", dy: 1.3 }
           ]
@@ -377,7 +374,7 @@
 
       rooms: [
         {
-          id: "bedroom-n",
+          id: "bedroom-north",
           label: "Quarto N",
           from: ["dorm-top.x0", "dorm-top.y0"],
           to: ["knee-left.x0", "dorm-top.y1"],
@@ -387,7 +384,7 @@
           ]
         },
         {
-          id: "unused-n",
+          id: "unused-north",
           label: "Sem uso",
           from: ["office.x0 + params.knee_setback", "office.y0"],
           to: ["office.x1 - params.knee_setback", "dorm-top.y0"]
@@ -419,31 +416,24 @@
       },
     },
     {
-      id: "knee-corner-front-right",
-      path: {
-        points: [
-          ["right.x1 - params.knee_setback", "top.y0"],
-          ["right.x1 - params.knee_setback", "knee-top.y0"],
-          ["right.x1", "knee-top.y0"]
-        ]
-      },
-      base: { level: "upper.z0" },
-      color: "blue"
-    },
-    {
-      id: "knee-wall-back",
-      from: ["left.x0", "knee-bottom.y0"],
-      to: ["right.x1", "knee-bottom.y0"],
-      base: { level: "upper.z0" },
-      color: "blue"
-    },
-    {
       id: "knee-wall-front-left",
       path: {
         points: [
           ["office.x0", "knee-top.y0"],
           ["left.x0", "knee-top.y0"],
           ["left.x0", "office.y1"]
+        ]
+      },
+      base: { level: "upper.z0" },
+      color: "blue"
+    },
+    {
+      id: "knee-wall-front-right-corner",
+      path: {
+        points: [
+          ["right.x1 - params.knee_setback", "top.y0"],
+          ["right.x1 - params.knee_setback", "knee-top.y0"],
+          ["right.x1", "knee-top.y0"]
         ]
       },
       base: { level: "upper.z0" },
@@ -474,6 +464,13 @@
       id: "knee-wall-office-right",
       from: ["office.x1 - params.knee_setback", "office.y0"],
       to: ["office.x1 - params.knee_setback", "office.y1"],
+      base: { level: "upper.z0" },
+      color: "blue"
+    },
+    {
+      id: "knee-wall-rear",
+      from: ["left.x0", "knee-bottom.y0"],
+      to: ["right.x1", "knee-bottom.y0"],
       base: { level: "upper.z0" },
       color: "blue"
     },
@@ -510,14 +507,6 @@
   // [06] Telhados
   roofs: [
     {
-      id: "lateral-gable",
-      label: "Telhado Transversal",
-      from: ["top.x0", "top.y0 + 2", "upper.z0"],
-      to: ["top.x1", "bottom.y1 - 1", "z0"],
-      orientation: "transverse",
-      eave: [0, 0],
-    },
-    {
       id: "main-roof",
       label: "Telhado Principal",
       rectangle: ["office.x1 - 1.6", "hall.y0", "main.x1", "main.y1"],
@@ -530,6 +519,14 @@
       label: "Escritório",
       base: "office",
       orientation: "longitudinal",
+    },
+    {
+      id: "transverse-roof",
+      label: "Telhado Transversal",
+      from: ["top.x0", "top.y0 + 2", "upper.z0"],
+      to: ["top.x1", "bottom.y1 - 1", "z0"],
+      orientation: "transverse",
+      eave: [0, 0],
     }
   ],
 
