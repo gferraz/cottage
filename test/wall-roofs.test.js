@@ -101,18 +101,19 @@ test('roof coverage is the union of footprints, with the highest overlapping slo
 });
 
 require('../src/models/geometry-box.js');
+require('../src/models/geometry.js');
 require('../src/models/validation.js');
 require('../src/views/roofs.js');
-const normalizeRoofWall = (withRoof = true, points = [[0, 0], [4, 0]]) => {
+const normalizeRoofWall = (withRoof = true, points = [[0, 0], [4, 0]], geometry = { path: { points } }, resolve = Number) => {
   const base = globalThis.FloorPlanGeometryBox.fromValues({ x: 0, y: 0, w: 4, l: 4, z0: 0, h: 3 });
   const config = {
     floors: [{ id: 'ground', z0: 0, wall_max_height: 3, rooms: [] }],
     roofs: withRoof ? [{ id: 'roof', base: 'base', type: 'gable', orientation: 'longitudinal', pitch: 45 }] : [],
-    walls: [{ id: 'front-wall', base: { level: 0 }, top: 'roof', path: { points } }],
+    walls: [{ id: 'front-wall', base: { level: 0 }, top: 'roof', ...geometry }],
   };
   const plan = { currentConfig: config, references: new Map([['base', base]]),
     catalog: {}, roomDefinitions: new Map(), errors: [], allRoofs: [{ id: 'stale' }],
-    resolve: Number };
+    resolve };
   walls.normalizeRoomWalls(plan, config);
   return plan;
 };
@@ -128,6 +129,60 @@ test('normalization resolves roof top from current config before global lists ex
 test('roof top reports absent roofs and paths without coverage', () => {
   assert.match(normalizeRoofWall(false).errors[0].message, /telhado válido/);
   assert.match(normalizeRoofWall(true, [[10, 10], [12, 10]]).errors[0].message, /não encontra nenhum telhado/);
+});
+
+test('wall endpoints resolve into the same roof-limited geometry as path points', () => {
+  const plan = normalizeRoofWall(true, undefined, { from: ['0', '0'], to: ['4', '0'] });
+  assert.deepEqual(plan.errors, []);
+  const wall = plan.independentWalls.get('front-wall');
+  const original = normalizeRoofWall().independentWalls.get('front-wall');
+  assert.deepEqual(wall.path.points, original.path.points);
+  assert.deepEqual(wall.geometryParts, original.geometryParts);
+  assert.equal(wall.top, 'roof');
+});
+
+test('wall endpoints reject incomplete, invalid or conflicting geometry', () => {
+  for (const geometry of [
+    { from: [0, 0] },
+    { to: [4, 0] },
+    { from: [0, 0, 0], to: [4, 0] },
+    { from: [0, 0], to: ['invalid', 0] },
+    { from: [0, 0], to: [4, 0], path: { points: [[0, 0], [2, 0]] } },
+  ]) {
+    const plan = normalizeRoofWall(true, undefined, geometry);
+    assert.equal(plan.independentWalls.size, 0);
+    assert.equal(plan.errors.length, 1);
+    assert.match(plan.errors[0].message, /from\/to/);
+  }
+});
+
+test('wall to expressions use the resolved from coordinates as their local origin', () => {
+  const resolver = {
+    ...globalThis.FloorPlanGeometry,
+    partReferenceStack: [],
+    references: new Map([
+      ['office', { x0: () => 0, y0: () => 0 }],
+      ['knee-top', { y0: () => 3 }],
+      ['upper', { z0: () => 3 }],
+    ]),
+  };
+  const geometry = {
+    id: 'knee-wall-offce-left', base: { level: 'upper.z0' }, top: 'roof',
+    thickness: 0.12, color: 'blue',
+    from: ['office.x0 + 0.8', 'office.y0'], to: ['x0', 'knee-top.y0'],
+  };
+  const plan = normalizeRoofWall(true, undefined, geometry, resolver.resolve.bind(resolver));
+  assert.deepEqual(plan.errors, []);
+  const wall = plan.independentWalls.get(geometry.id);
+  assert.deepEqual(wall.path.points, [[0.8, 0], [0.8, 3]]);
+  assert.equal(wall.baseZ, 3);
+  assert.equal(wall.color, 'blue');
+
+  const offset = normalizeRoofWall(true, undefined, {
+    ...geometry, to: ['x0 + 1', 'y0 + 2'],
+  }, resolver.resolve.bind(resolver));
+  assert.deepEqual(offset.errors, []);
+  assert.deepEqual(offset.independentWalls.get(geometry.id).path.points, [[0.8, 0], [1.8, 2]]);
 });
 
 test('elevation projects the full wall thickness at an overlapping roof boundary', () => {

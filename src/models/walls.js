@@ -670,17 +670,26 @@ const FloorPlanWalls = {
         if (plan.references.has(definition.id)) {
           throw new Error(`ID global duplicado: ${definition.id}`);
         }
-        const points = definition.path?.points;
-        if (!Array.isArray(points) || points.length < 2) {
-          throw new Error("Parede independente precisa de path.points com ao menos dois pontos");
+        const hasEndpoints = definition.from !== undefined || definition.to !== undefined;
+        if (hasEndpoints && definition.path !== undefined) {
+          throw new Error("Use from/to ou path.points para definir a parede, sem combinar os dois formatos");
         }
-        const resolvedPoints = points.map((point) => {
+        const pointSource = hasEndpoints ? "from/to" : "path.points";
+        const points = hasEndpoints ? [definition.from, definition.to] : definition.path?.points;
+        if (!Array.isArray(points) || points.length < 2) {
+          throw new Error("Parede independente precisa de from/to ou path.points com ao menos dois pontos");
+        }
+        let localOrigin = null;
+        const resolvedPoints = points.map((point, index) => {
           if (!Array.isArray(point) || point.length !== 2) {
-            throw new Error("Cada ponto de path.points precisa ser [x, y]");
+            throw new Error(`Cada ponto de ${pointSource} precisa ser [x, y]`);
           }
-          const resolved = point.map((value) => plan.resolve(value));
+          const resolved = point.map((value) => plan.resolve(value, localOrigin));
           if (!resolved.every(Number.isFinite)) {
-            throw new Error("As coordenadas de path.points precisam ser numéricas");
+            throw new Error(`As coordenadas de ${pointSource} precisam ser numéricas`);
+          }
+          if (hasEndpoints && index === 0) {
+            localOrigin = { x0: resolved[0], y0: resolved[1] };
           }
           return resolved;
         });

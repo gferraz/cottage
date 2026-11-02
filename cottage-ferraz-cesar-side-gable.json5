@@ -146,8 +146,31 @@
       color: "blue",
       path: {
         points: [
-          ["left.x0",      "knee-top.y0"],
-          ["knee-left.x0", "knee-top.y0"]
+          ["office.x0", "knee-top.y0"],
+          ["left.x0", "knee-top.y0"],
+          ["left.x0", "office.y1"]
+        ]
+      }
+    },
+    {
+      id: "knee-wall-unused-left",
+      base: { level: "upper.z0" },
+      top: "roof",
+      thickness: 0.12,
+      color: "blue",
+      from: ["office.x0 + 0.8", "office.y0"],
+      to: ["x0", "knee-top.y0"]
+    },
+    {
+      id: "knee-wall-unused-right",
+      base: { level: "upper.z0" },
+      top: "roof",
+      thickness: 0.12,
+      color: "blue",
+      path: {
+        points: [
+          ["office.x1 - 0.8", "office.y0"],
+          ["office.x1 - 0.8", "knee-top.y0"]
         ]
       }
     },
@@ -513,9 +536,7 @@
           id: "unused-n",
           label: "Sem uso",
           from: ["office.x0 + 0.8", "office.y0"],
-          to: ["office.x1", "dorm-top.y0"],
-          openings: [{ type: "door", from: "bottom", to: "bedroom-n", dy: 3 }],
-          walls: ["left"]
+          to: ["office.x1", "dorm-top.y0"]
         },
         {
           id: "bedroom-n",
