@@ -21,7 +21,7 @@ O seletor de piso muda apenas o desenho. As listas, totais e erros são consolid
 
 ## Editar a planta
 
-O arquivo ativo é `cottage-ferraz-cesar-front-gables.json5`. O índice no início contém marcadores para buscar com Ctrl+F / Cmd+F. As aberturas laterais ficam junto ao cômodo, em `rooms[].openings`; `from: "left"` refere-se à lateral esquerda desse cômodo. Vãos entre pavimentos continuam em `floors[].openings`.
+O arquivo ativo é `cottage-ferraz-cesar-front-gables.json5`. O índice no início contém marcadores para buscar com Ctrl+F / Cmd+F. Listas de objetos com `id` ficam em ordem alfabética; listas sem IDs e coordenadas mantêm sua ordem. A ordem das seções do primeiro nível é preservada. As aberturas laterais ficam junto ao cômodo, em `rooms[].openings`; `from: "left"` refere-se à lateral esquerda desse cômodo. Vãos entre pavimentos continuam em `floors[].openings`.
 
 Medidas reutilizáveis ficam em `parameters`:
 
@@ -78,7 +78,7 @@ Para retângulos, use `pos: [x, y]` e `size: [w, l]`, em metros. `x/y/w/l` tamb�
 
 Expressões podem combinar referências e operações: `"living.x1 - 0.3"`, `"room.w / 2"` e `"part.z1"`. Cada referência oferece `x0()`, `x1()`, `xc()`, `y0()`, `y1()`, `yc()`, `z0()`, `z1()`, `zc()`, `w()`, `l()`, `h()` e `area()`.
 
-Cômodos compostos usam `parts`; cada parte tem sua própria geometria e pode referenciar partes anteriores. As partes também podem ser referenciadas globalmente por ID, por exemplo `flight-1.y0`, a partir de qualquer cômodo. A regra de não sobreposição também é aplicada às partes.
+Cômodos compostos usam `parts`; cada parte tem sua própria geometria e pode referenciar outras partes, independentemente da ordem de declaração. Referências circulares geram erro. As partes também podem ser referenciadas globalmente por ID, por exemplo `flight-1.y0`, a partir de qualquer cômodo. A regra de não sobreposição também é aplicada às partes.
 
 Portas, janelas e vãos aceitam `z0` e `h` para a projeção vertical: `z1 = z0 + h`. Quando omitidos, portas e vãos usam `z0: 0, h: 2.1`, e janelas usam `z0: 0.9, h: 1.2`. A largura continua sendo informada por `w` e a posição relativa por `dx` ou `dy`.
 

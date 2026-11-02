@@ -548,7 +548,9 @@ const FloorPlanLists = {
     const communications = [];
     const pairs = [
       ["right", "left", "vertical"],
+      ["left", "right", "vertical"],
       ["bottom", "top", "horizontal"],
+      ["top", "bottom", "horizontal"],
     ];
     for (let index = 0; index < rooms.length; index += 1) {
       for (

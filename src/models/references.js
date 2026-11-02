@@ -577,30 +577,42 @@ const FloorPlanReferences = {
     const localReferences = new Map();
     plan.partReferenceStack.push(localReferences);
     try {
-      return parts.map((part, index) => {
-        const geometry = {
-          ...plan.normalizeGeometry(part),
-          id: part.id || `part-${index + 1}`,
-        };
+      const geometries = new Map();
+      const pending = new Set();
+      const geometryAt = (index) => {
+        if (geometries.has(index)) return geometries.get(index);
+        const part = parts[index];
+        if (pending.has(index)) throw new Error(`Referência circular entre partes: ${part.id || index + 1}`);
+        pending.add(index);
+        try {
+          const geometry = { ...plan.normalizeGeometry(part), id: part.id || `part-${index + 1}` };
+          geometries.set(index, geometry);
+          return geometry;
+        } finally {
+          pending.delete(index);
+        }
+      };
+      parts.forEach((part, index) => {
         const reference = {
-          x0: () => geometry.x,
-          x1: () => geometry.x + geometry.w,
-          xc: () => geometry.x + geometry.w / 2,
-          y0: () => geometry.y,
-          y1: () => geometry.y + geometry.l,
-          yc: () => geometry.y + geometry.l / 2,
-          z0: () => geometry.z0,
-          z1: () => geometry.z1,
-          zc: () => (geometry.z0 + geometry.z1) / 2,
-          h: () => geometry.h,
-          w: () => geometry.w,
-          l: () => geometry.l,
-          area: () => geometry.w * geometry.l,
+          x0: () => geometryAt(index).x,
+          x1: () => geometryAt(index).x + geometryAt(index).w,
+          xc: () => geometryAt(index).x + geometryAt(index).w / 2,
+          y0: () => geometryAt(index).y,
+          y1: () => geometryAt(index).y + geometryAt(index).l,
+          yc: () => geometryAt(index).y + geometryAt(index).l / 2,
+          z0: () => geometryAt(index).z0,
+          z1: () => geometryAt(index).z1,
+          zc: () => (geometryAt(index).z0 + geometryAt(index).z1) / 2,
+          h: () => geometryAt(index).h,
+          w: () => geometryAt(index).w,
+          l: () => geometryAt(index).l,
+          area: () => geometryAt(index).w * geometryAt(index).l,
         };
-        FloorPlanGeometryBox.attach(reference, { label: geometry.id });
-        localReferences.set(geometry.id, reference);
-        return geometry;
+        const id = part.id || `part-${index + 1}`;
+        FloorPlanGeometryBox.attach(reference, { label: id });
+        localReferences.set(id, reference);
       });
+      return parts.map((_, index) => geometryAt(index));
     } finally {
       plan.partReferenceStack.pop();
     }
