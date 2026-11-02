@@ -1,0 +1,11 @@
+{
+  "json.schemas": [
+    {
+      "fileMatch": [
+        "/*.json5",
+        "/examples/*.json5"
+      ],
+      "url": "./floor-plan.schema.json"
+    }
+  ]
+}

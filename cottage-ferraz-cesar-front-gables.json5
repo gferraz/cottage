@@ -3,12 +3,13 @@
 // ÍNDICE DE EDIÇÃO — use Ctrl+F / Cmd+F para buscar os marcadores abaixo.
 // [01] Metadados e apresentação: título, resumo, coordenadas e viewport.
 //      [01.1] Configuração — padrões de paredes, telhados, aberturas e pavimentos.
+// [01.2] Parâmetros — parameters: espessura, pé-direito e recuo das meias-paredes.
 // [02] Terreno e implantação: terrain (limites/cotas) e building (posição).
 // [03] Zonas de referência: main, central, top, bottom, left, right e dorm.
 // [04] Pavimentos e cômodos:
 //      [04.1] Térreo — ground; office, hall, master, stairs, kitchen e garage.
 //      [04.2] Dormitórios — upper; unused-n e bedroom-n.
-//      Cada pavimento reúne rooms, items e openings.
+//      Aberturas laterais ficam em rooms[].openings; vãos entre pisos em floors[].openings.
 // [05] Paredes independentes:
 //      [05.1] Fachadas — front-wall, right-wall, rear-wall e left-wall.
 //      [05.2] Meias-paredes — IDs com prefixo knee-wall e knee-corner.
@@ -19,6 +20,8 @@
 // Coordenadas em metros. x0/y0/z0 em "to" referem-se à origem de "from".
 // Paredes: top: "roof" termina na cobertura e omite trechos sem telhado acima.
 {
+  $schema: "./floor-plan.schema.json",
+
   // [01] Metadados e apresentação
   title: "Cottage Ferraz-César",
   summary: "Residência de dois pavimentos em terreno cadastrado com diferença de cota de 6 m entre frente e fundos. O programa reúne ambientes sociais, íntimos e de serviço, além de varanda frontal e terraço posterior.",
@@ -35,7 +38,7 @@
     walls: {
       base: { level: "ground.z0" },
       top: "roof",
-      thickness: 0.12,
+      thickness: "params.wall_thickness",
       color: "desejo-ambar"
     },
     roofs: {
@@ -50,8 +53,16 @@
       opening: { w: 1.0, h: 2.1, z0: 0 }
     },
     floors: {
-      ceiling_height: 3
+      ceiling_height: "params.ground_height"
     }
+  },
+
+  // [01.2] Parâmetros
+  // Use params.nome nas medidas e expressões. Valores em metros.
+  parameters: {
+    wall_thickness: 0.12,
+    ground_height: 3,
+    knee_setback: 0.8
   },
 
   // [02] Terreno e implantação
@@ -89,12 +100,12 @@
     { id: "right",   rectangle: ["central.x1", "central.y0", "main.x1", "main.y1"], visible: false },
 
     // Referências do pavimento superior.
-    { id: "dorm-top", rectangle: ["top.x0", "top.y0 + 0.8", "top.x1", "top.y1"], color: "blue", visible: false },
-    { id: "dorm-top-right", rectangle: ["office.x0 + 0.8", "top.y0", "top.x1 - 0.8", "top.y1"], color: "blue", visible: false },
+    { id: "dorm-top", rectangle: ["top.x0", "top.y0 + params.knee_setback", "top.x1", "top.y1"], color: "blue", visible: false },
+    { id: "dorm-top-right", rectangle: ["office.x0 + params.knee_setback", "top.y0", "top.x1 - params.knee_setback", "top.y1"], color: "blue", visible: false },
 
     {
       id: "dorm-bottom",
-      rectangle: ["bottom.x0", "bottom.y0", "bottom.x1", "bottom.y1 - 0.8"],
+      rectangle: ["bottom.x0", "bottom.y0", "bottom.x1", "bottom.y1 - params.knee_setback"],
       color: "blue",
       visible: false
     },
@@ -126,8 +137,7 @@
           label: "Escritório",
           from: ["left.x0 - 0.8", "left.y0  - 2.5"],
           to: ["left.x1 - 1.1", "left.y0 + 1.5"],
-          // Aberturas do pavimento; aberturas locais ficam dentro do cômodo.
-      openings: [
+          openings: [
             { type: "door",   from: "right", to: "hall"  },
             { type: "window", from: "top",  dx: 0.9, w: 0.6 },
             { type: "window", from: "top",  dx: 1.5, w: 0.6 },
@@ -156,21 +166,39 @@
           from: ["office.x1", "main.y0"],
           to: ["right.x0", "office.y1"],
           classes: "circulation",
-          walls: ["left"]
+          walls: ["left"],
+          openings: [
+            { from: "top", to: "porch", type: "door", w: 1 }
+          ]
         },
         {
           id: "master",
           label: "Suíte Master",
           rectangle: ["left.x0", "office.y1", "left.x1 + 0.3", "y0 + 3.2"],
-          walls: ["top", "right"]
+          walls: ["top", "right"],
+          openings: [
+            { from: "left", to: "exterior", type: "window", dy: 0.6 },
+            { from: "left", to: "exterior", type: "window", dy: 2.1 }
+          ]
         },
-        { id: "closet", label: "Closet", from: ["left.x0", "master.y1"], to: ["x0 + 3.2", "y0 + 2.4"] },
+        {
+          id: "closet",
+          label: "Closet",
+          from: ["left.x0", "master.y1"],
+          to: ["x0 + 3.2", "y0 + 2.4"],
+          openings: [
+            { from: "right", to: "vestibule", type: "opening" }
+          ]
+        },
         {
           id: "vestibule",
           label: "Vest.",
           rectangle: ["closet.x1", "closet.y0", "master.x1", "closet.y1"],
           walls: ["right", "bottom", "left"],
-          overlaps: "corridor-2"
+          overlaps: "corridor-2",
+          openings: [
+            { from: "right", to: "living", type: "door", dy: 1.3 }
+          ]
         },
 
         {
@@ -179,7 +207,11 @@
           from: ["left.x0", "closet.y1"],
           to: ["left.x1", "knee-bottom.y0"],
           walls: ["top", "bottom", "right"],
-          classes: "wet"
+          classes: "wet",
+          openings: [
+            { from: "top", to: "vestibule", type: "door" },
+            { from: "left", to: "exterior", type: "window" }
+          ]
         },
         {
           id: "corridor-1",
@@ -200,7 +232,10 @@
           label: "Lavabo",
           rectangle: ["right.x0", "living.y1", "x0 + 2.4", "y0 + 1.2"],
           classes: "powder wet",
-          walls: ["top", "left"]
+          walls: ["top", "left"],
+          openings: [
+            { from: "left", to: "corridor-2", type: "door" }
+          ]
         },
         {
           id: "laundry",
@@ -219,7 +254,7 @@
           parts: [
             {
               id: "upper-flight",
-              from: ["right.x0", "living.y1", 3.0],
+              from: ["right.x0", "living.y1", "upper.z0"],
               to: ["right.x0 + 2.1", "y0 + 1.2", "z0 - 1.33"],
               classes: "stair-flight"
             },
@@ -253,7 +288,10 @@
           id: "dining",
           label: "Jantar",
           from: ["right.x0", "porch.y1"],
-          to: ["right.x1", "y0 + 3.4"]
+          to: ["right.x1", "y0 + 3.4"],
+          openings: [
+            { from: "top", to: "exterior", type: "window", w: 2.4, h: 1.5 }
+          ]
         },
         {
           id: "living",
@@ -267,7 +305,11 @@
           label: "Cozinha",
           from: ["dorm.x0", "masterbath.y1"],
           to: ["right.x0", "y0 + 3.9"],
-          classes: "wet"
+          classes: "wet",
+          openings: [
+            { from: "left", to: "exterior", type: "window", w: 2.4 },
+            { from: "bottom", to: "terrace", type: "door" }
+          ]
         },
 
         {
@@ -281,13 +323,19 @@
           label: "Despensa",
           rectangle: ["right.x0", "circulation.y1", "circulation.x1", "y0 + 1.8"],
           classes: "service pantry",
-          walls: ["top", "right", "left"]
+          walls: ["top", "right", "left"],
+          openings: [
+            { from: "top", to: "circulation", type: "opening" }
+          ]
         },
         {
           id: "mudroom",
           label: "Mudroom",
           rectangle: ["pantry.x1", "laundry.y1", "right.x1", "pantry.y1"],
-          classes: "service mudroom"
+          classes: "service mudroom",
+          openings: [
+            { from: "right", to: "garage", type: "door" }
+          ]
         },
 
         {
@@ -296,7 +344,11 @@
           pos: ["laundry.x1", "laundry.y1"],
           size: [4.0, 6.5],
           classes: "service garage",
-          walls: ["top", "right", "bottom"]
+          walls: ["top", "right", "bottom"],
+          openings: [
+            { from: "top", to: "exterior", type: "door", w: 3.2 },
+            { from: "bottom", to: "exterior", type: "door", w: 3.2 }
+          ]
         },
         {
           id: "terrace",
@@ -323,49 +375,27 @@
         { type: "railing", pos: ["porch.x0",        "porch.y0"], size: ["hall.xc - 0.9 - porch.x0", 0.08, 1.1] },
         { type: "railing", pos: ["hall.xc + 0.9",   "porch.y0"], size: ["porch.x1 - hall.xc - 0.9", 0.08, 1.1] },
         { type: "railing", pos: ["porch.x1 - 0.08", "porch.y0"], size: [0.08, "porch.l", 1.1] }
-      ],
-      // Aberturas do pavimento; aberturas locais ficam dentro do cômodo.
-      openings: [
-        { from: "hall.top", to: "porch", type: "door", w: 1.0 },
-
-        { from: "dining.top", to: "exterior", type: "window", w: 2.4, h: 1.5 },
-
-        { from: "closet.right", to: "vestibule", type: "opening" },
-        { from: "vestibule.right", to: "living", type: "door", dy: 1.3 },
-        { from: "master.left", to: "exterior", type: "window", dy: 0.6 },
-        { from: "master.left", to: "exterior", type: "window", dy: 2.1 },
-        { from: "masterbath.top", to: "vestibule", type: "door" },
-        { from: "masterbath.left", to: "exterior", type: "window" },
-
-        { from: "kitchen.left", to: "exterior", type: "window", w: 2.4 },
-        { from: "pantry.top", to: "circulation", type: "opening" },
-        { from: "powder.left", to: "corridor-2", type: "door" },
-        { from: "mudroom.right", to: "garage", type: "door" },
-        { from: "garage.top", to: "exterior", type: "door", w: 3.2 },
-        { from: "garage.bottom", to: "exterior", type: "door", w: 3.2 },
-        { from: "kitchen.bottom", to: "terrace", type: "door" }
       ]
     },
     // [04.2] Dormitórios — upper
     {
       id: "upper",
       label: "Dormitórios",
-      z0: 3,
+      z0: "params.ground_height",
 
       rooms: [
         {
           id: "unused-n",
           label: "Sem uso",
-          from: ["office.x0 + 0.8", "office.y0"],
-          to: ["office.x1 - 0.8", "dorm-top.y0"]
+          from: ["office.x0 + params.knee_setback", "office.y0"],
+          to: ["office.x1 - params.knee_setback", "dorm-top.y0"]
         },
         {
           id: "bedroom-n",
           label: "Quarto N",
           from: ["dorm-top.x0", "dorm-top.y0"],
           to: ["knee-left.x0", "dorm-top.y1"],
-          // Aberturas do pavimento; aberturas locais ficam dentro do cômodo.
-      openings: [{ type: "door", from: "right", to: "playroom", dy: 3 }],
+          openings: [{ type: "door", from: "right", to: "playroom", dy: 3 }],
           walls: []
         },
       ],
@@ -438,15 +468,15 @@
     },
     {
       id: "knee-wall-office-left",
-      from: ["office.x0 + 0.8", "office.y0"],
+      from: ["office.x0 + params.knee_setback", "office.y0"],
       to: ["x0", "office.y1"],
       base: { level: "upper.z0" },
       color: "blue"
     },
     {
       id: "knee-wall-office-right",
-      from: ["office.x1 - 0.8", "office.y0"],
-      to: ["office.x1 - 0.8", "office.y1"],
+      from: ["office.x1 - params.knee_setback", "office.y0"],
+      to: ["office.x1 - params.knee_setback", "office.y1"],
       base: { level: "upper.z0" },
       color: "blue"
     },
@@ -454,8 +484,8 @@
       id: "knee-corner-front-right",
       path: {
         points: [
-          ["right.x1 - 0.8", "top.y0"],
-          ["right.x1 - 0.8", "knee-top.y0"],
+          ["right.x1 - params.knee_setback", "top.y0"],
+          ["right.x1 - params.knee_setback", "knee-top.y0"],
           ["right.x1", "knee-top.y0"]
         ]
       },
@@ -526,8 +556,8 @@
     { id: "main-left", label: "parede esquerda", pos: ["left.x0", -2.5], l: 20, color: "green" },
 
     { id: "knee-top",    label: "meia parede frontal",  pos: [-4.0, "dorm.y0"], w: 20, color: "green" },
-    { id: "knee-right",  label: "meia parede direita",  pos: ["main-roof.x1 - 0.8", -2.5], l: 20, color: "terracotta" },
-    { id: "knee-left",   label: "meia parede esquerda", pos: ["main-roof.x0 + 0.8", -2.5], l: 20, color: "terracotta" },
+    { id: "knee-right",  label: "meia parede direita",  pos: ["main-roof.x1 - params.knee_setback", -2.5], l: 20, color: "terracotta" },
+    { id: "knee-left",   label: "meia parede esquerda", pos: ["main-roof.x0 + params.knee_setback", -2.5], l: 20, color: "terracotta" },
     { id: "knee-bottom", label: "meia parede traseira", pos: [-4.0, "dorm.y1"], w: 20, color: "green" }
 
   ]

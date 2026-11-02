@@ -634,7 +634,8 @@ const FloorPlanLists = {
     }
 
     plan.errors.forEach(
-      ({ index, id, opening, category = "opening", message }) => {
+      (error) => {
+        const { index, id, opening, category = "opening", message } = error;
         const item = document.createElement("div");
         item.className = "error-list-item";
         const labels = {
@@ -649,9 +650,17 @@ const FloorPlanLists = {
           object: "Objeto",
           guide: "Guia",
           floor: "Piso",
+          wall: "Parede",
         };
         const name = id || (index === undefined ? "" : ` ${index + 1}`);
         item.textContent = `${labels[category] || "Erro"}${name ? ` ${name}` : ""}: ${message} `;
+        const location = error.location ?? FloorPlanParser.errorLocation(error, plan.currentConfig);
+        if (location) {
+          const sourceLocation = document.createElement("div");
+          sourceLocation.className = "error-source-location";
+          sourceLocation.textContent = FloorPlanParser.formatLocation(location);
+          item.append(sourceLocation);
+        }
         const source = document.createElement("code");
         if (opening !== undefined) source.textContent = JSON.stringify(opening);
         item.append(source);

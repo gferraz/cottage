@@ -1,0 +1,31 @@
+{
+  $schema: "../floor-plan.schema.json",
+  title: "Exemplo de edição",
+  // Exemplo JSON5: chaves sem aspas, comentários e parâmetros reutilizáveis.
+  parameters: {
+    wall_thickness: 0.12,
+    ground_height: 3,
+    room_width: 4
+  },
+  config: {
+    walls: { thickness: "params.wall_thickness", color: "desejo-ambar" },
+    floors: { ceiling_height: "params.ground_height" },
+    openings: { window: { w: 0.9, h: 1.5, z0: 0.9 } }
+  },
+  floors: [{
+    id: "ground",
+    label: "Térreo",
+    z0: 0,
+    rooms: [{
+      id: "office",
+      label: "Escritório",
+      from: [0, 0],
+      to: ["x0 + params.room_width", "y0 + 3"],
+      walls: ["top", "right", "bottom", "left"],
+      openings: [
+        { type: "window", from: "left", to: "exterior" },
+        { type: "door", from: "bottom", to: "exterior", w: 1 }
+      ]
+    }]
+  }]
+}

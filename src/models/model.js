@@ -1,5 +1,68 @@
 const FloorPlanModel = {
+  resolveParameters(config) {
+    if (!config.parameters) return config;
+    const values = new Map();
+    const stack = new Set();
+    const evaluate = (name) => {
+      if (values.has(name)) return values.get(name);
+      if (!Object.hasOwn(config.parameters, name)) throw new Error(`Parâmetro desconhecido: params.${name}`);
+      if (stack.has(name)) throw new Error(`Referência circular no parâmetro params.${name}`);
+      stack.add(name);
+      try {
+        const value = resolver.resolve(config.parameters[name]);
+        if (!Number.isFinite(value)) throw new Error(`O parâmetro params.${name} precisa ser numérico`);
+        values.set(name, value);
+        return value;
+      } catch (error) {
+        if (!error.location) {
+          error.location = window.FloorPlanParser?.location(config.parameters, name);
+          if (error.location) error.message = `${FloorPlanParser.formatLocation(error.location)}: ${error.message}`;
+        }
+        throw error;
+      } finally {
+        stack.delete(name);
+      }
+    };
+    const resolver = {
+      resolveExpression: FloorPlanGeometry.resolveExpression,
+      resolve(value) {
+        if (typeof value === "number") return value;
+        const text = String(value).trim();
+        if (/^params\.[\w-]+$/.test(text)) return evaluate(text.slice(7));
+        if (text !== "" && Number.isFinite(Number(text))) return Number(text);
+        if (!/[()+*/]|\s[+-]\s|^[+-]/.test(text)) {
+          throw new Error(`Valor de parâmetro inválido: ${text}. Use números ou referências params.nome`);
+        }
+        return this.resolveExpression(text);
+      },
+    };
+    for (const name of Object.keys(config.parameters)) evaluate(name);
+    const visit = (value) => {
+      if (typeof value === "string" && /\bparams\.[\w-]+/.test(value)) {
+        if (/^params\.[\w-]+$/.test(value)) return evaluate(value.slice(7));
+        return value.replace(/\bparams\.([\w-]+)/g, (_, name) => `(${evaluate(name)})`);
+      }
+      if (!value || typeof value !== "object") return value;
+      const childValue = (child, key) => {
+        try {
+          return key === "parameters" ? child : visit(child);
+        } catch (error) {
+          if (!error.location) {
+            error.location = window.FloorPlanParser?.location(value, key) ?? window.FloorPlanParser?.location(value);
+            if (error.location) error.message = `${FloorPlanParser.formatLocation(error.location)}: ${error.message}`;
+          }
+          throw error;
+        }
+      };
+      const result = Array.isArray(value) ? value.map(childValue)
+        : Object.fromEntries(Object.entries(value).map(([key, child]) => [key, childValue(child, key)]));
+      return window.FloorPlanParser?.copyLocation(value, result) ?? result;
+    };
+    return visit(config);
+  },
+
   applyDefaults(config) {
+    config = this.resolveParameters(config);
     const defaults = config.config ?? {};
     const roofDefaults = Object.fromEntries(
       ["type", "pitch", "eave", "rake"].filter((key) => defaults.roofs?.[key] !== undefined)
@@ -8,11 +71,13 @@ const FloorPlanModel = {
     const expand = (floor) => {
       const ceilingHeight = floor.ceiling_height ?? floor.wall_max_height ??
         defaults.floors?.ceiling_height ?? defaults.floors?.wall_max_height;
-      return {
+      const result = {
         ...floor,
         ...(ceilingHeight !== undefined ? { ceiling_height: ceilingHeight } : {}),
         ...(floor.roofs ? { roofs: floor.roofs.map((roof) => ({ ...roofDefaults, ...roof })) } : {}),
       };
+      if (floor.roofs) result.roofs.forEach((roof, index) => window.FloorPlanParser?.copyLocation(floor.roofs[index], roof));
+      return window.FloorPlanParser?.copyLocation(floor, result) ?? result;
     };
     const result = expand(config);
     if (config.floors) result.floors = config.floors.map(expand);

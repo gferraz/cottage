@@ -19,6 +19,34 @@ O parser é embutido na aplicação; não é necessário instalar biblioteca ou 
 
 O seletor de piso muda apenas o desenho. As listas, totais e erros são consolidados entre todos os pisos.
 
+## Editar a planta
+
+O arquivo ativo é `cottage-ferraz-cesar-front-gables.json5`. O índice no início contém marcadores para buscar com Ctrl+F / Cmd+F. As aberturas laterais ficam junto ao cômodo, em `rooms[].openings`; `from: "left"` refere-se à lateral esquerda desse cômodo. Vãos entre pavimentos continuam em `floors[].openings`.
+
+Medidas reutilizáveis ficam em `parameters`:
+
+```json5
+parameters: {
+  wall_thickness: 0.12,
+  ground_height: 3,
+  knee_setback: 0.8
+},
+config: {
+  walls: { thickness: "params.wall_thickness", color: "desejo-ambar" },
+  floors: { ceiling_height: "params.ground_height" }
+}
+```
+
+Use `"params.nome"` como valor, ou em expressões geométricas como `"office.x0 + params.knee_setback"`. Parâmetros podem depender de outros parâmetros (`"params.ground_height * 2"`); ciclos, nomes inexistentes e valores não numéricos geram erro. Não use referências a cômodos dentro de `parameters`.
+
+`config.walls` define padrões somente das paredes independentes; `config.roofs`, dos telhados; `config.openings`, das dimensões por tipo de abertura; e `config.floors`, dos pavimentos. O valor explícito no elemento prevalece. `ceiling_height` é o nome atual; `wall_max_height` continua aceito por compatibilidade.
+
+O [JSON Schema](floor-plan.schema.json) fornece sugestões e validação estrutural em editores com suporte a JSON5 e JSON Schema. O arquivo ativo mantém chaves sem aspas, comentários e vírgulas finais. `.vscode/settings.json` registra o schema local, sem forçar o modo JSONC; o VS Code precisa de suporte a JSON5 com integração ao schema para oferecer validação e autocompletar nesse formato.
+
+Veja um [exemplo curto e carregável](examples/parametros-e-aberturas.json5). O schema detecta erros de formato, propriedades e tipos; referências geométricas, conexões e colisões são verificadas pela aplicação.
+
+Ao carregar um arquivo, os erros indicam nome, linha, coluna e caminho, por exemplo `casa.json5:42:7 · floors[0].rooms[3].openings[0]`. A linha aponta para o início do objeto que originou o erro; erros sintáticos apontam para a posição do problema. Arquivos carregados sem nome, como pelo link de compartilhamento, aparecem como `JSON5`.
+
 ## Estrutura mínima do JSON
 
 ```json
@@ -28,7 +56,7 @@ O seletor de piso muda apenas o desenho. As listas, totais e erros são consolid
     "id": "ground",
     "label": "Térreo",
     "z0": 0,
-    "wall_max_height": 3,
+    "ceiling_height": 3,
     "rooms": [],
     "items": [],
     "openings": []
@@ -36,7 +64,7 @@ O seletor de piso muda apenas o desenho. As listas, totais e erros são consolid
 }
 ```
 
-Cada piso deve informar `z0`, sua cota vertical, e `wall_max_height`, a altura máxima das paredes desse piso. Quando existe um piso acima, a altura efetiva das paredes é limitada pela diferença entre os `z0`; no último piso, usa-se `wall_max_height`. O antigo `h` do piso não é mais usado para definir sua posição.
+Cada piso deve informar `z0`, sua cota vertical, e `ceiling_height`, o pé-direito desse piso. Quando existe um piso acima, a altura efetiva das paredes é limitada pela diferença entre os `z0`; no último piso, usa-se `ceiling_height`. O antigo `h` do piso não é mais usado para definir sua posição.
 
 Os IDs dos cômodos são obrigatórios, globais e únicos. IDs de zonas, itens, janelas, passagens e guias também devem ser únicos quando informados. Objetos geométricos com ID podem ser referenciados globalmente quando o tipo oferece referências. `x0`, `y0` e `z0` são palavras reservadas e não podem ser usados como IDs.
 

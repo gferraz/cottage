@@ -900,7 +900,7 @@ class FloorPlan {
    */
   async loadFile(file) {
     const sourceText = await file.text();
-    const config = FloorPlanParser.parse(sourceText);
+    const config = FloorPlanParser.parse(sourceText, { filename: file.name });
     this.currentSourceText = sourceText;
     return this.load(config);
   }

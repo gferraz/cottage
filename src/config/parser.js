@@ -1,9 +1,53 @@
 const FloorPlanParser = {
-  parse(sourceText) {
+  locations: new WeakMap(),
+  propertyLocations: new WeakMap(),
+
+  location(value, property) {
+    if (!value || typeof value !== "object") return;
+    return property === undefined ? this.locations.get(value) : this.propertyLocations.get(value)?.get(property);
+  },
+
+  copyLocation(source, target) {
+    const location = this.location(source);
+    if (location) this.locations.set(target, location);
+    const properties = this.propertyLocations.get(source);
+    if (properties) this.propertyLocations.set(target, properties);
+    return target;
+  },
+
+  errorLocation(error, config) {
+    const direct = this.location(error.opening);
+    if (direct) return direct;
+    const seen = new Set();
+    const find = (value) => {
+      if (!value || typeof value !== "object" || seen.has(value)) return;
+      seen.add(value);
+      if (error.id && value.id === error.id) return this.location(value);
+      for (const child of Object.values(value)) {
+        const found = find(child);
+        if (found) return found;
+      }
+    };
+    return find(config);
+  },
+
+  formatLocation(location) {
+    return `${location.file || "JSON5"}:${location.line}:${location.column} · ${location.path || "$"}`;
+  },
+
+  parse(sourceText, { filename = "" } = {}) {
     const source = String(sourceText).replace(/^\uFEFF/, "");
     let index = 0;
+    let activePath = "";
+    const locationAt = (offset, path) => {
+      const lines = source.slice(0, offset).split("\n");
+      return { file: filename, line: lines.length, column: lines.at(-1).length + 1, path };
+    };
     const fail = (message) => {
-      throw new Error(`JSON5: ${message} at position ${index}`);
+      const location = locationAt(index, activePath);
+      const error = new Error(`${this.formatLocation(location)}: ${message}`);
+      error.location = location;
+      throw error;
     };
     const skipSpace = () => {
       while (index < source.length) {
@@ -45,11 +89,16 @@ const FloorPlanParser = {
       index += match[0].length;
       return match[0];
     };
-    const parseValue = () => {
+    const parseValue = (path = "") => {
       skipSpace();
+      activePath = path;
       const character = source[index];
-      if (character === "{") return parseObject();
-      if (character === "[") return parseArray();
+      if (character === "{" || character === "[") {
+        const location = locationAt(index, path);
+        const value = character === "{" ? parseObject(path) : parseArray(path);
+        this.locations.set(value, location);
+        return value;
+      }
       if (character === '"' || character === "'") return parseString(character);
       const token = source.slice(index).match(/^(?:[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?|true|false|null|NaN|Infinity)/)?.[0];
       if (!token) fail("expected a value");
@@ -61,12 +110,12 @@ const FloorPlanParser = {
       if (token === "Infinity") return Number.POSITIVE_INFINITY;
       return Number(token);
     };
-    const parseArray = () => {
+    const parseArray = (path) => {
       index += 1;
       const values = [];
       skipSpace();
       while (source[index] !== "]") {
-        values.push(parseValue());
+        values.push(parseValue(`${path}[${values.length}]`));
         skipSpace();
         if (source[index] === ",") {
           index += 1;
@@ -78,18 +127,22 @@ const FloorPlanParser = {
       index += 1;
       return values;
     };
-    const parseObject = () => {
+    const parseObject = (path) => {
       index += 1;
       const value = {};
+      const properties = new Map();
       skipSpace();
       while (source[index] !== "}") {
+        const propertyStart = index;
         const key = source[index] === '"' || source[index] === "'"
           ? parseString(source[index])
           : parseIdentifier();
         skipSpace();
         if (source[index] !== ":") fail("expected ':'");
         index += 1;
-        value[key] = parseValue();
+        activePath = path ? `${path}.${key}` : key;
+        properties.set(key, locationAt(propertyStart, activePath));
+        value[key] = parseValue(activePath);
         skipSpace();
         if (source[index] === ",") {
           index += 1;
@@ -99,6 +152,7 @@ const FloorPlanParser = {
       }
       if (source[index] !== "}") fail("unterminated object");
       index += 1;
+      this.propertyLocations.set(value, properties);
       return value;
     };
     const result = parseValue();

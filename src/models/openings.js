@@ -21,11 +21,12 @@ const FloorPlanOpenings = {
       (room.openings ?? []).map((opening) => {
         const from = String(opening.from ?? "").trim();
         const relativeWall = /^(top|right|bottom|left)$/.test(from);
-        return {
+        const result = {
           ...opening,
           from: relativeWall ? `${room.id}.${from}` : from,
           roomId: room.id,
         };
+        return window.FloorPlanParser?.copyLocation(opening, result) ?? result;
       }),
     );
   },

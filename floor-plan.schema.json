@@ -1,0 +1,2174 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Planta da casa",
+  "description": "Estrutura de edição JSON/JSONC/JSON5. Referências e colisões são validadas ao carregar a planta.",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "coordinates": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string",
+            "minLength": 1,
+            "description": "Número, referência geométrica ou expressão com params.nome."
+          }
+        ]
+      },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "parameters": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^[A-Za-z_][A-Za-z0-9_-]*$"
+      },
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string",
+            "minLength": 1,
+            "description": "Número, referência geométrica ou expressão com params.nome."
+          }
+        ]
+      },
+      "description": "Medidas nomeadas; use params.nome. Parâmetros aceitam números e expressões entre parâmetros, sem referências geométricas."
+    },
+    "config": {
+      "type": "object",
+      "properties": {
+        "walls": {
+          "type": "object",
+          "properties": {
+            "base": {
+              "anyOf": [
+                {
+                  "const": "terrain"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "level": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Número, referência geométrica ou expressão com params.nome."
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "level"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "top": {
+              "anyOf": [
+                {
+                  "const": "roof"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "level": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Número, referência geométrica ou expressão com params.nome."
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "level"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "thickness": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            },
+            "color": {
+              "type": "string",
+              "description": "Token do catálogo (ex.: desejo-ambar, blue) ou cor CSS."
+            }
+          },
+          "additionalProperties": false
+        },
+        "roofs": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "enum": [
+                "gable"
+              ]
+            },
+            "pitch": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "exclusiveMaximum": 90
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            },
+            "eave": {
+              "anyOf": [
+                {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  ]
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            },
+            "rake": {
+              "anyOf": [
+                {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  ]
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "openings": {
+          "type": "object",
+          "properties": {
+            "door": {
+              "type": "object",
+              "properties": {
+                "w": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  ]
+                },
+                "h": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  ]
+                },
+                "z0": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            "window": {
+              "type": "object",
+              "properties": {
+                "w": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  ]
+                },
+                "h": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  ]
+                },
+                "z0": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            },
+            "opening": {
+              "type": "object",
+              "properties": {
+                "w": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  ]
+                },
+                "h": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  ]
+                },
+                "z0": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "floors": {
+          "type": "object",
+          "properties": {
+            "ceiling_height": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            },
+            "wall_max_height": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "viewport": {
+      "type": "object",
+      "properties": {
+        "size": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "origin": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "additionalProperties": false
+    },
+    "terrain": {
+      "type": "object"
+    },
+    "building": {
+      "type": "object"
+    },
+    "theme": {
+      "type": "object"
+    },
+    "solar": {
+      "type": "object"
+    },
+    "item-types": {
+      "type": "object"
+    },
+    "zones": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/geometry"
+      }
+    },
+    "floors": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/floor"
+      }
+    },
+    "walls": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/wall"
+      }
+    },
+    "roofs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/roof"
+      }
+    },
+    "guides": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/geometry"
+      }
+    },
+    "id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "z0": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "string",
+          "minLength": 1,
+          "description": "Número, referência geométrica ou expressão com params.nome."
+        }
+      ]
+    },
+    "ceiling_height": {
+      "anyOf": [
+        {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ]
+    },
+    "wall_max_height": {
+      "anyOf": [
+        {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        {
+          "type": "string",
+          "minLength": 1
+        }
+      ],
+      "description": "Nome antigo de ceiling_height, aceito por compatibilidade."
+    },
+    "rooms": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/room"
+      }
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/item"
+      }
+    },
+    "openings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/opening"
+      }
+    },
+    "windows": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/opening"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "geometry": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "from": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "to": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "pos": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "rectangle": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "x": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "y": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "w": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "l": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "h": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "z0": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "rotation": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "inset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "outset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "color": {
+          "type": "string"
+        },
+        "classes": {
+          "type": "string"
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "orientation": {
+          "enum": [
+            "longitudinal",
+            "transverse"
+          ]
+        }
+      }
+    },
+    "room": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "from": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "to": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "pos": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "rectangle": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "x": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "y": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "w": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "l": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "h": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "z0": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "rotation": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "inset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "outset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "color": {
+          "type": "string"
+        },
+        "classes": {
+          "type": "string"
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "orientation": {
+          "enum": [
+            "longitudinal",
+            "transverse"
+          ]
+        },
+        "walls": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "top",
+                  "right",
+                  "bottom",
+                  "left"
+                ]
+              }
+            },
+            {
+              "type": "object"
+            }
+          ]
+        },
+        "parts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/room"
+          }
+        },
+        "openings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/opening"
+          }
+        },
+        "overlaps": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "overlays": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "item": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "from": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "to": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "pos": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "rectangle": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "x": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "y": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "w": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "l": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "h": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "z0": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "rotation": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "inset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "outset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "color": {
+          "type": "string"
+        },
+        "classes": {
+          "type": "string"
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "orientation": {
+          "enum": [
+            "longitudinal",
+            "transverse"
+          ]
+        },
+        "type": {
+          "type": "string"
+        },
+        "showLabel": {
+          "type": "boolean"
+        }
+      }
+    },
+    "opening": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "door",
+            "window",
+            "opening"
+          ]
+        },
+        "from": {
+          "type": "string",
+          "description": "Lado local (left/right/top/bottom) dentro do cômodo; id.lado no pavimento; ID do piso para vão vertical."
+        },
+        "to": {
+          "type": "string",
+          "description": "ID do cômodo ou exterior; ID do piso para vão vertical."
+        },
+        "w": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "h": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "z0": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "dx": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "dy": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "position": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "x": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "y": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "length": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "pos": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        }
+      },
+      "required": [
+        "from"
+      ],
+      "additionalProperties": false
+    },
+    "floor": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "z0": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "ceiling_height": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "wall_max_height": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ],
+          "description": "Nome antigo de ceiling_height, aceito por compatibilidade."
+        },
+        "rooms": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/room"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/item"
+          }
+        },
+        "openings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/opening"
+          }
+        },
+        "windows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/opening"
+          }
+        },
+        "roofs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/roof"
+          }
+        },
+        "zones": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/geometry"
+          }
+        },
+        "guides": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/geometry"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "z0"
+      ],
+      "additionalProperties": false
+    },
+    "roof": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "from": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "to": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "pos": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "rectangle": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "x": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "y": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "w": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "l": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "h": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "z0": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "rotation": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "inset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "outset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "color": {
+          "type": "string"
+        },
+        "classes": {
+          "type": "string"
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "orientation": {
+          "enum": [
+            "longitudinal",
+            "transverse"
+          ]
+        },
+        "type": {
+          "enum": [
+            "gable"
+          ]
+        },
+        "pitch": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0,
+              "exclusiveMaximum": 90
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "eave": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              ]
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "rake": {
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              ]
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "base": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "label": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "from": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Número, referência geométrica ou expressão com params.nome."
+                      }
+                    ]
+                  },
+                  "minItems": 2,
+                  "maxItems": 3
+                },
+                "to": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Número, referência geométrica ou expressão com params.nome."
+                      }
+                    ]
+                  },
+                  "minItems": 2,
+                  "maxItems": 3
+                },
+                "pos": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Número, referência geométrica ou expressão com params.nome."
+                      }
+                    ]
+                  },
+                  "minItems": 2,
+                  "maxItems": 3
+                },
+                "size": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Número, referência geométrica ou expressão com params.nome."
+                      }
+                    ]
+                  },
+                  "minItems": 2,
+                  "maxItems": 3
+                },
+                "rectangle": {
+                  "type": "array",
+                  "items": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "description": "Número, referência geométrica ou expressão com params.nome."
+                      }
+                    ]
+                  },
+                  "minItems": 4,
+                  "maxItems": 4
+                },
+                "x": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                },
+                "y": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                },
+                "w": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                },
+                "l": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                },
+                "h": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                },
+                "z0": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                },
+                "rotation": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                },
+                "inset": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "outset": {
+                  "type": "array",
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "color": {
+                  "type": "string"
+                },
+                "classes": {
+                  "type": "string"
+                },
+                "visible": {
+                  "type": "boolean"
+                },
+                "orientation": {
+                  "enum": [
+                    "longitudinal",
+                    "transverse"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "openings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/opening"
+          }
+        },
+        "windows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/opening"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "wall": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "base": {
+          "anyOf": [
+            {
+              "const": "terrain"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "level"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "top": {
+          "anyOf": [
+            {
+              "const": "roof"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "level"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "thickness": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "color": {
+          "type": "string",
+          "description": "Token do catálogo (ex.: desejo-ambar, blue) ou cor CSS."
+        },
+        "from": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "to": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "path": {
+          "type": "object",
+          "properties": {
+            "points": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                },
+                "minItems": 2,
+                "maxItems": 2
+              },
+              "minItems": 2
+            }
+          },
+          "required": [
+            "points"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "required": [
+            "from",
+            "to"
+          ],
+          "not": {
+            "required": [
+              "path"
+            ]
+          }
+        },
+        {
+          "required": [
+            "path"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "from"
+                ]
+              },
+              {
+                "required": [
+                  "to"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}
