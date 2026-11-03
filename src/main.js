@@ -168,7 +168,7 @@ class FloorPlan {
         if (!Array.isArray(floors)) return;
         if (event.target.value === "__all_floors__") {
           this.showAllFloors = true;
-          this.renderFacade3D();
+          this.load(this.currentConfig, { preservePresentation: true });
           return;
         }
         this.showAllFloors = false;
@@ -326,6 +326,72 @@ class FloorPlan {
       }
       pending = next;
     }
+  }
+
+  renderPlanFloors(config, selectedFloor) {
+    const floors = this.showAllFloors ? (config.floors ?? [config]) : [selectedFloor];
+    const keys = ["roomElements", "stairElements", "itemElements", "openings", "windows"];
+    const combined = Object.fromEntries(keys.map((key) => [key, []]));
+    const collisionErrors = [];
+    const originalFloorId = this.currentFloorId;
+    const originalHeight = this.currentFloorHeight;
+    try {
+      for (const floorConfig of floors) {
+        this.currentFloorId = floorConfig.id || null;
+        this.currentFloorHeight = Number(floorConfig.z0 ?? 0);
+        keys.forEach((key) => { this[key] = []; });
+        const invalidRoomIds = this.invalidRoomIds ?? new Set();
+        const validRooms = (floorConfig.rooms ?? []).filter((room) => room.id
+          && this.roomDefinitions.get(room.id) === room
+          && !invalidRoomIds.has(room.id));
+        this.addRooms(validRooms);
+        if (!this.showAllFloors) this.addSpanningStairs(config, floorConfig);
+        this.updateOverlaps();
+        this.renderWallsForFloor(floorConfig);
+        if (!this.showAllFloors) this.addVisibleVerticalOpenings(config, floorConfig);
+        const validZoneIds = this.validZoneIds ?? new Set();
+        this.addZones(this.visibleZones(this.showAllFloors ? { ...config, zones: [] } : config, floorConfig).filter((zone) => validZoneIds.has(zone.id)));
+        (floorConfig.items ?? []).forEach((item, index) => {
+          try {
+            this.addItem(item);
+          } catch (error) {
+            this.errors.push({ index, opening: item, category: "item", message: error.message });
+          }
+        });
+        this.updateOverlaps();
+        [...(floorConfig.openings ?? []), ...this.roomOpenings(floorConfig)].forEach((opening, index) => {
+          if (this.isVerticalOpening(opening)) return;
+          try {
+            this.addOpening(opening);
+          } catch (error) {
+            this.errors.push({ index, opening, category: opening.type === "window" ? "window" : "opening", message: error.message });
+          }
+        });
+        (floorConfig.windows ?? []).forEach((window, index) => {
+          try {
+            this.addWindow(window);
+          } catch (error) {
+            this.errors.push({ index, opening: window, category: "window", message: error.message });
+          }
+        });
+        keys.forEach((key) => {
+          this[key].forEach((entry) => {
+            if (entry.dataset) entry.dataset.floorId = floorConfig.id || "";
+          });
+          combined[key].push(...this[key]);
+        });
+        collisionErrors.push(...this.errors.filter((error) => ["collision", "overlap"].includes(error.category)));
+      }
+      keys.forEach((key) => { this[key] = combined[key]; });
+      this.errors = [...this.errors.filter((error) => !["collision", "overlap"].includes(error.category)), ...collisionErrors];
+      if (this.showAllFloors && config.floors) {
+        this.addZones((config.zones ?? []).filter((zone) => this.validZoneIds?.has(zone.id)));
+      }
+    } finally {
+      this.currentFloorId = originalFloorId;
+      this.currentFloorHeight = originalHeight;
+    }
+    FloorPlanWalls.renderIndependentWalls(this);
   }
 
   renderWallsForFloor(floorConfig) {
@@ -771,7 +837,7 @@ class FloorPlan {
         if (config.floors.length > 1) {
           const label = document.createElement("label");
           label.className = "floor-option";
-          label.title = "Mostrar todos os pisos na perspectiva 3D";
+          label.title = "Mostrar todos os pisos na planta baixa e na perspectiva 3D";
           const input = document.createElement("input");
           input.type = "radio";
           input.name = "floor-selection";
@@ -794,48 +860,14 @@ class FloorPlan {
     document.querySelector("#project-overview")?.removeAttribute("hidden");
     this.clear();
     this.prepareRoomReferences(config);
-    this.validateInactiveFloorFeatures(config, floorIndex);
+    if (!this.showAllFloors) this.validateInactiveFloorFeatures(config, floorIndex);
     this.prepareGlobalLists(config);
     try {
       this.renderTerrain(config.terrain);
     } catch (error) {
       this.errors.push({ category: "presentation", message: error.message });
     }
-    const invalidRoomIds = this.invalidRoomIds ?? new Set();
-    const validRooms = (floorConfig.rooms ?? []).filter((room) => room.id
-      && this.roomDefinitions.get(room.id) === room
-      && !invalidRoomIds.has(room.id));
-    this.addRooms(validRooms);
-    this.addSpanningStairs(config, floorConfig);
-    this.updateOverlaps();
-    this.renderWallsForFloor(floorConfig);
-    FloorPlanWalls.renderIndependentWalls(this);
-    this.addVisibleVerticalOpenings(config, floorConfig);
-    const validZoneIds = this.validZoneIds ?? new Set();
-    this.addZones(this.visibleZones(config, floorConfig).filter((zone) => validZoneIds.has(zone.id)));
-    (floorConfig.items ?? []).forEach((item, index) => {
-      try {
-        this.addItem(item);
-      } catch (error) {
-        this.errors.push({ index, opening: item, category: "item", message: error.message });
-      }
-    });
-    this.updateOverlaps();
-    [...(floorConfig.openings ?? []), ...this.roomOpenings(floorConfig)].forEach((opening, index) => {
-      if (this.isVerticalOpening(opening)) return;
-      try {
-        this.addOpening(opening);
-      } catch (error) {
-        this.errors.push({ index, opening, category: opening.type === "window" ? "window" : "opening", message: error.message });
-      }
-    });
-    (floorConfig.windows ?? []).forEach((window, index) => {
-      try {
-        this.addWindow(window);
-      } catch (error) {
-        this.errors.push({ index, opening: window, category: "window", message: error.message });
-      }
-    });
+    this.renderPlanFloors(config, floorConfig);
     this.updateLayerVisibility();
     this.renderMultiFloorUnderlay(floorConfig);
     try {
@@ -843,7 +875,9 @@ class FloorPlan {
     } catch (error) {
       this.errors.push({ category: "presentation", message: error.message });
     }
-    const visibleRoofs = this.visibleRoofs(config, floorConfig);
+    const visibleRoofs = this.showAllFloors && config.floors
+      ? [...(config.roofs ?? []), ...config.floors.flatMap((floor) => floor.roofs ?? [])]
+      : this.visibleRoofs(config, floorConfig);
     this.renderRoofs(visibleRoofs);
     if (this.roofSwitch) {
       const hasRoofs = visibleRoofs.length > 0;
@@ -858,7 +892,9 @@ class FloorPlan {
       this.roofOnlySwitch.disabled = !hasRoofs;
       this.roofOnlySwitch.closest(".visibility-switch")?.toggleAttribute("hidden", !hasRoofs);
     }
-    this.renderGuides(this.visibleGuides(config, floorConfig));
+    this.renderGuides(this.showAllFloors && config.floors
+      ? [...(config.guides ?? []), ...config.floors.flatMap((floor) => floor.guides ?? [])]
+      : this.visibleGuides(config, floorConfig));
     const defaultFacades = [
       { id: "front", label: "Fachada frontal", direction: "front" },
       { id: "rear", label: "Fachada posterior", direction: "rear" },

@@ -17,7 +17,7 @@ Arquivos `.json5` e `.jsonc` também são aceitos. Eles usam a mesma estrutura d
 
 O parser é embutido na aplicação; não é necessário instalar biblioteca ou servidor.
 
-O seletor de piso muda apenas o desenho. As listas, totais e erros são consolidados entre todos os pisos.
+O seletor de piso muda apenas o desenho. **Todos os pisos** sobrepõe os pavimentos na planta baixa e mostra o conjunto na perspectiva 3D; escolher um piso restaura a vista individual. As listas, totais e erros são consolidados entre todos os pisos.
 
 ## Editar a planta
 
@@ -87,7 +87,7 @@ Use `scope` com o ID de um pavimento ou cômodo:
 }
 ```
 
-Na planta baixa e na perspectiva 3D com um piso selecionado, a parede aparece somente no piso do escopo. **Todos os pisos** na perspectiva e as elevações completas incluem as paredes de todos os escopos. O escopo associa o elemento; não recorta a parede ao cômodo, não altera suas coordenadas e não muda `base` ou `top`. Paredes sem `scope` mantêm o comportamento anterior. Um ID inexistente gera erro com a localização da definição.
+Na planta baixa e na perspectiva 3D com um piso selecionado, a parede aparece somente no piso do escopo. **Todos os pisos** na planta e na perspectiva, assim como as elevações completas, incluem as paredes de todos os escopos. O escopo associa o elemento; não recorta a parede ao cômodo, não altera suas coordenadas e não muda `base` ou `top`. Paredes sem `scope` mantêm o comportamento anterior. Um ID inexistente gera erro com a localização da definição.
 
 ## Geometria e referências
 

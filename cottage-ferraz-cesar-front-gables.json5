@@ -430,6 +430,7 @@
     },
     {
       id: "knee-wall-front-right-corner",
+      scope: "upper",
       path: {
         points: [
           ["right.x1 - params.knee_setback", "top.y0"],
@@ -442,6 +443,7 @@
     },
     {
       id: "knee-wall-middle-left",
+      scope: "upper",
       from: ["left.x0", "w-axis.y0"],
       to: ["knee-left.x0", "w-axis.y0"],
       base: { level: "upper.z0" },
@@ -449,6 +451,7 @@
     },
     {
       id: "knee-wall-middle-right",
+      scope: "upper",
       from: ["knee-right.x0", "w-axis.y0"],
       to: ["right.x1", "w-axis.y0"],
       base: { level: "upper.z0" },
@@ -456,6 +459,7 @@
     },
     {
       id: "knee-wall-office-left",
+      scope: "upper",
       from: ["office.x0 + params.knee_setback", "office.y0"],
       to: ["x0", "office.y1"],
       base: { level: "upper.z0" },
@@ -463,6 +467,7 @@
     },
     {
       id: "knee-wall-office-right",
+      scope: "upper",
       from: ["office.x1 - params.knee_setback", "office.y0"],
       to: ["office.x1 - params.knee_setback", "office.y1"],
       base: { level: "upper.z0" },
@@ -470,6 +475,7 @@
     },
     {
       id: "knee-wall-rear",
+      scope: "upper",
       from: ["left.x0", "knee-bottom.y0"],
       to: ["right.x1", "knee-bottom.y0"],
       base: { level: "upper.z0" },

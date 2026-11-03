@@ -454,7 +454,7 @@ const FloorPlanWalls = {
   renderIndependentWalls(plan) {
     plan.wallElements = [];
     plan.independentWalls.forEach((wall) => {
-      if (wall.scopeFloorId && wall.scopeFloorId !== plan.currentFloorId) return;
+      if (!plan.showAllFloors && wall.scopeFloorId && wall.scopeFloorId !== plan.currentFloorId) return;
       const points = wall.path.points;
       points.slice(0, -1).forEach(([x0, y0], index) => {
         const [x1, y1] = points[index + 1];

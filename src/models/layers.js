@@ -129,6 +129,8 @@ const FloorPlanLayers = {
       ) {
         const first = pieces[index];
         const second = pieces[otherIndex];
+        if (first.room.dataset.floorId && second.room.dataset.floorId &&
+          first.room.dataset.floorId !== second.room.dataset.floorId) continue;
         const overlapWidth =
           Math.min(first.part.x + first.part.w, second.part.x + second.part.w) -
           Math.max(first.part.x, second.part.x);
@@ -253,6 +255,14 @@ const FloorPlanLayers = {
   renderMultiFloorUnderlay(plan, floorConfig = null) {
     if (!plan.multiFloorLayer) return;
     plan.multiFloorLayer.replaceChildren();
+    if (plan.showAllFloors) {
+      if (plan.multiFloorSwitch) {
+        plan.multiFloorSwitch.hidden = true;
+        plan.multiFloorSwitch.closest(".visibility-switch")?.setAttribute("hidden", "");
+      }
+      plan.updateVisibilityHeading();
+      return;
+    }
     const config = plan.currentConfig;
     const activeFloor =
       floorConfig ||
