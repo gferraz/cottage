@@ -8,7 +8,7 @@
 // [03] Zonas de referência: main, central, top, bottom, left, right e dorm.
 // [04] Pavimentos e cômodos:
 //      [04.1] Térreo — ground; office, hall, master, stairs, kitchen e garage.
-//      [04.2] Dormitórios — upper; unused-north e bedroom-north.
+//      [04.2] Dormitórios — upper; unused-north, bedroom-north e zonas headroom-*-2m.
 //      Cômodos e partes ordenados alfabeticamente pelo id.
 //      Aberturas laterais ficam em rooms[].openings; vãos entre pisos em floors[].openings.
 // [05] Paredes independentes:
@@ -63,6 +63,11 @@
     ground_height: 3,
 
     // Aproveitamento do espaço sob a cobertura
+    // Altura livre de 2 m: 2 / tan(51°), arredondado para cima.
+    // Recalcular se mudar a inclinação ou a diferença de cota entre piso e base dos telhados.
+    headroom_2m_inset: 1.619569,
+    // Altura livre de 3 m: 3 / tan(51°), arredondado para cima.
+    headroom_3m_inset: 2.429353,
     knee_setback: 0.8
   },
 
@@ -211,7 +216,7 @@
           id: "living",
           label: "Estar",
           from: ["master.x1", "dining.y1"],
-          to: ["right.x1", "y0 + 4"]
+          to: ["right.x1", "y0 + 3.8"]
         },
         {
           id: "master",
@@ -390,6 +395,66 @@
           to: ["office.x1 - params.knee_setback", "dorm-top.y0"]
         }
       ],
+      // Altura livre no piso superior: verde >= 2 m; azul >= 3 m.
+      // O escritório não tem zona de 3 m: sua altura livre máxima é aproximadamente 2,35 m.
+      // Sem beirais; as sobreposições representam regiões atendidas por mais de um telhado.
+      zones: [
+        {
+          id: "headroom-main-roof-2m",
+          label: "Telhado principal — altura ≥ 2 m",
+          rectangle: [
+            "main-roof.x0 + params.headroom_2m_inset",
+            "main-roof.y0",
+            "main-roof.x1 - params.headroom_2m_inset",
+            "main-roof.y1"
+          ],
+          color: "green"
+        },
+        {
+          id: "headroom-main-roof-3m",
+          label: "Telhado principal — altura ≥ 3 m",
+          rectangle: [
+            "main-roof.x0 + params.headroom_3m_inset",
+            "main-roof.y0",
+            "main-roof.x1 - params.headroom_3m_inset",
+            "main-roof.y1"
+          ],
+          color: "blue"
+        },
+        {
+          id: "headroom-office-roof-2m",
+          label: "Telhado do escritório — altura ≥ 2 m",
+          rectangle: [
+            "office-roof.x0 + params.headroom_2m_inset",
+            "office-roof.y0",
+            "office-roof.x1 - params.headroom_2m_inset",
+            "office-roof.y1"
+          ],
+          color: "green"
+        },
+        {
+          id: "headroom-transverse-roof-2m",
+          label: "Telhado transversal — altura ≥ 2 m",
+          rectangle: [
+            "transverse-roof.x0",
+            "transverse-roof.y0 + params.headroom_2m_inset",
+            "transverse-roof.x1",
+            "transverse-roof.y1 - params.headroom_2m_inset"
+          ],
+          color: "green"
+        },
+        {
+          id: "headroom-transverse-roof-3m",
+          label: "Telhado transversal — altura ≥ 3 m",
+          rectangle: [
+            "transverse-roof.x0",
+            "transverse-roof.y0 + params.headroom_3m_inset",
+            "transverse-roof.x1",
+            "transverse-roof.y1 - params.headroom_3m_inset"
+          ],
+          color: "blue"
+        }
+      ],
       // Mobiliário e equipamentos.
       items: [
       ],
@@ -416,36 +481,14 @@
       },
     },
     {
-      id: "knee-wall-front-left",
-      scope: "unused-north",
-      path: {
-        points: [
-          ["office.x0", "knee-top.y0"],
-          ["left.x0", "knee-top.y0"],
-          ["left.x0", "office.y1"]
-        ]
-      },
-      base: { level: "upper.z0" },
-      color: "blue"
-    },
-    {
-      id: "knee-wall-front-right-corner",
-      scope: "upper",
-      path: {
-        points: [
-          ["right.x1 - params.knee_setback", "top.y0"],
-          ["right.x1 - params.knee_setback", "knee-top.y0"],
-          ["right.x1", "knee-top.y0"]
-        ]
-      },
-      base: { level: "upper.z0" },
-      color: "blue"
-    },
-    {
       id: "knee-wall-office-left",
       scope: "upper",
-      from: ["office.x0 + params.knee_setback", "office.y0"],
-      to: ["x0", "office.y1"],
+      path: {
+        points: [
+          ["office.x0 + params.knee_setback", "office.y0"],
+          ["office.x0 + params.knee_setback", "transverse-roof.y0 + params.knee_setback"]
+        ]
+      },
       base: { level: "upper.z0" },
       color: "blue"
     },
@@ -453,15 +496,33 @@
       id: "knee-wall-office-right",
       scope: "upper",
       from: ["office.x1 - params.knee_setback", "office.y0"],
-      to: ["office.x1 - params.knee_setback", "office.y1"],
+      to: ["office.x1 - params.knee_setback", "transverse-roof.y0 + params.knee_setback"],
       base: { level: "upper.z0" },
       color: "blue"
     },
     {
       id: "knee-wall-rear",
       scope: "upper",
-      from: ["left.x0", "knee-bottom.y0"],
-      to: ["right.x1", "knee-bottom.y0"],
+      path: {
+        points: [
+          ["left.x0", "transverse-roof.y1 - params.knee_setback"],
+          ["knee-left.x0", "transverse-roof.y1 - params.knee_setback"],
+          ["knee-left.x0", "left.y1"]
+        ]
+      },
+      base: { level: "upper.z0" },
+      color: "blue"
+    },
+    {
+      id: "knee-wall-right",
+      scope: "upper",
+      path: {
+        points: [
+          ["knee-right.x0", "right.y0"],
+          ["knee-right.x0", "transverse-roof.y0 + params.knee_setback"],
+          ["right.x1", "transverse-roof.y0 + params.knee_setback"]
+        ]
+      },
       base: { level: "upper.z0" },
       color: "blue"
     },
@@ -508,7 +569,7 @@
     {
       id: "office-roof",
       label: "Escritório",
-      base: "office",
+      rectangle: ["office.x0", "office.y0", "office.x1", "transverse-roof.y0 + params.knee_setback"],
       orientation: "longitudinal",
     },
     {
@@ -528,7 +589,6 @@
     { id: "knee-bottom", label: "meia parede traseira", pos: [-4.0, "dorm.y1"], w: 20, color: "green" },
     { id: "knee-left",   label: "meia parede esquerda", pos: ["main-roof.x0 + params.knee_setback", -2.5], l: 20, color: "terracotta" },
     { id: "knee-right",  label: "meia parede direita",  pos: ["main-roof.x1 - params.knee_setback", -2.5], l: 20, color: "terracotta" },
-    { id: "knee-top",    label: "meia parede frontal",  pos: [-4.0, "dorm.y0"], w: 20, color: "green" },
     { id: "l-axis", label: "eixo longitudinal", pos: ["central.xc", -2.5], l: 20, color: "green" },
     { id: "main-bottom", label: "parede traseira", pos: [-4.0, "main.y1"], w: 20, color: "green" },
     { id: "main-left", label: "parede esquerda", pos: ["left.x0", -2.5], l: 20, color: "green" },

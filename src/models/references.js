@@ -255,28 +255,35 @@ const FloorPlanReferences = {
         ]
       : config.roofs ?? [];
 
-    roofs.forEach((roof) => {
-      if (
-        !roof.id ||
-        FloorPlanValidation.isReservedId(roof.id) ||
-        plan.references.has(roof.id)
-      ) {
-        return;
+    let pending = roofs.filter((roof) => roof.id
+      && !FloorPlanValidation.isReservedId(roof.id)
+      && !plan.references.has(roof.id));
+    while (pending.length) {
+      const unresolved = [];
+      const errors = [];
+      pending.forEach((roof) => {
+        if (plan.references.has(roof.id)) return;
+        try {
+          const baseDefinition = roof.base ?? roof;
+          const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
+          const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
+          plan.references.set(roof.id, base);
+        } catch (error) {
+          unresolved.push(roof);
+          errors.push({
+            category: "roof",
+            id: roof.id,
+            opening: roof,
+            message: error.message,
+          });
+        }
+      });
+      if (unresolved.length === pending.length) {
+        plan.errors.push(...errors);
+        break;
       }
-      try {
-        const baseDefinition = roof.base ?? roof;
-        const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
-        const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
-        plan.references.set(roof.id, base);
-      } catch (error) {
-        plan.errors.push({
-          category: "roof",
-          id: roof.id,
-          opening: roof,
-          message: error.message,
-        });
-      }
-    });
+      pending = unresolved;
+    }
   },
 
   validateGlobalObjectIds(plan, config) {
