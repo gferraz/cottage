@@ -442,22 +442,6 @@
       color: "blue"
     },
     {
-      id: "knee-wall-middle-left",
-      scope: "upper",
-      from: ["left.x0", "w-axis.y0"],
-      to: ["knee-left.x0", "w-axis.y0"],
-      base: { level: "upper.z0" },
-      color: "blue"
-    },
-    {
-      id: "knee-wall-middle-right",
-      scope: "upper",
-      from: ["knee-right.x0", "w-axis.y0"],
-      to: ["right.x1", "w-axis.y0"],
-      base: { level: "upper.z0" },
-      color: "blue"
-    },
-    {
       id: "knee-wall-office-left",
       scope: "upper",
       from: ["office.x0 + params.knee_setback", "office.y0"],
