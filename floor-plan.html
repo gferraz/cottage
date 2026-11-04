@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Planta térrea — separada por módulos</title>
     <link rel="stylesheet" href="src/config/theme.css" />
-  <link rel="stylesheet" href="src/floor-plan.css?v=elevations-3" />
+  <link rel="stylesheet" href="src/floor-plan.css?v=stair-up-arrows-1" />
   </head>
   <body class="page-empty">
 <template id="portable-export-css"><style>
@@ -517,6 +517,11 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .stair-flight[data-stair-direction="reverse"] .stair-arrow::before { content: "↑"; }
 .stair-flight[data-stair-axis="horizontal"] .stair-arrow::before { content: "→"; }
 .stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"] .stair-arrow::before { content: "←"; }
+/* As setas indicam subida mesmo quando from/to descreve a descida. */
+.stair-flight[data-stair-rise="down"] .stair-arrow::before {
+  display: inline-block;
+  transform: rotate(180deg);
+}
 .stair-flight[data-stair-axis="horizontal"]::after {
   background: repeating-linear-gradient(
     to right,

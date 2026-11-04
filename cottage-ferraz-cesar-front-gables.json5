@@ -11,8 +11,9 @@
 //      [04.2] Dormitórios — upper; unused-north, bedroom-north e zonas headroom-*-2m.
 //      Cômodos e partes ordenados alfabeticamente pelo id.
 //      Aberturas laterais ficam em rooms[].openings; vãos entre pisos em floors[].openings.
-// [05] Paredes independentes:
-//      Fachadas — front-wall, left-wall, rear-wall e right-wall.
+// [05] Paredes independentes por pavimento:
+//      Térreo — front-wall, left-wall, rear-wall e right-wall; topo em upper.z0.
+//      Piso superior — upper-*-wall; base em upper.z0 e topo na cobertura.
 //      Meias-paredes — IDs com prefixo knee-wall e knee-corner.
 // [06] Telhados: main-roof, office-roof e transverse-roof.
 // [07] Guias de desenho: w-axis, l-axis e referências das knee-walls.
@@ -145,7 +146,8 @@
           to: ["x0 + 3.2", "y0 + 2.4"],
           openings: [
             { type: "opening", from: "right", to: "vestibule" }
-          ]
+          ],
+          walls: ["top"]
         },
         {
           id: "dining",
@@ -354,7 +356,7 @@
       ],
       // Mobiliário e equipamentos.
       items: [
-        { title: "Mesa", pos: ["dining.x0 + 1.2", "dining.y0 + 1.2"], size: [2.7, 1.1], classes: "table" },
+        { title: "Mesa", pos: ["dining.x1 - 3.8", "dining.y0 + 1"], size: [3.0, 1.1], classes: "table" },
         {
           title: "Lareira",
           pos: ["living.x1 - 0.2", "living.y0 + 0.5"],
@@ -381,9 +383,19 @@
         {
           id: "bedroom-north",
           label: "Quarto N",
-          from: ["dorm-top.x0", "dorm-top.y0"],
-          to: ["knee-left.x0", "dorm-top.y1"],
-          walls: [],
+          from: ["knee-left.x0", "hall.y0"],
+          to: ["knee-left.x0 + 3.3", "y0 + 2.8"],
+          walls: ["right", "bottom"],
+          openings: [
+            { type: "door", from: "right", to: "playroom", dy: 3 }
+          ]
+        },
+        {
+          id: "bedroom-east",
+          label: "Quarto E",
+          from: ["knee-right.x0", "hall.y0"],
+          to: ["bedroom-north.x1", "y0 + 2.8"],
+          walls: ["bottom"],
           openings: [
             { type: "door", from: "right", to: "playroom", dy: 3 }
           ]
@@ -392,7 +404,7 @@
           id: "unused-north",
           label: "Sem uso",
           from: ["office.x0 + params.knee_setback", "office.y0"],
-          to: ["office.x1 - params.knee_setback", "dorm-top.y0"]
+          to: ["office.x1 - params.knee_setback", "transverse-roof.y0 + 0.8"]
         }
       ],
       // Altura livre no piso superior: verde >= 2 m; azul >= 3 m.
@@ -469,6 +481,8 @@
   walls: [
     {
       id: "front-wall",
+      scope: "ground",
+      top: { level: "upper.z0" },
       path: {
         points: [
           ["office.x0", "office.y0"],
@@ -483,6 +497,7 @@
     {
       id: "knee-wall-office-left",
       scope: "upper",
+      color: "blue",
       path: {
         points: [
           ["office.x0 + params.knee_setback", "office.y0"],
@@ -490,19 +505,19 @@
         ]
       },
       base: { level: "upper.z0" },
-      color: "blue"
     },
     {
       id: "knee-wall-office-right",
       scope: "upper",
+      color: "blue",
       from: ["office.x1 - params.knee_setback", "office.y0"],
       to: ["office.x1 - params.knee_setback", "transverse-roof.y0 + params.knee_setback"],
       base: { level: "upper.z0" },
-      color: "blue"
     },
     {
       id: "knee-wall-rear",
       scope: "upper",
+      color: "blue",
       path: {
         points: [
           ["left.x0", "transverse-roof.y1 - params.knee_setback"],
@@ -511,11 +526,11 @@
         ]
       },
       base: { level: "upper.z0" },
-      color: "blue"
     },
     {
       id: "knee-wall-right",
       scope: "upper",
+      color: "blue",
       path: {
         points: [
           ["knee-right.x0", "right.y0"],
@@ -524,10 +539,11 @@
         ]
       },
       base: { level: "upper.z0" },
-      color: "blue"
     },
     {
       id: "left-wall",
+      scope: "ground",
+      top: { level: "upper.z0" },
       path: {
         points: [
           ["office.x0", "office.y0"],
@@ -539,6 +555,8 @@
     },
     {
       id: "rear-wall",
+      scope: "ground",
+      top: { level: "upper.z0" },
       path: {
         points: [
           ["kitchen.x0", "kitchen.y1"],
@@ -547,12 +565,84 @@
           ["mudroom.x1", "mudroom.y1"]
         ]
       },
-      top: { level: "ground.z1" },
     },
     {
       id: "right-wall",
+      scope: "ground",
+      top: { level: "upper.z0" },
       from: ["right.x1", "dining.y0"],
       to: ["right.x1", "mudroom.y1"],
+    },
+    // Fechamento frontal do vão da escada no segundo piso.
+    {
+      id: "stairs-upper-wall",
+      scope: "upper",
+      color: "aroma-de-uva",
+      base: { level: "upper.z0" },
+      top: "roof",
+      from: ["stairs.x0", "stairs.y0"],
+      to: ["stairs.x1", "stairs.y0"]
+    },
+    // Fechamentos periféricos do piso superior, independentes do térreo.
+    {
+      id: "upper-office-front-wall",
+      scope: "upper",
+      color: "aroma-de-uva",
+      base: { level: "upper.z0" },
+      top: "roof",
+      path: {
+        points: [
+          ["office.x0", "office.y0"],
+          ["office.x1", "office.y0"]
+        ]
+      }
+    },
+    {
+      id: "upper-front-wall",
+      scope: "upper",
+      color: "aroma-de-uva",
+      base: { level: "upper.z0" },
+      top: "roof",
+      path: {
+        points: [
+          ["knee-left.x0", "hall.y0"],
+          ["hall.x1", "hall.y0"],
+          ["hall.x1", "right.y0"],
+          ["right.x1", "right.y0"]
+        ]
+      }
+    },
+    {
+      id: "upper-left-wall",
+      scope: "upper",
+      color: "aroma-de-uva",
+      base: { level: "upper.z0" },
+      top: "roof",
+      path: {
+        points: [
+          ["office.x0", "office.y1"],
+          ["left.x0", "office.y1"],
+          ["left.x0", "main.y1"]
+        ]
+      }
+    },
+    {
+      id: "upper-rear-wall",
+      scope: "upper",
+      color: "aroma-de-uva",
+      base: { level: "upper.z0" },
+      top: "roof",
+      from: ["main.x0", "main.y1"],
+      to: ["main.x1", "main.y1"]
+    },
+    {
+      id: "upper-right-wall",
+      scope: "upper",
+      color: "aroma-de-uva",
+      base: { level: "upper.z0" },
+      top: "roof",
+      from: ["right.x1", "right.y0"],
+      to: ["right.x1", "main.y1"]
     }
   ],
 
