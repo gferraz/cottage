@@ -211,7 +211,7 @@
         {
           id: "laundry",
           label: "Lavanderia",
-          rectangle: ["right.x0", "upper-flight.y1", "right.x1", "y0 + 1.6"],
+          rectangle: ["right.x0", "living.y1 + 1.2", "right.x1", "y0 + 1.6"],
           walls: ["left"],
           classes: "service laundry wet"
         },
@@ -299,6 +299,8 @@
           walls: ["left"],
           classes: "circulation"
         },
+        // Escada anterior — dois lances e patamar intermediário na cota 1,67 m.
+        /*
         {
           id: "stairs",
           label: "Escada",
@@ -329,6 +331,58 @@
               // z0 é a extremidade inferior do lance, pois as cotas são normalizadas.
               from: ["upper-flight.x1", "upper-flight.y0", "upper-flight.z0"],
               to: ["right.x1", "upper-flight.y1", "z0"],
+              classes: "stair-landing",
+              color: "terracotta"
+            }
+          ],
+          walls: [],
+          overlaps: ["powder", "laundry"],
+          overlays: ["powder", "laundry"]
+        },
+        */
+        // Escada em U — três lances de 6 espelhos (18 no total).
+        // Pisos de 0,28 m: 5 pisos por lance, com projeção de 1,40 m.
+        // Larguras: lance 1 de 1,30 m; lances 2 e 3 de 1,40 m.
+        // Patamares: 1,30 × 1,40 m e 1,40 × 1,40 m.
+        // Caixa de 4,10 × 2,80 m, sem paredes.
+        // Lance inferior à direita (lado baixo do telhado); chegada à esquerda.
+        // Borda esquerda da caixa alinhada à guia central direita.
+        {
+          id: "stairs",
+          label: "Escada",
+          parts: [
+            {
+              id: "lower-flight",
+              from: ["right.x1 - 1.3", "living.y1", "ground.z0"],
+              to: ["right.x1", "y0 + 1.4", "ground.z0 + (upper.z0 - ground.z0) / 3"],
+              orientation: "longitudinal",
+              classes: "stair-flight"
+            },
+            {
+              id: "lower-landing",
+              from: ["lower-flight.x0", "lower-flight.y1", "lower-flight.z1"],
+              to: ["lower-flight.x1", "y0 + 1.3", "z0"],
+              classes: "stair-landing",
+              color: "terracotta"
+            },
+            {
+              id: "middle-flight",
+              from: ["lower-landing.x0", "lower-landing.y0", "lower-landing.z0"],
+              to: ["x0 - 1.3", "lower-landing.y1", "ground.z0 + 2 * (upper.z0 - ground.z0) / 3"],
+              orientation: "transverse",
+              classes: "stair-flight"
+            },
+            {
+              id: "upper-flight",
+              from: ["upper-landing.x0", "upper-landing.y0", "upper-landing.z0"],
+              to: ["upper-landing.x1", "lower-flight.y0", "upper.z0"],
+              orientation: "longitudinal",
+              classes: "stair-flight"
+            },
+            {
+              id: "upper-landing",
+              from: ["middle-flight.x0", "middle-flight.y0", "middle-flight.z1"],
+              to: ["central-right.x0", "middle-flight.y1", "z0"],
               classes: "stair-landing",
               color: "terracotta"
             }
@@ -583,14 +637,14 @@
       from: ["right.x1", "dining.y0"],
       to: ["right.x1", "mudroom.y1"],
     },
-    // Fechamento frontal do vão da escada no segundo piso.
+    // Fechamento frontal do vão, deixando livre a chegada do terceiro lance.
     {
       id: "stairs-upper-wall",
       scope: "upper",
       color: "aroma-de-uva",
       base: { level: "upper.z0" },
       top: "roof",
-      from: ["stairs.x0", "stairs.y0"],
+      from: ["upper-flight.x1", "stairs.y0"],
       to: ["stairs.x1", "stairs.y0"]
     },
     {
