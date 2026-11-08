@@ -86,7 +86,18 @@
             "top": {
               "anyOf": [
                 {
-                  "const": "roof"
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "ID do objeto superior, ou roof para o conjunto de telhados."
+                },
+                {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
                 },
                 {
                   "type": "object",
@@ -107,10 +118,12 @@
                   "required": [
                     "level"
                   ],
-                  "additionalProperties": false
+                  "additionalProperties": false,
+                  "deprecated": true
                 },
                 {
-                  "$ref": "#/definitions/undersideTop"
+                  "$ref": "#/definitions/undersideTop",
+                  "deprecated": true
                 }
               ]
             },
@@ -1097,7 +1110,18 @@
         "top": {
           "anyOf": [
             {
-              "const": "roof"
+              "type": "string",
+              "minLength": 1,
+              "description": "ID do objeto superior, ou roof para o conjunto de telhados."
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
             },
             {
               "type": "object",
@@ -1118,10 +1142,12 @@
               "required": [
                 "level"
               ],
-              "additionalProperties": false
+              "additionalProperties": false,
+              "deprecated": true
             },
             {
-              "$ref": "#/definitions/undersideTop"
+              "$ref": "#/definitions/undersideTop",
+              "deprecated": true
             }
           ]
         }
@@ -2511,7 +2537,18 @@
         "top": {
           "anyOf": [
             {
-              "const": "roof"
+              "type": "string",
+              "minLength": 1,
+              "description": "ID do objeto superior, ou roof para o conjunto de telhados."
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
             },
             {
               "type": "object",
@@ -2532,10 +2569,12 @@
               "required": [
                 "level"
               ],
-              "additionalProperties": false
+              "additionalProperties": false,
+              "deprecated": true
             },
             {
-              "$ref": "#/definitions/undersideTop"
+              "$ref": "#/definitions/undersideTop",
+              "deprecated": true
             }
           ]
         },

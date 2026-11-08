@@ -133,7 +133,7 @@ test('active room walls resolve stair parts and independent walls accept overhea
   const plan = prepare(source);
   assert.deepEqual(plan.errors.filter((entry) => entry.category === 'wall'), []);
   for (const id of ['powder-left', 'laundry-left']) {
-    assert.equal(plan.walls.get(id).undersideLimits.length, 2);
+    assert.equal(plan.walls.get(id).undersideLimits.length, 5);
   }
   const independent = plan.independentWalls.get('under-test-wall');
   assert.equal(independent.undersideLimits.length, 2);
@@ -173,4 +173,24 @@ test('room top accepts the same level and roof forms as independent walls', () =
   assert.deepEqual(roofPlan.errors.filter((entry) => entry.category === 'wall'), []);
   assert.equal(roofPlan.walls.get('room-left').roofOnly, true);
   assert.equal(roofPlan.walls.get('room-left').z1, 4);
+});
+
+test('direct object IDs and ID lists work for room and independent tops', () => {
+  const source = { ceiling_height: 3,
+    roofs: [{ id: 'gable', type: 'gable', orientation: 'longitudinal', pitch: 45, z0: 3, rectangle: [0, 0, 2, 2] }],
+    rooms: [
+      { id: 'slab', pos: [0, 0, 2], size: [2, 2, 0.2], walls: [] },
+      { id: 'room', pos: [0, 0], size: [2, 2], top: 'slab', walls: ['left'] },
+    ],
+    walls: [{ id: 'direct-wall', base: { level: 0 }, top: ['slab'], thickness: 0.1, from: [0, 0], to: [2, 0] }],
+  };
+  const plan = prepare(source);
+  assert.deepEqual(plan.errors.filter((entry) => entry.category === 'wall'), []);
+  assert.equal(plan.walls.get('room-left').undersideLimits[0].id, 'slab');
+  assert.deepEqual(plan.independentWalls.get('direct-wall').top, ['slab']);
+  assert.equal(height(walls.undersideLimits(plan, 'slab')[0], 1, 1), 2);
+  const [roof] = walls.undersideLimits(plan, 'gable');
+  assert.equal(roof.peakZ, 4);
+  assert.equal(roof.slopes.length, 2);
+  assert.equal(walls.undersideLimits(plan, 'roof').length, 0);
 });

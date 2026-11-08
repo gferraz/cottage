@@ -211,7 +211,7 @@
         {
           id: "laundry",
           label: "Lavanderia",
-          top: { under: ["middle-flight", "lower-landing"] },
+          top: "stairs",
           // Faixa técnica sob o lance 2 e o patamar 1; acesso pelo lado dos fundos.
           rectangle: ["middle-flight.x0", "middle-flight.y0", "lower-landing.x1", "lower-landing.y1 + 0.1"],
           walls: ["left"],
@@ -287,7 +287,7 @@
         {
           id: "powder",
           label: "Lavabo",
-          top: { under: ["upper-flight", "upper-landing"] },
+          top: "stairs",
           // Ocupa exatamente a projeção do lance 3 e do patamar 2.
           rectangle: ["upper-flight.x0", "upper-flight.y0", "upper-flight.x1", "upper-landing.y1"],
           walls: ["top", "right", "bottom", "left"],

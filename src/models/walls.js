@@ -11,6 +11,10 @@ const FloorPlanWalls = {
   // Rectangular footprints and planes describing the underside of overhead
   // objects. Stair direction is resolved before building its inclined plane.
   undersideLimits(plan, top, padding = 0) {
+    // IDs are the public format. Keep the former object form readable for
+    // previously saved plans; "roof" remains the existing roof-set alias.
+    if (top === "roof") return [];
+    if (typeof top === "string" || Array.isArray(top)) top = { under: top };
     if (!top || top.under === undefined) return [];
     const ids = Array.isArray(top.under) ? top.under : [top.under];
     const offset = plan.resolve(top.offset ?? 0);
@@ -20,6 +24,15 @@ const FloorPlanWalls = {
     }
     const floors = plan.currentConfig?.floors ?? [plan.currentConfig ?? {}];
     const limits = ids.flatMap((id) => {
+      const roof = [...(plan.currentConfig?.roofs ?? []), ...floors.flatMap((floor) =>
+        (floor.roofs ?? []).map((entry) => ({ ...entry, floorId: floor.id })))].find((entry) => entry.id === id);
+      if (roof) {
+        const limits = this.roofLimits(plan, { ...plan.currentConfig, roofs: [roof],
+          ...(plan.currentConfig?.floors ? { floors: floors.map((floor) => ({ ...floor, roofs: [] })) } : {}),
+        });
+        return limits.map((limit) => ({ ...limit, id, peakZ: limit.peakZ - offset,
+          slopes: limit.slopes.map(([a, b, c, d]) => [a, b, c, d + c * offset]) }));
+      }
       const owner = plan.partOwners?.get(id);
       const room = plan.roomDefinitions?.get(owner ?? id);
       if (room?.parts && !owner) {
@@ -51,6 +64,8 @@ const FloorPlanWalls = {
         : [0, 0, 1, offset - z0];
       return [{
         id,
+        peakZ: Math.max(...[[x, y], [x + w, y], [x, y + l], [x + w, y + l]]
+          .map(([px, py]) => -(plane[0] * px + plane[1] * py + plane[3]) / plane[2])),
         bounds: [[-1, 0, 0, x - padding], [1, 0, 0, -x - w - padding],
           [0, -1, 0, y - padding], [0, 1, 0, -y - l - padding]],
         slopes: [plane],
@@ -600,6 +615,8 @@ const FloorPlanWalls = {
           : configuredMaxHeight;
         const explicitHeight = Number(geometry.h());
         let height = explicitHeight > 0 ? explicitHeight : floorHeight;
+        const undersideLimits = this.undersideLimits(plan, definition.top, thickness / 2);
+        if (undersideLimits.length) height = Math.max(height, ...undersideLimits.map((limit) => limit.peakZ - floorZ0));
         const roofOnly = definition.top === "roof";
         if (roofOnly) {
           const limits = this.roofLimits(plan, config);
@@ -636,7 +653,6 @@ const FloorPlanWalls = {
         });
 
         const wallStates = plan.normalizeWalls(definition.walls);
-        const undersideLimits = this.undersideLimits(plan, definition.top, thickness / 2);
         ["top", "right", "bottom", "left"].forEach((side) => {
           const state = wallStates[side];
           if (state !== "solid" && state !== "virtual") return;
@@ -848,7 +864,7 @@ const FloorPlanWalls = {
         }
         const topZ = roofOnly
           ? Math.max(...roofLimits.map((roof) => roof.peakZ))
-          : plan.resolve(definition.top?.level ?? (undersideLimits.length ? Math.max(...floors.map((floor) =>
+          : plan.resolve(definition.top?.level ?? (undersideLimits.length ? Math.max(...undersideLimits.map((limit) => limit.peakZ), ...floors.map((floor) =>
             Number(floor.z0 ?? 0) + Number(floor.ceiling_height ?? floor.wall_max_height ?? 0))) : groundLevel));
         if (
           !Number.isFinite(thickness) || thickness <= 0 ||
@@ -868,7 +884,7 @@ const FloorPlanWalls = {
           path: { ...definition.path, points: resolvedPoints },
           base,
           baseZ,
-          top: roofOnly ? "roof" : { ...definition.top, level: topZ },
+          top: roofOnly ? "roof" : undersideLimits.length ? definition.top : { ...definition.top, level: topZ },
           undersideLimits,
           topZ,
           thickness,
