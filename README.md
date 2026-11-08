@@ -93,6 +93,16 @@ Na planta baixa e na perspectiva 3D com um piso selecionado, a parede aparece so
 
 Para retângulos, use `pos: [x, y]` e `size: [w, l]`, em metros. `x/y/w/l` também são aceitos diretamente. `h` é a altura vertical; `z0` é a cota inicial. `rectangle: [x0, y0, x1, y1]` é uma alternativa. Nos dois últimos valores de `rectangle`, os aliases locais `x0`, `y0` e `z0` representam o ponto inicial: `rectangle: ["main.x0", "main.y0", "x0 + 3", "y0 + 2"]` cria um retângulo de `3 × 2 m`. `from` e `to` também aceitam esses aliases: `from: [4, 8], to: ["x0 + 1", "y0 - 3"]` termina em `[5, 5]`. Para coordenadas absolutas ou referências, use expressões como `to: ["main.x1", "main.y1"]`; arrays numéricos em `to` continuam sendo coordenadas absolutas. `inset: ["id", dx, dy]` cria um retângulo interno e `outset: ["id", dx, dy]` cria um retângulo ampliado para fora, aumentando cada lado em `dx` e `dy`.
 
+Use `copy: "id"` para reutilizar explicitamente a geometria retangular de outro objeto:
+
+```json5
+{ id: "office-copy", copy: "office", label: "Cópia do escritório", color: "blue" }
+```
+
+Veja o [exemplo completo](examples/copiar-geometria.json5).
+
+A cópia acompanha as alterações da origem e reutiliza posição, largura, comprimento e extensão vertical. Aparência, rotação original, paredes e aberturas não são herdadas; defina essas propriedades no novo objeto. Para cômodos compostos, usa-se o retângulo envolvente, sem reproduzir as partes. Não combine `copy` com `from/to`, `pos/size`, `rectangle`, `inset/outset` ou outras medidas geométricas. Paredes independentes continuam usando `from/to` ou `path.points`.
+
 Expressões podem combinar referências e operações: `"living.x1 - 0.3"`, `"room.w / 2"` e `"part.z1"`. Cada referência oferece `x0()`, `x1()`, `xc()`, `y0()`, `y1()`, `yc()`, `z0()`, `z1()`, `zc()`, `w()`, `l()`, `h()` e `area()`.
 
 Cômodos compostos usam `parts`; cada parte tem sua própria geometria e pode referenciar outras partes, independentemente da ordem de declaração. Referências circulares geram erro. As partes também podem ser referenciadas globalmente por ID, por exemplo `flight-1.y0`, a partir de qualquer cômodo. A regra de não sobreposição também é aplicada às partes.

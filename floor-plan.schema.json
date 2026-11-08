@@ -730,8 +730,98 @@
             "longitudinal",
             "transverse"
           ]
+        },
+        "copy": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Reutiliza os limites retangulares e a extensão vertical do objeto referenciado. Não herda aparência nem aberturas."
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "copy"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "from"
+                  ]
+                },
+                {
+                  "required": [
+                    "to"
+                  ]
+                },
+                {
+                  "required": [
+                    "pos"
+                  ]
+                },
+                {
+                  "required": [
+                    "size"
+                  ]
+                },
+                {
+                  "required": [
+                    "rectangle"
+                  ]
+                },
+                {
+                  "required": [
+                    "inset"
+                  ]
+                },
+                {
+                  "required": [
+                    "outset"
+                  ]
+                },
+                {
+                  "required": [
+                    "x"
+                  ]
+                },
+                {
+                  "required": [
+                    "y"
+                  ]
+                },
+                {
+                  "required": [
+                    "w"
+                  ]
+                },
+                {
+                  "required": [
+                    "l"
+                  ]
+                },
+                {
+                  "required": [
+                    "z0"
+                  ]
+                },
+                {
+                  "required": [
+                    "h"
+                  ]
+                },
+                {
+                  "required": [
+                    "parts"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
     },
     "room": {
       "type": "object",
@@ -995,10 +1085,100 @@
               }
             }
           ]
+        },
+        "copy": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Reutiliza os limites retangulares e a extensão vertical do objeto referenciado. Não herda aparência nem aberturas."
         }
       },
       "required": [
         "id"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "copy"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "from"
+                  ]
+                },
+                {
+                  "required": [
+                    "to"
+                  ]
+                },
+                {
+                  "required": [
+                    "pos"
+                  ]
+                },
+                {
+                  "required": [
+                    "size"
+                  ]
+                },
+                {
+                  "required": [
+                    "rectangle"
+                  ]
+                },
+                {
+                  "required": [
+                    "inset"
+                  ]
+                },
+                {
+                  "required": [
+                    "outset"
+                  ]
+                },
+                {
+                  "required": [
+                    "x"
+                  ]
+                },
+                {
+                  "required": [
+                    "y"
+                  ]
+                },
+                {
+                  "required": [
+                    "w"
+                  ]
+                },
+                {
+                  "required": [
+                    "l"
+                  ]
+                },
+                {
+                  "required": [
+                    "z0"
+                  ]
+                },
+                {
+                  "required": [
+                    "h"
+                  ]
+                },
+                {
+                  "required": [
+                    "parts"
+                  ]
+                }
+              ]
+            }
+          }
+        }
       ]
     },
     "item": {
@@ -1213,8 +1393,98 @@
         },
         "showLabel": {
           "type": "boolean"
+        },
+        "copy": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Reutiliza os limites retangulares e a extensão vertical do objeto referenciado. Não herda aparência nem aberturas."
         }
-      }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "copy"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "from"
+                  ]
+                },
+                {
+                  "required": [
+                    "to"
+                  ]
+                },
+                {
+                  "required": [
+                    "pos"
+                  ]
+                },
+                {
+                  "required": [
+                    "size"
+                  ]
+                },
+                {
+                  "required": [
+                    "rectangle"
+                  ]
+                },
+                {
+                  "required": [
+                    "inset"
+                  ]
+                },
+                {
+                  "required": [
+                    "outset"
+                  ]
+                },
+                {
+                  "required": [
+                    "x"
+                  ]
+                },
+                {
+                  "required": [
+                    "y"
+                  ]
+                },
+                {
+                  "required": [
+                    "w"
+                  ]
+                },
+                {
+                  "required": [
+                    "l"
+                  ]
+                },
+                {
+                  "required": [
+                    "z0"
+                  ]
+                },
+                {
+                  "required": [
+                    "h"
+                  ]
+                },
+                {
+                  "required": [
+                    "parts"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
     },
     "opening": {
       "type": "object",
@@ -1966,8 +2236,98 @@
                     "longitudinal",
                     "transverse"
                   ]
+                },
+                "copy": {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Reutiliza os limites retangulares e a extensão vertical do objeto referenciado. Não herda aparência nem aberturas."
                 }
-              }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "required": [
+                      "copy"
+                    ]
+                  },
+                  "then": {
+                    "not": {
+                      "anyOf": [
+                        {
+                          "required": [
+                            "from"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "to"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "pos"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "size"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "rectangle"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "inset"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "outset"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "x"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "y"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "w"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "l"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "z0"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "h"
+                          ]
+                        },
+                        {
+                          "required": [
+                            "parts"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              ]
             }
           ]
         },
@@ -1982,9 +2342,99 @@
           "items": {
             "$ref": "#/definitions/opening"
           }
+        },
+        "copy": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Reutiliza os limites retangulares e a extensão vertical do objeto referenciado. Não herda aparência nem aberturas."
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "copy"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "from"
+                  ]
+                },
+                {
+                  "required": [
+                    "to"
+                  ]
+                },
+                {
+                  "required": [
+                    "pos"
+                  ]
+                },
+                {
+                  "required": [
+                    "size"
+                  ]
+                },
+                {
+                  "required": [
+                    "rectangle"
+                  ]
+                },
+                {
+                  "required": [
+                    "inset"
+                  ]
+                },
+                {
+                  "required": [
+                    "outset"
+                  ]
+                },
+                {
+                  "required": [
+                    "x"
+                  ]
+                },
+                {
+                  "required": [
+                    "y"
+                  ]
+                },
+                {
+                  "required": [
+                    "w"
+                  ]
+                },
+                {
+                  "required": [
+                    "l"
+                  ]
+                },
+                {
+                  "required": [
+                    "z0"
+                  ]
+                },
+                {
+                  "required": [
+                    "h"
+                  ]
+                },
+                {
+                  "required": [
+                    "parts"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
     },
     "wall": {
       "type": "object",

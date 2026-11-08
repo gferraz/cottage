@@ -69,7 +69,7 @@ const FloorPlanGeometryDomain = {
       data = {
         ...itemType,
         ...data,
-        size: data.size ?? itemType.size,
+        size: data.size ?? (data.copy === undefined ? itemType.size : undefined),
         classes: data.classes ?? itemType.classes,
         label: data.label ?? itemType.label,
         title: data.title ?? itemType.title ?? itemType.label,
@@ -80,6 +80,25 @@ const FloorPlanGeometryDomain = {
       throw new Error("Rotation precisa ser um ângulo numérico em graus");
     }
     data = { ...data, rotation: ((rotation % 360) + 360) % 360 };
+    if (data.copy !== undefined) {
+      if (typeof data.copy !== "string" || !data.copy.trim()) {
+        throw new Error("Copy precisa informar o ID de uma referência geométrica");
+      }
+      if (["from", "to", "pos", "size", "rectangle", "inset", "outset", "x", "y", "w", "l", "z0", "h", "parts"]
+        .some((key) => data[key] !== undefined)) {
+        throw new Error("Copy não pode ser combinado com outra definição geométrica");
+      }
+      const id = data.copy.trim();
+      const reference = plan.partReferenceStack?.at(-1)?.get(id) ?? plan.references.get(id);
+      if (!reference) throw new Error(`Unknown geometric reference: ${id}`);
+      const x = reference.x0(), y = reference.y0(), w = reference.w(), l = reference.l();
+      const z0 = reference.z0 ? reference.z0() : plan.currentFloorHeight;
+      const h = reference.h ? reference.h() : 0;
+      if (![x, y, w, l, z0, h].every(Number.isFinite) || w <= 0 || l <= 0 || h < 0) {
+        throw new Error(`Copy precisa de uma geometria retangular válida: ${id}`);
+      }
+      return { ...data, x, y, w, l, z0, z1: z0 + h, h };
+    }
     const isStair = data.classes?.split(/\s+/).includes("stair-flight");
     if (data.inset !== undefined && data.outset !== undefined) {
       throw new Error("Uma geometria não pode combinar inset e outset");
