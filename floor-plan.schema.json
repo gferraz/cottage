@@ -1094,8 +1094,36 @@
           "minLength": 1,
           "description": "Reutiliza os limites retangulares e a extensão vertical do objeto referenciado. Não herda aparência nem aberturas."
         },
-        "wall_top": {
-          "$ref": "#/definitions/undersideTop"
+        "top": {
+          "anyOf": [
+            {
+              "const": "roof"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "level"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "$ref": "#/definitions/undersideTop"
+            }
+          ]
         }
       },
       "required": [

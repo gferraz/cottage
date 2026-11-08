@@ -599,7 +599,15 @@ const FloorPlanWalls = {
           ? Math.min(nextFloorZ0 - floorZ0, configuredMaxHeight)
           : configuredMaxHeight;
         const explicitHeight = Number(geometry.h());
-        const height = explicitHeight > 0 ? explicitHeight : floorHeight;
+        let height = explicitHeight > 0 ? explicitHeight : floorHeight;
+        const roofOnly = definition.top === "roof";
+        if (roofOnly) {
+          const limits = this.roofLimits(plan, config);
+          if (!limits.length) throw new Error('A parede com top: "roof" precisa de um telhado válido');
+          height = Math.max(...limits.map((roof) => roof.peakZ)) - floorZ0;
+        } else if (definition.top?.level !== undefined) {
+          height = plan.resolve(definition.top.level) - floorZ0;
+        }
         const roomBounds = [
           geometry.x0(),
           geometry.x1(),
@@ -628,7 +636,7 @@ const FloorPlanWalls = {
         });
 
         const wallStates = plan.normalizeWalls(definition.walls);
-        const undersideLimits = this.undersideLimits(plan, definition.wall_top, thickness / 2);
+        const undersideLimits = this.undersideLimits(plan, definition.top, thickness / 2);
         ["top", "right", "bottom", "left"].forEach((side) => {
           const state = wallStates[side];
           if (state !== "solid" && state !== "virtual") return;
@@ -711,6 +719,7 @@ const FloorPlanWalls = {
             h: height,
             thickness,
             undersideLimits: [...undersideLimits],
+            roofOnly,
             touchedRoomIds: [],
             signature,
           };

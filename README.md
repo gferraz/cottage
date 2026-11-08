@@ -135,11 +135,11 @@ Para paredes independentes, use `top: "roof"` para alcançar automaticamente a c
 
 Nesse modo, somente os trechos cobertos são desenhados; nos encontros prevalece o telhado mais alto. Se nenhum telhado válido cobrir o caminho acima da base, a parede aparece em **Itens com erro**. A forma `top: { level: ... }` continua disponível para limitar a parede a uma cota explícita.
 
-Para limitar paredes por um objeto superior, use `wall_top` no cômodo ou `top` na parede independente:
+Para limitar paredes por um objeto superior, use a mesma propriedade `top` no cômodo e na parede independente:
 
 ```json5
 // No cômodo: a parede acompanha o lance e o patamar.
-wall_top: { under: ["upper-flight", "upper-landing"] }
+top: { under: ["upper-flight", "upper-landing"] }
 // Na parede independente: desconto vertical opcional para estrutura/forro.
 top: { under: "upper-flight", offset: 0.15 }
 ```

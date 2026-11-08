@@ -144,7 +144,7 @@ test('active room walls resolve stair parts and independent walls accept overhea
 
 test('invalid room overhead references become located wall errors instead of uncapped walls', () => {
   const plan = prepare({ ceiling_height: 3, rooms: [{ id: 'room', pos: [0, 0], size: [2, 2],
-    wall_top: { under: 'missing' }, walls: ['left'] }] });
+    top: { under: 'missing' }, walls: ['left'] }] });
   assert.ok(plan.errors.some((entry) => entry.category === 'wall' && /desconhecido/.test(entry.message)));
   assert.equal(plan.walls.size, 0);
 });
@@ -159,4 +159,18 @@ test('padding covers perimeter wall thickness without extending slopes into adja
   assert.equal(landing.bounds[2][3], 2);
   const faces = walls.boxFaces(0, 2, 0, 1, 3.06, 4);
   assert.ok(Math.abs(volume(walls.wallSolids(faces, [], false, [flight, landing])) - 3.18) < 1e-8);
+});
+
+test('room top accepts the same level and roof forms as independent walls', () => {
+  const levelPlan = prepare({ ceiling_height: 3, rooms: [{ id: 'room', pos: [0, 0], size: [2, 2],
+    top: { level: 2.4 }, walls: ['left'] }] });
+  assert.equal(levelPlan.walls.get('room-left').z1, 2.4);
+  const roofPlan = prepare({ ceiling_height: 3,
+    roofs: [{ id: 'roof', type: 'gable', orientation: 'longitudinal', pitch: 45, z0: 3,
+      rectangle: [0, 0, 2, 2] }],
+    rooms: [{ id: 'room', pos: [0, 0], size: [2, 2], top: 'roof', walls: ['left'] }],
+  });
+  assert.deepEqual(roofPlan.errors.filter((entry) => entry.category === 'wall'), []);
+  assert.equal(roofPlan.walls.get('room-left').roofOnly, true);
+  assert.equal(roofPlan.walls.get('room-left').z1, 4);
 });
