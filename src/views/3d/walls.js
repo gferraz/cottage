@@ -104,7 +104,7 @@ const FloorPlan3DWalls = {
           wall.from[0] + x * Math.cos(angle) - y * Math.sin(angle),
           wall.from[1] + x * Math.sin(angle) + y * Math.cos(angle), z,
         ])) : faces;
-        FloorPlanWalls.roofSolids(worldFaces, roofLimits, wall.roofOnly).forEach((solid) => {
+        FloorPlanWalls.wallSolids(worldFaces, roofLimits, wall.roofOnly, wall.undersideLimits).forEach((solid) => {
           wallSolids.push(solid);
           solid.forEach((face) => {
             for (let j = 1; j < face.length - 1; j += 1) vertices.push(...face[0], ...face[j], ...face[j + 1]);

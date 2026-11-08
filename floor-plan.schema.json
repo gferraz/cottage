@@ -108,6 +108,9 @@
                     "level"
                   ],
                   "additionalProperties": false
+                },
+                {
+                  "$ref": "#/definitions/undersideTop"
                 }
               ]
             },
@@ -1090,6 +1093,9 @@
           "type": "string",
           "minLength": 1,
           "description": "Reutiliza os limites retangulares e a extensão vertical do objeto referenciado. Não herda aparência nem aberturas."
+        },
+        "wall_top": {
+          "$ref": "#/definitions/undersideTop"
         }
       },
       "required": [
@@ -2499,6 +2505,9 @@
                 "level"
               ],
               "additionalProperties": false
+            },
+            {
+              "$ref": "#/definitions/undersideTop"
             }
           ]
         },
@@ -2624,6 +2633,46 @@
           }
         }
       ]
+    },
+    "undersideTop": {
+      "type": "object",
+      "description": "Limita as paredes pela face inferior dos objetos indicados. Lances de escada seguem a inclinação; demais retângulos usam z0. Fora da projeção, preserva o topo normal.",
+      "properties": {
+        "under": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          ]
+        },
+        "offset": {
+          "anyOf": [
+            {
+              "type": "number",
+              "minimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ],
+          "description": "Desconto vertical em metros para estrutura/forro; padrão 0."
+        }
+      },
+      "required": [
+        "under"
+      ],
+      "additionalProperties": false
     }
   }
 }

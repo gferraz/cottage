@@ -804,6 +804,8 @@ const FloorPlanFacades = {
           to: side ? [depth, end] : [end, depth],
           thickness: wall?.thickness ?? Number(plan.catalog.walls?.thickness ?? 0.12),
           baseStart: base, baseEnd: base, top,
+          undersideLimits: wall?.undersideLimits ?? FloorPlanWalls.undersideLimits(plan,
+            plan.roomDefinitions?.get(roomId)?.wall_top, Number(plan.catalog.walls?.thickness ?? 0.12) / 2),
         }, roofLimits, side);
         const path = polygons.map((polygon) => polygon.map(([coordinate, z], i) =>
           `${i ? "L" : "M"}${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`,
@@ -981,6 +983,7 @@ const FloorPlanFacades = {
             from: startPoint, to: endPoint, thickness: wall.thickness,
             baseStart: startBase, baseEnd: endBase, top: wall.topZ,
             roofOnly: wall.top === "roof",
+            undersideLimits: wall.undersideLimits,
           }, roofLimits, side);
           if (!polygons.length) return;
           if (!independentWallFaces.has(wall.id)) independentWallFaces.set(wall.id, { wall, polygons: [] });

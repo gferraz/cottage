@@ -1,4 +1,90 @@
 const FloorPlanWalls = {
+  stairUndersidePlane(stair, offset = 0) {
+    const alongX = stair.stairAxis === "horizontal";
+    const increasing = (stair.stairDirection !== "reverse") === (stair.stairRise !== "down");
+    const slope = stair.h / (alongX ? stair.w : stair.l) * (increasing ? 1 : -1);
+    const ax = alongX ? slope : 0, ay = alongX ? 0 : slope;
+    const intercept = stair.z0 + (increasing ? 0 : stair.h) - ax * stair.x - ay * stair.y - offset;
+    return [-ax, -ay, 1, -intercept];
+  },
+
+  // Rectangular footprints and planes describing the underside of overhead
+  // objects. Stair direction is resolved before building its inclined plane.
+  undersideLimits(plan, top, padding = 0) {
+    if (!top || top.under === undefined) return [];
+    const ids = Array.isArray(top.under) ? top.under : [top.under];
+    const offset = plan.resolve(top.offset ?? 0);
+    if (!ids.length || ids.some((id) => typeof id !== "string" || !id.trim()) ||
+      !Number.isFinite(offset) || offset < 0) {
+      throw new Error("O limite inferior precisa de referências e offset não negativo");
+    }
+    const floors = plan.currentConfig?.floors ?? [plan.currentConfig ?? {}];
+    const limits = ids.flatMap((id) => {
+      const owner = plan.partOwners?.get(id);
+      const room = plan.roomDefinitions?.get(owner ?? id);
+      if (room?.parts && !owner) {
+        return this.undersideLimits(plan, { under: room.parts.map((part) => part.id), offset }, padding);
+      }
+      const definition = owner ? room.parts.find((part) => part.id === id) : room;
+      const floor = floors.find((entry) => (entry.rooms ?? []).includes(room)) ?? floors[0];
+      let geometry;
+      if (definition) {
+        geometry = plan.normalizeGeometryAtFloor(definition, floor);
+      } else {
+        const itemFloor = floors.find((entry) => (entry.items ?? []).some((item) => item.id === id));
+        const item = itemFloor?.items.find((entry) => entry.id === id);
+        if (item) geometry = plan.normalizeGeometryAtFloor(plan.resolveItemType(item), itemFloor);
+        else {
+          const reference = plan.references?.get(id);
+          if (!reference?.geometry) throw new Error(`Objeto superior desconhecido: ${id}`);
+          const box = reference.geometry();
+          geometry = { x: box.x0(), y: box.y0(), w: box.w(), l: box.l(), z0: box.z0(), h: box.h() };
+        }
+      }
+      const { x, y, w, l, z0 } = geometry;
+      if (![x, y, w, l, z0].every(Number.isFinite) || w <= 0 || l <= 0 ||
+        Number(geometry.rotation ?? 0) % 360 !== 0) {
+        throw new Error(`Objeto superior precisa de geometria retangular sem rotação: ${id}`);
+      }
+      const plane = String(geometry.classes ?? "").split(/\s+/).includes("stair-flight")
+        ? this.stairUndersidePlane(geometry, offset)
+        : [0, 0, 1, offset - z0];
+      return [{
+        id,
+        bounds: [[-1, 0, 0, x - padding], [1, 0, 0, -x - w - padding],
+          [0, -1, 0, y - padding], [0, 1, 0, -y - l - padding]],
+        slopes: [plane],
+      }];
+    });
+    if (padding > 0) {
+      const bounds = limits.map((limit) => limit.bounds.map((plane) => [...plane]));
+      limits.forEach((limit, index) => {
+        limit.bounds.forEach((plane, edge) => {
+          const opposite = [1, 0, 3, 2][edge];
+          const cross = edge < 2 ? 2 : 0;
+          const shared = bounds.some((other, j) => j !== index &&
+            Math.abs(bounds[index][edge][3] + other[opposite][3] + 2 * padding) < 1e-8 &&
+            Math.min(-bounds[index][cross + 1][3], -other[cross + 1][3]) -
+              Math.max(bounds[index][cross][3], other[cross][3]) > 2 * padding + 1e-8);
+          // Extend only the outer perimeter across wall thickness. Extending
+          // a slope through a shared landing edge creates a false dip.
+          if (shared) plane[3] += padding;
+        });
+      });
+    }
+    return limits;
+  },
+
+  wallSolids(faces, roofs, roofOnly = false, undersideLimits = []) {
+    let solids = this.roofSolids(faces, roofs, roofOnly);
+    // Apply each object separately: the nearest underside wins in overlaps,
+    // while wall portions outside its footprint keep their original height.
+    undersideLimits.forEach((limit) => {
+      solids = solids.flatMap((solid) => this.roofSolids(solid, [limit]));
+    });
+    return solids;
+  },
+
   // Clip a convex solid, closing the cut with a face ordered around its normal.
   clipSolid(faces, plane) {
     const distance = (point) => plane.slice(0, 3).reduce((sum, n, i) => sum + n * point[i], plane[3]);
@@ -201,7 +287,7 @@ const FloorPlanWalls = {
     return result;
   },
 
-  wallElevation({ from, to, thickness, baseStart, baseEnd, top, roofOnly }, roofs, side) {
+  wallElevation({ from, to, thickness, baseStart, baseEnd, top, roofOnly, undersideLimits }, roofs, side) {
     const dx = to[0] - from[0], dy = to[1] - from[1];
     const length = Math.hypot(dx, dy);
     if (length <= 1e-9) return [];
@@ -212,7 +298,7 @@ const FloorPlanWalls = {
         from[1] + uy * x + ux * y,
         z === baseStart && x === length ? baseEnd : z,
       ]));
-    return this.roofSolids(faces, roofs, roofOnly).flatMap((solid) => {
+    return this.wallSolids(faces, roofs, roofOnly, undersideLimits).flatMap((solid) => {
       // A clipped piece is convex, so its orthographic silhouette is the hull
       // of its projected vertices, including both faces across the thickness.
       const points = solid.flat().map(([x, y, z]) => [side ? y : x, z]
@@ -542,6 +628,7 @@ const FloorPlanWalls = {
         });
 
         const wallStates = plan.normalizeWalls(definition.walls);
+        const undersideLimits = this.undersideLimits(plan, definition.wall_top, thickness / 2);
         ["top", "right", "bottom", "left"].forEach((side) => {
           const state = wallStates[side];
           if (state !== "solid" && state !== "virtual") return;
@@ -581,6 +668,7 @@ const FloorPlanWalls = {
             .join(":");
           const existing = signatures.get(signature);
           if (existing) {
+            existing.undersideLimits.push(...undersideLimits);
             if (existing.state !== state) {
               plan.errors.push({
                 category: "wall",
@@ -622,6 +710,7 @@ const FloorPlanWalls = {
             z1: floorZ0 + height,
             h: height,
             thickness,
+            undersideLimits: [...undersideLimits],
             touchedRoomIds: [],
             signature,
           };
@@ -744,12 +833,14 @@ const FloorPlanWalls = {
           ? terrainMinimumZ
           : plan.resolve(baseDefinition?.level);
         const roofOnly = definition.top === "roof";
+        const undersideLimits = this.undersideLimits(plan, definition.top, thickness / 2);
         if (roofOnly && !roofLimits.length) {
           throw new Error('A parede com top: "roof" precisa de um telhado válido acima da base');
         }
         const topZ = roofOnly
           ? Math.max(...roofLimits.map((roof) => roof.peakZ))
-          : plan.resolve(definition.top?.level ?? groundLevel);
+          : plan.resolve(definition.top?.level ?? (undersideLimits.length ? Math.max(...floors.map((floor) =>
+            Number(floor.z0 ?? 0) + Number(floor.ceiling_height ?? floor.wall_max_height ?? 0))) : groundLevel));
         if (
           !Number.isFinite(thickness) || thickness <= 0 ||
           !Number.isFinite(baseZ) || !Number.isFinite(topZ)
@@ -769,6 +860,7 @@ const FloorPlanWalls = {
           base,
           baseZ,
           top: roofOnly ? "roof" : { ...definition.top, level: topZ },
+          undersideLimits,
           topZ,
           thickness,
           x: x0,
@@ -796,7 +888,7 @@ const FloorPlanWalls = {
           throw new Error('A base da parede precisa ser "terrain" ou { level: "referência.z0" }');
         }
         if (wall.h <= 0) throw new Error("A cota superior da parede precisa ficar acima da base");
-        wall.geometryParts = this.geometryParts(wall).map((part) => ({ ...part, ...scopeFields, roofOnly }));
+        wall.geometryParts = this.geometryParts(wall).map((part) => ({ ...part, ...scopeFields, roofOnly, undersideLimits }));
         if (roofOnly) {
           const covered = resolvedPoints.slice(0, -1).some((from, i) =>
             this.roofSection([[0, baseZ], [1, baseZ], [1, topZ], [0, topZ]],

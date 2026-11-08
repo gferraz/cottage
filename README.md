@@ -135,6 +135,17 @@ Para paredes independentes, use `top: "roof"` para alcançar automaticamente a c
 
 Nesse modo, somente os trechos cobertos são desenhados; nos encontros prevalece o telhado mais alto. Se nenhum telhado válido cobrir o caminho acima da base, a parede aparece em **Itens com erro**. A forma `top: { level: ... }` continua disponível para limitar a parede a uma cota explícita.
 
+Para limitar paredes por um objeto superior, use `wall_top` no cômodo ou `top` na parede independente:
+
+```json5
+// No cômodo: a parede acompanha o lance e o patamar.
+wall_top: { under: ["upper-flight", "upper-landing"] }
+// Na parede independente: desconto vertical opcional para estrutura/forro.
+top: { under: "upper-flight", offset: 0.15 }
+```
+
+`under` aceita um ID ou uma lista de IDs de cômodos, partes, itens ou referências retangulares sem rotação. Um cômodo composto usa as suas partes. Lances seguem o plano inclinado ideal entre as cotas das extremidades; patamares e outros volumes usam sua cota inferior `z0`. O padrão de `offset` é zero: nenhuma espessura estrutural é presumida. Os lances no 3D deixam o volume sob esse plano livre. Nos encontros, prevalece a face inferior mais baixa; trechos fora das projeções mantêm o limite normal. O recorte considera a espessura das paredes e aparece no 3D e nas elevações. Referências inválidas geram erro de parede. O recorte não valida automaticamente a altura útil de portas ou equipamentos.
+
 O padrão é quatro paredes sólidas. Use `walls` com `solid`, `open` ou `virtual`:
 
 ```json

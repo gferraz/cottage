@@ -107,13 +107,25 @@ const FloorPlan3DElements = {
         const center = axis === "horizontal"
           ? [x + offset + stepRun / 2, y + length / 2, z0 + stepHeight / 2]
           : [x + width / 2, y + offset + stepRun / 2, z0 + stepHeight / 2];
-        const step = new THREE.Mesh(
-          new THREE.BoxGeometry(...dimensions),
-          wallMaterial,
+        // Keep the space below the flight open. The underside follows the
+        // same ideal inclined plane used to limit walls, without a guessed
+        // structural thickness.
+        const faces = FloorPlanWalls.boxFaces(
+          center[0] - dimensions[0] / 2, center[1] - dimensions[1] / 2, z0,
+          center[0] + dimensions[0] / 2, center[1] + dimensions[1] / 2, z0 + stepHeight,
         );
+        const solid = FloorPlanWalls.clipSolid(faces,
+          FloorPlanWalls.stairUndersidePlane(stair).map((value) => -value));
+        const vertices = [];
+        solid.forEach((face) => {
+          for (let i = 1; i < face.length - 1; i++) vertices.push(...face[0], ...face[i], ...face[i + 1]);
+        });
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.computeVertexNormals();
+        const step = new THREE.Mesh(geometry, wallMaterial);
         step.castShadow = true;
         step.receiveShadow = true;
-        step.position.set(...center);
         step.userData.domainId = stair.id;
         step.userData.stepIndex = index;
         scene.add(step);

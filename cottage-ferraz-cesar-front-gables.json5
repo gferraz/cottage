@@ -211,7 +211,9 @@
         {
           id: "laundry",
           label: "Lavanderia",
-          rectangle: ["right.x0", "living.y1 + 1.2", "right.x1", "y0 + 1.6"],
+          wall_top: { under: ["middle-flight", "lower-landing"] },
+          // Faixa técnica sob o lance 2 e o patamar 1; acesso pelo lado dos fundos.
+          rectangle: ["middle-flight.x0", "middle-flight.y0", "lower-landing.x1", "lower-landing.y1 + 0.1"],
           walls: ["left"],
           classes: "service laundry wet"
         },
@@ -219,7 +221,7 @@
           id: "living",
           label: "Estar",
           from: ["master.x1", "dining.y1"],
-          to: ["right.x1", "y0 + 3.8"]
+          to: ["right.x1", "y0 + 3.5"]
         },
         {
           id: "master",
@@ -285,8 +287,10 @@
         {
           id: "powder",
           label: "Lavabo",
-          rectangle: ["right.x0", "living.y1", "x0 + 2.4", "y0 + 1.2"],
-          walls: ["top", "left"],
+          wall_top: { under: ["upper-flight", "upper-landing"] },
+          // Ocupa exatamente a projeção do lance 3 e do patamar 2.
+          rectangle: ["upper-flight.x0", "upper-flight.y0", "upper-flight.x1", "upper-landing.y1"],
+          walls: ["top", "right", "bottom", "left"],
           openings: [
             { type: "door", from: "left", to: "rear-corridor" }
           ],
@@ -341,9 +345,10 @@
         },
         */
         // Escada em U — três lances de 6 espelhos (18 no total).
-        // Pisos de 0,28 m: 5 pisos por lance, com projeção de 1,40 m.
-        // Larguras: lance 1 de 1,30 m; lances 2 e 3 de 1,40 m.
-        // Patamares: 1,30 × 1,40 m e 1,40 × 1,40 m.
+        // Projeção dos lances 1 e 3: 1,40 m; do lance 2: 1,30 m.
+        // Com 5 pisos por lance: 0,28 m nos lances 1 e 3; 0,26 m no lance 2.
+        // Largura dos três lances: 1,40 m.
+        // Dois patamares de 1,40 × 1,40 m.
         // Caixa de 4,10 × 2,80 m, sem paredes.
         // Lance inferior à direita (lado baixo do telhado); chegada à esquerda.
         // Borda esquerda da caixa alinhada à guia central direita.
@@ -353,8 +358,8 @@
           parts: [
             {
               id: "lower-flight",
-              from: ["right.x1 - 1.3", "living.y1", "ground.z0"],
-              to: ["right.x1", "y0 + 1.4", "ground.z0 + (upper.z0 - ground.z0) / 3"],
+              from: ["right.x1 - 1.4", "living.y1", "ground.z0"],
+              to: ["right.x1", "y0 + 1.3", "ground.z0 + (upper.z0 - ground.z0) / 3"],
               orientation: "longitudinal",
               classes: "stair-flight"
             },
@@ -419,8 +424,13 @@
           classes: "fireplace"
         },
         { title: "Carro", pos: ["garage.x0 + 1", "garage.y0 + 1"], size: [1.8, 4.0], classes: "car" },
-        { type: "washing-machine", pos: ["laundry.x1 - 0.7", "laundry.y0"] },
-        { type: "washing-machine", pos: ["laundry.x1 - 1.4", "laundry.y0"] },
+        // Lavadoras frontais lado a lado, voltadas para a circulação/mudroom.
+        // Folga de 5 cm entre máquinas e 2,5 cm nas extremidades do lance.
+        // A lavadora do lado baixo exige conferir a espessura real da escada.
+        { type: "washing-machine", pos: ["middle-flight.x0 + 0.025", "middle-flight.y1 - 0.65"], rotation: 180 },
+        { type: "washing-machine", pos: ["middle-flight.x1 - 0.625", "middle-flight.y1 - 0.65"], rotation: 180 },
+        // Sob o patamar de 1 m: somente armazenamento baixo.
+        { title: "Armário baixo", pos: ["lower-landing.x0 + 0.1", "lower-landing.y0 + 0.1"], size: ["lower-landing.w - 0.2", 0.4, 0.6], classes: "storage", color: "furniture" },
         { type: "queen-bed", pos: ["master.x0 + 1", "master.y0"] },
 
         { type: "railing", pos: ["porch.x0",        "porch.y0"], size: ["hall.xc - 0.9 - porch.x0", 0.08, 1.1] },
