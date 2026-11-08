@@ -1,4 +1,16 @@
 const FloorPlanGeometry = {
+  stairGradientRange(floorZ, parts) {
+    return {
+      base: Math.min(floorZ, ...parts.map((part) => part.z0)),
+      top: Math.max(floorZ, ...parts.map((part) => part.z1)),
+    };
+  },
+
+  stairGradientRatio(z, range) {
+    const span = range.top - range.base;
+    return span > 0 ? Math.max(0, Math.min(1, (z - range.base) / span)) : 0;
+  },
+
   resolveExpression(expression, localOrigin = null) {
     const tokens = [];
     const tokenPattern = /\s*(?:(\d+(?:\.\d+)?(?:e[+-]?\d+)?|[A-Za-z_][\w.-]*)|([()+\-*/]))/i;

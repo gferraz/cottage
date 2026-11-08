@@ -367,8 +367,7 @@
               id: "lower-landing",
               from: ["lower-flight.x0", "lower-flight.y1", "lower-flight.z1"],
               to: ["lower-flight.x1", "y0 + 1.3", "z0"],
-              classes: "stair-landing",
-              color: "terracotta"
+              classes: "stair-landing"
             },
             {
               id: "middle-flight",
@@ -388,8 +387,7 @@
               id: "upper-landing",
               from: ["middle-flight.x0", "middle-flight.y0", "middle-flight.z1"],
               to: ["central-right.x0", "middle-flight.y1", "z0"],
-              classes: "stair-landing",
-              color: "terracotta"
+              classes: "stair-landing"
             }
           ],
           walls: [],

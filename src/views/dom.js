@@ -1,4 +1,22 @@
 const FloorPlanDom = {
+  applyStairGradient(element, geometry, range) {
+    const color = (z) => `color-mix(in srgb, var(--theme-circulation), var(--theme-roof-gradient-dark) ${
+      ((1 - FloorPlanGeometry.stairGradientRatio(z, range)) * 100).toFixed(4)}%)`;
+    let background = color(geometry.z0);
+    if (geometry.h > 0) {
+      const count = Math.max(1, Math.round(geometry.h / 0.16));
+      const increasing = (geometry.stairDirection !== "reverse") === (geometry.stairRise !== "down");
+      const stops = Array.from({ length: count }, (_, index) => {
+        const step = increasing ? index + 1 : count - index;
+        return `${color(geometry.z0 + geometry.h * step / count)} ${index / count * 100}% ${(index + 1) / count * 100}%`;
+      });
+      background = `linear-gradient(to ${geometry.stairAxis === "horizontal" ? "right" : "bottom"}, ${stops.join(", ")})`;
+      element.style.setProperty("--stair-step", (geometry.stairAxis === "horizontal" ? geometry.w : geometry.l) / count);
+    }
+    element.dataset.stairGradient = "height";
+    element.style.setProperty("background", background, "important");
+  },
+
   add(plan, data) {
     const {
       label = "",
@@ -58,6 +76,11 @@ const FloorPlanDom = {
       arrow.className = "stair-arrow";
       arrow.setAttribute("aria-hidden", "true");
       element.append(arrow);
+    }
+    if (classes.split(/\s+/).some((name) => ["stair-flight", "stair-landing"].includes(name))) {
+      const sourceFloor = plan.roomFloorConfigs?.get(data.id);
+      const base = Number(sourceFloor?.z0 ?? plan.currentFloorHeight);
+      this.applyStairGradient(element, normalized, FloorPlanGeometry.stairGradientRange(base, [normalized]));
     }
     if (title) element.title = title;
     if (!room && showLabel && (label || title)) {
@@ -123,6 +146,11 @@ const FloorPlanDom = {
     const parts = room.parts?.length
       ? plan.normalizeParts(room.parts)
       : undefined;
+    const stairParts = parts?.filter((part) => String(part.classes ?? "").split(/\s+/)
+      .some((name) => ["stair-flight", "stair-landing"].includes(name))) ?? [];
+    const sourceFloor = plan.roomFloorConfigs?.get(room.id);
+    const stairGradient = stairParts.length ? FloorPlanGeometry.stairGradientRange(
+      Number(sourceFloor?.z0 ?? plan.currentFloorHeight), stairParts) : null;
     const geometry = parts?.length
       ? {
           x: Math.min(...parts.map((part) => part.x)),
@@ -239,6 +267,9 @@ const FloorPlanDom = {
         const partColor = part.color ?? room.color;
         if (partColor)
           partElement.style.backgroundColor = plan.themeFillColor(partColor);
+        if (stairGradient && partClasses.split(/\s+/).some((name) => ["stair-flight", "stair-landing"].includes(name))) {
+          this.applyStairGradient(partElement, part, stairGradient);
+        }
         if (partClasses.split(/\s+/).includes("stair-flight")) {
           partElement.dataset.stairAxis = part.stairAxis;
           partElement.dataset.stairDirection = part.stairDirection || "forward";

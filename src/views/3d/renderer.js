@@ -154,20 +154,25 @@ const FloorPlanFacades3D = {
     floors.filter((floor) => !plan.visibleFloor || floor === plan.visibleFloor).forEach((floor) => {
       (floor?.rooms ?? []).forEach((definition) => {
         if (isStairFlight(definition)) {
-          stairFlights.push(plan.normalizeGeometryAtFloor(definition, floor));
+          const part = plan.normalizeGeometryAtFloor(definition, floor);
+          stairFlights.push({ ...part, stairGradient: FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), [part]) });
         }
         if (String(definition.classes || "").split(/\s+/).includes("stair-landing")) {
-          stairLandings.push(plan.normalizeGeometryAtFloor(definition, floor));
+          const part = plan.normalizeGeometryAtFloor(definition, floor);
+          stairLandings.push({ ...part, stairGradient: FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), [part]) });
         }
         if (!Array.isArray(definition.parts)) return;
         const previousHeight = plan.currentFloorHeight;
         plan.currentFloorHeight = Number(floor?.z0 ?? 0);
         try {
           const parts = plan.normalizeParts(definition.parts);
-          stairFlights.push(...parts.filter(isStairFlight));
+          const stairParts = parts.filter((part) => isStairFlight(part) ||
+            String(part.classes || "").split(/\s+/).includes("stair-landing"));
+          const range = FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), stairParts);
+          stairFlights.push(...parts.filter(isStairFlight).map((part) => ({ ...part, stairGradient: range })));
           stairLandings.push(...parts.filter((part) =>
             String(part.classes || "").split(/\s+/).includes("stair-landing"),
-          ));
+          ).map((part) => ({ ...part, stairGradient: range })));
         } finally {
           plan.currentFloorHeight = previousHeight;
         }

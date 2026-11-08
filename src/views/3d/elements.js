@@ -1,4 +1,17 @@
 const FloorPlan3DElements = {
+  heightMaterial(plan, THREE, baseMaterial, stair, z) {
+    if (!stair.stairGradient) return baseMaterial;
+    const styles = getComputedStyle(plan.root);
+    const opaque = (value) => value.replace(/^rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)$/, "rgb($1,$2,$3)");
+    const low = new THREE.Color(opaque(styles.getPropertyValue("--theme-circulation").trim()));
+    const high = new THREE.Color(opaque(styles.getPropertyValue("--theme-roof-gradient-dark").trim()));
+    const ratio = 1 - FloorPlanGeometry.stairGradientRatio(z, stair.stairGradient);
+    const material = baseMaterial.clone();
+    // Match the sRGB interpolation used by color-mix in the plan view.
+    material.color.copy(low.convertLinearToSRGB().lerp(high.convertLinearToSRGB(), ratio).convertSRGBToLinear());
+    return material;
+  },
+
   renderItems({ plan, THREE, scene, wallMaterial, finite, reportInvalid }) {
     (plan.allItems ?? []).forEach((item) => {
       const classes = String(item.classes || "").split(/\s+/);
@@ -123,7 +136,7 @@ const FloorPlan3DElements = {
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
         geometry.computeVertexNormals();
-        const step = new THREE.Mesh(geometry, wallMaterial);
+        const step = new THREE.Mesh(geometry, this.heightMaterial(plan, THREE, wallMaterial, stair, z0 + stepHeight));
         step.castShadow = true;
         step.receiveShadow = true;
         step.userData.domainId = stair.id;
@@ -139,9 +152,9 @@ const FloorPlan3DElements = {
           reportInvalid("patamar de escada", landing.id);
           return;
         }
-        const landingMaterial = wallMaterial.clone();
+        const landingMaterial = this.heightMaterial(plan, THREE, wallMaterial, landing, z0).clone();
         landingMaterial.side = THREE.DoubleSide;
-        if (landing.color) {
+        if (landing.color && !landing.stairGradient) {
           const color = plan.themeFillColor(landing.color).replace(
             /var\((--[\w-]+)\)/g,
             (_match, property) => getComputedStyle(plan.root).getPropertyValue(property).trim(),
