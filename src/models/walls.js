@@ -362,6 +362,12 @@ const FloorPlanWalls = {
           (floor.roofs ?? []).map((roof) => ({ ...roof, floorId: floor.id }))) ]
       : plan.allRoofs ?? [];
     return roofs.flatMap((roof) => {
+      if (roof.type === "shed") {
+        try {
+          const { peakZ, bounds, slopes } = FloorPlanRoofs.shedGeometry(plan, roof, false);
+          return [{ peakZ, bounds, slopes }];
+        } catch { return []; }
+      }
       if (roof.type !== "gable" || !["longitudinal", "transverse"].includes(roof.orientation)) return [];
       try {
         const floor = FloorPlanRoofs.floorForRoof(plan, roof, roof.base ?? roof);

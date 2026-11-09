@@ -478,7 +478,7 @@ const FloorPlanTextExport = {
         "",
         `### ${heading}`,
         "",
-        "| Telhado | Tipo | Cumeeira | Dimensões (m) | Cota base (m) | Altura (m) | Superfície (m²) | Inclinação | Beiral (m) | Empena (m) |",
+        "| Telhado | Tipo | Cumeeira / borda alta | Dimensões (m) | Cota base (m) | Altura (m) | Superfície (m²) | Inclinação | Beiral (m) | Empena (m) |",
         "|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
       );
       roofEntries.forEach((roof) => {
@@ -490,7 +490,7 @@ const FloorPlanTextExport = {
           return;
         }
         lines.push(
-          `| ${plan.markdownText(roof.label || roof.id || "Telhado")} | ${plan.markdownText(plan.roofTypeLabel(roof.type))} | ${plan.markdownText(plan.roofOrientationLabel(roof.orientation))} · ${plan.formatMeters(metrics.ridgeLength)} m | ${plan.formatMeters(metrics.roofWidth)} × ${plan.formatMeters(metrics.roofLength)} | ${plan.formatMeters(metrics.baseElevation)} | ${plan.formatMeters(metrics.rise)} | ${plan.formatMeters(metrics.surfaceArea)} | ${plan.formatMeters(metrics.pitch)}° | ${FloorPlanRoofs.formatOverhang(plan, metrics.eave)} | ${FloorPlanRoofs.formatOverhang(plan, metrics.rake)} |`,
+          `| ${plan.markdownText(roof.label || roof.id || "Telhado")} | ${plan.markdownText(plan.roofTypeLabel(roof.type))} | ${plan.markdownText(FloorPlanRoofs.axisLabel(plan, roof, metrics.ridgeLength))} | ${plan.formatMeters(metrics.roofWidth)} × ${plan.formatMeters(metrics.roofLength)} | ${plan.formatMeters(metrics.baseElevation)} | ${plan.formatMeters(metrics.rise)} | ${plan.formatMeters(metrics.surfaceArea)} | ${plan.formatMeters(metrics.pitch)}° | ${FloorPlanRoofs.formatOverhang(plan, metrics.eave)} | ${FloorPlanRoofs.formatOverhang(plan, metrics.rake)} |`,
         );
       });
     };

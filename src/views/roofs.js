@@ -1,4 +1,61 @@
 const FloorPlanRoofs = {
+  axisLabel(plan, roof, length) {
+    if (roof.type !== "shed") return `${plan.roofOrientationLabel(roof.orientation)} · ${plan.formatMeters(length)} m`;
+    const slope = roof.slope ?? (roof.orientation === "longitudinal" ? "right" : "bottom");
+    const direction = { top: "frente", bottom: "fundos", left: "esquerda", right: "direita" }[slope];
+    return `Caimento: ${direction} · borda alta: ${plan.formatMeters(length)} m`;
+  },
+
+  // z0 é a cota da borda baixa na base, antes do avanço dos beirais.
+  shedGeometry(plan, roof, includeEaves = true) {
+    if (!["longitudinal", "transverse"].includes(roof.orientation)) {
+      throw new Error('Telhado shed precisa de orientação "longitudinal" ou "transverse"');
+    }
+    const longitudinal = roof.orientation === "longitudinal";
+    const slope = roof.slope ?? (longitudinal ? "right" : "bottom");
+    if (!(longitudinal ? ["left", "right"] : ["top", "bottom"]).includes(slope)) {
+      throw new Error("O caimento (slope) precisa corresponder à orientação do telhado shed");
+    }
+    const floor = this.floorForRoof(plan, roof, roof.base ?? roof);
+    const base = this.resolveBase(plan, roof.base ?? roof, floor);
+    const pitch = Number(roof.pitch);
+    if (!(pitch > 0 && pitch < 90)) throw new Error("A inclinação do telhado precisa estar entre 0 e 90 graus");
+    const eave = this.overhangPair(roof.eave), rake = this.overhangPair(roof.rake);
+    if (![...eave, ...rake].every((value) => Number.isFinite(value) && value >= 0)) {
+      throw new Error("Os beirais do telhado precisam ser números não negativos");
+    }
+    const [e0, e1] = includeEaves ? eave : [0, 0];
+    const [r0, r1] = rake;
+    const x0 = base.x0() - (longitudinal ? e0 : r0), x1 = base.x1() + (longitudinal ? e1 : r1);
+    const y0 = base.y0() - (longitudinal ? r0 : e0), y1 = base.y1() + (longitudinal ? r1 : e1);
+    const start = longitudinal ? base.x0() : base.y0(), end = longitudinal ? base.x1() : base.y1();
+    const z0 = roof.z0 === undefined ? this.baseCeilingZ(plan, base, 0, floor) : plan.resolve(roof.z0);
+    if (![x0, x1, y0, y1, z0].every(Number.isFinite) || x1 <= x0 || y1 <= y0) throw new Error("Base inválida para o telhado shed");
+    const tangent = Math.tan(pitch * Math.PI / 180);
+    const lowAtStart = slope === "left" || slope === "top";
+    const gradient = (lowAtStart ? 1 : -1) * tangent;
+    const intercept = z0 - gradient * (lowAtStart ? start : end);
+    const at = (x, y) => [x, y, intercept + gradient * (longitudinal ? x : y)];
+    const polygon = [at(x0, y0), at(x1, y0), at(x1, y1), at(x0, y1)];
+    const rise = (end - start) * tangent;
+    const high = lowAtStart ? end : start;
+    return {
+      base, longitudinal, slope, pitch, eave, rake, z0, baseElevation: z0, rise,
+      baseSpan: end - start, baseX0: base.x0(), baseX1: base.x1(), baseY0: base.y0(), baseY1: base.y1(),
+      eave0: eave[0], eave1: eave[1], pitchTangent: tangent,
+      x0, x1, y0, y1, roofWidth: x1 - x0, roofLength: y1 - y0,
+      ridgeLength: longitudinal ? y1 - y0 : x1 - x0,
+      ridgeX0: longitudinal ? high : x0, ridgeX1: longitudinal ? high : x1,
+      ridgeY0: longitudinal ? y0 : high, ridgeY1: longitudinal ? y1 : high,
+      surfaceArea: (x1 - x0) * (y1 - y0) / Math.cos(pitch * Math.PI / 180),
+      minZ: Math.min(...polygon.map((point) => point[2])),
+      peakZ: Math.max(...polygon.map((point) => point[2])),
+      bounds: [[-1, 0, 0, x0], [1, 0, 0, -x1], [0, -1, 0, y0], [0, 1, 0, -y1]],
+      slopes: [longitudinal ? [-gradient, 0, 1, -intercept] : [0, -gradient, 1, -intercept]],
+      polygon,
+    };
+  },
+
   clipPolygon(points, plane) {
     if (!points.length) return [];
     const distances = points.map((point) => plane.slice(0, 3).reduce((sum, value, i) => sum + value * point[i], plane[3]));
@@ -18,6 +75,12 @@ const FloorPlanRoofs = {
 
   intersectingSurfaces(plan, roofs = plan.allRoofs ?? []) {
     const definitions = roofs.flatMap((roof) => {
+      if (roof.type === "shed") {
+        try {
+          const geometry = this.shedGeometry(plan, roof);
+          return [{ roof, polygons: [geometry.polygon], planes: [...geometry.bounds, ...geometry.slopes] }];
+        } catch { return []; }
+      }
       if (roof.type !== "gable" || !["longitudinal", "transverse"].includes(roof.orientation)) return [];
       try {
         const floor = this.floorForRoof(plan, roof, roof.base ?? roof);
@@ -52,6 +115,8 @@ const FloorPlanRoofs = {
     });
     return definitions.map((definition, index) => {
       let polygons = definition.polygons;
+      // Uma cobertura inferior pode continuar sob os beirais de outro volume.
+      if (definition.roof.clip_intersections === false) return { roof: definition.roof, polygons };
       definitions.forEach((other, otherIndex) => {
         if (otherIndex === index) return;
         polygons = polygons.flatMap((polygon) => {
@@ -266,19 +331,20 @@ const FloorPlanRoofs = {
     const clippedRoofs = this.intersectingSurfaces(plan, plan.allRoofs?.length ? plan.allRoofs : roofs);
     roofs.forEach((roof, index) => {
       try {
-        if (roof.type !== "gable")
+        if (!["gable", "shed"].includes(roof.type))
           throw new Error(`Unsupported roof type: ${roof.type || "undefined"}`);
         const baseDefinition = roof.base ?? roof;
         if (!roof.base && !["from", "to", "rectangle", "pos", "size", "inset", "outset"].some((key) => roof[key] !== undefined)) {
-          throw new Error("A gable roof needs a base definition");
+          throw new Error("O telhado precisa de uma base");
         }
         if (!["longitudinal", "transverse"].includes(roof.orientation)) {
           throw new Error(
-            'A gable roof orientation must be "longitudinal" or "transverse"',
+            'A orientação do telhado precisa ser "longitudinal" ou "transverse"',
           );
         }
 
-        const base = FloorPlanRoofs.resolveBase(plan, baseDefinition);
+        const shed = roof.type === "shed" ? this.shedGeometry(plan, roof) : null;
+        const base = shed?.base ?? FloorPlanRoofs.resolveBase(plan, baseDefinition);
         const pitch = Number(roof.pitch);
         if (!(pitch > 0 && pitch < 90))
           throw new Error(
@@ -297,7 +363,7 @@ const FloorPlanRoofs = {
         const x1 = base.x1() + (longitudinal ? eave1 : rake1);
         const y0 = base.y0() - (longitudinal ? rake0 : eave0);
         const y1 = base.y1() + (longitudinal ? rake1 : eave1);
-        const z0 =
+        const z0 = shed ? shed.z0 :
           roof.z0 !== undefined
             ? plan.resolve(roof.z0)
             : FloorPlanRoofs.baseCeilingZ(plan, base);
@@ -309,20 +375,20 @@ const FloorPlanRoofs = {
         const baseX1 = base.x1();
         const baseY0 = base.y0();
         const baseY1 = base.y1();
-        const ridgeX = longitudinal ? (baseX0 + baseX1) / 2 : x0;
-        const ridgeY = longitudinal ? y0 : (baseY0 + baseY1) / 2;
-        const ridgeEndX = longitudinal ? ridgeX : x1;
-        const ridgeEndY = longitudinal ? y1 : ridgeY;
+        const ridgeX = shed ? shed.ridgeX0 : longitudinal ? (baseX0 + baseX1) / 2 : x0;
+        const ridgeY = shed ? shed.ridgeY0 : longitudinal ? y0 : (baseY0 + baseY1) / 2;
+        const ridgeEndX = shed ? shed.ridgeX1 : longitudinal ? ridgeX : x1;
+        const ridgeEndY = shed ? shed.ridgeY1 : longitudinal ? y1 : ridgeY;
         const ridgeLength = Math.hypot(ridgeEndX - ridgeX, ridgeEndY - ridgeY);
-        const rise = (baseSpan / 2) * Math.tan(radians);
+        const rise = shed ? shed.rise : (baseSpan / 2) * Math.tan(radians);
         roof.bounds = () =>
           FloorPlanGeometryBox.fromValues({
             x: x0,
             y: y0,
             w: x1 - x0,
             l: y1 - y0,
-            z0,
-            h: rise,
+            z0: shed ? shed.minZ : z0,
+            h: shed ? shed.peakZ - shed.minZ : rise,
           });
         roof.geometry = () => {
           throw new Error(
@@ -360,7 +426,7 @@ const FloorPlanRoofs = {
         for (let edge = 0; edge < edges.length; edge += 2) {
           const a = edges[edge], b = edges[edge + 1];
           const segment = `M${point(a)} L${point(b)}`;
-          if (Math.abs(a[2] - z0 - rise) < 1e-7 && Math.abs(b[2] - z0 - rise) < 1e-7) ridgeSegments.push(segment);
+          if (!shed && Math.abs(a[2] - z0 - rise) < 1e-7 && Math.abs(b[2] - z0 - rise) < 1e-7) ridgeSegments.push(segment);
           else boundarySegments.push(segment);
         }
         const boundary = create("path", { d: boundarySegments.join(" "), class: "roof-surface", fill: "none" });
@@ -406,12 +472,25 @@ const FloorPlanRoofs = {
         group.dataset.base =
           typeof baseDefinition === "string" ? baseDefinition : "inline-geometry";
         group.dataset.orientation = roof.orientation;
+        if (shed) group.dataset.slope = shed.slope;
         group.dataset.pitch = String(pitch);
         group.dataset.eave = JSON.stringify([eave0, eave1]);
         group.dataset.rake = JSON.stringify([rake0, rake1]);
         group.dataset.baseZ = String(z0);
         group.dataset.ridgeZ = String(z0 + rise);
         group.append(defs, polygon, boundary, ridge);
+        if (shed) {
+          const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+          const sign = ["top", "left"].includes(shed.slope) ? -1 : 1;
+          const dx = longitudinal ? sign : 0, dy = longitudinal ? 0 : sign;
+          const tip = [cx + dx * 0.4, cy + dy * 0.4];
+          const arrow = create("path", {
+            d: `M${point([cx - dx * 0.4, cy - dy * 0.4])} L${point(tip)} M${point([tip[0] - dx * 0.18 - dy * 0.12, tip[1] - dy * 0.18 + dx * 0.12])} L${point(tip)} L${point([tip[0] - dx * 0.18 + dy * 0.12, tip[1] - dy * 0.18 - dx * 0.12])}`,
+            class: "roof-ridge",
+            "aria-label": "Direção do caimento",
+          });
+          group.append(arrow);
+        }
         if (roof.label) {
           const label = create("text", {
             x: (pridgex + pridgex2) / 2,
@@ -429,7 +508,7 @@ const FloorPlanRoofs = {
             dy: "1.25em",
             class: "roof-label-details",
           });
-          details.textContent = `Cumeeira: ${plan.formatMeters(ridgeLength)} m — Altura: ${plan.formatMeters(rise)} m — Inclinação: ${plan.formatMeters(pitch)}°`;
+          details.textContent = `${shed ? "Borda alta" : "Cumeeira"}: ${plan.formatMeters(ridgeLength)} m — Altura: ${plan.formatMeters(rise)} m — Inclinação: ${plan.formatMeters(pitch)}°`;
           label.append(title, details);
           group.append(label);
         }

@@ -223,6 +223,18 @@ const FloorPlanFacades3D = {
       drawingBounds.y1 = Math.max(drawingBounds.y1, Number(stair.y) + Number(stair.l));
     });
     (plan.showRoofs ? plan.allRoofs || [] : []).forEach((roof) => {
+      if (roof.type === "shed") {
+        try {
+          const geometry = FloorPlanRoofs.shedGeometry(plan, roof);
+          drawingBounds.x0 = Math.min(drawingBounds.x0, geometry.x0);
+          drawingBounds.x1 = Math.max(drawingBounds.x1, geometry.x1);
+          drawingBounds.y0 = Math.min(drawingBounds.y0, geometry.y0);
+          drawingBounds.y1 = Math.max(drawingBounds.y1, geometry.y1);
+          drawingBounds.z0 = Math.min(drawingBounds.z0, geometry.minZ);
+          drawingBounds.z1 = Math.max(drawingBounds.z1, geometry.peakZ);
+        } catch { /* A validação do telhado apresenta o erro. */ }
+        return;
+      }
       if (roof.type !== "gable") return;
       try {
         const baseDefinition = roof.base ?? roof;

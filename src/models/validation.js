@@ -13,7 +13,9 @@ const FloorPlanValidation = {
     const surface = roof.id && reference.startsWith(prefix)
       ? reference.slice(prefix.length)
       : reference;
-    const surfaces = roof.type === "gable"
+    const surfaces = roof.type === "shed"
+      ? [roof.slope ?? (roof.orientation === "longitudinal" ? "right" : "bottom")]
+      : roof.type === "gable"
       ? roof.orientation === "longitudinal"
         ? ["left", "right"]
         : roof.orientation === "transverse" ? ["top", "bottom"] : []

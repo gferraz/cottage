@@ -266,6 +266,9 @@ const FloorPlanFacades = {
       const facadeMin = Math.min(...coordinates);
       const facadeMax = Math.max(...coordinates);
       const roofGeometry = (roof) => {
+        if (roof.type === "shed") {
+          try { return FloorPlanRoofs.shedGeometry(plan, roof); } catch { return null; }
+        }
         let base;
         let floor;
         try {
@@ -390,15 +393,15 @@ const FloorPlanFacades = {
         });
       };
       facadeRoofs.forEach((roof) => {
-        if (roof.type !== "gable") return;
+        if (!["gable", "shed"].includes(roof.type)) return;
         const longitudinal = roof.orientation === "longitudinal";
         const isVisible = longitudinal ? !side : side;
-        if (!isVisible) return;
+        if (!isVisible && roof.type !== "shed") return;
         const geometry = roofGeometry(roof);
         if (!roofReachesFacade(geometry)) return;
-        const span = longitudinal
-          ? [geometry.x0, geometry.x1]
-          : [geometry.y0, geometry.y1];
+        const span = side
+          ? [geometry.y0, geometry.y1]
+          : [geometry.x0, geometry.x1];
         coordinates.push(...span);
       });
       const rawMin = Math.min(...coordinates);
@@ -419,10 +422,10 @@ const FloorPlanFacades = {
       const min = frontAligned ? horizontalOrigin + padding : rawMin;
       const width = Math.max(max - rawMin, 1);
       const roofTop = facadeRoofs.reduce((highest, roof) => {
-        if (roof.type !== "gable") return highest;
+        if (!["gable", "shed"].includes(roof.type)) return highest;
         const geometry = roofGeometry(roof);
         return roofReachesFacade(geometry)
-          ? Math.max(highest, (geometry?.z0 ?? 0) + (geometry?.rise ?? 0))
+          ? Math.max(highest, geometry?.peakZ ?? ((geometry?.z0 ?? 0) + (geometry?.rise ?? 0)))
           : highest;
       }, 0);
       // floorHeight is an absolute Z reference. The roof rise used by the
@@ -430,7 +433,7 @@ const FloorPlanFacades = {
       // the roof's full rise from its own base.
       const roofRise = Math.max(0, roofTop - floorHeight);
       const roofDrop = facadeRoofs.reduce((lowest, roof) => {
-        if (roof.type !== "gable") return lowest;
+        if (!["gable", "shed"].includes(roof.type)) return lowest;
         const isVisible =
           roof.orientation === "longitudinal" ? !side : side;
         const geometry = roofGeometry(roof);
@@ -819,7 +822,7 @@ const FloorPlanFacades = {
         const [roomStart, roomEnd] = roomFacadeSpan(room);
         const roomDepth = roomFacadeDepth(room);
         return facadeRoofs.some((roof) => {
-          if (roof.type !== "gable") return false;
+          if (!["gable", "shed"].includes(roof.type)) return false;
           const geometry = roofGeometry(roof);
           if (!geometry || !roofReachesFacade(geometry)) return false;
           const [roofStart, roofEnd] = roofFacadeSpan(geometry);

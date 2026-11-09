@@ -179,10 +179,29 @@ Itens são objetos concretos, aparecem em lista própria e podem usar `overlaps`
 
 `guides` desenha linhas ou segmentos auxiliares. Use `pos` ou `from` para o ponto inicial e `to` para o ponto final; em `to`, `x0`, `y0` e `z0` representam o ponto inicial da guia. `theme.colors` personaliza a paleta. Escadas podem ter `h` positivo, `stair-flight` e `parts`, projetando-se visualmente entre pisos; aberturas verticais conectam dois IDs de pisos. O catálogo atual inclui `washing-machine`, `queen-bed`, `three-seat-sofa` e `armchair`; cada tipo pode ser usado com `type` e ter sua posição e tamanho sobrescritos.
 
-Os encontros entre telhados são recortados automaticamente na planta, nas elevações e no 3D: superfícies abaixo de outro telhado são removidas, mantendo a cobertura mais alta em cada ponto e as linhas de encontro. Sobreposições coplanares são desenhadas uma única vez. Esse recorte visual considera os beirais; a regra de altura das paredes continua ignorando `eave`.
+Os encontros entre telhados são recortados automaticamente na planta, nas elevações e no 3D: superfícies abaixo de outro telhado são removidas, mantendo a cobertura mais alta em cada ponto e as linhas de encontro. Sobreposições coplanares são desenhadas uma única vez. Use `clip_intersections: false` no telhado para manter sua superfície inteira, por exemplo numa cobertura de varanda que continua sob os beirais de um corpo mais alto. Esse campo afeta somente o recorte visual dessa superfície; o recorte das demais coberturas e a altura das paredes continuam seguindo as regras existentes. Esse recorte visual considera os beirais; a regra de altura das paredes continua ignorando `eave`.
 
 Telhados de duas águas podem ser definidos com `roofs`: `{ "id": "office-roof", "type": "gable", "base": "office", "orientation": "longitudinal", "pitch": 51, "eave": 0.4, "rake": 0.2 }`. A base pode referenciar um cômodo/zona por ID ou ser definida diretamente no telhado com `inset`, `outset`, `from/to`, `pos/size` ou `rectangle`; por exemplo, `{ "inset": ["main", 3, 0, 3, 0] }`. Nos atalhos de cinco posições, a ordem é `[id, left, top, right, bottom]`; a forma antiga `[id, dx, dy]` continua aplicando o mesmo valor aos lados correspondentes. Também é possível usar uma geometria própria em `base`, como `{ "base": { "from": ["x0 + 1", "y0 + 2"], "to": ["x1 - 1", "y1 - 2"] } }`. `pitch` é informado em graus, `eave` é o avanço dos beirais e `rake` é o avanço das extremidades das empenas, ambos em metros; use arrays (`[0.4, 0.6]`) para valores diferentes nos dois lados. A orientação aceita `longitudinal` (cumeeira no eixo Y) ou `transverse` (cumeeira no eixo X). A planta desenha a projeção translúcida e a linha da cumeeira; telhados não entram no cálculo das áreas.
 O renderer também desenha triângulos tracejados nas extremidades para indicar a inclinação. A altura em Z é projetada no plano sempre em escala real de 100%, sem parâmetro adicional de escala.
+
+Para uma cobertura de **uma água**, use `type: "shed"`. `z0` informa a cota absoluta da **borda baixa na base**, antes dos beirais. A altura entre apoios é o vão inteiro no sentido do caimento multiplicado por `tan(pitch)`. `orientation: "longitudinal"` aceita `slope: "left"` ou `"right"` (padrão); `orientation: "transverse"` aceita `slope: "top"` (frente) ou `"bottom"` (fundos, padrão). O campo `slope` aponta para a borda baixa.
+
+```json5
+{
+  id: "porch-roof",
+  label: "Cobertura da varanda",
+  type: "shed",
+  base: "porch",
+  orientation: "transverse",
+  slope: "top",
+  pitch: 12,
+  z0: "ground.z0 + 2.6",
+  eave: [0.35, 0],
+  rake: [0, 0.25]
+}
+```
+
+Nesse exemplo, a água desce da fachada para a frente da varanda. Em `eave`, os valores correspondem às bordas esquerda/direita para orientação longitudinal e frente/fundos para transversal; `rake` corresponde às outras duas bordas. Os beirais prolongam o mesmo plano inclinado, inclusive abaixo de `z0` na borda baixa. Na planta, uma seta indica o caimento; nas fachadas e no 3D, os encontros com outros telhados são recortados. Paredes com `top: "roof"` também seguem o plano de uma água, sem considerar `eave`, como nas coberturas de duas águas. A projeção, as cotas inclinadas no DXF e a área da superfície são exportadas; o shed não recebe linha de cumeeira. Pilares, vigas, calhas e fechamentos verticais precisam ser definidos separadamente.
 
 Use `visible: false` em uma zona, item ou outro elemento visual para ocultá-lo sem removê-lo das referências geométricas:
 

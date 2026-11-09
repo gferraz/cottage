@@ -102,7 +102,7 @@ const FloorPlanMetrics = {
   },
 
   roofTypeLabel(type) {
-    return { gable: "duas águas" }[type] || type || "—";
+    return { gable: "duas águas", shed: "uma água" }[type] || type || "—";
   },
 
   roofOrientationLabel(orientation) {

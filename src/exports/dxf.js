@@ -1,5 +1,8 @@
 const FloorPlanExport = {
   roofMetrics(plan, roof) {
+    if (roof.type === "shed") {
+      try { return FloorPlanRoofs.shedGeometry(plan, roof); } catch { return null; }
+    }
     let base;
     try {
       base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
@@ -268,6 +271,14 @@ const FloorPlanExport = {
         const metrics = FloorPlanExport.roofMetrics(plan, roof);
         if (!metrics) return;
         const { x0, x1, y0, y1, ridgeX0, ridgeY0, ridgeX1, ridgeY1 } = metrics;
+        if (roof.type === "shed") {
+          metrics.polygon.forEach((point, index) => {
+            const next = metrics.polygon[(index + 1) % metrics.polygon.length];
+            line("ROOFS", point[0], point[1], next[0], next[1], point[2], next[2]);
+          });
+          if (roof.label) text("ROOF_LABELS", roof.label, (x0 + x1) / 2, (y0 + y1) / 2);
+          return;
+        }
         line("ROOFS", x0, y0, x1, y0, metrics.baseElevation);
         line("ROOFS", x1, y0, x1, y1, metrics.baseElevation);
         line("ROOFS", x1, y1, x0, y1, metrics.baseElevation);
@@ -362,3 +373,5 @@ const FloorPlanExport = {
     return `${lines.join("\n")}\n`;
   },
 };
+
+window.FloorPlanExport = FloorPlanExport;

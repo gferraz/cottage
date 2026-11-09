@@ -385,7 +385,7 @@ const FloorPlanLists = {
     const headings = [
       "Telhado",
       "Tipo",
-      "Cumeeira",
+      "Cumeeira / borda alta",
       "Dimensões (m)",
       "Cota base (m)",
       "Altura (m)",
@@ -443,13 +443,14 @@ const FloorPlanLists = {
           baseLength + (longitudinal ? rake0 + rake1 : eave0 + eave1);
         const ridgeLength = longitudinal ? roofLength : roofWidth;
         const rise =
-          ((longitudinal ? baseWidth : baseLength) / 2) *
+          ((longitudinal ? baseWidth : baseLength) / (roof.type === "shed" ? 1 : 2)) *
           Math.tan((pitch * Math.PI) / 180);
         const baseSpan = longitudinal ? baseWidth : baseLength;
         const slopeA = longitudinal ? eave0 : rake0;
         const slopeB = longitudinal ? eave1 : rake1;
-        const roofSurfaceArea =
-          (Math.hypot(baseSpan / 2 + slopeA, rise) +
+        const roofSurfaceArea = roof.type === "shed"
+          ? roofWidth * roofLength / Math.cos(pitch * Math.PI / 180)
+          : (Math.hypot(baseSpan / 2 + slopeA, rise) +
             Math.hypot(baseSpan / 2 + slopeB, rise)) *
           ridgeLength;
         const baseElevation =
@@ -460,7 +461,7 @@ const FloorPlanLists = {
               : 0;
         values = [
           plan.roofTypeLabel(roof.type),
-          `${plan.roofOrientationLabel(roof.orientation)} · ${plan.formatMeters(ridgeLength)} m`,
+          FloorPlanRoofs.axisLabel(plan, roof, ridgeLength),
           `${plan.formatMeters(roofWidth)} × ${plan.formatMeters(roofLength)}`,
           plan.formatMeters(baseElevation),
           plan.formatMeters(rise),

@@ -151,7 +151,8 @@
           "properties": {
             "type": {
               "enum": [
-                "gable"
+                "gable",
+                "shed"
               ]
             },
             "pitch": {
@@ -216,6 +217,15 @@
                   "minLength": 1
                 }
               ]
+            },
+            "slope": {
+              "enum": [
+                "top",
+                "right",
+                "bottom",
+                "left"
+              ],
+              "description": "Caimento do shed; longitudinal: left/right; transverse: top/bottom."
             }
           },
           "additionalProperties": false
@@ -2019,7 +2029,8 @@
         },
         "type": {
           "enum": [
-            "gable"
+            "gable",
+            "shed"
           ]
         },
         "pitch": {
@@ -2407,6 +2418,20 @@
           "type": "string",
           "minLength": 1,
           "description": "Reutiliza os limites retangulares e a extensão vertical do objeto referenciado. Não herda aparência nem aberturas."
+        },
+        "slope": {
+          "enum": [
+            "top",
+            "right",
+            "bottom",
+            "left"
+          ],
+          "description": "Caimento do shed; longitudinal: left/right; transverse: top/bottom."
+        },
+        "clip_intersections": {
+          "type": "boolean",
+          "default": true,
+          "description": "Recorta a superfície nos encontros com outros telhados. Use false para preservar uma cobertura inferior completa."
         }
       },
       "additionalProperties": false,
