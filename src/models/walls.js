@@ -836,7 +836,7 @@ const FloorPlanWalls = {
           throw new Error("Parede independente precisa de from/to ou path.points com ao menos dois pontos");
         }
         let localOrigin = null;
-        const resolvedPoints = points.map((point, index) => {
+        const resolvedPoints = points.map((point) => {
           if (!Array.isArray(point) || point.length !== 2) {
             throw new Error(`Cada ponto de ${pointSource} precisa ser [x, y]`);
           }
@@ -844,9 +844,7 @@ const FloorPlanWalls = {
           if (!resolved.every(Number.isFinite)) {
             throw new Error(`As coordenadas de ${pointSource} precisam ser numéricas`);
           }
-          if (hasEndpoints && index === 0) {
-            localOrigin = { x0: resolved[0], y0: resolved[1] };
-          }
+          localOrigin = { x0: resolved[0], y0: resolved[1] };
           return resolved;
         });
         const thickness = Number(

@@ -20,6 +20,7 @@
 //
 // Para localizar uma definição por ID, busque, por exemplo: id: "left-wall".
 // Coordenadas em metros. x0/y0/z0 em "to" referem-se à origem de "from".
+// Em path.points, x0/y0 referem-se ao ponto anterior.
 // Paredes: top: "roof" termina na cobertura e omite trechos sem telhado acima.
 {
   $schema: "./floor-plan.schema.json",
@@ -449,7 +450,7 @@
           id: "bedroom-north",
           label: "Quarto N",
           from: ["knee-left.x0", "hall.y0"],
-          to: ["knee-left.x0 + 3.3", "y0 + 3.2"],
+          to: ["knee-left.x0 + 2.9", "y0 + 3.2"],
           walls: ["right", "bottom"],
           openings: [
             { type: "door", from: "right", to: "playroom", dy: 3 }
@@ -466,13 +467,14 @@
           ]
         },
         {
-          id: "bedroom-south",
-          label: "Quarto S",
-          from: ["bedroom-east.x0 + 1", "bedroom-east.y1"],
+          id: "playroom",
+          label: "Sala de jogos",
+          from: ["upper-flight.x1", "bedroom-east.y1"],
           to: ["right.x1", "stairs.y0"],
-          walls: ["bottom", "left"],
+          walls: ["bottom"],
           openings: [
-            { type: "door", from: "right", to: "playroom", dy: 3 }
+            // Centralizada no eixo do frontão do telhado transversal.
+            { type: "window", from: "right", w: 0.9, dy: "transverse-roof.yc - playroom.y0 - 0.45" }
           ]
         },
         {
@@ -485,7 +487,7 @@
           id: "unused-central",
           label: "Sem uso",
           from: ["unused-left.x1", "bedroom-north.y1"],
-          to: ["bedroom-south.x0", "bedroom-south.y1"],
+          to: ["playroom.x0", "playroom.y1"],
         },
         {
           id: "unused-rear",
@@ -572,11 +574,7 @@
         { id: "bed-east", type: "twin-bed", pos: ["bedroom-east.x0 + 0.2", "bedroom-east.y0 + 0.2"] },
         // Quarto N: corredor de 0,71 m entre as camas.
         { id: "bed-north-1", type: "twin-bed", pos: ["bedroom-north.x0 + 0.45", "bedroom-north.y0 + 0.2"] },
-        { id: "bed-north-2", type: "twin-bed", pos: ["bedroom-north.x1 - 1.17", "bedroom-north.y0 + 0.2"] },
-        // Quarto S: cabeceiras a 0,10 m da parede externa direita; passagem de 0,70 m entre camas e 0,69 m à esquerda.
-        // Posições compensam a rotação de 90° em torno do centro do item.
-        { id: "bed-south-1", type: "twin-bed", pos: ["bedroom-south.x1 - 1.54", "bedroom-south.y0 + 0.13"], rotation: 90 },
-        { id: "bed-south-2", type: "twin-bed", pos: ["bedroom-south.x1 - 1.54", "bedroom-south.y1 - 1.9"], rotation: 90 }
+        { id: "bed-north-2", type: "twin-bed", pos: ["bedroom-north.x1 - 1.17", "bedroom-north.y0 + 0.2"] }
       ],
       // Aberturas do pavimento; aberturas locais ficam dentro do cômodo.
       openings: [
@@ -594,9 +592,9 @@
       path: {
         points: [
           ["hall.x0", "hall.y0"],
-          ["hall.x1", "hall.y0"],
-          ["hall.x1", "right.y0"],
-          ["right.x1", "right.y0"]
+          ["hall.x1", "y0"],
+          ["x0", "right.y0"],
+          ["right.x1", "y0"]
         ]
       },
     },
@@ -607,32 +605,12 @@
       path: {
         points: [
           ["office.x0", "office.y1"],
-          ["office.x0", "office.y0"],
-          ["office.x1", "office.y0"],
-          ["office.x1", "office.y1"],
+          ["x0", "office.y0"],
+          ["office.x1", "y0"],
+          ["x0", "office.y1"],
         ]
       },
     },
-    // {
-    //   id: "knee-wall-office-left",
-    //   scope: "upper",
-    //   color: "blue",
-    //   path: {
-    //     points: [
-    //       ["office.x0 + params.knee_setback", "office.y0"],
-    //       ["office.x0 + params.knee_setback", "transverse-roof.y0 + params.knee_setback"]
-    //     ]
-    //   },
-    //   base: { level: "upper.z0" },
-    // },
-    // {
-    //   id: "knee-wall-office-right",
-    //   scope: "upper",
-    //   color: "blue",
-    //   from: ["office.x1 - params.knee_setback", "office.y0"],
-    //   to: ["office.x1 - params.knee_setback", "transverse-roof.y0 + params.knee_setback"],
-    //   base: { level: "upper.z0" },
-    // },
     {
       id: "knee-wall-rear",
       scope: "upper",
@@ -640,7 +618,7 @@
       path: {
         points: [
           ["knee-left.x0", "transverse-roof.y1 - 1.3"],
-          ["knee-left.x0", "left.y1"]
+          ["x0", "left.y1"]
         ]
       },
       base: { level: "upper.z0" },
@@ -652,8 +630,8 @@
       path: {
         points: [
           ["knee-right.x0", "right.y0"],
-          ["knee-right.x0", "transverse-roof.y0 + params.knee_setback"],
-          ["right.x1", "transverse-roof.y0 + params.knee_setback"]
+          ["x0", "transverse-roof.y0 + params.knee_setback + 0.8"],
+          ["right.x1", "y0"]
         ]
       },
       base: { level: "upper.z0" },
@@ -665,9 +643,9 @@
       path: {
         points: [
           ["office.x0", "office.y0"],
-          ["office.x0", "office.y1"],
-          ["left.x0", "office.y1"],
-          ["left.x0", "kitchen.y1"]
+          ["x0", "office.y1"],
+          ["left.x0", "y0"],
+          ["x0", "kitchen.y1"]
         ]
       },
     },
@@ -678,7 +656,7 @@
       path: {
         points: [
           ["kitchen.x0", "kitchen.y1"],
-          ["kitchen.x1", "kitchen.y1"],
+          ["kitchen.x1", "y0"],
           ["pantry.x0", "pantry.y1"],
           ["mudroom.x1", "mudroom.y1"]
         ]
@@ -689,17 +667,7 @@
       scope: "ground",
       top: { level: "upper.z0" },
       from: ["right.x1", "dining.y0"],
-      to: ["right.x1", "mudroom.y1"],
-    },
-    // Fechamento frontal do vão, deixando livre a chegada do terceiro lance.
-    {
-      id: "stairs-upper-wall",
-      scope: "upper",
-      color: "aroma-de-uva",
-      base: { level: "upper.z0" },
-      top: "roof",
-      from: ["upper-flight.x1", "stairs.y0"],
-      to: ["stairs.x1", "stairs.y0"]
+      to: ["x0", "mudroom.y1"],
     },
     {
       id: "upper-office-walls",
@@ -710,12 +678,10 @@
       path: {
         points: [
           ["main-left.x0", "office.y1"],
-          ["office.x0", "office.y1"],
-          ["office.x0", "office.y0"],
-          ["office.x1", "office.y0"],
-          ["office.x1", "main.y0"],
-          ["knee-left.x0", "main.y0"],
-          ["knee-left.x0", "main.y0 + 3.2"]
+          ["office.x0", "y0"],
+          ["x0", "office.y0"],
+          ["office.x1", "y0"],
+          ["x0", "main.y0"]
         ]
       }
     },
@@ -728,9 +694,9 @@
       path: {
         points: [
           ["knee-left.x0", "hall.y0"],
-          ["hall.x1", "hall.y0"],
-          ["hall.x1", "right.y0"],
-          ["right.x1", "right.y0"]
+          ["hall.x1", "y0"],
+          ["x0", "right.y0"],
+          ["right.x1", "y0"]
         ]
       }
     },
@@ -743,7 +709,20 @@
       path: {
         points: [
           ["left.x0", "office.y1"],
-          ["left.x0", "main.y1"]
+          ["x0", "main.y1"]
+        ]
+      }
+    },
+    {
+      id: "left-front-knee-wall",
+      scope: "upper",
+      color: "blue",
+      base: { level: "upper.z0" },
+      top: "roof",
+      path: {
+        points: [
+          ["knee-left.x0", "main.y0"],
+          ["x0", "y0 + 3.2"]
         ]
       }
     },
@@ -754,7 +733,7 @@
       base: { level: "upper.z0" },
       top: "roof",
       from: ["main.x0", "main.y1"],
-      to: ["main.x1", "main.y1"]
+      to: ["main.x1", "y0"]
     },
     {
       id: "upper-right-wall",
@@ -763,7 +742,7 @@
       base: { level: "upper.z0" },
       top: "roof",
       from: ["right.x1", "right.y0"],
-      to: ["right.x1", "main.y1"]
+      to: ["x0", "main.y1"]
     }
   ],
 

@@ -225,6 +225,35 @@ test('wall to expressions use the resolved from coordinates as their local origi
   assert.deepEqual(offset.independentWalls.get(geometry.id).path.points, [[0.8, 0], [1.8, 2]]);
 });
 
+test('wall path aliases use the previous resolved point for each segment', () => {
+  const resolver = {
+    ...globalThis.FloorPlanGeometry,
+    partReferenceStack: [],
+    references: new Map([
+      ['right', { x0: () => 4, y0: () => 2, x1: () => 8 }],
+    ]),
+  };
+  const geometry = {
+    id: 'knee-wall-right',
+    path: { points: [
+      ['right.x0', 'right.y0'],
+      ['x0', 'y0 + 3'],
+      ['right.x1', 'y0'],
+      ['x0 - 1', { from: 'y0', delta: 2 }],
+    ] },
+  };
+  const plan = normalizeRoofWall(true, undefined, geometry, resolver.resolve.bind(resolver));
+  assert.deepEqual(plan.errors, []);
+  assert.deepEqual(plan.independentWalls.get(geometry.id).path.points,
+    [[4, 2], [4, 5], [8, 5], [7, 7]]);
+
+  const invalid = normalizeRoofWall(true, undefined, {
+    ...geometry, path: { points: [['x0', 2], [4, 5]] },
+  }, resolver.resolve.bind(resolver));
+  assert.equal(invalid.independentWalls.size, 0);
+  assert.match(invalid.errors[0].message, /Invalid geometric reference: x0/);
+});
+
 test('elevation projects the full wall thickness at an overlapping roof boundary', () => {
   const low = { bounds: [[-1, 0, 0, -1], [1, 0, 0, -5], [0, -1, 0, 0], [0, 1, 0, -4]], slopes: [[0, 0, 1, -3]] };
   const high = { bounds: [[-1, 0, 0, -1], [1, 0, 0, -5], [0, -1, 0, -1], [0, 1, 0, -4]], slopes: [[0, 0, 1, -6]] };

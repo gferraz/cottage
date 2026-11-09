@@ -123,6 +123,8 @@ Na perspectiva 3D, os itens são representados por volumes esquemáticos, respei
 
 No 3D e nas elevações, todas as paredes (inclusive independentes e diagonais) têm sua altura recortada pelas superfícies dos telhados nas áreas cobertas, considerando espessura e vãos. Os avanços `eave` não participam do limite de altura das paredes; os avanços `rake` continuam considerados. Nos encontros de telhados, prevalece a superfície mais alta; trechos sem cobertura mantêm a altura definida.
 
+Em `path.points` de paredes independentes, `x0` e `y0` representam as coordenadas do ponto anterior já resolvido. Por exemplo, `[[4, 2], ["x0", "y0 + 3"], [8, "y0"]]` resulta em `[[4, 2], [4, 5], [8, 5]]`. O primeiro ponto precisa usar coordenadas absolutas ou referências a outros objetos.
+
 Para paredes independentes, use `top: "roof"` para alcançar automaticamente a cobertura, tanto no 3D quanto nas elevações:
 
 ```js
