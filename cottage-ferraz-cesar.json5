@@ -65,11 +65,12 @@
     ground_height: 3,
 
     // Aproveitamento do espaço sob a cobertura
-    // Altura livre de 2 m: 2 / tan(51°), arredondado para cima.
+    // Telhados principais: base 1 m acima do piso superior.
+    // Altura livre de 2 m: (2 - 1) / tan(51°), arredondado para cima.
     // Recalcular se mudar a inclinação ou a diferença de cota entre piso e base dos telhados.
-    headroom_2m_inset: 1.619569,
-    // Altura livre de 3 m: 3 / tan(51°), arredondado para cima.
-    headroom_3m_inset: 2.429353,
+    headroom_2m_inset: 0.809785,
+    // Altura livre de 3 m: (3 - 1) / tan(51°), arredondado para cima.
+    headroom_3m_inset: 1.619569,
     // Escritório: base do telhado 1 m acima do piso; (2 - 1) / tan(51°).
     office_headroom_2m_inset: 0.809785,
     // Escritório: altura livre de 3 m; (3 - 1) / tan(51°).
@@ -791,6 +792,7 @@
     {
       id: "main-roof",
       label: "Telhado Principal",
+      z0: "upper.z0 + 1",
       rectangle: ["office.x1 - 1.6", "hall.y0", "main.x1", "main.y1"],
       orientation: "longitudinal",
       eave: [0.0, 0.5],
@@ -806,7 +808,7 @@
     {
       id: "transverse-roof",
       label: "Telhado Transversal",
-      from: ["top.x0", "top.y0 + 2", "upper.z0"],
+      from: ["top.x0", "top.y0 + 2", "upper.z0 + 1"],
       to: ["top.x1", "bottom.y1 - 1", "z0"],
       orientation: "transverse",
       eave: [0, 0],
