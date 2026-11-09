@@ -295,7 +295,7 @@
           rectangle: ["upper-flight.x0", "upper-flight.y0", "upper-flight.x1", "upper-landing.y1"],
           walls: ["top", "right", "bottom", "left"],
           openings: [
-            { type: "door", from: "left", to: "rear-corridor" }
+            { type: "door", from: "left", to: "rear-corridor", dy: 0.1 }
           ],
           classes: "powder wet"
         },
@@ -450,50 +450,66 @@
           id: "bedroom-north",
           label: "Quarto N",
           from: ["knee-left.x0", "hall.y0"],
-          to: ["knee-left.x0 + 2.9", "y0 + 3.2"],
+          to: ["knee-left.x0 + 2.9", "y0 + 4.6"],
           walls: ["right", "bottom"],
           openings: [
-            { type: "door", from: "right", to: "playroom", dy: 3 }
+            { type: "door", from: "bottom", to: "upper-corridor"},
+            // Par de janelas simétrico em relação ao eixo do frontão principal.
+            { type: "window", from: "top", to: "exterior", w: 0.9, h: 1.2, z0: "upper.z0 + 1", dx: "main-roof.xc - 1.2 - 0.45 - bedroom-north.x0" }
           ]
         },
         {
           id: "bedroom-east",
           label: "Quarto E",
           from: ["knee-right.x0", "hall.y0"],
-          to: ["bedroom-north.x1", "bedroom-north.y1"],
+          to: ["bedroom-north.x1", "y0 + 3.6"],
           walls: ["bottom"],
           openings: [
-            { type: "door", from: "right", to: "playroom", dy: 3 }
+            { type: "door", from: "bottom", to: "playroom", w: 0.8, dx: 0.2 },
+            { type: "window", from: "top", to: "exterior", w: 0.9, h: 1.2, z0: "upper.z0 + 1", dx: "main-roof.xc + 1.2 - 0.45 - bedroom-east.x0" }
+          ]
+        },
+        {
+          id: "bedroom-west",
+          label: "Quarto Oeste",
+          from: ["knee-left.x0", "bathroom.y0 - 0.9"],
+          to: ["stairs.x0", "main.y1"],
+          walls: ["top", "right"],
+          openings: [
+            { type: "door", from: "top", to: "upper-corridor" }
           ]
         },
         {
           id: "playroom",
-          label: "Sala de jogos",
-          from: ["upper-flight.x1", "bedroom-east.y1"],
+          label: "Sala de Estar",
+          from: ["bedroom-east.x0", "bedroom-east.y1"],
           to: ["right.x1", "stairs.y0"],
-          walls: ["bottom"],
+          walls: [],
           openings: [
-            // Centralizada no eixo do frontão do telhado transversal.
             { type: "window", from: "right", w: 0.9, dy: "transverse-roof.yc - playroom.y0 - 0.45" }
+          ]
+        },
+        {
+          id: "bathroom",
+          label: "Banheiro",
+          from: ["left.x0", "stairs.y0"],
+          to: ["knee-left.x0", "main.y1"],
+          walls: ["top"],
+          openings: [
+            { type: "door", from: "top", to: "unused-left" }
           ]
         },
         {
           id: "unused-left",
           label: "Sem uso",
           from: ["left.x0", "office.y0"],
-          to: ["knee-left.x0", "main.y1"],
+          to: ["knee-left.x0", "bathroom.y0"],
         },
         {
-          id: "unused-central",
-          label: "Sem uso",
+          id: "upper-corridor",
+          label: "Corredorr",
           from: ["unused-left.x1", "bedroom-north.y1"],
-          to: ["playroom.x0", "playroom.y1"],
-        },
-        {
-          id: "unused-rear",
-          label: "Sem uso",
-          from: ["unused-central.x0", "unused-central.y1"],
-          to: ["stairs.x0", "main.y1"],
+          to: ["playroom.x0", "bedroom-west.y0"]
         }
       ],
       // Altura livre no piso superior: verde >= 2 m; azul >= 3 m.
@@ -509,7 +525,7 @@
             "main-roof.x1 - params.headroom_2m_inset",
             "main-roof.y1"
           ],
-          color: "green"
+          color: "rgba(98, 139, 90, 0.35)"
         },
         {
           id: "headroom-main-roof-3m",
@@ -520,7 +536,7 @@
             "main-roof.x1 - params.headroom_3m_inset",
             "main-roof.y1"
           ],
-          color: "blue"
+          color: "rgba(77, 120, 153, 0.35)"
         },
         {
           id: "headroom-office-roof-2m",
@@ -531,7 +547,7 @@
             "office-roof.x1 - params.office_headroom_2m_inset",
             "office-roof.y1"
           ],
-          color: "green"
+          color: "rgba(98, 139, 90, 0.35)"
         },
         {
           id: "headroom-office-roof-3m",
@@ -542,7 +558,7 @@
             "office-roof.x1 - params.office_headroom_3m_inset",
             "office-roof.y1"
           ],
-          color: "blue"
+          color: "rgba(77, 120, 153, 0.35)"
         },
         {
           id: "headroom-transverse-roof-2m",
@@ -553,7 +569,7 @@
             "transverse-roof.x1",
             "transverse-roof.y1 - params.headroom_2m_inset"
           ],
-          color: "green"
+          color: "rgba(98, 139, 90, 0.35)"
         },
         {
           id: "headroom-transverse-roof-3m",
@@ -564,17 +580,17 @@
             "transverse-roof.x1",
             "transverse-roof.y1 - params.headroom_3m_inset"
           ],
-          color: "blue"
+          color: "rgba(77, 120, 153, 0.35)"
         }
       ],
       // Mobiliário e equipamentos.
       items: [
-        // Camas Twin de 0,97 × 1,91 m; cabeceiras no lado frontal.
-        // Quarto E: uma cama na faixa mais alta da cobertura.
-        { id: "bed-east", type: "twin-bed", pos: ["bedroom-east.x0 + 0.2", "bedroom-east.y0 + 0.2"] },
-        // Quarto N: corredor de 0,71 m entre as camas.
-        { id: "bed-north-1", type: "twin-bed", pos: ["bedroom-north.x0 + 0.45", "bedroom-north.y0 + 0.2"] },
-        { id: "bed-north-2", type: "twin-bed", pos: ["bedroom-north.x1 - 1.17", "bedroom-north.y0 + 0.2"] }
+        // Camas Twin de 0,97 × 1,91 m; posições compensam a rotação em torno do centro.
+        // Quarto E: cabeceiras à direita; três espaços iguais entre camas e faces internas frontal/traseira.
+        { id: "bed-east", type: "twin-bed", pos: ["bedroom-east.x1 - 1.44 - params.wall_thickness / 2", "bedroom-east.y0 + params.wall_thickness / 2 + (bedroom-east.l - params.wall_thickness - 1.94) / 3 - 0.47"], rotation: 90 },
+        { id: "bed-east-2", type: "twin-bed", pos: ["bedroom-east.x1 - 1.44 - params.wall_thickness / 2", "bedroom-east.y0 + params.wall_thickness / 2 + 2 * (bedroom-east.l - params.wall_thickness - 1.94) / 3 + 0.97 - 0.47"], rotation: 90 },
+        // Quarto N: cabeceira à esquerda, cama centralizada entre frente e fundo.
+        { id: "bed-north-1", type: "twin-bed", pos: ["bedroom-north.x0 + 0.47 + params.wall_thickness / 2", "bedroom-north.yc - 0.955"], rotation: 270 }
       ],
       // Aberturas do pavimento; aberturas locais ficam dentro do cômodo.
       openings: [
@@ -617,7 +633,7 @@
       color: "blue",
       path: {
         points: [
-          ["knee-left.x0", "transverse-roof.y1 - 1.3"],
+          ["knee-left.x0", "stairs.y0 - 0.9"],
           ["x0", "left.y1"]
         ]
       },
@@ -642,8 +658,7 @@
       top: { level: "upper.z0" },
       path: {
         points: [
-          ["office.x0", "office.y0"],
-          ["x0", "office.y1"],
+          ["office.x0", "office.y1"],
           ["left.x0", "y0"],
           ["x0", "kitchen.y1"]
         ]
@@ -714,7 +729,7 @@
       }
     },
     {
-      id: "left-front-knee-wall",
+      id: "knee-wall-front-left",
       scope: "upper",
       color: "blue",
       base: { level: "upper.z0" },
@@ -722,7 +737,7 @@
       path: {
         points: [
           ["knee-left.x0", "main.y0"],
-          ["x0", "y0 + 3.2"]
+          ["x0", "y0 + 4.6"]
         ]
       }
     },
@@ -785,6 +800,6 @@
     { id: "main-left", label: "parede esquerda", pos: ["left.x0", -2.5], l: 20, color: "green" },
     { id: "main-right", label: "parede direita", pos: ["right.x1", -2.5], l: 20, color: "green" },
     { id: "main-top", label: "parede frontal", pos: [-4.0, "main.y0"], w: 20, color: "green" },
-    { id: "w-axis", label: "eixo transversal", pos: [-4.0, "main.yc"], w: 20, color: "green" }
+    { id: "w-axis", label: "eixo transversal", pos: [-4.0, "main.yc + 0.5"], w: 20, color: "green" }
   ]
 }

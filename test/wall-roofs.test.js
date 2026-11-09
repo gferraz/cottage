@@ -207,7 +207,7 @@ test('wall to expressions use the resolved from coordinates as their local origi
     ]),
   };
   const geometry = {
-    id: 'knee-wall-offce-left', base: { level: 'upper.z0' }, top: 'roof',
+    id: 'knee-wall-office-left', base: { level: 'upper.z0' }, top: 'roof',
     thickness: 0.12, color: 'blue',
     from: ['office.x0 + 0.8', 'office.y0'], to: ['x0', 'knee-top.y0'],
   };
