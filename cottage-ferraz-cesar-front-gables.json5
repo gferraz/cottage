@@ -264,8 +264,7 @@
           to: ["left.x1 - 1.1", "left.y0 + 1.5"],
           openings: [
             { type: "door", from: "right", to: "hall" },
-            { type: "window", from: "top", w: 0.6, dx: 0.9 },
-            { type: "window", from: "top", w: 0.6, dx: 1.5 },
+            { type: "window", from: "top", w: 1.2},
             { type: "window", from: "left" }
           ],
           classes: "office"
