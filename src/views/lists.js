@@ -560,6 +560,9 @@ const FloorPlanLists = {
       ) {
         const first = rooms[index];
         const second = rooms[otherIndex];
+        const firstFloor = plan.roomFloorConfigs?.get(first.dataset.id);
+        const secondFloor = plan.roomFloorConfigs?.get(second.dataset.id);
+        if (firstFloor && secondFloor && firstFloor.id !== secondFloor.id) continue;
 
         for (const [firstSide, secondSide, orientation] of pairs) {
           if (
@@ -581,6 +584,32 @@ const FloorPlanLists = {
 
           const firstId = first.dataset.id || `room-${index + 1}`;
           const secondId = second.dataset.id || `room-${otherIndex + 1}`;
+          let gaps = [[start, end]];
+          const epsilon = 1e-9;
+          const floorZ = Number(firstFloor?.z0 ?? first.z0?.() ?? 0);
+          for (const wall of plan.independentWalls?.values() ?? []) {
+            if (wall.scopeFloorId && firstFloor && wall.scopeFloorId !== firstFloor.id) continue;
+            // Somente paredes que alcançam o piso fecham a passagem em planta.
+            if (wall.z0 > floorZ + epsilon || wall.z1 <= floorZ + epsilon) continue;
+            const points = wall.path?.points ?? [];
+            for (let segment = 0; segment < points.length - 1; segment += 1) {
+              const from = points[segment];
+              const to = points[segment + 1];
+              const along = orientation === "vertical" ? 1 : 0;
+              const across = 1 - along;
+              if (Math.abs(from[across] - to[across]) > epsilon ||
+                Math.abs(from[across] - firstSegment.coordinate) > Math.max(epsilon, (wall.thickness ?? 0) / 2)) continue;
+              const wallStart = Math.min(from[along], to[along]);
+              const wallEnd = Math.max(from[along], to[along]);
+              gaps = gaps.flatMap(([a, b]) => {
+                if (wallEnd <= a + epsilon || wallStart >= b - epsilon) return [[a, b]];
+                return [[a, Math.min(b, wallStart)], [Math.max(a, wallEnd), b]]
+                  .filter(([left, right]) => right - left > epsilon);
+              });
+            }
+          }
+          const length = gaps.reduce((total, [a, b]) => total + b - a, 0);
+          if (length <= epsilon) continue;
           communications.push({
             id: `${firstId}-${secondId}`,
             firstId,
@@ -588,7 +617,7 @@ const FloorPlanLists = {
             firstLabel: first.dataset.label || firstId,
             secondLabel: second.dataset.label || secondId,
             orientation,
-            length: end - start,
+            length,
           });
         }
       }
