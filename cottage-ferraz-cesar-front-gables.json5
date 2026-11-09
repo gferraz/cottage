@@ -447,7 +447,7 @@
           id: "bedroom-north",
           label: "Quarto N",
           from: ["knee-left.x0", "hall.y0"],
-          to: ["knee-left.x0 + 3.3", "y0 + 2.8"],
+          to: ["knee-left.x0 + 3.3", "y0 + 3.2"],
           walls: ["right", "bottom"],
           openings: [
             { type: "door", from: "right", to: "playroom", dy: 3 }
@@ -457,8 +457,18 @@
           id: "bedroom-east",
           label: "Quarto E",
           from: ["knee-right.x0", "hall.y0"],
-          to: ["bedroom-north.x1", "y0 + 2.8"],
+          to: ["bedroom-north.x1", "bedroom-north.y1"],
           walls: ["bottom"],
+          openings: [
+            { type: "door", from: "right", to: "playroom", dy: 3 }
+          ]
+        },
+        {
+          id: "bedroom-south",
+          label: "Quarto S",
+          from: ["bedroom-east.x0 + 1", "bedroom-east.y1"],
+          to: ["right.x1", "stairs.y0"],
+          walls: ["bottom", "left"],
           openings: [
             { type: "door", from: "right", to: "playroom", dy: 3 }
           ]
@@ -663,11 +673,13 @@
       top: "roof",
       path: {
         points: [
+          ["main-left.x0", "office.y1"],
+          ["office.x0", "office.y1"],
           ["office.x0", "office.y0"],
           ["office.x1", "office.y0"],
-          ["office.x1", "office.y1"],
-          ["office.x0", "office.y1"],
-          ["office.x0", "office.y0"]
+          ["office.x1", "main.y0"],
+          ["knee-left.x0", "main.y0"],
+          ["knee-left.x0", "main.y0 + 3.2"]
         ]
       }
     },
