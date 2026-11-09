@@ -71,6 +71,8 @@
     headroom_3m_inset: 2.429353,
     // Escritório: base do telhado 1 m acima do piso; (2 - 1) / tan(51°).
     office_headroom_2m_inset: 0.809785,
+    // Escritório: altura livre de 3 m; (3 - 1) / tan(51°).
+    office_headroom_3m_inset: 1.619569,
     knee_setback: 0.8
   },
 
@@ -474,13 +476,26 @@
           ]
         },
         {
-          id: "unused-north",
+          id: "unused-left",
           label: "Sem uso",
-          copy: "office"
+          from: ["left.x0", "office.y0"],
+          to: ["knee-left.x0", "main.y1"],
+        },
+        {
+          id: "unused-central",
+          label: "Sem uso",
+          from: ["unused-left.x1", "bedroom-north.y1"],
+          to: ["bedroom-south.x0", "bedroom-south.y1"],
+        },
+        {
+          id: "unused-rear",
+          label: "Sem uso",
+          from: ["unused-central.x0", "unused-central.y1"],
+          to: ["stairs.x0", "main.y1"],
         }
       ],
       // Altura livre no piso superior: verde >= 2 m; azul >= 3 m.
-      // As zonas de 3 m representadas abaixo são as dos telhados principal e transversal.
+      // Cada telhado tem suas faixas de altura livre de 2 m e 3 m.
       // Sem beirais; as sobreposições representam regiões atendidas por mais de um telhado.
       zones: [
         {
@@ -517,6 +532,17 @@
           color: "green"
         },
         {
+          id: "headroom-office-roof-3m",
+          label: "Telhado do escritório — altura ≥ 3 m",
+          rectangle: [
+            "office-roof.x0 + params.office_headroom_3m_inset",
+            "office-roof.y0",
+            "office-roof.x1 - params.office_headroom_3m_inset",
+            "office-roof.y1"
+          ],
+          color: "blue"
+        },
+        {
           id: "headroom-transverse-roof-2m",
           label: "Telhado transversal — altura ≥ 2 m",
           rectangle: [
@@ -541,6 +567,16 @@
       ],
       // Mobiliário e equipamentos.
       items: [
+        // Camas Twin de 0,97 × 1,91 m; cabeceiras no lado frontal.
+        // Quarto E: uma cama na faixa mais alta da cobertura.
+        { id: "bed-east", type: "twin-bed", pos: ["bedroom-east.x0 + 0.2", "bedroom-east.y0 + 0.2"] },
+        // Quarto N: corredor de 0,71 m entre as camas.
+        { id: "bed-north-1", type: "twin-bed", pos: ["bedroom-north.x0 + 0.45", "bedroom-north.y0 + 0.2"] },
+        { id: "bed-north-2", type: "twin-bed", pos: ["bedroom-north.x1 - 1.17", "bedroom-north.y0 + 0.2"] },
+        // Quarto S: cabeceiras a 0,10 m da parede externa direita; passagem de 0,70 m entre camas e 0,69 m à esquerda.
+        // Posições compensam a rotação de 90° em torno do centro do item.
+        { id: "bed-south-1", type: "twin-bed", pos: ["bedroom-south.x1 - 1.54", "bedroom-south.y0 + 0.13"], rotation: 90 },
+        { id: "bed-south-2", type: "twin-bed", pos: ["bedroom-south.x1 - 1.54", "bedroom-south.y1 - 1.9"], rotation: 90 }
       ],
       // Aberturas do pavimento; aberturas locais ficam dentro do cômodo.
       openings: [

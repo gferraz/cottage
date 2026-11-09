@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Planta térrea — separada por módulos</title>
     <link rel="stylesheet" href="src/config/theme.css" />
-  <link rel="stylesheet" href="src/floor-plan.css?v=wall-openings-1" />
+  <link rel="stylesheet" href="src/floor-plan.css?v=twin-beds-1" />
   </head>
   <body class="page-empty">
 <template id="portable-export-css"><style>
@@ -539,6 +539,30 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .table { border: 2px solid #7a5b3a; background: #caa878; z-index: 5; }
 .car { border: 2px solid #666; border-radius: 14px; background: #bbb; z-index: 5; }
 .queen-bed { border: 2px solid #6d7890; border-radius: 5px; background: #d9deea; }
+.plan-item.twin-bed {
+  opacity: 0.85;
+  border: 2px solid var(--theme-label);
+  border-radius: 4px;
+}
+.twin-bed::before {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 5%;
+  height: 18%;
+  border: 1px solid var(--theme-label);
+  border-radius: 3px;
+}
+.twin-bed::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 28%;
+  border-top: 1px solid var(--theme-label);
+}
+
 .three-seat-sofa { border: 2px solid #756070; border-radius: 10px; background: #cbb8c8; }
 .armchair { border: 2px solid #756070; border-radius: 12px; background: #d8c8d5; }
 .appliance { z-index: 6; border: 2px solid #53616b; border-radius: 3px; background: #d9e1e5; }
