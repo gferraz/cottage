@@ -476,7 +476,9 @@
           to: ["stairs.x0", "main.y1"],
           walls: ["top", "right"],
           openings: [
-            { type: "door", from: "top", to: "upper-corridor" }
+            { type: "door", from: "top", to: "upper-corridor" },
+            // Janela no frontão dos fundos, na faixa mais alta da cobertura principal.
+            { type: "window", from: "bottom", to: "exterior", w: 1.2, h: 1.2, z0: "upper.z0 + 0.9", dx: "bedroom-west.w - 1.8" }
           ]
         },
         {
@@ -496,7 +498,9 @@
           to: ["knee-left.x0", "main.y1"],
           walls: ["top"],
           openings: [
-            { type: "door", from: "top", to: "unused-left" }
+            { type: "door", from: "top", to: "unused-left" },
+            // Janela alta no frontão do escritório; abertura operável a detalhar.
+            { type: "window", from: "bottom", to: "exterior", w: 0.8, h: 0.6, z0: "upper.z0 + 1.5", dx: 0.7 }
           ]
         },
         {
@@ -590,7 +594,15 @@
         { id: "bed-east", type: "twin-bed", pos: ["bedroom-east.x1 - 1.44 - params.wall_thickness / 2", "bedroom-east.y0 + params.wall_thickness / 2 + (bedroom-east.l - params.wall_thickness - 1.94) / 3 - 0.47"], rotation: 90 },
         { id: "bed-east-2", type: "twin-bed", pos: ["bedroom-east.x1 - 1.44 - params.wall_thickness / 2", "bedroom-east.y0 + params.wall_thickness / 2 + 2 * (bedroom-east.l - params.wall_thickness - 1.94) / 3 + 0.97 - 0.47"], rotation: 90 },
         // Quarto N: cabeceira à esquerda, cama centralizada entre frente e fundo.
-        { id: "bed-north-1", type: "twin-bed", pos: ["bedroom-north.x0 + 0.47 + params.wall_thickness / 2", "bedroom-north.yc - 0.955"], rotation: 270 }
+        { id: "bed-north-1", type: "queen-bed", pos: ["bedroom-north.x0 + 0.2 + params.wall_thickness / 2", "bedroom-north.yc - 1"], rotation: 270 },
+        // Quarto Oeste: cabeceiras à direita; faixa de circulação aos pés e entre camas.
+        { id: "bed-west-1", type: "twin-bed", pos: ["bedroom-west.x1 - 1.44 - params.wall_thickness / 2", "bedroom-west.y0 + 0.3"], rotation: 90 },
+        { id: "bed-west-2", type: "twin-bed", pos: ["bedroom-west.x1 - 1.44 - params.wall_thickness / 2", "bedroom-west.y1 - 1.74"], rotation: 90 },
+        // Armários baixos sob a água do telhado; portas de correr a detalhar.
+        { id: "wardrobe-west-front", title: "Armário baixo — Quarto Oeste", pos: ["bedroom-west.x0 + 0.06", "bedroom-west.y0 + 0.06"], size: [0.8, 0.6, 1.2], classes: "storage", color: "furniture" },
+        { id: "wardrobe-west-rear", title: "Armário baixo — Quarto Oeste", pos: ["bedroom-west.x0 + 0.06", "bedroom-west.y1 - 0.66"], size: [0.8, 0.6, 1.2], classes: "storage", color: "furniture" },
+        // Borda frontal do vão; chegada do lance superior permanece livre à esquerda.
+        { id: "stair-arrival-railing", type: "railing", label: "Guarda-corpo do desembarque", pos: ["upper-flight.x1", "stairs.y0 - 0.08"], size: ["stairs.x1 - upper-flight.x1 - params.wall_thickness / 2", 0.08, 1.1] }
       ],
       // Aberturas do pavimento; aberturas locais ficam dentro do cômodo.
       openings: [
