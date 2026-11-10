@@ -54,3 +54,28 @@ test('disjoint roof footprints are not truncated and preserve their overhangs', 
   assert.ok(Math.abs(area([entries[0]]) - 5.5 * 4.6) < 1e-8);
   assert.ok(Math.abs(area([entries[1]]) - 16) < 1e-8);
 });
+
+for (const type of ['gable', 'shed']) for (const orientation of ['longitudinal', 'transverse']) {
+  test(`${orientation} ${type} rake extensions preserve the roof below while the body still cuts it`, () => {
+    const entries = roofs.intersectingSurfaces(fixture([
+      definition('low', orientation, { type, rake: [1, 2] }),
+      definition('high', orientation, { type, rake: [1, 2], z0: 10 }),
+    ]));
+    assert.ok(Math.abs(area([entries[0]]) - 12) < 1e-8);
+    assert.ok(Math.abs(area([entries[1]]) - 28) < 1e-8);
+    const axis = orientation === 'longitudinal' ? 1 : 0;
+    for (const polygon of entries[0].polygons) {
+      const center = polygon.reduce((sum, point) => sum + point[axis], 0) / polygon.length;
+      assert.ok(center < 0 || center > 4, 'only the regions under the rake extensions survive');
+    }
+  });
+
+  test(`${orientation} ${type} eaves still cut the roof below`, () => {
+    const entries = roofs.intersectingSurfaces(fixture([
+      definition('low', orientation, { type, eave: [1, 2] }),
+      definition('high', orientation, { type, eave: [1, 2], z0: 10 }),
+    ]));
+    assert.equal(entries[0].polygons.length, 0);
+    assert.ok(Math.abs(area([entries[1]]) - 28) < 1e-8);
+  });
+}

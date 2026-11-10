@@ -78,7 +78,14 @@ const FloorPlanRoofs = {
       if (roof.type === "shed") {
         try {
           const geometry = this.shedGeometry(plan, roof);
-          return [{ roof, polygons: [geometry.polygon], planes: [...geometry.bounds, ...geometry.slopes] }];
+          const { base, longitudinal, x0, x1, y0, y1 } = geometry;
+          const bounds = [
+            [-1, 0, 0, longitudinal ? x0 : base.x0()],
+            [1, 0, 0, -(longitudinal ? x1 : base.x1())],
+            [0, -1, 0, longitudinal ? base.y0() : y0],
+            [0, 1, 0, -(longitudinal ? base.y1() : y1)],
+          ];
+          return [{ roof, polygons: [geometry.polygon], planes: [...bounds, ...geometry.slopes] }];
         } catch { return []; }
       }
       if (roof.type !== "gable" || !["longitudinal", "transverse"].includes(roof.orientation)) return [];
@@ -108,7 +115,15 @@ const FloorPlanRoofs = {
           [at(x0, y0), at(x1, y0), at(x1, ridge), at(x0, ridge)],
           [at(x0, ridge), at(x1, ridge), at(x1, y1), at(x0, y1)],
         ];
-        return [{ roof, polygons, planes: [[-1, 0, 0, x0], [1, 0, 0, -x1], [0, -1, 0, y0], [0, 1, 0, -y1], ...slopes] }];
+        // Rake extensions are drawn, but do not remove roofs beneath them.
+        // Eave bounds and the roof's slopes still participate in clipping.
+        const bounds = [
+          [-1, 0, 0, longitudinal ? x0 : base.x0()],
+          [1, 0, 0, -(longitudinal ? x1 : base.x1())],
+          [0, -1, 0, longitudinal ? base.y0() : y0],
+          [0, 1, 0, -(longitudinal ? base.y1() : y1)],
+        ];
+        return [{ roof, polygons, planes: [...bounds, ...slopes] }];
       } catch {
         return [];
       }
