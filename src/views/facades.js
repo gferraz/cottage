@@ -1,7 +1,19 @@
 const FloorPlanFacades = {
+  depthOrderedFaces(faces, facadeEdge) {
+    const direction = facadeEdge === "min" ? 1 : -1;
+    // Stable ties preserve the order: surface, outline, then openings.
+    return [...faces].sort((first, second) => direction * (second.depth - first.depth));
+  },
+
+  occludingFaces(face, faces, facadeEdge) {
+    const direction = facadeEdge === "min" ? 1 : -1;
+    return faces.filter((other) => other.occluder &&
+      direction * (face.depth - other.depth) > 0.01);
+  },
+
   updateRoofVisibility(plan) {
     [plan.facadeLayer, plan.secondaryFacadeLayer].forEach((layer) => {
-      layer?.querySelectorAll(".facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label")
+      layer?.querySelectorAll(".facade-roof-occlusion, .facade-roof-face, .facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label")
         .forEach((element) => element.classList.toggle("roof-hidden", !plan.showRoofs));
     });
   },
@@ -392,6 +404,24 @@ const FloorPlanFacades = {
           return isAtOrInFront(roofDepth, roomDepth);
         });
       };
+      // Paint complete faces back to front, keeping outlines and labels with
+      // their surface. Transparent theme colors need an opaque backing first.
+      const facadeFaces = [];
+      const addFace = (depth, elements, opaque = false) => {
+        const group = document.createElementNS(svgNamespace, "g");
+        if (opaque && elements[0]) {
+          const backing = elements[0].cloneNode(false);
+          backing.removeAttribute("class");
+          backing.style.fill = getComputedStyle(plan.root).getPropertyValue("--theme-wall-fill").trim() || "#f7f7f4";
+          backing.style.fillOpacity = "1";
+          backing.style.stroke = "none";
+          group.append(backing);
+        }
+        elements.forEach((element) => group.append(element));
+        facadeFaces.push({ depth, group, occluder: opaque ? elements[0] : null });
+        return group;
+      };
+
       facadeRoofs.forEach((roof) => {
         if (!["gable", "shed"].includes(roof.type)) return;
         const longitudinal = roof.orientation === "longitudinal";
@@ -649,6 +679,11 @@ const FloorPlanFacades = {
         outline.classList.add("facade-roof-eave");
         outline.dataset.roofInFront = inFront;
         svg.append(outline);
+        const roofDepth = side
+          ? facadeEdge === "min" ? geometry.x0 : geometry.x1
+          : facadeEdge === "min" ? geometry.y0 : geometry.y1;
+        const roofFace = addFace(roofDepth, [surface, outline], true);
+        roofFace.classList.add("facade-roof-face");
         if (roof.label || roof.id) {
           const vertices = polygons.flat();
           const peak = vertices.reduce((highest, vertex) => vertex[2] > highest[2] ? vertex : highest);
@@ -671,7 +706,7 @@ const FloorPlanFacades = {
           details.setAttribute("dy", "1.2em");
           details.classList.add("facade-roof-label-details");
           label.append(title, details);
-          svg.append(label);
+          roofFace.append(label);
         }
       });
 
@@ -764,7 +799,9 @@ const FloorPlanFacades = {
             railing.setAttribute("height", `${height * scale}`);
             railing.classList.add("facade-railing");
             railing.dataset.id = item.dataset?.id || item.id || "";
-            svg.append(railing);
+            const near = side ? itemValue(item, "x") : itemValue(item, "y");
+            const far = near + (side ? itemValue(item, "w") : itemValue(item, "l"));
+            addFace(facadeEdge === "min" ? near : far, [railing]);
           }
         });
 
@@ -780,6 +817,7 @@ const FloorPlanFacades = {
         outline.style.stroke = getComputedStyle(plan.root).getPropertyValue("--theme-wall").trim() || "#222";
         outline.style.strokeWidth = "1.5";
         svg.append(outline);
+        return outline;
       };
 
       const sectionPath = (start, end, from, to, baseStart, baseEnd, top, roofOnly = false) => {
@@ -857,7 +895,7 @@ const FloorPlanFacades = {
         const occluder = document.createElementNS(svgNamespace, "path");
         occluder.setAttribute("d", roomSection(room, geometry, compoundPart, start, end, z0, z1).path);
         occluder.classList.add("facade-occluder");
-        svg.append(occluder);
+        addFace(roomFacadeDepth(room), [occluder]);
       });
 
       surfaceRooms.forEach(({ room, geometry, compoundPart }) => {
@@ -899,7 +937,8 @@ const FloorPlanFacades = {
           ? `${room.dataset.id || ""}.${geometry.id || "part"}`
           : room.dataset.id || "";
         svg.append(rect);
-        appendWallOutline(section.polygons, "facade-room-outline", rect.dataset.id);
+        const roomOutline = appendWallOutline(section.polygons, "facade-room-outline", rect.dataset.id);
+        const roomFace = addFace(roomFacadeDepth(room), [rect, roomOutline], true);
 
         const roomLabel = compoundPart
           ? ""
@@ -924,7 +963,7 @@ const FloorPlanFacades = {
           dimensions.setAttribute("dy", "1.2em");
           dimensions.classList.add("facade-room-label-details");
           label.append(title, dimensions);
-          svg.append(label);
+          roomFace.append(label);
         }
 
       });
@@ -983,7 +1022,7 @@ const FloorPlanFacades = {
         .sort((first, second) => facadeEdge === "min"
           ? second.depth - first.depth
           : first.depth - second.depth)
-        .forEach(({ wall, segmentIndex, start, end, startBase, endBase, startPoint, endPoint }) => {
+        .forEach(({ wall, segmentIndex, depth, start, end, startBase, endBase, startPoint, endPoint }) => {
           const polygons = FloorPlanWalls.wallElevation({
             from: startPoint, to: endPoint, thickness: wall.thickness,
             baseStart: startBase, baseEnd: endBase, top: wall.topZ,
@@ -991,10 +1030,13 @@ const FloorPlanFacades = {
             undersideLimits: wall.undersideLimits,
           }, roofLimits, side);
           if (!polygons.length) return;
-          if (!independentWallFaces.has(wall.id)) independentWallFaces.set(wall.id, { wall, polygons: [] });
-          independentWallFaces.get(wall.id).polygons.push(...polygons);
+          // Adjacent segments in the same facade plane share one silhouette.
+          // Outlining each separately exposes their internal vertical seam.
+          const key = `${wall.id}:${depth.toFixed(8)}`;
+          if (!independentWallFaces.has(key)) independentWallFaces.set(key, { wall, depth, polygons: [] });
+          independentWallFaces.get(key).polygons.push(...polygons);
         });
-      independentWallFaces.forEach(({ wall, polygons }) => {
+      independentWallFaces.forEach(({ wall, depth, polygons }) => {
         const face = document.createElementNS(svgNamespace, "path");
         face.setAttribute("d", polygons.map((polygon) => polygon.map(([coordinate, z], i) =>
           `${i ? "L" : "M"}${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`,
@@ -1005,13 +1047,8 @@ const FloorPlanFacades = {
           : getComputedStyle(plan.root).getPropertyValue("--theme-wall-fill").trim() || "#f7f7f4";
         face.style.stroke = "none";
         svg.append(face);
-        appendWallOutline(polygons, "facade-independent-wall-outline", wall.id);
-      });
-
-      const foregroundRoofSelector =
-        ".facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label";
-      svg.querySelectorAll(foregroundRoofSelector).forEach((element) => {
-        if (element.dataset.roofInFront === "true") svg.append(element);
+        const outline = appendWallOutline(polygons, "facade-independent-wall-outline", wall.id);
+        addFace(depth, [face, outline], true);
       });
 
       facadeOpenings
@@ -1034,7 +1071,7 @@ const FloorPlanFacades = {
           svg.append(clip);
           const featureGroup = document.createElementNS(svgNamespace, "g");
           featureGroup.setAttribute("clip-path", `url(#${clipId})`);
-          svg.append(featureGroup);
+          addFace(depth, [featureGroup]);
           const rect = document.createElementNS(svgNamespace, "rect");
           rect.setAttribute("x", `${(start - min + padding) * scale}`);
           rect.setAttribute("y", `${(floorHeight - z0 - height + padding) * scale}`);
@@ -1084,9 +1121,43 @@ const FloorPlanFacades = {
           }
         });
 
-      svg.querySelectorAll(".facade-railing").forEach((railing) => {
-        svg.append(railing);
+      // Clip hidden edges and labels as well as fills. Painter ordering alone
+      // allows rear annotations to leak through translucent surfaces.
+      facadeFaces.forEach((face, faceIndex) => {
+        const occluders = this.occludingFaces(face, facadeFaces, facadeEdge);
+        if (!occluders.length) return;
+        const mask = document.createElementNS(svgNamespace, "mask");
+        const maskId = `facade-${index}-visibility-${faceIndex}`;
+        mask.id = maskId;
+        mask.setAttribute("maskUnits", "userSpaceOnUse");
+        mask.setAttribute("x", "0");
+        mask.setAttribute("y", `${viewY}`);
+        mask.setAttribute("width", `${viewWidth}`);
+        mask.setAttribute("height", `${viewHeight}`);
+        mask.style.maskType = "luminance";
+        const background = document.createElementNS(svgNamespace, "rect");
+        background.setAttribute("x", "0");
+        background.setAttribute("y", `${viewY}`);
+        background.setAttribute("width", `${viewWidth}`);
+        background.setAttribute("height", `${viewHeight}`);
+        background.setAttribute("fill", "white");
+        mask.append(background);
+        occluders.forEach((other) => {
+          const silhouette = other.occluder.cloneNode(false);
+          silhouette.removeAttribute("class");
+          silhouette.removeAttribute("style");
+          silhouette.setAttribute("fill", "black");
+          silhouette.setAttribute("stroke", "none");
+          if (other.group.classList.contains("facade-roof-face")) {
+            silhouette.classList.add("facade-roof-occlusion");
+          }
+          mask.append(silhouette);
+        });
+        defs.append(mask);
+        face.group.setAttribute("mask", `url(#${maskId})`);
       });
+      this.depthOrderedFaces(facadeFaces, facadeEdge)
+        .forEach(({ group }) => svg.append(group));
 
       if (frontAligned && plan.terrainReference) {
         const profile = plan.terrainReference;

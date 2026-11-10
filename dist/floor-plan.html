@@ -490,7 +490,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .roof-plan {
   pointer-events: none;
 }
-.roof-plan.roof-hidden { display: none; }
+.roof-plan.roof-hidden, .facade-view .roof-hidden { display: none; }
 .roof-surface {
   fill: var(--theme-roof-fill, rgba(130, 105, 75, 0.16));
   stroke: var(--theme-roof-line, rgba(90, 70, 45, 0.62));
@@ -831,7 +831,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 }
 
 
-.plan-opening {
+.plan-item.plan-opening {
   z-index: 15;
   opacity: 1 !important;
   border: 2px solid var(--theme-opening-line);
@@ -854,7 +854,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   border-right: none;
 }
 
-.plan-window {
+.plan-item.plan-window {
   z-index: 15;
   opacity: 1 !important;
   border: 2px solid var(--theme-window-line);
@@ -1005,6 +1005,11 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .stair-flight[data-stair-direction="reverse"] .stair-arrow::before { content: "↑"; }
 .stair-flight[data-stair-axis="horizontal"] .stair-arrow::before { content: "→"; }
 .stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"] .stair-arrow::before { content: "←"; }
+/* As setas indicam subida mesmo quando from/to descreve a descida. */
+.stair-flight[data-stair-rise="down"] .stair-arrow::before {
+  display: inline-block;
+  transform: rotate(180deg);
+}
 .stair-flight[data-stair-axis="horizontal"]::after {
   background: repeating-linear-gradient(
     to right,
@@ -1022,6 +1027,30 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .table { border: 2px solid #7a5b3a; background: #caa878; z-index: 5; }
 .car { border: 2px solid #666; border-radius: 14px; background: #bbb; z-index: 5; }
 .queen-bed { border: 2px solid #6d7890; border-radius: 5px; background: #d9deea; }
+.plan-item.twin-bed {
+  opacity: 0.85;
+  border: 2px solid var(--theme-label);
+  border-radius: 4px;
+}
+.twin-bed::before {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 5%;
+  height: 18%;
+  border: 1px solid var(--theme-label);
+  border-radius: 3px;
+}
+.twin-bed::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 28%;
+  border-top: 1px solid var(--theme-label);
+}
+
 .three-seat-sofa { border: 2px solid #756070; border-radius: 10px; background: #cbb8c8; }
 .armchair { border: 2px solid #756070; border-radius: 12px; background: #d8c8d5; }
 .appliance { z-index: 6; border: 2px solid #53616b; border-radius: 3px; background: #d9e1e5; }
@@ -1981,7 +2010,7 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 }
 
 
-.plan-opening {
+.plan-item.plan-opening {
   z-index: 15;
   opacity: 1 !important;
   border: 2px solid var(--theme-opening-line);
@@ -2004,7 +2033,7 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   border-right: none;
 }
 
-.plan-window {
+.plan-item.plan-window {
   z-index: 15;
   opacity: 1 !important;
   border: 2px solid var(--theme-window-line);
@@ -2157,6 +2186,11 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .stair-flight[data-stair-direction="reverse"] .stair-arrow::before { content: "↑"; }
 .stair-flight[data-stair-axis="horizontal"] .stair-arrow::before { content: "→"; }
 .stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"] .stair-arrow::before { content: "←"; }
+/* As setas indicam subida mesmo quando from/to descreve a descida. */
+.stair-flight[data-stair-rise="down"] .stair-arrow::before {
+  display: inline-block;
+  transform: rotate(180deg);
+}
 .stair-flight[data-stair-axis="horizontal"]::after {
   background: repeating-linear-gradient(
     to right,
@@ -2174,6 +2208,30 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .table { border: 2px solid #7a5b3a; background: #caa878; z-index: 5; }
 .car { border: 2px solid #666; border-radius: 14px; background: #bbb; z-index: 5; }
 .queen-bed { border: 2px solid #6d7890; border-radius: 5px; background: #d9deea; }
+.plan-item.twin-bed {
+  opacity: 0.85;
+  border: 2px solid var(--theme-label);
+  border-radius: 4px;
+}
+.twin-bed::before {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 5%;
+  height: 18%;
+  border: 1px solid var(--theme-label);
+  border-radius: 3px;
+}
+.twin-bed::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 28%;
+  border-top: 1px solid var(--theme-label);
+}
+
 .three-seat-sofa { border: 2px solid #756070; border-radius: 10px; background: #cbb8c8; }
 .armchair { border: 2px solid #756070; border-radius: 12px; background: #d8c8d5; }
 .appliance { z-index: 6; border: 2px solid #53616b; border-radius: 3px; background: #d9e1e5; }
@@ -2285,7 +2343,7 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 #multi-floor-button:hover:not(:disabled) { background: var(--theme-button-hover); }
 #dxf-button:disabled { cursor: not-allowed; opacity: 0.55; }
 #multi-floor-button:disabled { cursor: not-allowed; opacity: 0.55; }
-.roof-plan.roof-hidden { display: none; }
+.roof-plan.roof-hidden, .facade-view .roof-hidden { display: none; }
 .legend { flex: 1 1 auto; min-width: 0; font-size: 13px; color: #444; }
 .opening-legend,
 .roof-legend,
@@ -2505,6 +2563,10 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
         <input id="show-roofs" type="checkbox" />
         <span>Telhados</span>
       </label>
+      <label class="visibility-switch" hidden title="Isolar os telhados na perspectiva 3D">
+        <input id="show-only-roofs" type="checkbox" />
+        <span>Somente telhado (3D)</span>
+      </label>
       <label class="visibility-switch" hidden>
         <input id="show-multi-floor" type="checkbox" />
         <span>Multi-pisos</span>
@@ -2580,11 +2642,55 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
     </script>
   <script data-bundled-scripts>
 const FloorPlanParser = {
-  parse(sourceText) {
+  locations: new WeakMap(),
+  propertyLocations: new WeakMap(),
+
+  location(value, property) {
+    if (!value || typeof value !== "object") return;
+    return property === undefined ? this.locations.get(value) : this.propertyLocations.get(value)?.get(property);
+  },
+
+  copyLocation(source, target) {
+    const location = this.location(source);
+    if (location) this.locations.set(target, location);
+    const properties = this.propertyLocations.get(source);
+    if (properties) this.propertyLocations.set(target, properties);
+    return target;
+  },
+
+  errorLocation(error, config) {
+    const direct = this.location(error.opening);
+    if (direct) return direct;
+    const seen = new Set();
+    const find = (value) => {
+      if (!value || typeof value !== "object" || seen.has(value)) return;
+      seen.add(value);
+      if (error.id && value.id === error.id) return this.location(value);
+      for (const child of Object.values(value)) {
+        const found = find(child);
+        if (found) return found;
+      }
+    };
+    return find(config);
+  },
+
+  formatLocation(location) {
+    return `${location.file || "JSON5"}:${location.line}:${location.column} · ${location.path || "$"}`;
+  },
+
+  parse(sourceText, { filename = "" } = {}) {
     const source = String(sourceText).replace(/^\uFEFF/, "");
     let index = 0;
+    let activePath = "";
+    const locationAt = (offset, path) => {
+      const lines = source.slice(0, offset).split("\n");
+      return { file: filename, line: lines.length, column: lines.at(-1).length + 1, path };
+    };
     const fail = (message) => {
-      throw new Error(`JSON5: ${message} at position ${index}`);
+      const location = locationAt(index, activePath);
+      const error = new Error(`${this.formatLocation(location)}: ${message}`);
+      error.location = location;
+      throw error;
     };
     const skipSpace = () => {
       while (index < source.length) {
@@ -2626,11 +2732,16 @@ const FloorPlanParser = {
       index += match[0].length;
       return match[0];
     };
-    const parseValue = () => {
+    const parseValue = (path = "") => {
       skipSpace();
+      activePath = path;
       const character = source[index];
-      if (character === "{") return parseObject();
-      if (character === "[") return parseArray();
+      if (character === "{" || character === "[") {
+        const location = locationAt(index, path);
+        const value = character === "{" ? parseObject(path) : parseArray(path);
+        this.locations.set(value, location);
+        return value;
+      }
       if (character === '"' || character === "'") return parseString(character);
       const token = source.slice(index).match(/^(?:[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?|true|false|null|NaN|Infinity)/)?.[0];
       if (!token) fail("expected a value");
@@ -2642,12 +2753,12 @@ const FloorPlanParser = {
       if (token === "Infinity") return Number.POSITIVE_INFINITY;
       return Number(token);
     };
-    const parseArray = () => {
+    const parseArray = (path) => {
       index += 1;
       const values = [];
       skipSpace();
       while (source[index] !== "]") {
-        values.push(parseValue());
+        values.push(parseValue(`${path}[${values.length}]`));
         skipSpace();
         if (source[index] === ",") {
           index += 1;
@@ -2659,18 +2770,22 @@ const FloorPlanParser = {
       index += 1;
       return values;
     };
-    const parseObject = () => {
+    const parseObject = (path) => {
       index += 1;
       const value = {};
+      const properties = new Map();
       skipSpace();
       while (source[index] !== "}") {
+        const propertyStart = index;
         const key = source[index] === '"' || source[index] === "'"
           ? parseString(source[index])
           : parseIdentifier();
         skipSpace();
         if (source[index] !== ":") fail("expected ':'");
         index += 1;
-        value[key] = parseValue();
+        activePath = path ? `${path}.${key}` : key;
+        properties.set(key, locationAt(propertyStart, activePath));
+        value[key] = parseValue(activePath);
         skipSpace();
         if (source[index] === ",") {
           index += 1;
@@ -2680,6 +2795,7 @@ const FloorPlanParser = {
       }
       if (source[index] !== "}") fail("unterminated object");
       index += 1;
+      this.propertyLocations.set(value, properties);
       return value;
     };
     const result = parseValue();
@@ -2693,11 +2809,97 @@ window.FloorPlanParser = FloorPlanParser;
 
 
 const FloorPlanModel = {
+  resolveParameters(config) {
+    if (!config.parameters) return config;
+    const values = new Map();
+    const stack = new Set();
+    const evaluate = (name) => {
+      if (values.has(name)) return values.get(name);
+      if (!Object.hasOwn(config.parameters, name)) throw new Error(`Parâmetro desconhecido: params.${name}`);
+      if (stack.has(name)) throw new Error(`Referência circular no parâmetro params.${name}`);
+      stack.add(name);
+      try {
+        const value = resolver.resolve(config.parameters[name]);
+        if (!Number.isFinite(value)) throw new Error(`O parâmetro params.${name} precisa ser numérico`);
+        values.set(name, value);
+        return value;
+      } catch (error) {
+        if (!error.location) {
+          error.location = window.FloorPlanParser?.location(config.parameters, name);
+          if (error.location) error.message = `${FloorPlanParser.formatLocation(error.location)}: ${error.message}`;
+        }
+        throw error;
+      } finally {
+        stack.delete(name);
+      }
+    };
+    const resolver = {
+      resolveExpression: FloorPlanGeometry.resolveExpression,
+      resolve(value) {
+        if (typeof value === "number") return value;
+        const text = String(value).trim();
+        if (/^params\.[\w-]+$/.test(text)) return evaluate(text.slice(7));
+        if (text !== "" && Number.isFinite(Number(text))) return Number(text);
+        if (!/[()+*/]|\s[+-]\s|^[+-]/.test(text)) {
+          throw new Error(`Valor de parâmetro inválido: ${text}. Use números ou referências params.nome`);
+        }
+        return this.resolveExpression(text);
+      },
+    };
+    for (const name of Object.keys(config.parameters)) evaluate(name);
+    const visit = (value) => {
+      if (typeof value === "string" && /\bparams\.[\w-]+/.test(value)) {
+        if (/^params\.[\w-]+$/.test(value)) return evaluate(value.slice(7));
+        return value.replace(/\bparams\.([\w-]+)/g, (_, name) => `(${evaluate(name)})`);
+      }
+      if (!value || typeof value !== "object") return value;
+      const childValue = (child, key) => {
+        try {
+          return key === "parameters" ? child : visit(child);
+        } catch (error) {
+          if (!error.location) {
+            error.location = window.FloorPlanParser?.location(value, key) ?? window.FloorPlanParser?.location(value);
+            if (error.location) error.message = `${FloorPlanParser.formatLocation(error.location)}: ${error.message}`;
+          }
+          throw error;
+        }
+      };
+      const result = Array.isArray(value) ? value.map(childValue)
+        : Object.fromEntries(Object.entries(value).map(([key, child]) => [key, childValue(child, key)]));
+      return window.FloorPlanParser?.copyLocation(value, result) ?? result;
+    };
+    return visit(config);
+  },
+
+  applyDefaults(config) {
+    config = this.resolveParameters(config);
+    const defaults = config.config ?? {};
+    const roofDefaults = Object.fromEntries(
+      ["type", "pitch", "eave", "rake", "slope"].filter((key) => defaults.roofs?.[key] !== undefined)
+        .map((key) => [key, defaults.roofs[key]]),
+    );
+    const expand = (floor) => {
+      const ceilingHeight = floor.ceiling_height ?? floor.wall_max_height ??
+        defaults.floors?.ceiling_height ?? defaults.floors?.wall_max_height;
+      const result = {
+        ...floor,
+        ...(ceilingHeight !== undefined ? { ceiling_height: ceilingHeight } : {}),
+        ...(floor.roofs ? { roofs: floor.roofs.map((roof) => ({ ...roofDefaults, ...roof })) } : {}),
+      };
+      if (floor.roofs) result.roofs.forEach((roof, index) => window.FloorPlanParser?.copyLocation(floor.roofs[index], roof));
+      return window.FloorPlanParser?.copyLocation(floor, result) ?? result;
+    };
+    const result = expand(config);
+    if (config.floors) result.floors = config.floors.map(expand);
+    return result;
+  },
+
   fromText(sourceText) {
     return FloorPlanModel.fromConfig(FloorPlanParser.parse(sourceText));
   },
 
   fromConfig(config) {
+    config = this.applyDefaults(config);
     const floors = config.floors ?? [config];
     const viewport = config.viewport ?? {
       size: [20, 20],
@@ -2845,6 +3047,8 @@ const FloorPlanModel = {
   },
 };
 
+window.FloorPlanModel = FloorPlanModel;
+
 
 const FloorPlanValidation = {
   isReservedId(id) {
@@ -2861,7 +3065,9 @@ const FloorPlanValidation = {
     const surface = roof.id && reference.startsWith(prefix)
       ? reference.slice(prefix.length)
       : reference;
-    const surfaces = roof.type === "gable"
+    const surfaces = roof.type === "shed"
+      ? [roof.slope ?? (roof.orientation === "longitudinal" ? "right" : "bottom")]
+      : roof.type === "gable"
       ? roof.orientation === "longitudinal"
         ? ["left", "right"]
         : roof.orientation === "transverse" ? ["top", "bottom"] : []
@@ -2894,12 +3100,12 @@ const FloorPlanValidation = {
     floors.forEach((floor, index) => {
       const label = floor.id || `piso ${index + 1}`;
       const z0 = Number(floor.z0);
-      const wallMaxHeight = Number(floor.wall_max_height);
+      const wallMaxHeight = Number(floor.ceiling_height ?? floor.wall_max_height);
       if (!Number.isFinite(z0)) {
         errors.push({ category: "floor", id: floor.id, opening: floor, message: `${label}: z0 precisa ser numérico` });
       }
       if (!Number.isFinite(wallMaxHeight) || wallMaxHeight <= 0) {
-        errors.push({ category: "floor", id: floor.id, opening: floor, message: `${label}: wall_max_height precisa ser positivo` });
+        errors.push({ category: "floor", id: floor.id, opening: floor, message: `${label}: ceiling_height precisa ser positivo` });
       }
       if (index > 0 && Number.isFinite(z0)) {
         const previousZ0 = Number(floors[index - 1].z0);
@@ -2994,6 +3200,9 @@ const FloorPlanLegend = {
 
 const FloorPlanExport = {
   roofMetrics(plan, roof) {
+    if (roof.type === "shed") {
+      try { return FloorPlanRoofs.shedGeometry(plan, roof); } catch { return null; }
+    }
     let base;
     try {
       base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
@@ -3262,6 +3471,14 @@ const FloorPlanExport = {
         const metrics = FloorPlanExport.roofMetrics(plan, roof);
         if (!metrics) return;
         const { x0, x1, y0, y1, ridgeX0, ridgeY0, ridgeX1, ridgeY1 } = metrics;
+        if (roof.type === "shed") {
+          metrics.polygon.forEach((point, index) => {
+            const next = metrics.polygon[(index + 1) % metrics.polygon.length];
+            line("ROOFS", point[0], point[1], next[0], next[1], point[2], next[2]);
+          });
+          if (roof.label) text("ROOF_LABELS", roof.label, (x0 + x1) / 2, (y0 + y1) / 2);
+          return;
+        }
         line("ROOFS", x0, y0, x1, y0, metrics.baseElevation);
         line("ROOFS", x1, y0, x1, y1, metrics.baseElevation);
         line("ROOFS", x1, y1, x0, y1, metrics.baseElevation);
@@ -3357,8 +3574,22 @@ const FloorPlanExport = {
   },
 };
 
+window.FloorPlanExport = FloorPlanExport;
+
 
 const FloorPlanGeometry = {
+  stairGradientRange(floorZ, parts) {
+    return {
+      base: Math.min(floorZ, ...parts.map((part) => part.z0)),
+      top: Math.max(floorZ, ...parts.map((part) => part.z1)),
+    };
+  },
+
+  stairGradientRatio(z, range) {
+    const span = range.top - range.base;
+    return span > 0 ? Math.max(0, Math.min(1, (z - range.base) / span)) : 0;
+  },
+
   resolveExpression(expression, localOrigin = null) {
     const tokens = [];
     const tokenPattern = /\s*(?:(\d+(?:\.\d+)?(?:e[+-]?\d+)?|[A-Za-z_][\w.-]*)|([()+\-*/]))/i;
@@ -3656,7 +3887,7 @@ const FloorPlanMetrics = {
   },
 
   roofTypeLabel(type) {
-    return { gable: "duas águas" }[type] || type || "—";
+    return { gable: "duas águas", shed: "uma água" }[type] || type || "—";
   },
 
   roofOrientationLabel(orientation) {
@@ -4181,6 +4412,26 @@ window.FloorPlanGuides = FloorPlanGuides;
 
 
 const FloorPlanFacades = {
+  depthOrderedFaces(faces, facadeEdge) {
+    const direction = facadeEdge === "min" ? 1 : -1;
+    // Stable ties preserve the order: surface, outline, then openings.
+    return [...faces].sort((first, second) => direction * (second.depth - first.depth));
+  },
+
+  occludingFaces(face, faces, facadeEdge) {
+    const direction = facadeEdge === "min" ? 1 : -1;
+    return faces.filter((other) => other.occluder &&
+      direction * (face.depth - other.depth) > 0.01);
+  },
+
+  updateRoofVisibility(plan) {
+    [plan.facadeLayer, plan.secondaryFacadeLayer].forEach((layer) => {
+      layer?.querySelectorAll(".facade-roof-occlusion, .facade-roof-face, .facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label")
+        .forEach((element) => element.classList.toggle("roof-hidden", !plan.showRoofs));
+    });
+  },
+
+
   render(plan, facades = []) {
     if (!plan.facadeLayer) return;
     plan.facadeLayer.replaceChildren();
@@ -4224,7 +4475,7 @@ const FloorPlanFacades = {
           const floorIndex = floorConfigs.indexOf(floorConfig);
           const floorZ0 = Number(floorConfig?.z0 ?? 0);
           const nextFloorZ0 = Number(floorConfigs[floorIndex + 1]?.z0);
-          const wallMaxHeight = Number(floorConfig?.wall_max_height ?? 0);
+          const wallMaxHeight = Number(floorConfig?.ceiling_height ?? floorConfig?.wall_max_height ?? 0);
           const defaultWallHeight = Number.isFinite(nextFloorZ0)
             ? Math.min(Math.max(0, nextFloorZ0 - floorZ0), wallMaxHeight)
             : wallMaxHeight;
@@ -4296,6 +4547,7 @@ const FloorPlanFacades = {
     );
 
     const roofLimits = FloorPlanWalls.roofLimits(plan);
+    const roofSurfaces = FloorPlanRoofs.intersectingSurfaces(plan);
 
     facades.forEach((facade, index) => {
       const direction = facade.direction || "front";
@@ -4439,6 +4691,9 @@ const FloorPlanFacades = {
       const facadeMin = Math.min(...coordinates);
       const facadeMax = Math.max(...coordinates);
       const roofGeometry = (roof) => {
+        if (roof.type === "shed") {
+          try { return FloorPlanRoofs.shedGeometry(plan, roof); } catch { return null; }
+        }
         let base;
         let floor;
         try {
@@ -4514,7 +4769,23 @@ const FloorPlanFacades = {
           facadeEdge === "min"
             ? roofNear <= edge + facadeDepth
             : roofFar >= edge - facadeDepth;
-        if (!reachesFacadeDepth) return false;
+        // A setback roof must remain visible when it limits a projected wall;
+        // otherwise that wall appears to end without any roof above it.
+        const coversProjectedWall = surfaceRooms.some(({ geometry: roomGeometry, compoundPart }) => {
+          const x0 = compoundPart ? roomGeometry.x : roomGeometry.x0();
+          const x1 = compoundPart ? roomGeometry.x + roomGeometry.w : roomGeometry.x1();
+          const y0 = compoundPart ? roomGeometry.y : roomGeometry.y0();
+          const y1 = compoundPart ? roomGeometry.y + roomGeometry.l : roomGeometry.y1();
+          const coordinate = side
+            ? facadeEdge === "min" ? x0 : x1
+            : facadeEdge === "min" ? y0 : y1;
+          const [roofStart, roofEnd] = roofFacadeSpan(geometry);
+          const start = side ? y0 : x0;
+          const end = side ? y1 : x1;
+          return coordinate >= roofNear - 0.01 && coordinate <= roofFar + 0.01 &&
+            Math.min(end, roofEnd) - Math.max(start, roofStart) > 0.001;
+        });
+        if (!reachesFacadeDepth && !coversProjectedWall) return false;
         return rooms.some((room) => {
           const roomNear = side ? room.x0() : room.y0();
           const roomFar = side ? room.x1() : room.y1();
@@ -4546,18 +4817,34 @@ const FloorPlanFacades = {
           return isAtOrInFront(roofDepth, roomDepth);
         });
       };
-      const roofElementSelector =
-        ".facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label";
+      // Paint complete faces back to front, keeping outlines and labels with
+      // their surface. Transparent theme colors need an opaque backing first.
+      const facadeFaces = [];
+      const addFace = (depth, elements, opaque = false) => {
+        const group = document.createElementNS(svgNamespace, "g");
+        if (opaque && elements[0]) {
+          const backing = elements[0].cloneNode(false);
+          backing.removeAttribute("class");
+          backing.style.fill = getComputedStyle(plan.root).getPropertyValue("--theme-wall-fill").trim() || "#f7f7f4";
+          backing.style.fillOpacity = "1";
+          backing.style.stroke = "none";
+          group.append(backing);
+        }
+        elements.forEach((element) => group.append(element));
+        facadeFaces.push({ depth, group, occluder: opaque ? elements[0] : null });
+        return group;
+      };
+
       facadeRoofs.forEach((roof) => {
-        if (roof.type !== "gable") return;
+        if (!["gable", "shed"].includes(roof.type)) return;
         const longitudinal = roof.orientation === "longitudinal";
         const isVisible = longitudinal ? !side : side;
-        if (!isVisible) return;
+        if (!isVisible && roof.type !== "shed") return;
         const geometry = roofGeometry(roof);
         if (!roofReachesFacade(geometry)) return;
-        const span = longitudinal
-          ? [geometry.x0, geometry.x1]
-          : [geometry.y0, geometry.y1];
+        const span = side
+          ? [geometry.y0, geometry.y1]
+          : [geometry.x0, geometry.x1];
         coordinates.push(...span);
       });
       const rawMin = Math.min(...coordinates);
@@ -4578,10 +4865,10 @@ const FloorPlanFacades = {
       const min = frontAligned ? horizontalOrigin + padding : rawMin;
       const width = Math.max(max - rawMin, 1);
       const roofTop = facadeRoofs.reduce((highest, roof) => {
-        if (roof.type !== "gable") return highest;
+        if (!["gable", "shed"].includes(roof.type)) return highest;
         const geometry = roofGeometry(roof);
         return roofReachesFacade(geometry)
-          ? Math.max(highest, (geometry?.z0 ?? 0) + (geometry?.rise ?? 0))
+          ? Math.max(highest, geometry?.peakZ ?? ((geometry?.z0 ?? 0) + (geometry?.rise ?? 0)))
           : highest;
       }, 0);
       // floorHeight is an absolute Z reference. The roof rise used by the
@@ -4589,7 +4876,7 @@ const FloorPlanFacades = {
       // the roof's full rise from its own base.
       const roofRise = Math.max(0, roofTop - floorHeight);
       const roofDrop = facadeRoofs.reduce((lowest, roof) => {
-        if (roof.type !== "gable") return lowest;
+        if (!["gable", "shed"].includes(roof.type)) return lowest;
         const isVisible =
           roof.orientation === "longitudinal" ? !side : side;
         const geometry = roofGeometry(roof);
@@ -4780,240 +5067,60 @@ const FloorPlanFacades = {
       svg.append(verticalLabel);
 
       facadeRoofs.forEach((roof) => {
-        if (roof.type !== "gable") return;
-        const longitudinal = roof.orientation === "longitudinal";
         const geometry = roofGeometry(roof);
         if (!roofReachesFacade(geometry)) return;
-        const roofIsInFront = roofIsInFrontAtBase(geometry);
-        const existingRoofElements = new Set(
-          svg.querySelectorAll(roofElementSelector),
-        );
-        const markRoofElements = () => {
-          svg.querySelectorAll(roofElementSelector).forEach((element) => {
-            if (!existingRoofElements.has(element)) {
-              element.dataset.roofInFront = String(roofIsInFront);
-            }
-          });
-        };
-        const {
-          x0,
-          x1,
-          y0,
-          y1,
-          z0: roofZ0,
-          rise,
-          baseX0,
-          baseX1,
-          baseY0,
-          baseY1,
-          eave0,
-          eave1,
-          pitch,
-        } = geometry;
-        const roofSpan = longitudinal ? [x0, x1] : [y0, y1];
-        const baseSpan = longitudinal ? [baseX0, baseX1] : [baseY0, baseY1];
-        const roofStart = roofSpan[0];
-        const roofEnd = roofSpan[1];
-        const baseStart = baseSpan[0];
-        const baseEnd = baseSpan[1];
-        const ridge = (roofStart + roofEnd) / 2;
-        const baseRidge = (baseStart + baseEnd) / 2;
-        const pitchTangent = Math.tan((pitch * Math.PI) / 180);
-        const baseY = (floorHeight - roofZ0 + padding) * scale;
-        const eaveStartY = baseY + eave0 * pitchTangent * scale;
-        const eaveEndY = baseY + eave1 * pitchTangent * scale;
-        const roofWidth = longitudinal ? geometry.x1 - geometry.x0 : geometry.y1 - geometry.y0;
-        const roofLength = longitudinal ? geometry.y1 - geometry.y0 : geometry.x1 - geometry.x0;
-        const isVisibleOnFacade = longitudinal ? !side : side;
-        if (longitudinal && !side) {
-          const ridgeCoordinate =
-            (floorHeight - roofZ0 - rise + padding) * scale;
-          const appendRoofLine = (start, startY, end, endY) => {
-            const line = document.createElementNS(svgNamespace, "line");
-            line.setAttribute("x1", `${(start - min + padding) * scale}`);
-            line.setAttribute("y1", `${startY}`);
-            line.setAttribute("x2", `${(end - min + padding) * scale}`);
-            line.setAttribute("y2", `${endY}`);
-            line.classList.add("facade-roof-eave");
-            svg.append(line);
-          };
-          appendRoofLine(baseStart, baseY, baseRidge, ridgeCoordinate);
-          appendRoofLine(baseEnd, baseY, baseRidge, ridgeCoordinate);
-
-          if (roof.label || roof.id) {
-            const labelX = (baseRidge - min + padding) * scale;
-            const roofLabel = document.createElementNS(svgNamespace, "text");
-            roofLabel.setAttribute("x", `${labelX}`);
-            roofLabel.setAttribute("y", `${ridgeCoordinate - 3}`);
-            roofLabel.setAttribute("text-anchor", "start");
-            roofLabel.classList.add("facade-roof-label");
-            const roofTitle = document.createElementNS(svgNamespace, "tspan");
-            roofTitle.textContent = roof.label || roof.id;
-            roofTitle.setAttribute("x", `${labelX}`);
-            roofTitle.classList.add("facade-roof-label-title");
-            const roofDetails = document.createElementNS(svgNamespace, "tspan");
-            roofDetails.textContent = `l: ${plan.formatMeters(roofLength)}m w: ${plan.formatMeters(roofWidth)}m h: ${plan.formatMeters(rise)}m`;
-            roofDetails.setAttribute("x", `${labelX}`);
-            roofDetails.setAttribute("dy", "1.2em");
-            roofDetails.classList.add("facade-roof-label-details");
-            roofLabel.append(roofTitle, roofDetails);
-            svg.append(roofLabel);
-          }
-          markRoofElements();
-          return;
-        }
-        if (!isVisibleOnFacade) {
-          const ridgeLine = document.createElementNS(svgNamespace, "line");
-          const ridgeStart = side ? y0 : x0;
-          const ridgeEnd = side ? y1 : x1;
-          const ridgeCoordinate =
-            (floorHeight - roofZ0 - rise + padding) * scale;
-          const eaveCoordinate =
-            (floorHeight - roofZ0 + padding) * scale;
-          const roofSurface = document.createElementNS(
-            svgNamespace,
-            "polygon",
-          );
-          roofSurface.setAttribute(
-            "points",
-            [
-              `${(ridgeStart - min + padding) * scale},${ridgeCoordinate}`,
-              `${(ridgeEnd - min + padding) * scale},${ridgeCoordinate}`,
-              `${(ridgeEnd - min + padding) * scale},${eaveCoordinate}`,
-              `${(ridgeStart - min + padding) * scale},${eaveCoordinate}`,
-            ].join(" "),
-          );
-          roofSurface.classList.add("facade-roof");
-          svg.append(roofSurface);
-          ridgeLine.setAttribute(
-            "x1",
-            `${(ridgeStart - min + padding) * scale}`,
-          );
-          ridgeLine.setAttribute(
-            "x2",
-            `${(ridgeEnd - min + padding) * scale}`,
-          );
-          ridgeLine.setAttribute("y1", `${ridgeCoordinate}`);
-          ridgeLine.setAttribute("y2", `${ridgeCoordinate}`);
-          ridgeLine.setAttribute(
-            "stroke",
-            getComputedStyle(plan.root)
-              .getPropertyValue("--theme-roof-line")
-              .trim() || "rgba(112, 55, 35, 0.9)",
-          );
-          ridgeLine.setAttribute("stroke-width", "1.5");
-          ridgeLine.classList.add("facade-roof-ridge");
-          svg.append(ridgeLine);
-
-          const eaveLine = document.createElementNS(svgNamespace, "line");
-          eaveLine.setAttribute(
-            "x1",
-            `${(ridgeStart - min + padding) * scale}`,
-          );
-          eaveLine.setAttribute(
-            "x2",
-            `${(ridgeEnd - min + padding) * scale}`,
-          );
-          eaveLine.setAttribute("y1", `${eaveCoordinate}`);
-          eaveLine.setAttribute("y2", `${eaveCoordinate}`);
-          eaveLine.setAttribute(
-            "stroke",
-            getComputedStyle(plan.root)
-              .getPropertyValue("--theme-roof-line")
-              .trim() || "rgba(112, 55, 35, 0.9)",
-          );
-          eaveLine.setAttribute("stroke-width", "1.5");
-          eaveLine.classList.add("facade-roof-eave");
-          svg.append(eaveLine);
-
-          if (roof.label || roof.id) {
-            const ridgeLabelX =
-              ((ridgeStart + ridgeEnd) / 2 - min + padding) * scale;
-            const ridgeLabelY = ridgeCoordinate - 3;
-            const roofLabel = document.createElementNS(svgNamespace, "text");
-            roofLabel.setAttribute("x", `${ridgeLabelX}`);
-            roofLabel.setAttribute("y", `${ridgeLabelY}`);
-            roofLabel.setAttribute("text-anchor", "middle");
-            roofLabel.classList.add("facade-roof-label");
-
-            const roofTitle = document.createElementNS(svgNamespace, "tspan");
-            roofTitle.textContent = roof.label || roof.id;
-            roofTitle.setAttribute("x", `${ridgeLabelX}`);
-            roofTitle.classList.add("facade-roof-label-title");
-
-            const roofDetails = document.createElementNS(svgNamespace, "tspan");
-            roofDetails.textContent = `l: ${plan.formatMeters(roofLength)}m w: ${plan.formatMeters(roofWidth)}m h: ${plan.formatMeters(rise)}m`;
-            roofDetails.setAttribute("x", `${ridgeLabelX}`);
-            roofDetails.setAttribute("dy", "1.2em");
-            roofDetails.classList.add("facade-roof-label-details");
-
-            roofLabel.append(roofTitle, roofDetails);
-            svg.append(roofLabel);
-          }
-          markRoofElements();
-          return;
-        }
-        const polygon = document.createElementNS(svgNamespace, "polygon");
-        const points = [
-          `${(baseStart - min + padding) * scale},${baseY}`,
-          `${(baseRidge - min + padding) * scale},${(floorHeight - roofZ0 - rise + padding) * scale}`,
-          `${(baseEnd - min + padding) * scale},${baseY}`,
-        ].join(" ");
-        polygon.setAttribute("points", points);
-        polygon.classList.add("facade-roof");
-        svg.append(polygon);
-
-        [
-          [baseStart, baseY, roofStart, eaveStartY],
-          [baseEnd, baseY, roofEnd, eaveEndY],
-        ].forEach(([start, startY, end, endY]) => {
-          const eaveLine = document.createElementNS(svgNamespace, "line");
-          eaveLine.setAttribute("x1", `${(start - min + padding) * scale}`);
-          eaveLine.setAttribute("y1", `${startY}`);
-          eaveLine.setAttribute("x2", `${(end - min + padding) * scale}`);
-          eaveLine.setAttribute("y2", `${endY}`);
-          eaveLine.classList.add("facade-roof-eave");
-          svg.append(eaveLine);
-        });
-
+        const polygons = roofSurfaces.find((entry) => entry.roof === roof)?.polygons ?? [];
+        if (!polygons.length) return;
+        const point = ([x, y, z]) => `${((side ? y : x) - min + padding) * scale},${(floorHeight - z + padding) * scale}`;
+        const surface = document.createElementNS(svgNamespace, "path");
+        surface.setAttribute("d", polygons.map((polygon) => {
+          const projectedArea = polygon.reduce((sum, vertex, i) => {
+            const next = polygon[(i + 1) % polygon.length];
+            return sum + vertex[side ? 1 : 0] * next[2] - next[side ? 1 : 0] * vertex[2];
+          }, 0);
+          const ordered = projectedArea < 0 ? [...polygon].reverse() : polygon;
+          return ordered.map((vertex, i) => `${i ? "L" : "M"}${point(vertex)}`).join(" ") + " Z";
+        }).join(" "));
+        surface.classList.add("facade-roof");
+        surface.style.stroke = "none";
+        const inFront = String(roofIsInFrontAtBase(geometry));
+        surface.dataset.roofInFront = inFront;
+        svg.append(surface);
+        const edges = FloorPlanRoofs.surfaceEdges(polygons);
+        const outline = document.createElementNS(svgNamespace, "path");
+        outline.setAttribute("d", edges.map((vertex, i) => `${i % 2 ? "L" : "M"}${point(vertex)}`).join(" "));
+        outline.classList.add("facade-roof-eave");
+        outline.dataset.roofInFront = inFront;
+        svg.append(outline);
+        const roofDepth = side
+          ? facadeEdge === "min" ? geometry.x0 : geometry.x1
+          : facadeEdge === "min" ? geometry.y0 : geometry.y1;
+        const roofFace = addFace(roofDepth, [surface, outline], true);
+        roofFace.classList.add("facade-roof-face");
         if (roof.label || roof.id) {
-          const ridgeX = (baseRidge - min + padding) * scale;
-          const baseY = (floorHeight - roofZ0 + padding) * scale;
-          const ridgeY = (floorHeight - roofZ0 - rise + padding) * scale;
-          const labelX = ridgeX;
-          const labelY = longitudinal
-            ? ridgeY - 3
-            : ridgeY - 0.18 * scale;
-          const roofLabel = document.createElementNS(svgNamespace, "text");
-          roofLabel.setAttribute("x", `${labelX}`);
-          roofLabel.setAttribute("y", `${labelY}`);
-          roofLabel.setAttribute("text-anchor", longitudinal ? "start" : "middle");
-          if (longitudinal) {
-            const angle =
-              (Math.atan2(baseY - ridgeY, (baseEnd - baseRidge) * scale) * 180) /
-              Math.PI;
-            roofLabel.setAttribute(
-              "transform",
-              `rotate(${angle} ${labelX} ${labelY})`,
-            );
-          }
-          roofLabel.classList.add("facade-roof-label");
-
-          const roofTitle = document.createElementNS(svgNamespace, "tspan");
-          roofTitle.textContent = roof.label || roof.id;
-          roofTitle.setAttribute("x", `${labelX}`);
-          roofTitle.classList.add("facade-roof-label-title");
-
-          const roofDetails = document.createElementNS(svgNamespace, "tspan");
-          roofDetails.textContent = `l: ${plan.formatMeters(roofLength)}m w: ${plan.formatMeters(roofWidth)}m h: ${plan.formatMeters(rise)}m`;
-          roofDetails.setAttribute("x", `${labelX}`);
-          roofDetails.setAttribute("dy", "1.2em");
-          roofDetails.classList.add("facade-roof-label-details");
-
-          roofLabel.append(roofTitle, roofDetails);
-          svg.append(roofLabel);
+          const vertices = polygons.flat();
+          const peak = vertices.reduce((highest, vertex) => vertex[2] > highest[2] ? vertex : highest);
+          const label = document.createElementNS(svgNamespace, "text");
+          const labelX = ((side ? peak[1] : peak[0]) - min + padding) * scale;
+          label.setAttribute("x", `${labelX}`);
+          label.setAttribute("y", `${(floorHeight - peak[2] + padding) * scale - 3}`);
+          label.setAttribute("text-anchor", "middle");
+          label.classList.add("facade-roof-label");
+          label.dataset.roofInFront = inFront;
+          const title = document.createElementNS(svgNamespace, "tspan");
+          title.textContent = roof.label || roof.id;
+          title.setAttribute("x", `${labelX}`);
+          title.classList.add("facade-roof-label-title");
+          const details = document.createElementNS(svgNamespace, "tspan");
+          const roofWidth = geometry.longitudinal ? geometry.x1 - geometry.x0 : geometry.y1 - geometry.y0;
+          const roofLength = geometry.longitudinal ? geometry.y1 - geometry.y0 : geometry.x1 - geometry.x0;
+          details.textContent = `l: ${plan.formatMeters(roofLength)}m w: ${plan.formatMeters(roofWidth)}m h: ${plan.formatMeters(geometry.rise)}m`;
+          details.setAttribute("x", `${labelX}`);
+          details.setAttribute("dy", "1.2em");
+          details.classList.add("facade-roof-label-details");
+          label.append(title, details);
+          roofFace.append(label);
         }
-        markRoofElements();
       });
 
       const facadeWalls = [facadeWall];
@@ -5105,9 +5212,26 @@ const FloorPlanFacades = {
             railing.setAttribute("height", `${height * scale}`);
             railing.classList.add("facade-railing");
             railing.dataset.id = item.dataset?.id || item.id || "";
-            svg.append(railing);
+            const near = side ? itemValue(item, "x") : itemValue(item, "y");
+            const far = near + (side ? itemValue(item, "w") : itemValue(item, "l"));
+            addFace(facadeEdge === "min" ? near : far, [railing]);
           }
         });
+
+      const appendWallOutline = (polygons, className, id) => {
+        const edges = FloorPlanWalls.elevationOutline(polygons);
+        const outline = document.createElementNS(svgNamespace, "path");
+        outline.setAttribute("d", edges.map(([coordinate, z], i) =>
+          `${i % 2 ? "L" : "M"}${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`,
+        ).join(" "));
+        outline.classList.add(className);
+        outline.dataset.id = id || "";
+        outline.style.fill = "none";
+        outline.style.stroke = getComputedStyle(plan.root).getPropertyValue("--theme-wall").trim() || "#222";
+        outline.style.strokeWidth = "1.5";
+        svg.append(outline);
+        return outline;
+      };
 
       const sectionPath = (start, end, from, to, baseStart, baseEnd, top, roofOnly = false) => {
         const polygons = FloorPlanWalls.roofSection(
@@ -5118,19 +5242,38 @@ const FloorPlanFacades = {
         ).join(" ") + " Z").join(" ");
         return { path, polygons };
       };
-      const roomSection = (room, start, end, base, top) => {
+      const roomSection = (room, geometry, compoundPart, start, end, base, top) => {
+        const value = (property) => compoundPart
+          ? property === "x0" ? geometry.x : property === "x1" ? geometry.x + geometry.w
+            : property === "y0" ? geometry.y : geometry.y + geometry.l
+          : geometry[property]();
         const depth = side
-          ? facadeEdge === "min" ? room.x0() : room.x1()
-          : facadeEdge === "min" ? room.y0() : room.y1();
-        return sectionPath(start, end, side ? [depth, start] : [start, depth],
-          side ? [depth, end] : [end, depth], base, base, top);
+          ? facadeEdge === "min" ? value("x0") : value("x1")
+          : facadeEdge === "min" ? value("y0") : value("y1");
+        const roomId = String(room.dataset.id || "");
+        const wall = [...(plan.walls?.values() ?? [])].find((candidate) =>
+          candidate.sourceSides?.some((source) => source.roomId === roomId && source.side === facadeWall));
+        const polygons = FloorPlanWalls.wallElevation({
+          from: side ? [depth, start] : [start, depth],
+          to: side ? [depth, end] : [end, depth],
+          thickness: wall?.thickness ?? Number(plan.catalog.walls?.thickness ?? 0.12),
+          baseStart: base, baseEnd: base,
+          top: plan.roomDefinitions?.get(roomId)?.top !== undefined ? wall?.z1 ?? top : top,
+          roofOnly: wall?.roofOnly,
+          undersideLimits: wall?.undersideLimits ?? FloorPlanWalls.undersideLimits(plan,
+            plan.roomDefinitions?.get(roomId)?.top, Number(plan.catalog.walls?.thickness ?? 0.12) / 2),
+        }, roofLimits, side);
+        const path = polygons.map((polygon) => polygon.map(([coordinate, z], i) =>
+          `${i ? "L" : "M"}${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`,
+        ).join(" ") + " Z").join(" ");
+        return { path, polygons };
       };
 
       const roofBehindRoom = (room) => {
         const [roomStart, roomEnd] = roomFacadeSpan(room);
         const roomDepth = roomFacadeDepth(room);
         return facadeRoofs.some((roof) => {
-          if (roof.type !== "gable") return false;
+          if (!["gable", "shed"].includes(roof.type)) return false;
           const geometry = roofGeometry(roof);
           if (!geometry || !roofReachesFacade(geometry)) return false;
           const [roofStart, roofEnd] = roofFacadeSpan(geometry);
@@ -5163,9 +5306,9 @@ const FloorPlanFacades = {
         const z0 = compoundPart ? geometry.z0 : room.z0();
         const z1 = compoundPart ? geometry.z1 : room.z1();
         const occluder = document.createElementNS(svgNamespace, "path");
-        occluder.setAttribute("d", roomSection(room, start, end, z0, z1).path);
+        occluder.setAttribute("d", roomSection(room, geometry, compoundPart, start, end, z0, z1).path);
         occluder.classList.add("facade-occluder");
-        svg.append(occluder);
+        addFace(roomFacadeDepth(room), [occluder]);
       });
 
       surfaceRooms.forEach(({ room, geometry, compoundPart }) => {
@@ -5194,7 +5337,7 @@ const FloorPlanFacades = {
           (compoundPart ? geometry.z1 : geometry.z1()) - z0,
           0,
         );
-        const section = roomSection(room, start, end, z0, z0 + height);
+        const section = roomSection(room, geometry, compoundPart, start, end, z0, z0 + height);
         if (!section.polygons.length) return;
         const tops = section.polygons.flat().map(([, z]) => z);
         const topStart = Math.max(...tops);
@@ -5202,10 +5345,13 @@ const FloorPlanFacades = {
         const rect = document.createElementNS(svgNamespace, "path");
         rect.setAttribute("d", section.path);
         rect.classList.add("facade-room");
+        rect.style.stroke = "none";
         rect.dataset.id = compoundPart
           ? `${room.dataset.id || ""}.${geometry.id || "part"}`
           : room.dataset.id || "";
         svg.append(rect);
+        const roomOutline = appendWallOutline(section.polygons, "facade-room-outline", rect.dataset.id);
+        const roomFace = addFace(roomFacadeDepth(room), [rect, roomOutline], true);
 
         const roomLabel = compoundPart
           ? ""
@@ -5230,7 +5376,7 @@ const FloorPlanFacades = {
           dimensions.setAttribute("dy", "1.2em");
           dimensions.classList.add("facade-room-label-details");
           label.append(title, dimensions);
-          svg.append(label);
+          roomFace.append(label);
         }
 
       });
@@ -5284,39 +5430,38 @@ const FloorPlanFacades = {
           projectedIndependentWalls.push({ wall, segmentIndex, depth, start, end, startBase, endBase, startPoint, endPoint });
         });
       });
+      const independentWallFaces = new Map();
       projectedIndependentWalls
         .sort((first, second) => facadeEdge === "min"
           ? second.depth - first.depth
           : first.depth - second.depth)
-        .forEach(({ wall, segmentIndex, start, end, startBase, endBase, startPoint, endPoint }) => {
+        .forEach(({ wall, segmentIndex, depth, start, end, startBase, endBase, startPoint, endPoint }) => {
           const polygons = FloorPlanWalls.wallElevation({
             from: startPoint, to: endPoint, thickness: wall.thickness,
             baseStart: startBase, baseEnd: endBase, top: wall.topZ,
             roofOnly: wall.top === "roof",
+            undersideLimits: wall.undersideLimits,
           }, roofLimits, side);
           if (!polygons.length) return;
-          const path = polygons.map((polygon) => polygon.map(([coordinate, z], i) =>
-            `${i ? "L" : "M"}${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`,
-          ).join(" ") + " Z").join(" ");
-          const face = document.createElementNS(svgNamespace, "path");
-          face.setAttribute("d", path);
-          face.classList.add("facade-independent-wall");
-          face.dataset.wallId = wall.id;
-          face.dataset.segment = String(segmentIndex);
-          face.style.fill = wall.color
-            ? plan.themeFillColor(wall.color)
-            : getComputedStyle(plan.root)
-                .getPropertyValue("--theme-wall-fill").trim() || "#f7f7f4";
-          face.style.stroke = getComputedStyle(plan.root)
-            .getPropertyValue("--theme-wall").trim() || "#222";
-          face.style.strokeWidth = "1.5";
-          svg.append(face);
+          // Adjacent segments in the same facade plane share one silhouette.
+          // Outlining each separately exposes their internal vertical seam.
+          const key = `${wall.id}:${depth.toFixed(8)}`;
+          if (!independentWallFaces.has(key)) independentWallFaces.set(key, { wall, depth, polygons: [] });
+          independentWallFaces.get(key).polygons.push(...polygons);
         });
-
-      const foregroundRoofSelector =
-        ".facade-roof, .facade-roof-eave, .facade-roof-ridge, .facade-roof-label";
-      svg.querySelectorAll(foregroundRoofSelector).forEach((element) => {
-        if (element.dataset.roofInFront === "true") svg.append(element);
+      independentWallFaces.forEach(({ wall, depth, polygons }) => {
+        const face = document.createElementNS(svgNamespace, "path");
+        face.setAttribute("d", polygons.map((polygon) => polygon.map(([coordinate, z], i) =>
+          `${i ? "L" : "M"}${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`,
+        ).join(" ") + " Z").join(" "));
+        face.classList.add("facade-independent-wall");
+        face.dataset.wallId = wall.id;
+        face.style.fill = wall.color ? plan.themeFillColor(wall.color)
+          : getComputedStyle(plan.root).getPropertyValue("--theme-wall-fill").trim() || "#f7f7f4";
+        face.style.stroke = "none";
+        svg.append(face);
+        const outline = appendWallOutline(polygons, "facade-independent-wall-outline", wall.id);
+        addFace(depth, [face, outline], true);
       });
 
       facadeOpenings
@@ -5339,7 +5484,7 @@ const FloorPlanFacades = {
           svg.append(clip);
           const featureGroup = document.createElementNS(svgNamespace, "g");
           featureGroup.setAttribute("clip-path", `url(#${clipId})`);
-          svg.append(featureGroup);
+          addFace(depth, [featureGroup]);
           const rect = document.createElementNS(svgNamespace, "rect");
           rect.setAttribute("x", `${(start - min + padding) * scale}`);
           rect.setAttribute("y", `${(floorHeight - z0 - height + padding) * scale}`);
@@ -5389,9 +5534,43 @@ const FloorPlanFacades = {
           }
         });
 
-      svg.querySelectorAll(".facade-railing").forEach((railing) => {
-        svg.append(railing);
+      // Clip hidden edges and labels as well as fills. Painter ordering alone
+      // allows rear annotations to leak through translucent surfaces.
+      facadeFaces.forEach((face, faceIndex) => {
+        const occluders = this.occludingFaces(face, facadeFaces, facadeEdge);
+        if (!occluders.length) return;
+        const mask = document.createElementNS(svgNamespace, "mask");
+        const maskId = `facade-${index}-visibility-${faceIndex}`;
+        mask.id = maskId;
+        mask.setAttribute("maskUnits", "userSpaceOnUse");
+        mask.setAttribute("x", "0");
+        mask.setAttribute("y", `${viewY}`);
+        mask.setAttribute("width", `${viewWidth}`);
+        mask.setAttribute("height", `${viewHeight}`);
+        mask.style.maskType = "luminance";
+        const background = document.createElementNS(svgNamespace, "rect");
+        background.setAttribute("x", "0");
+        background.setAttribute("y", `${viewY}`);
+        background.setAttribute("width", `${viewWidth}`);
+        background.setAttribute("height", `${viewHeight}`);
+        background.setAttribute("fill", "white");
+        mask.append(background);
+        occluders.forEach((other) => {
+          const silhouette = other.occluder.cloneNode(false);
+          silhouette.removeAttribute("class");
+          silhouette.removeAttribute("style");
+          silhouette.setAttribute("fill", "black");
+          silhouette.setAttribute("stroke", "none");
+          if (other.group.classList.contains("facade-roof-face")) {
+            silhouette.classList.add("facade-roof-occlusion");
+          }
+          mask.append(silhouette);
+        });
+        defs.append(mask);
+        face.group.setAttribute("mask", `url(#${maskId})`);
       });
+      this.depthOrderedFaces(facadeFaces, facadeEdge)
+        .forEach(({ group }) => svg.append(group));
 
       if (frontAligned && plan.terrainReference) {
         const profile = plan.terrainReference;
@@ -5472,6 +5651,7 @@ const FloorPlanFacades = {
           : plan.secondaryFacadeLayer || plan.facadeLayer;
       target.append(figure);
     });
+    this.updateRoofVisibility(plan);
   },
 };
 
@@ -5617,6 +5797,7 @@ const FloorPlan3DWalls = {
     }));
     const cuts = [...new Set([0, length, ...holes.flatMap((hole) => [hole.x0, hole.x1])])].sort((a, b) => a - b);
     const vertices = [];
+    const wallSolids = [];
     for (let i = 0; i < cuts.length - 1; i += 1) {
       const start = cuts[i], end = cuts[i + 1];
       const active = holes.filter((hole) => hole.x0 < end && hole.x1 > start).sort((a, b) => a.z0 - b.z0);
@@ -5636,7 +5817,8 @@ const FloorPlan3DWalls = {
           wall.from[0] + x * Math.cos(angle) - y * Math.sin(angle),
           wall.from[1] + x * Math.sin(angle) + y * Math.cos(angle), z,
         ])) : faces;
-        FloorPlanWalls.roofSolids(worldFaces, roofLimits, wall.roofOnly).forEach((solid) => {
+        FloorPlanWalls.wallSolids(worldFaces, roofLimits, wall.roofOnly, wall.undersideLimits).forEach((solid) => {
+          wallSolids.push(solid);
           solid.forEach((face) => {
             for (let j = 1; j < face.length - 1; j += 1) vertices.push(...face[0], ...face[j], ...face[j + 1]);
           });
@@ -5653,8 +5835,12 @@ const FloorPlan3DWalls = {
     if (wall.pathSegment !== undefined) mesh.userData.pathSegment = wall.pathSegment;
     mesh.renderOrder = 1;
     scene.add(mesh);
+    const outlineGeometry = new THREE.BufferGeometry();
+    outlineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(
+      FloorPlanWalls.outlineSegments(wallSolids).flat(), 3,
+    ));
     const outline = new THREE.LineSegments(
-      new THREE.EdgesGeometry(geometry),
+      outlineGeometry,
       wallLineMaterial,
     );
     scene.add(outline);
@@ -5683,6 +5869,93 @@ const FloorPlan3DWalls = {
 
 
 const FloorPlan3DElements = {
+  heightMaterial(plan, THREE, baseMaterial, stair, z) {
+    if (!stair.stairGradient) return baseMaterial;
+    const styles = getComputedStyle(plan.root);
+    const opaque = (value) => value.replace(/^rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)$/, "rgb($1,$2,$3)");
+    const low = new THREE.Color(opaque(styles.getPropertyValue("--theme-circulation").trim()));
+    const high = new THREE.Color(opaque(styles.getPropertyValue("--theme-roof-gradient-dark").trim()));
+    const ratio = 1 - FloorPlanGeometry.stairGradientRatio(z, stair.stairGradient);
+    const material = baseMaterial.clone();
+    // Match the sRGB interpolation used by color-mix in the plan view.
+    material.color.copy(low.convertLinearToSRGB().lerp(high.convertLinearToSRGB(), ratio).convertSRGBToLinear());
+    return material;
+  },
+
+  renderItems({ plan, THREE, scene, wallMaterial, finite, reportInvalid }) {
+    (plan.allItems ?? []).forEach((item) => {
+      const classes = String(item.classes || "").split(/\s+/);
+      if (classes.includes("railing")) return;
+      const kind = ["queen-bed", "twin-bed", "car", "table", "washing-machine", "three-seat-sofa", "armchair", "fireplace"]
+        .find((name) => item.type === name || classes.includes(name));
+      const defaults = { car: 1.45, table: 0.75, fireplace: 1.8 };
+      const x = Number(item.x), y = Number(item.y), w = Number(item.w), l = Number(item.l);
+      const z0 = Number(item.z0 ?? 0);
+      const configuredHeight = Number(item.h ?? Number(item.z1) - z0);
+      const h = configuredHeight > 0 ? configuredHeight : (defaults[kind] ?? 0.6);
+      const rotation = Number(item.rotation ?? 0);
+      if (!finite(x, y, w, l, z0, h, rotation) || w <= 0 || l <= 0 || h <= 0 || configuredHeight < 0) {
+        reportInvalid("item", item.id || item.title || item.label);
+        return;
+      }
+      const material = wallMaterial.clone();
+      if (item.color) {
+        const color = plan.themeFillColor(item.color).replace(/var\((--[\w-]+)\)/g,
+          (_match, property) => getComputedStyle(plan.root).getPropertyValue(property).trim());
+        const rgba = color.match(/^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/i);
+        material.color.set(rgba ? `rgb(${rgba[1]}, ${rgba[2]}, ${rgba[3]})` : color);
+        if (rgba) {
+          material.opacity *= Number(rgba[4]);
+          material.transparent = material.opacity < 1;
+        }
+      }
+      const detailMaterial = (color) => {
+        const result = material.clone();
+        result.color.set(color);
+        return result;
+      };
+      const light = detailMaterial("#e9e2d6");
+      const dark = detailMaterial("#44494b");
+      const glass = detailMaterial("#8ba3af");
+      const group = new THREE.Group();
+      group.position.set(x + w / 2, y + l / 2, z0);
+      group.rotation.z = rotation * Math.PI / 180;
+      group.userData.domainId = item.id || "";
+      group.userData.itemType = item.type || kind || "generic";
+      group.name = item.label || item.title || item.id || "Item";
+      // Fractions of the configured envelope keep every detail within its size.
+      const box = (sx, sy, sz, cx, cy, cz, fill = material) => {
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(w * sx, l * sy, h * sz), fill);
+        mesh.position.set(w * cx, l * cy, h * cz);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        mesh.userData.domainId = item.id || "";
+        group.add(mesh);
+      };
+      if (kind === "queen-bed" || kind === "twin-bed") {
+        box(1, 1, 0.45, 0, 0, 0.225);
+        box(0.96, 0.96, 0.4, 0, 0, 0.65, light);
+        box(0.8, 0.2, 0.15, 0, -0.33, 0.925, light);
+      } else if (kind === "car") {
+        box(0.9, 1, 0.48, 0, 0, 0.36);
+        box(0.76, 0.48, 0.4, 0, -0.03, 0.8, glass);
+        for (const cx of [-0.45, 0.45]) for (const cy of [-0.32, 0.32]) box(0.1, 0.16, 0.26, cx, cy, 0.13, dark);
+      } else if (kind === "table") {
+        box(1, 1, 0.1, 0, 0, 0.95);
+        for (const cx of [-0.42, 0.42]) for (const cy of [-0.4, 0.4]) box(0.08, 0.08, 0.9, cx, cy, 0.45);
+      } else if (kind === "three-seat-sofa" || kind === "armchair") {
+        box(1, 1, 0.45, 0, 0, 0.225);
+        box(1, 0.16, 0.55, 0, -0.42, 0.725);
+        for (const cx of [-0.44, 0.44]) box(0.12, 0.84, 0.35, cx, 0.08, 0.625);
+      } else {
+        box(1, 1, 1, 0, 0, 0.5);
+        if (kind === "washing-machine") box(0.55, 0.015, 0.55, 0, -0.4925, 0.5, glass);
+        if (kind === "fireplace") box(0.72, 0.015, 0.5, 0, -0.4925, 0.35, dark);
+      }
+      scene.add(group);
+    });
+  },
+
   render({ plan, THREE, scene, stairFlights, stairLandings = [], wallMaterial, wallLineMaterial, finite, reportInvalid }) {
     stairFlights.forEach((stair) => {
       const x = Number(stair.x);
@@ -5717,13 +5990,25 @@ const FloorPlan3DElements = {
         const center = axis === "horizontal"
           ? [x + offset + stepRun / 2, y + length / 2, z0 + stepHeight / 2]
           : [x + width / 2, y + offset + stepRun / 2, z0 + stepHeight / 2];
-        const step = new THREE.Mesh(
-          new THREE.BoxGeometry(...dimensions),
-          wallMaterial,
+        // Keep the space below the flight open. The underside follows the
+        // same ideal inclined plane used to limit walls, without a guessed
+        // structural thickness.
+        const faces = FloorPlanWalls.boxFaces(
+          center[0] - dimensions[0] / 2, center[1] - dimensions[1] / 2, z0,
+          center[0] + dimensions[0] / 2, center[1] + dimensions[1] / 2, z0 + stepHeight,
         );
+        const solid = FloorPlanWalls.clipSolid(faces,
+          FloorPlanWalls.stairUndersidePlane(stair).map((value) => -value));
+        const vertices = [];
+        solid.forEach((face) => {
+          for (let i = 1; i < face.length - 1; i++) vertices.push(...face[0], ...face[i], ...face[i + 1]);
+        });
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.computeVertexNormals();
+        const step = new THREE.Mesh(geometry, this.heightMaterial(plan, THREE, wallMaterial, stair, z0 + stepHeight));
         step.castShadow = true;
         step.receiveShadow = true;
-        step.position.set(...center);
         step.userData.domainId = stair.id;
         step.userData.stepIndex = index;
         scene.add(step);
@@ -5737,9 +6022,9 @@ const FloorPlan3DElements = {
           reportInvalid("patamar de escada", landing.id);
           return;
         }
-        const landingMaterial = wallMaterial.clone();
+        const landingMaterial = this.heightMaterial(plan, THREE, wallMaterial, landing, z0).clone();
         landingMaterial.side = THREE.DoubleSide;
-        if (landing.color) {
+        if (landing.color && !landing.stairGradient) {
           const color = plan.themeFillColor(landing.color).replace(
             /var\((--[\w-]+)\)/g,
             (_match, property) => getComputedStyle(plan.root).getPropertyValue(property).trim(),
@@ -5789,154 +6074,42 @@ const FloorPlan3DElements = {
 
 
 const FloorPlan3DRoofs = {
-  render({
-    plan, THREE, scene, roofMaterial, roofLineMaterial,
-    finite, reportInvalid,
-  }) {
-    (plan.allRoofs || []).forEach((roof) => {
-      if (roof.type !== "gable") return;
-      const baseDefinition = roof.base ?? roof;
-      const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
-      let base;
-      try {
-        base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
-      } catch {
-        return;
-      }
-      if (!base) return;
-      const pitch = Number(roof.pitch);
-      if (!Number.isFinite(pitch)) return;
-      const baseX0 = Number(base.x0());
-      const baseX1 = Number(base.x1());
-      const baseY0 = Number(base.y0());
-      const baseY1 = Number(base.y1());
-      const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
-      const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
-      const span = roof.orientation === "longitudinal" ? baseX1 - baseX0 : baseY1 - baseY0;
-      const rise = (span / 2) * Math.tan((pitch * Math.PI) / 180);
-      const pitchTangent = Math.tan((pitch * Math.PI) / 180);
-      const z0 = roof.z0 === undefined
-        ? FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor)
-        : plan.resolve(roof.z0);
-      if (!finite(baseX0, baseX1, baseY0, baseY1, span, rise, z0) || span <= 0 || rise < 0) {
-        reportInvalid("telhado", roof.id);
-        return;
-      }
-
-      if (roof.orientation === "longitudinal") {
-        this.renderLongitudinal({
-          THREE, scene, baseX0, baseX1, baseY0, baseY1,
-          eave0, eave1, rake0, rake1, rise, pitchTangent, z0,
-          roofMaterial, roofLineMaterial,
-        });
-      } else {
-        this.renderTransverse({
-          THREE, scene, baseX0, baseX1, baseY0, baseY1, eave0, eave1, rake0,
-          rake1, rise, pitchTangent, z0, roofMaterial, roofLineMaterial,
-        });
-      }
-    });
-  },
-
-  renderLongitudinal({
-    THREE, scene, baseX0, baseX1, baseY0, baseY1,
-    eave0, eave1, rake0, rake1, rise, pitchTangent, z0,
-    roofMaterial, roofLineMaterial,
-  }) {
-    const roofX0 = baseX0 - eave0;
-    const roofX1 = baseX1 + eave1;
-    const roofY0 = baseY0 - rake0;
-    const roofY1 = baseY1 + rake1;
-    const ridgeX = (baseX0 + baseX1) / 2;
-    const makeSlope = (x0, z0AtEave, x1, z1AtRidge) => {
+  render({ plan, THREE, scene, roofMaterial, roofLineMaterial }) {
+    FloorPlanRoofs.intersectingSurfaces(plan).forEach(({ roof, polygons }) => {
+      if (!polygons.length) return;
+      const vertices = [];
+      polygons.forEach((polygon) => {
+        for (let i = 1; i < polygon.length - 1; i += 1) {
+          vertices.push(...polygon[0], ...polygon[i], ...polygon[i + 1]);
+        }
+      });
       const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(
-          [
-            x0, roofY0, z0AtEave,
-            x1, roofY0, z1AtRidge,
-            x1, roofY1, z1AtRidge,
-            x0, roofY1, z0AtEave,
-          ],
-          3,
-        ),
-      );
-      geometry.setIndex([0, 1, 2, 0, 2, 3]);
+      geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
       geometry.computeVertexNormals();
       const mesh = new THREE.Mesh(geometry, roofMaterial);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
+      mesh.userData.domainId = roof.id || "";
       mesh.renderOrder = 7;
       scene.add(mesh);
-    };
-    makeSlope(roofX0, z0 - eave0 * pitchTangent, ridgeX, z0 + rise);
-    makeSlope(ridgeX, z0 + rise, roofX1, z0 - eave1 * pitchTangent);
-    [roofY0, roofY1].forEach((y) => {
-      const rakeEdge = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(roofX0, y, z0 - eave0 * pitchTangent),
-          new THREE.Vector3(ridgeX, y, z0 + rise),
-          new THREE.Vector3(roofX1, y, z0 - eave1 * pitchTangent),
-        ]),
-        roofLineMaterial,
-      );
-      rakeEdge.renderOrder = 8;
-      scene.add(rakeEdge);
+      const lines = new THREE.BufferGeometry();
+      lines.setAttribute("position", new THREE.Float32BufferAttribute(
+        FloorPlanRoofs.surfaceEdges(polygons).flat(), 3,
+      ));
+      const outline = new THREE.LineSegments(lines, roofLineMaterial);
+      outline.renderOrder = 8;
+      scene.add(outline);
     });
-  },
-
-  renderTransverse({
-    THREE, scene, baseX0, baseX1, baseY0, baseY1, eave0, eave1, rake0, rake1,
-    rise, pitchTangent, z0, roofMaterial, roofLineMaterial,
-  }) {
-    const roofX0 = baseX0 - rake0;
-    const roofX1 = baseX1 + rake1;
-    const roofY0 = baseY0 - eave0;
-    const roofY1 = baseY1 + eave1;
-    const ridgeY = (baseY0 + baseY1) / 2;
-    const makeSlope = (y0, zStart, y1, zEnd) => {
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(
-          [
-            roofX0, y0, zStart,
-            roofX1, y0, zStart,
-            roofX1, y1, zEnd,
-            roofX0, y1, zEnd,
-          ],
-          3,
-        ),
-      );
-      geometry.setIndex([0, 1, 2, 0, 2, 3]);
-      geometry.computeVertexNormals();
-      const mesh = new THREE.Mesh(geometry, roofMaterial);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      mesh.renderOrder = 7;
-      scene.add(mesh);
-    };
-    makeSlope(roofY0, z0 - eave0 * pitchTangent, ridgeY, z0 + rise);
-    makeSlope(ridgeY, z0 + rise, roofY1, z0 - eave1 * pitchTangent);
-    const roofLines = new THREE.LineSegments(
-      new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(roofX0, roofY0, z0 - eave0 * pitchTangent),
-        new THREE.Vector3(roofX1, roofY0, z0 - eave0 * pitchTangent),
-        new THREE.Vector3(roofX0, ridgeY, z0 + rise),
-        new THREE.Vector3(roofX1, ridgeY, z0 + rise),
-        new THREE.Vector3(roofX0, roofY1, z0 - eave1 * pitchTangent),
-        new THREE.Vector3(roofX1, roofY1, z0 - eave1 * pitchTangent),
-      ]),
-      roofLineMaterial,
-    );
-    roofLines.renderOrder = 8;
-    scene.add(roofLines);
   },
 };
 
 
 const FloorPlan3DSun = {
+  seasonDates: {
+    "summer-solstice": "2026-12-21",
+    equinox: "2026-03-20",
+    "winter-solstice": "2026-06-21",
+  },
   parseAngle(value) {
     if (typeof value === "number") return value;
     const text = String(value ?? "").trim();
@@ -5957,7 +6130,7 @@ const FloorPlan3DSun = {
       .split(":")
       .map(Number);
     const season = solar.season ?? "equinox";
-    const date = solar.dates?.[season] ?? solar.date ?? "2026-03-20";
+    const date = solar.dates?.[season] ?? solar.date ?? this.seasonDates[season] ?? this.seasonDates.equinox;
     const utcOffset = Number(solar.utc_offset ?? -3);
     if (
       ![latitude, longitude, hours, minutes, utcOffset].every(Number.isFinite) ||
@@ -6099,7 +6272,43 @@ window.FloorPlan3DSun = FloorPlan3DSun;
  * element group to a focused renderer in this directory.
  */
 const FloorPlanFacades3D = {
+  floorView(plan) {
+    const floors = plan.currentConfig?.floors;
+    if (!floors?.length || plan.showAllFloors) return plan;
+    const index = Math.max(0, floors.findIndex((floor) => floor.id === plan.currentFloorId));
+    const floor = floors[index];
+    const z0 = Number(floor.z0);
+    const z1 = index + 1 < floors.length ? Number(floors[index + 1].z0) : Infinity;
+    const inFloor = (entry) => entry.floorId === floor.id;
+    const clipWall = (wall) => {
+      if (wall.scopeFloorId && wall.scopeFloorId !== floor.id) return [];
+      const bottom = Math.max(Number(wall.z0), z0);
+      const top = Math.min(Number(wall.z1), z1);
+      if (top - bottom <= 1e-9) return [];
+      return [{ ...wall, z0: bottom, z1: top, h: top - bottom,
+        from: [wall.from[0], wall.from[1], bottom],
+        to: [wall.to[0], wall.to[1], bottom],
+        ...(wall.pos ? { pos: [wall.pos[0], wall.pos[1], bottom], size: [wall.size[0], wall.size[1], top - bottom] } : {}),
+      }];
+    };
+    const view = Object.create(plan);
+    view.allRooms = (plan.allRooms ?? []).filter(inFloor);
+    view.allItems = (plan.allItems ?? []).filter(inFloor);
+    view.allOpenings = (plan.allOpenings ?? []).filter(inFloor);
+    view.allWindows = (plan.allWindows ?? []).filter(inFloor);
+    view.wallRenderParts = (plan.wallRenderParts ?? []).flatMap(clipWall);
+    view.independentWalls = new Map([...(plan.independentWalls ?? [])].flatMap(([id, wall]) => {
+      if (wall.scopeFloorId && wall.scopeFloorId !== floor.id) return [];
+      const bottom = Math.max(wall.z0, z0), top = Math.min(wall.topZ, z1);
+      return top - bottom > 1e-9 ? [[id, { ...wall, z0: bottom, topZ: top }]] : [];
+    }));
+    view.visibleFloor = floor;
+    view.visibleFloorRange = [z0, z1];
+    return view;
+  },
+
   render(plan, { direction = "front" } = {}) {
+    plan = this.floorView(plan);
     const container = plan.facade3dLayer;
     if (!container) return;
     container._threeRenderer?.dispose();
@@ -6173,7 +6382,7 @@ const FloorPlanFacades3D = {
         const floor = floors[floorIndex] || floors[0] || {};
         const floorZ0 = Number(floor.z0 ?? 0);
         const nextZ0 = Number(floors[floorIndex + 1]?.z0);
-        const wallMaxHeight = Number(floor.wall_max_height ?? 0);
+        const wallMaxHeight = Number(floor.ceiling_height ?? floor.wall_max_height ?? 0);
         const defaultHeight = Number.isFinite(nextZ0)
           ? Math.min(Math.max(0, nextZ0 - floorZ0), wallMaxHeight)
           : wallMaxHeight;
@@ -6211,31 +6420,46 @@ const FloorPlanFacades3D = {
 
     const stairFlights = [];
     const stairLandings = [];
-    floors.forEach((floor) => {
+    floors.filter((floor) => !plan.visibleFloor || floor === plan.visibleFloor).forEach((floor) => {
       (floor?.rooms ?? []).forEach((definition) => {
         if (isStairFlight(definition)) {
-          stairFlights.push(plan.normalizeGeometryAtFloor(definition, floor));
+          const part = plan.normalizeGeometryAtFloor(definition, floor);
+          stairFlights.push({ ...part, stairGradient: FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), [part]) });
         }
         if (String(definition.classes || "").split(/\s+/).includes("stair-landing")) {
-          stairLandings.push(plan.normalizeGeometryAtFloor(definition, floor));
+          const part = plan.normalizeGeometryAtFloor(definition, floor);
+          stairLandings.push({ ...part, stairGradient: FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), [part]) });
         }
         if (!Array.isArray(definition.parts)) return;
         const previousHeight = plan.currentFloorHeight;
         plan.currentFloorHeight = Number(floor?.z0 ?? 0);
         try {
           const parts = plan.normalizeParts(definition.parts);
-          stairFlights.push(...parts.filter(isStairFlight));
+          const stairParts = parts.filter((part) => isStairFlight(part) ||
+            String(part.classes || "").split(/\s+/).includes("stair-landing"));
+          const range = FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), stairParts);
+          stairFlights.push(...parts.filter(isStairFlight).map((part) => ({ ...part, stairGradient: range })));
           stairLandings.push(...parts.filter((part) =>
             String(part.classes || "").split(/\s+/).includes("stair-landing"),
-          ));
+          ).map((part) => ({ ...part, stairGradient: range })));
         } finally {
           plan.currentFloorHeight = previousHeight;
         }
       });
     });
 
+    if (plan.visibleFloorRange) {
+      const [bottom, top] = plan.visibleFloorRange;
+      for (const parts of [stairFlights, stairLandings]) {
+        for (let i = parts.length - 1; i >= 0; i -= 1) {
+          const part = parts[i];
+          if (part.z0 >= top || part.z1 < bottom) parts.splice(i, 1);
+        }
+      }
+    }
+
     if (!rooms.length) {
-      container.textContent = "Nenhum cômodo disponível para esta fachada.";
+      container.textContent = "Nenhum cômodo disponível para este piso.";
       return;
     }
 
@@ -6268,6 +6492,18 @@ const FloorPlanFacades3D = {
       drawingBounds.y1 = Math.max(drawingBounds.y1, Number(stair.y) + Number(stair.l));
     });
     (plan.showRoofs ? plan.allRoofs || [] : []).forEach((roof) => {
+      if (roof.type === "shed") {
+        try {
+          const geometry = FloorPlanRoofs.shedGeometry(plan, roof);
+          drawingBounds.x0 = Math.min(drawingBounds.x0, geometry.x0);
+          drawingBounds.x1 = Math.max(drawingBounds.x1, geometry.x1);
+          drawingBounds.y0 = Math.min(drawingBounds.y0, geometry.y0);
+          drawingBounds.y1 = Math.max(drawingBounds.y1, geometry.y1);
+          drawingBounds.z0 = Math.min(drawingBounds.z0, geometry.minZ);
+          drawingBounds.z1 = Math.max(drawingBounds.z1, geometry.peakZ);
+        } catch { /* A validação do telhado apresenta o erro. */ }
+        return;
+      }
       if (roof.type !== "gable") return;
       try {
         const baseDefinition = roof.base ?? roof;
@@ -6490,10 +6726,13 @@ const FloorPlanFacades3D = {
       finite,
       reportInvalid,
     };
-    FloorPlan3DSite.render(context);
-    FloorPlan3DWalls.render(context);
-    FloorPlan3DElements.render(context);
-    if (plan.showRoofs) FloorPlan3DRoofs.render(context);
+    if (!plan.showOnlyRoofs) {
+      FloorPlan3DSite.render(context);
+      FloorPlan3DWalls.render(context);
+      FloorPlan3DElements.render(context);
+      FloorPlan3DElements.renderItems(context);
+    }
+    if (plan.showRoofs || plan.showOnlyRoofs) FloorPlan3DRoofs.render(context);
 
     const updateCamera = () => {
       positionCamera();
@@ -6536,6 +6775,206 @@ window.FloorPlanFacades3D = FloorPlanFacades3D;
 
 
 const FloorPlanRoofs = {
+  axisLabel(plan, roof, length) {
+    if (roof.type !== "shed") return `${plan.roofOrientationLabel(roof.orientation)} · ${plan.formatMeters(length)} m`;
+    const slope = roof.slope ?? (roof.orientation === "longitudinal" ? "right" : "bottom");
+    const direction = { top: "frente", bottom: "fundos", left: "esquerda", right: "direita" }[slope];
+    return `Caimento: ${direction} · borda alta: ${plan.formatMeters(length)} m`;
+  },
+
+  // z0 é a cota da borda baixa na base, antes do avanço dos beirais.
+  shedGeometry(plan, roof, includeEaves = true) {
+    if (!["longitudinal", "transverse"].includes(roof.orientation)) {
+      throw new Error('Telhado shed precisa de orientação "longitudinal" ou "transverse"');
+    }
+    const longitudinal = roof.orientation === "longitudinal";
+    const slope = roof.slope ?? (longitudinal ? "right" : "bottom");
+    if (!(longitudinal ? ["left", "right"] : ["top", "bottom"]).includes(slope)) {
+      throw new Error("O caimento (slope) precisa corresponder à orientação do telhado shed");
+    }
+    const floor = this.floorForRoof(plan, roof, roof.base ?? roof);
+    const base = this.resolveBase(plan, roof.base ?? roof, floor);
+    const pitch = Number(roof.pitch);
+    if (!(pitch > 0 && pitch < 90)) throw new Error("A inclinação do telhado precisa estar entre 0 e 90 graus");
+    const eave = this.overhangPair(roof.eave), rake = this.overhangPair(roof.rake);
+    if (![...eave, ...rake].every((value) => Number.isFinite(value) && value >= 0)) {
+      throw new Error("Os beirais do telhado precisam ser números não negativos");
+    }
+    const [e0, e1] = includeEaves ? eave : [0, 0];
+    const [r0, r1] = rake;
+    const x0 = base.x0() - (longitudinal ? e0 : r0), x1 = base.x1() + (longitudinal ? e1 : r1);
+    const y0 = base.y0() - (longitudinal ? r0 : e0), y1 = base.y1() + (longitudinal ? r1 : e1);
+    const start = longitudinal ? base.x0() : base.y0(), end = longitudinal ? base.x1() : base.y1();
+    const z0 = roof.z0 === undefined ? this.baseCeilingZ(plan, base, 0, floor) : plan.resolve(roof.z0);
+    if (![x0, x1, y0, y1, z0].every(Number.isFinite) || x1 <= x0 || y1 <= y0) throw new Error("Base inválida para o telhado shed");
+    const tangent = Math.tan(pitch * Math.PI / 180);
+    const lowAtStart = slope === "left" || slope === "top";
+    const gradient = (lowAtStart ? 1 : -1) * tangent;
+    const intercept = z0 - gradient * (lowAtStart ? start : end);
+    const at = (x, y) => [x, y, intercept + gradient * (longitudinal ? x : y)];
+    const polygon = [at(x0, y0), at(x1, y0), at(x1, y1), at(x0, y1)];
+    const rise = (end - start) * tangent;
+    const high = lowAtStart ? end : start;
+    return {
+      base, longitudinal, slope, pitch, eave, rake, z0, baseElevation: z0, rise,
+      baseSpan: end - start, baseX0: base.x0(), baseX1: base.x1(), baseY0: base.y0(), baseY1: base.y1(),
+      eave0: eave[0], eave1: eave[1], pitchTangent: tangent,
+      x0, x1, y0, y1, roofWidth: x1 - x0, roofLength: y1 - y0,
+      ridgeLength: longitudinal ? y1 - y0 : x1 - x0,
+      ridgeX0: longitudinal ? high : x0, ridgeX1: longitudinal ? high : x1,
+      ridgeY0: longitudinal ? y0 : high, ridgeY1: longitudinal ? y1 : high,
+      surfaceArea: (x1 - x0) * (y1 - y0) / Math.cos(pitch * Math.PI / 180),
+      minZ: Math.min(...polygon.map((point) => point[2])),
+      peakZ: Math.max(...polygon.map((point) => point[2])),
+      bounds: [[-1, 0, 0, x0], [1, 0, 0, -x1], [0, -1, 0, y0], [0, 1, 0, -y1]],
+      slopes: [longitudinal ? [-gradient, 0, 1, -intercept] : [0, -gradient, 1, -intercept]],
+      polygon,
+    };
+  },
+
+  clipPolygon(points, plane) {
+    if (!points.length) return [];
+    const distances = points.map((point) => plane.slice(0, 3).reduce((sum, value, i) => sum + value * point[i], plane[3]));
+    if (distances.every((value) => value <= 1e-8)) return points;
+    if (distances.every((value) => value >= -1e-8)) return [];
+    const result = [];
+    points.forEach((point, i) => {
+      const next = points[(i + 1) % points.length];
+      const a = distances[i], b = distances[(i + 1) % points.length];
+      if (a <= 1e-8) result.push(point);
+      if ((a < -1e-8 && b > 1e-8) || (a > 1e-8 && b < -1e-8)) {
+        result.push(point.map((value, axis) => value + (next[axis] - value) * a / (a - b)));
+      }
+    });
+    return result.length >= 3 ? result : [];
+  },
+
+  intersectingSurfaces(plan, roofs = plan.allRoofs ?? []) {
+    const definitions = roofs.flatMap((roof) => {
+      if (roof.type === "shed") {
+        try {
+          const geometry = this.shedGeometry(plan, roof);
+          const { base, longitudinal, x0, x1, y0, y1 } = geometry;
+          const bounds = [
+            [-1, 0, 0, longitudinal ? x0 : base.x0()],
+            [1, 0, 0, -(longitudinal ? x1 : base.x1())],
+            [0, -1, 0, longitudinal ? base.y0() : y0],
+            [0, 1, 0, -(longitudinal ? base.y1() : y1)],
+          ];
+          return [{ roof, polygons: [geometry.polygon], planes: [...bounds, ...geometry.slopes] }];
+        } catch { return []; }
+      }
+      if (roof.type !== "gable" || !["longitudinal", "transverse"].includes(roof.orientation)) return [];
+      try {
+        const floor = this.floorForRoof(plan, roof, roof.base ?? roof);
+        const base = this.resolveBase(plan, roof.base ?? roof, floor);
+        const longitudinal = roof.orientation === "longitudinal";
+        const [e0, e1] = this.overhangPair(roof.eave);
+        const [r0, r1] = this.overhangPair(roof.rake);
+        const x0 = base.x0() - (longitudinal ? e0 : r0), x1 = base.x1() + (longitudinal ? e1 : r1);
+        const y0 = base.y0() - (longitudinal ? r0 : e0), y1 = base.y1() + (longitudinal ? r1 : e1);
+        const start = longitudinal ? base.x0() : base.y0();
+        const end = longitudinal ? base.x1() : base.y1();
+        const tangent = Math.tan(Number(roof.pitch) * Math.PI / 180);
+        const z = roof.z0 === undefined ? this.baseCeilingZ(plan, base, 0, floor) : plan.resolve(roof.z0);
+        if (![x0, x1, y0, y1, tangent, z].every(Number.isFinite) || tangent < 0 || x1 <= x0 || y1 <= y0) return [];
+        const ridge = (start + end) / 2;
+        const rise = (end - start) * tangent / 2;
+        const slopes = longitudinal
+          ? [[-tangent, 0, 1, start * tangent - z], [tangent, 0, 1, -end * tangent - z]]
+          : [[0, -tangent, 1, start * tangent - z], [0, tangent, 1, -end * tangent - z]];
+        const at = (x, y) => [x, y, z + rise - Math.abs((longitudinal ? x : y) - ridge) * tangent];
+        const polygons = longitudinal ? [
+          [at(x0, y0), at(ridge, y0), at(ridge, y1), at(x0, y1)],
+          [at(ridge, y0), at(x1, y0), at(x1, y1), at(ridge, y1)],
+        ] : [
+          [at(x0, y0), at(x1, y0), at(x1, ridge), at(x0, ridge)],
+          [at(x0, ridge), at(x1, ridge), at(x1, y1), at(x0, y1)],
+        ];
+        // Rake extensions are drawn, but do not remove roofs beneath them.
+        // Eave bounds and the roof's slopes still participate in clipping.
+        const bounds = [
+          [-1, 0, 0, longitudinal ? x0 : base.x0()],
+          [1, 0, 0, -(longitudinal ? x1 : base.x1())],
+          [0, -1, 0, longitudinal ? base.y0() : y0],
+          [0, 1, 0, -(longitudinal ? base.y1() : y1)],
+        ];
+        return [{ roof, polygons, planes: [...bounds, ...slopes] }];
+      } catch {
+        return [];
+      }
+    });
+    return definitions.map((definition, index) => {
+      let polygons = definition.polygons;
+      // Uma cobertura inferior pode continuar sob os beirais de outro volume.
+      if (definition.roof.clip_intersections === false) return { roof: definition.roof, polygons };
+      definitions.forEach((other, otherIndex) => {
+        if (otherIndex === index) return;
+        polygons = polygons.flatMap((polygon) => {
+          // Coplanar overlap belongs to the earlier definition only.
+          let inside = polygon;
+          const outside = [];
+          for (const plane of other.planes) {
+            const distance = (point) => plane.slice(0, 3).reduce((sum, value, axis) => sum + value * point[axis], plane[3]);
+            if (otherIndex > index && plane[2] === 1 && inside.length && inside.every((point) => Math.abs(distance(point)) <= 1e-8)) {
+              outside.push(inside);
+              inside = [];
+              break;
+            }
+            const next = this.clipPolygon(inside, plane);
+            const remainder = this.clipPolygon(inside, plane.map((value) => -value));
+            if (remainder.length && !(next === inside && remainder === inside)) outside.push(remainder);
+            inside = next;
+            if (!inside.length) break;
+          }
+          return outside;
+        });
+      });
+      return { roof: definition.roof, polygons };
+    });
+  },
+
+  surfaceEdges(polygons) {
+    const vertices = polygons.flat();
+    const edges = new Map();
+    const key = (point) => point.map((value) => Math.round(value * 1e7)).join(",");
+    polygons.forEach((polygon) => {
+      const u = polygon[1].map((value, axis) => value - polygon[0][axis]);
+      const v = polygon[2].map((value, axis) => value - polygon[0][axis]);
+      const normal = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+      const magnitude = Math.hypot(...normal);
+      if (magnitude < 1e-10) return;
+      const unit = normal.map((value) => value / magnitude);
+      polygon.forEach((from, i) => {
+        const to = polygon[(i + 1) % polygon.length];
+        const delta = to.map((value, axis) => value - from[axis]);
+        const length2 = delta.reduce((sum, value) => sum + value * value, 0);
+        if (length2 < 1e-14) return;
+        const cuts = [0, 1];
+        vertices.forEach((point) => {
+          const t = delta.reduce((sum, value, axis) => sum + value * (point[axis] - from[axis]), 0) / length2;
+          if (t > 1e-8 && t < 1 - 1e-8 && point.every((value, axis) => Math.abs(value - from[axis] - t * delta[axis]) < 1e-7)) cuts.push(t);
+        });
+        cuts.sort((a, b) => a - b);
+        for (let j = 0; j < cuts.length - 1; j += 1) {
+          if (cuts[j + 1] - cuts[j] < 1e-8) continue;
+          const a = from.map((value, axis) => value + cuts[j] * delta[axis]);
+          const b = from.map((value, axis) => value + cuts[j + 1] * delta[axis]);
+          const id = [key(a), key(b)].sort().join(":");
+          const edge = edges.get(id);
+          if (!edge) edges.set(id, { a, b, count: 1, normal: unit, crease: false });
+          else {
+            edge.count += 1;
+            if (Math.abs(edge.normal.reduce((sum, value, axis) => sum + value * unit[axis], 0)) < 0.999999) edge.crease = true;
+          }
+        }
+      });
+    });
+    // Shared edges between slopes are ridges/valleys; shared coplanar edges
+    // are harmless subdivision seams and need no extra line.
+    return [...edges.values()].filter((edge) => edge.count === 1 || edge.crease).flatMap(({ a, b }) => [a, b]);
+  },
+
   asGeometryBox(base, label = "roof base") {
     if (typeof base?.w === "function" && typeof base?.l === "function") {
       return base;
@@ -6635,7 +7074,7 @@ const FloorPlanRoofs = {
 
     if (candidates[0]) return candidates[0].z1();
 
-    const wallMaxHeight = Number(owningFloor?.wall_max_height);
+    const wallMaxHeight = Number(owningFloor?.ceiling_height ?? owningFloor?.wall_max_height);
     if (baseZ0 > 0) return baseZ0;
     if (Number.isFinite(wallMaxHeight) && wallMaxHeight > 0) {
       return baseZ0 + wallMaxHeight;
@@ -6680,21 +7119,23 @@ const FloorPlanRoofs = {
       return element;
     };
 
+    const clippedRoofs = this.intersectingSurfaces(plan, plan.allRoofs?.length ? plan.allRoofs : roofs);
     roofs.forEach((roof, index) => {
       try {
-        if (roof.type !== "gable")
+        if (!["gable", "shed"].includes(roof.type))
           throw new Error(`Unsupported roof type: ${roof.type || "undefined"}`);
         const baseDefinition = roof.base ?? roof;
         if (!roof.base && !["from", "to", "rectangle", "pos", "size", "inset", "outset"].some((key) => roof[key] !== undefined)) {
-          throw new Error("A gable roof needs a base definition");
+          throw new Error("O telhado precisa de uma base");
         }
         if (!["longitudinal", "transverse"].includes(roof.orientation)) {
           throw new Error(
-            'A gable roof orientation must be "longitudinal" or "transverse"',
+            'A orientação do telhado precisa ser "longitudinal" ou "transverse"',
           );
         }
 
-        const base = FloorPlanRoofs.resolveBase(plan, baseDefinition);
+        const shed = roof.type === "shed" ? this.shedGeometry(plan, roof) : null;
+        const base = shed?.base ?? FloorPlanRoofs.resolveBase(plan, baseDefinition);
         const pitch = Number(roof.pitch);
         if (!(pitch > 0 && pitch < 90))
           throw new Error(
@@ -6713,7 +7154,7 @@ const FloorPlanRoofs = {
         const x1 = base.x1() + (longitudinal ? eave1 : rake1);
         const y0 = base.y0() - (longitudinal ? rake0 : eave0);
         const y1 = base.y1() + (longitudinal ? rake1 : eave1);
-        const z0 =
+        const z0 = shed ? shed.z0 :
           roof.z0 !== undefined
             ? plan.resolve(roof.z0)
             : FloorPlanRoofs.baseCeilingZ(plan, base);
@@ -6725,20 +7166,20 @@ const FloorPlanRoofs = {
         const baseX1 = base.x1();
         const baseY0 = base.y0();
         const baseY1 = base.y1();
-        const ridgeX = longitudinal ? (baseX0 + baseX1) / 2 : x0;
-        const ridgeY = longitudinal ? y0 : (baseY0 + baseY1) / 2;
-        const ridgeEndX = longitudinal ? ridgeX : x1;
-        const ridgeEndY = longitudinal ? y1 : ridgeY;
+        const ridgeX = shed ? shed.ridgeX0 : longitudinal ? (baseX0 + baseX1) / 2 : x0;
+        const ridgeY = shed ? shed.ridgeY0 : longitudinal ? y0 : (baseY0 + baseY1) / 2;
+        const ridgeEndX = shed ? shed.ridgeX1 : longitudinal ? ridgeX : x1;
+        const ridgeEndY = shed ? shed.ridgeY1 : longitudinal ? y1 : ridgeY;
         const ridgeLength = Math.hypot(ridgeEndX - ridgeX, ridgeEndY - ridgeY);
-        const rise = (baseSpan / 2) * Math.tan(radians);
+        const rise = shed ? shed.rise : (baseSpan / 2) * Math.tan(radians);
         roof.bounds = () =>
           FloorPlanGeometryBox.fromValues({
             x: x0,
             y: y0,
             w: x1 - x0,
             l: y1 - y0,
-            z0,
-            h: rise,
+            z0: shed ? shed.minZ : z0,
+            h: shed ? shed.peakZ - shed.minZ : rise,
           });
         roof.geometry = () => {
           throw new Error(
@@ -6762,10 +7203,25 @@ const FloorPlanRoofs = {
         const pridgex2 = ridgeEndX + offsetX;
         const ridgey2 = ridgeEndY + offsetY;
 
-        const polygon = create("polygon", {
-          points: `${px0},${py0} ${px1},${py0} ${px1},${py1} ${px0},${py1}`,
+        const surfaces = clippedRoofs.find((entry) => entry.roof === roof || (roof.id && entry.roof.id === roof.id))
+          ?? this.intersectingSurfaces(plan, [roof])[0];
+        if (!surfaces?.polygons.length) return;
+        const point = ([x, y]) => `${x + offsetX},${y + offsetY}`;
+        const polygon = create("path", {
+          d: surfaces.polygons.map((vertices) => vertices.map((vertex, i) => `${i ? "L" : "M"}${point(vertex)}`).join(" ") + " Z").join(" "),
           class: "roof-surface",
         });
+        polygon.style.stroke = "none";
+        const edges = this.surfaceEdges(surfaces.polygons);
+        const boundarySegments = [], ridgeSegments = [];
+        for (let edge = 0; edge < edges.length; edge += 2) {
+          const a = edges[edge], b = edges[edge + 1];
+          const segment = `M${point(a)} L${point(b)}`;
+          if (!shed && Math.abs(a[2] - z0 - rise) < 1e-7 && Math.abs(b[2] - z0 - rise) < 1e-7) ridgeSegments.push(segment);
+          else boundarySegments.push(segment);
+        }
+        const boundary = create("path", { d: boundarySegments.join(" "), class: "roof-surface", fill: "none" });
+        boundary.style.fill = "none";
         const gradientId = `roof-gradient-${index + 1}`;
         const roofStyle = getComputedStyle(plan.root);
         const gradientDark =
@@ -6799,13 +7255,7 @@ const FloorPlanRoofs = {
         defs.append(gradient);
         polygon.style.setProperty("fill", `url(#${gradientId})`);
 
-        const ridge = create("line", {
-          x1: pridgex,
-          y1: ridgey,
-          x2: pridgex2,
-          y2: ridgey2,
-          class: "roof-ridge",
-        });
+        const ridge = create("path", { d: ridgeSegments.join(" "), class: "roof-ridge", fill: "none" });
         const group = create("g", {
           class: "roof-plan",
           "data-id": roof.id || `roof-${index + 1}`,
@@ -6813,12 +7263,25 @@ const FloorPlanRoofs = {
         group.dataset.base =
           typeof baseDefinition === "string" ? baseDefinition : "inline-geometry";
         group.dataset.orientation = roof.orientation;
+        if (shed) group.dataset.slope = shed.slope;
         group.dataset.pitch = String(pitch);
         group.dataset.eave = JSON.stringify([eave0, eave1]);
         group.dataset.rake = JSON.stringify([rake0, rake1]);
         group.dataset.baseZ = String(z0);
         group.dataset.ridgeZ = String(z0 + rise);
-        group.append(defs, polygon, ridge);
+        group.append(defs, polygon, boundary, ridge);
+        if (shed) {
+          const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+          const sign = ["top", "left"].includes(shed.slope) ? -1 : 1;
+          const dx = longitudinal ? sign : 0, dy = longitudinal ? 0 : sign;
+          const tip = [cx + dx * 0.4, cy + dy * 0.4];
+          const arrow = create("path", {
+            d: `M${point([cx - dx * 0.4, cy - dy * 0.4])} L${point(tip)} M${point([tip[0] - dx * 0.18 - dy * 0.12, tip[1] - dy * 0.18 + dx * 0.12])} L${point(tip)} L${point([tip[0] - dx * 0.18 + dy * 0.12, tip[1] - dy * 0.18 - dx * 0.12])}`,
+            class: "roof-ridge",
+            "aria-label": "Direção do caimento",
+          });
+          group.append(arrow);
+        }
         if (roof.label) {
           const label = create("text", {
             x: (pridgex + pridgex2) / 2,
@@ -6836,7 +7299,7 @@ const FloorPlanRoofs = {
             dy: "1.25em",
             class: "roof-label-details",
           });
-          details.textContent = `Cumeeira: ${plan.formatMeters(ridgeLength)} m — Altura: ${plan.formatMeters(rise)} m — Inclinação: ${plan.formatMeters(pitch)}°`;
+          details.textContent = `${shed ? "Borda alta" : "Cumeeira"}: ${plan.formatMeters(ridgeLength)} m — Altura: ${plan.formatMeters(rise)} m — Inclinação: ${plan.formatMeters(pitch)}°`;
           label.append(title, details);
           group.append(label);
         }
@@ -6857,16 +7320,34 @@ window.FloorPlanRoofs = FloorPlanRoofs;
 
 
 const FloorPlanOpenings = {
+  verticalDefaults(plan) {
+    const defaults = {
+      door: { w: 0.8, z0: 0, h: 2.1 },
+      opening: { w: 1.0, z0: 0, h: 2.1 },
+      window: { w: 0.9, z0: 0.9, h: 1.5 },
+      ...(plan.catalog.openings || {}),
+    };
+    for (const type of Object.keys(defaults)) {
+      const configured = plan.currentConfig?.config?.openings?.[type] ?? {};
+      defaults[type] = { ...defaults[type] };
+      for (const key of ["w", "h", "z0"]) {
+        if (configured[key] !== undefined) defaults[type][key] = configured[key];
+      }
+    }
+    return defaults;
+  },
+
   roomOpenings(plan, floorConfig) {
     return (floorConfig.rooms ?? []).flatMap((room) =>
       (room.openings ?? []).map((opening) => {
         const from = String(opening.from ?? "").trim();
         const relativeWall = /^(top|right|bottom|left)$/.test(from);
-        return {
+        const result = {
           ...opening,
           from: relativeWall ? `${room.id}.${from}` : from,
           roomId: room.id,
         };
+        return window.FloorPlanParser?.copyLocation(opening, result) ?? result;
       }),
     );
   },
@@ -7140,12 +7621,7 @@ const FloorPlanOpenings = {
       throw new Error(`Unknown opening target: ${target}`);
     }
 
-    const verticalDefaults = {
-      door: { w: 0.8, z0: 0, h: 2.1 },
-      opening: { w: 1.0, z0: 0, h: 2.1 },
-      window: { w: 0.9, z0: 0.9, h: 1.5 },
-      ...(plan.catalog.openings || {}),
-    };
+    const verticalDefaults = this.verticalDefaults(plan);
     const defaults = Object.fromEntries(
       Object.entries(verticalDefaults).map(([key, definition]) => [
         key,
@@ -7344,6 +7820,107 @@ window.FloorPlanOpenings = FloorPlanOpenings;
 
 
 const FloorPlanWalls = {
+  stairUndersidePlane(stair, offset = 0) {
+    const alongX = stair.stairAxis === "horizontal";
+    const increasing = (stair.stairDirection !== "reverse") === (stair.stairRise !== "down");
+    const slope = stair.h / (alongX ? stair.w : stair.l) * (increasing ? 1 : -1);
+    const ax = alongX ? slope : 0, ay = alongX ? 0 : slope;
+    const intercept = stair.z0 + (increasing ? 0 : stair.h) - ax * stair.x - ay * stair.y - offset;
+    return [-ax, -ay, 1, -intercept];
+  },
+
+  // Rectangular footprints and planes describing the underside of overhead
+  // objects. Stair direction is resolved before building its inclined plane.
+  undersideLimits(plan, top, padding = 0) {
+    // IDs are the public format. Keep the former object form readable for
+    // previously saved plans; "roof" remains the existing roof-set alias.
+    if (top === "roof") return [];
+    if (typeof top === "string" || Array.isArray(top)) top = { under: top };
+    if (!top || top.under === undefined) return [];
+    const ids = Array.isArray(top.under) ? top.under : [top.under];
+    const offset = plan.resolve(top.offset ?? 0);
+    if (!ids.length || ids.some((id) => typeof id !== "string" || !id.trim()) ||
+      !Number.isFinite(offset) || offset < 0) {
+      throw new Error("O limite inferior precisa de referências e offset não negativo");
+    }
+    const floors = plan.currentConfig?.floors ?? [plan.currentConfig ?? {}];
+    const limits = ids.flatMap((id) => {
+      const roof = [...(plan.currentConfig?.roofs ?? []), ...floors.flatMap((floor) =>
+        (floor.roofs ?? []).map((entry) => ({ ...entry, floorId: floor.id })))].find((entry) => entry.id === id);
+      if (roof) {
+        const limits = this.roofLimits(plan, { ...plan.currentConfig, roofs: [roof],
+          ...(plan.currentConfig?.floors ? { floors: floors.map((floor) => ({ ...floor, roofs: [] })) } : {}),
+        });
+        return limits.map((limit) => ({ ...limit, id, peakZ: limit.peakZ - offset,
+          slopes: limit.slopes.map(([a, b, c, d]) => [a, b, c, d + c * offset]) }));
+      }
+      const owner = plan.partOwners?.get(id);
+      const room = plan.roomDefinitions?.get(owner ?? id);
+      if (room?.parts && !owner) {
+        return this.undersideLimits(plan, { under: room.parts.map((part) => part.id), offset }, padding);
+      }
+      const definition = owner ? room.parts.find((part) => part.id === id) : room;
+      const floor = floors.find((entry) => (entry.rooms ?? []).includes(room)) ?? floors[0];
+      let geometry;
+      if (definition) {
+        geometry = plan.normalizeGeometryAtFloor(definition, floor);
+      } else {
+        const itemFloor = floors.find((entry) => (entry.items ?? []).some((item) => item.id === id));
+        const item = itemFloor?.items.find((entry) => entry.id === id);
+        if (item) geometry = plan.normalizeGeometryAtFloor(plan.resolveItemType(item), itemFloor);
+        else {
+          const reference = plan.references?.get(id);
+          if (!reference?.geometry) throw new Error(`Objeto superior desconhecido: ${id}`);
+          const box = reference.geometry();
+          geometry = { x: box.x0(), y: box.y0(), w: box.w(), l: box.l(), z0: box.z0(), h: box.h() };
+        }
+      }
+      const { x, y, w, l, z0 } = geometry;
+      if (![x, y, w, l, z0].every(Number.isFinite) || w <= 0 || l <= 0 ||
+        Number(geometry.rotation ?? 0) % 360 !== 0) {
+        throw new Error(`Objeto superior precisa de geometria retangular sem rotação: ${id}`);
+      }
+      const plane = String(geometry.classes ?? "").split(/\s+/).includes("stair-flight")
+        ? this.stairUndersidePlane(geometry, offset)
+        : [0, 0, 1, offset - z0];
+      return [{
+        id,
+        peakZ: Math.max(...[[x, y], [x + w, y], [x, y + l], [x + w, y + l]]
+          .map(([px, py]) => -(plane[0] * px + plane[1] * py + plane[3]) / plane[2])),
+        bounds: [[-1, 0, 0, x - padding], [1, 0, 0, -x - w - padding],
+          [0, -1, 0, y - padding], [0, 1, 0, -y - l - padding]],
+        slopes: [plane],
+      }];
+    });
+    if (padding > 0) {
+      const bounds = limits.map((limit) => limit.bounds.map((plane) => [...plane]));
+      limits.forEach((limit, index) => {
+        limit.bounds.forEach((plane, edge) => {
+          const opposite = [1, 0, 3, 2][edge];
+          const cross = edge < 2 ? 2 : 0;
+          const shared = bounds.some((other, j) => j !== index &&
+            Math.abs(bounds[index][edge][3] + other[opposite][3] + 2 * padding) < 1e-8 &&
+            Math.min(-bounds[index][cross + 1][3], -other[cross + 1][3]) -
+              Math.max(bounds[index][cross][3], other[cross][3]) > 2 * padding + 1e-8);
+          // Extend only the outer perimeter across wall thickness. Extending
+          // a slope through a shared landing edge creates a false dip.
+          if (shared) plane[3] += padding;
+        });
+      });
+    }
+    return limits;
+  },
+
+  wallSolids(faces, roofs, roofOnly = false, undersideLimits = []) {
+    let solids = this.roofSolids(faces, roofs, roofOnly);
+    // Apply each object separately: the nearest underside wins in overlaps,
+    // while wall portions outside its footprint keep their original height.
+    undersideLimits.forEach((limit) => {
+      solids = solids.flatMap((solid) => this.roofSolids(solid, [limit]));
+    });
+    return solids;
+  },
+
   // Clip a convex solid, closing the cut with a face ordered around its normal.
   clipSolid(faces, plane) {
     const distance = (point) => plane.slice(0, 3).reduce((sum, n, i) => sum + n * point[i], plane[3]);
@@ -7395,6 +7972,71 @@ const FloorPlanWalls = {
     return Math.abs(volume) > 1e-10 ? result : [];
   },
 
+  outlineSegments(solids) {
+    const epsilon = 1e-7;
+    const offset = 1e-5;
+    const dot = (a, b) => a.reduce((sum, value, i) => sum + value * b[i], 0);
+    const subtract = (a, b) => a.map((value, i) => value - b[i]);
+    const add = (a, b, factor) => a.map((value, i) => value + b[i] * factor);
+    const normalize = (vector) => {
+      const length = Math.hypot(...vector);
+      return length > epsilon ? vector.map((value) => value / length) : null;
+    };
+    const parts = solids.map((faces) => faces.flatMap((face) => {
+      const a = subtract(face[1], face[0]);
+      let normal;
+      for (let i = 2; i < face.length && !normal; i += 1) {
+        const b = subtract(face[i], face[0]);
+        normal = normalize([a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]);
+      }
+      if (!normal) return [];
+      const center = face[0].map((_, axis) => face.reduce((sum, point) => sum + point[axis], 0) / face.length);
+      return [{ face, normal, center, distance: -dot(normal, face[0]) }];
+    }));
+    const faces = parts.flat();
+    const contains = (part, point) => part.every(({ normal, distance }) => dot(normal, point) + distance <= epsilon);
+    const inUnion = (point) => parts.some((part) => contains(part, point));
+    const result = [];
+    const seen = new Set();
+    faces.forEach(({ face }) => face.forEach((from, index) => {
+      const to = face[(index + 1) % face.length];
+      const delta = subtract(to, from);
+      const direction = normalize(delta);
+      if (!direction) return;
+      const cuts = [0, 1];
+      faces.forEach(({ normal, distance }) => {
+        const denominator = dot(normal, delta);
+        if (Math.abs(denominator) <= epsilon) return;
+        const t = -(dot(normal, from) + distance) / denominator;
+        if (t > epsilon && t < 1 - epsilon) cuts.push(t);
+      });
+      cuts.sort((a, b) => a - b);
+      for (let i = 0; i < cuts.length - 1; i += 1) {
+        if (cuts[i + 1] - cuts[i] <= epsilon) continue;
+        const start = add(from, delta, cuts[i]);
+        const end = add(from, delta, cuts[i + 1]);
+        const key = [start, end].map((point) => point.map((value) => Math.round(value / epsilon)).join(",")).sort().join(":");
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const midpoint = add(from, delta, (cuts[i] + cuts[i + 1]) / 2);
+        const normals = [];
+        parts.forEach((part) => part.forEach(({ normal, distance, center }) => {
+          if (Math.abs(dot(normal, midpoint) + distance) > epsilon) return;
+          const towardCenter = subtract(center, midpoint);
+          const tangent = normalize(add(towardCenter, direction, -dot(towardCenter, direction)));
+          const sample = tangent ? add(midpoint, tangent, offset) : midpoint;
+          // Probe just inside the face, so concave corners remain visible too.
+          if (!contains(part, add(sample, normal, -offset)) || inUnion(add(sample, normal, offset))) return;
+          if (!normals.some((other) => dot(other, normal) > 0.999)) normals.push(normal);
+        }));
+        if (normals.some((normal, j) => normals.slice(j + 1).some((other) => Math.abs(dot(normal, other)) < 0.999))) {
+          result.push(start, end);
+        }
+      }
+    }));
+    return result;
+  },
+
   roofParts(part, roofs, clip, roofOnly) {
     const split = (piece, planes) => {
       let inside = piece;
@@ -7431,7 +8073,57 @@ const FloorPlanWalls = {
     return this.roofParts(faces, roofs, (part, plane) => this.clipSolid(part, plane), roofOnly);
   },
 
-  wallElevation({ from, to, thickness, baseStart, baseEnd, top, roofOnly }, roofs, side) {
+  elevationOutline(polygons) {
+    const epsilon = 1e-7;
+    const cross = (a, b) => a[0] * b[1] - a[1] * b[0];
+    const subtract = (a, b) => a.map((value, i) => value - b[i]);
+    const at = (a, delta, t) => a.map((value, i) => value + delta[i] * t);
+    const edges = polygons.flatMap((polygon) => polygon.map((a, i) => [a, polygon[(i + 1) % polygon.length]]));
+    const contains = ([x, y]) => polygons.some((polygon) => {
+      let inside = false;
+      polygon.forEach(([ax, ay], i) => {
+        const [bx, by] = polygon[(i + 1) % polygon.length];
+        if ((ay > y) !== (by > y) && x < (bx - ax) * (y - ay) / (by - ay) + ax) inside = !inside;
+      });
+      return inside;
+    });
+    const seen = new Set();
+    const result = [];
+    edges.forEach(([a, b]) => {
+      const delta = subtract(b, a);
+      const length = Math.hypot(...delta);
+      if (length < epsilon) return;
+      const cuts = [0, 1];
+      edges.forEach(([c, d]) => {
+        const other = subtract(d, c);
+        const denominator = cross(delta, other);
+        const offset = subtract(c, a);
+        if (Math.abs(denominator) > epsilon) {
+          const t = cross(offset, other) / denominator;
+          const u = cross(offset, delta) / denominator;
+          if (t > epsilon && t < 1 - epsilon && u >= -epsilon && u <= 1 + epsilon) cuts.push(t);
+        } else if (Math.abs(cross(offset, delta)) < epsilon) {
+          [c, d].forEach((point) => {
+            const t = subtract(point, a).reduce((sum, value, i) => sum + value * delta[i], 0) / (length * length);
+            if (t > epsilon && t < 1 - epsilon) cuts.push(t);
+          });
+        }
+      });
+      cuts.sort((x, y) => x - y);
+      for (let i = 0; i < cuts.length - 1; i += 1) {
+        if ((cuts[i + 1] - cuts[i]) * length < epsilon) continue;
+        const midpoint = at(a, delta, (cuts[i] + cuts[i + 1]) / 2);
+        const normal = [-delta[1] / length * 1e-6, delta[0] / length * 1e-6];
+        if (contains(at(midpoint, normal, 1)) === contains(at(midpoint, normal, -1))) continue;
+        const start = at(a, delta, cuts[i]), end = at(a, delta, cuts[i + 1]);
+        const key = [start, end].map((point) => point.map((value) => Math.round(value / epsilon)).join(",")).sort().join(":");
+        if (!seen.has(key)) { seen.add(key); result.push(start, end); }
+      }
+    });
+    return result;
+  },
+
+  wallElevation({ from, to, thickness, baseStart, baseEnd, top, roofOnly, undersideLimits }, roofs, side) {
     const dx = to[0] - from[0], dy = to[1] - from[1];
     const length = Math.hypot(dx, dy);
     if (length <= 1e-9) return [];
@@ -7442,10 +8134,11 @@ const FloorPlanWalls = {
         from[1] + uy * x + ux * y,
         z === baseStart && x === length ? baseEnd : z,
       ]));
-    return this.roofSolids(faces, roofs, roofOnly).flatMap((solid) => {
+    return this.wallSolids(faces, roofs, roofOnly, undersideLimits).flatMap((solid) => {
       // A clipped piece is convex, so its orthographic silhouette is the hull
       // of its projected vertices, including both faces across the thickness.
-      const points = solid.flat().map(([x, y, z]) => [side ? y : x, z])
+      const points = solid.flat().map(([x, y, z]) => [side ? y : x, z]
+        .map((value) => Math.round(value * 1e8) / 1e8))
         .sort((a, b) => a[0] - b[0] || a[1] - b[1])
         .filter((point, i, all) => !i || point.some((value, axis) => Math.abs(value - all[i - 1][axis]) > 1e-9));
       const cross = (a, b, c) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
@@ -7490,6 +8183,12 @@ const FloorPlanWalls = {
           (floor.roofs ?? []).map((roof) => ({ ...roof, floorId: floor.id }))) ]
       : plan.allRoofs ?? [];
     return roofs.flatMap((roof) => {
+      if (roof.type === "shed") {
+        try {
+          const { peakZ, bounds, slopes } = FloorPlanRoofs.shedGeometry(plan, roof, false);
+          return [{ peakZ, bounds, slopes }];
+        } catch { return []; }
+      }
       if (roof.type !== "gable" || !["longitudinal", "transverse"].includes(roof.orientation)) return [];
       try {
         const floor = FloorPlanRoofs.floorForRoof(plan, roof, roof.base ?? roof);
@@ -7609,6 +8308,8 @@ const FloorPlanWalls = {
     const axis = horizontalSide ? "x" : "y";
     const sideCoordinate = side === "top" ? room?.y0() : side === "bottom" ? room?.y1() : side === "left" ? room?.x0() : room?.x1();
     plan.independentWalls?.forEach((wall) => {
+      const roomFloorId = plan.roomFloorConfigs?.get(roomId)?.id;
+      if (wall.scopeFloorId && roomFloorId && wall.scopeFloorId !== roomFloorId) return;
       const points = wall.path?.points ?? [];
       for (let index = 0; index < points.length - 1; index += 1) {
         const from = points[index];
@@ -7651,6 +8352,19 @@ const FloorPlanWalls = {
       throw new Error(`A abertura ${opening.id} encontra mais de uma parede independente em ${roomId}.${side}`);
     }
 
+    // A shared boundary may be declared only by the neighboring room.
+    if (roomWalls.length === 0 && room) {
+      const sharedWalls = [...plan.walls.values()].filter((wall) =>
+        wall.axis === axis &&
+        Math.abs((axis === "x" ? wall.from[1] : wall.from[0]) - sideCoordinate) <= epsilon &&
+        coversOpening(wall, axis, wall.from, wall.to, sideCoordinate),
+      );
+      if (sharedWalls.length === 1) return sharedWalls[0];
+      if (sharedWalls.length > 1) {
+        throw new Error(`Mais de uma parede corresponde a ${roomId}.${side}`);
+      }
+    }
+
     if (roomWalls.length !== 1) {
       throw new Error(
         roomWalls.length === 0
@@ -7668,6 +8382,7 @@ const FloorPlanWalls = {
   renderIndependentWalls(plan) {
     plan.wallElements = [];
     plan.independentWalls.forEach((wall) => {
+      if (!plan.showAllFloors && wall.scopeFloorId && wall.scopeFloorId !== plan.currentFloorId) return;
       const points = wall.path.points;
       points.slice(0, -1).forEach(([x0, y0], index) => {
         const [x1, y1] = points[index + 1];
@@ -7721,12 +8436,22 @@ const FloorPlanWalls = {
         const floorZ0 = Number(floor.z0 ?? 0);
         const nextFloorIndex = floors.indexOf(floor) + 1;
         const nextFloorZ0 = Number(floors[nextFloorIndex]?.z0);
-        const configuredMaxHeight = Number(floor.wall_max_height);
+        const configuredMaxHeight = Number(floor.ceiling_height ?? floor.wall_max_height);
         const floorHeight = Number.isFinite(nextFloorZ0)
           ? Math.min(nextFloorZ0 - floorZ0, configuredMaxHeight)
           : configuredMaxHeight;
         const explicitHeight = Number(geometry.h());
-        const height = explicitHeight > 0 ? explicitHeight : floorHeight;
+        let height = explicitHeight > 0 ? explicitHeight : floorHeight;
+        const undersideLimits = this.undersideLimits(plan, definition.top, thickness / 2);
+        if (undersideLimits.length) height = Math.max(height, ...undersideLimits.map((limit) => limit.peakZ - floorZ0));
+        const roofOnly = definition.top === "roof";
+        if (roofOnly) {
+          const limits = this.roofLimits(plan, config);
+          if (!limits.length) throw new Error('A parede com top: "roof" precisa de um telhado válido');
+          height = Math.max(...limits.map((roof) => roof.peakZ)) - floorZ0;
+        } else if (definition.top?.level !== undefined) {
+          height = plan.resolve(definition.top.level) - floorZ0;
+        }
         const roomBounds = [
           geometry.x0(),
           geometry.x1(),
@@ -7794,6 +8519,7 @@ const FloorPlanWalls = {
             .join(":");
           const existing = signatures.get(signature);
           if (existing) {
+            existing.undersideLimits.push(...undersideLimits);
             if (existing.state !== state) {
               plan.errors.push({
                 category: "wall",
@@ -7835,6 +8561,8 @@ const FloorPlanWalls = {
             z1: floorZ0 + height,
             h: height,
             thickness,
+            undersideLimits: [...undersideLimits],
+            roofOnly,
             touchedRoomIds: [],
             signature,
           };
@@ -7892,6 +8620,13 @@ const FloorPlanWalls = {
     const roofLimits = this.roofLimits(plan, config);
     (config.walls ?? []).forEach((definition) => {
       try {
+        const defaults = config.config?.walls ?? {};
+        definition = { ...definition };
+        for (const key of ["base", "top", "thickness", "color"]) {
+          if (definition[key] === undefined && defaults[key] !== undefined) {
+            definition[key] = defaults[key];
+          }
+        }
         if (!definition.id) throw new Error("Parede independente precisa de id");
         if (FloorPlanValidation.isReservedId(definition.id)) {
           throw new Error(`ID reservado: ${definition.id}`);
@@ -7899,18 +8634,44 @@ const FloorPlanWalls = {
         if (plan.references.has(definition.id)) {
           throw new Error(`ID global duplicado: ${definition.id}`);
         }
-        const points = definition.path?.points;
-        if (!Array.isArray(points) || points.length < 2) {
-          throw new Error("Parede independente precisa de path.points com ao menos dois pontos");
+        let scopeFields = {};
+        if (definition.scope !== undefined) {
+          if (typeof definition.scope !== "string" || !definition.scope.trim()) {
+            throw new Error("scope da parede precisa ser o ID de um piso ou cômodo");
+          }
+          const scope = definition.scope.trim();
+          const scopeFloor = floors.find((floor) => floor.id === scope);
+          const roomFloor = roomFloors.get(scope);
+          if (!scopeFloor && !roomFloor) {
+            throw new Error(`Escopo inexistente: ${scope}. Informe o ID de um piso ou cômodo`);
+          }
+          if (scopeFloor && roomFloor) throw new Error(`Escopo ambíguo: ${scope} identifica um piso e um cômodo`);
+          scopeFields = {
+            scope,
+            scopeType: scopeFloor ? "floor" : "room",
+            scopeFloorId: (scopeFloor ?? roomFloor).id,
+            ...(roomFloor ? { scopeRoomId: scope } : {}),
+          };
         }
+        const hasEndpoints = definition.from !== undefined || definition.to !== undefined;
+        if (hasEndpoints && definition.path !== undefined) {
+          throw new Error("Use from/to ou path.points para definir a parede, sem combinar os dois formatos");
+        }
+        const pointSource = hasEndpoints ? "from/to" : "path.points";
+        const points = hasEndpoints ? [definition.from, definition.to] : definition.path?.points;
+        if (!Array.isArray(points) || points.length < 2) {
+          throw new Error("Parede independente precisa de from/to ou path.points com ao menos dois pontos");
+        }
+        let localOrigin = null;
         const resolvedPoints = points.map((point) => {
           if (!Array.isArray(point) || point.length !== 2) {
-            throw new Error("Cada ponto de path.points precisa ser [x, y]");
+            throw new Error(`Cada ponto de ${pointSource} precisa ser [x, y]`);
           }
-          const resolved = point.map((value) => plan.resolve(value));
+          const resolved = point.map((value) => plan.resolve(value, localOrigin));
           if (!resolved.every(Number.isFinite)) {
-            throw new Error("As coordenadas de path.points precisam ser numéricas");
+            throw new Error(`As coordenadas de ${pointSource} precisam ser numéricas`);
           }
+          localOrigin = { x0: resolved[0], y0: resolved[1] };
           return resolved;
         });
         const thickness = Number(
@@ -7922,12 +8683,14 @@ const FloorPlanWalls = {
           ? terrainMinimumZ
           : plan.resolve(baseDefinition?.level);
         const roofOnly = definition.top === "roof";
+        const undersideLimits = this.undersideLimits(plan, definition.top, thickness / 2);
         if (roofOnly && !roofLimits.length) {
           throw new Error('A parede com top: "roof" precisa de um telhado válido acima da base');
         }
         const topZ = roofOnly
           ? Math.max(...roofLimits.map((roof) => roof.peakZ))
-          : plan.resolve(definition.top?.level ?? groundLevel);
+          : plan.resolve(definition.top?.level ?? (undersideLimits.length ? Math.max(...undersideLimits.map((limit) => limit.peakZ), ...floors.map((floor) =>
+            Number(floor.z0 ?? 0) + Number(floor.ceiling_height ?? floor.wall_max_height ?? 0))) : groundLevel));
         if (
           !Number.isFinite(thickness) || thickness <= 0 ||
           !Number.isFinite(baseZ) || !Number.isFinite(topZ)
@@ -7940,12 +8703,14 @@ const FloorPlanWalls = {
         const y1 = Math.max(...resolvedPoints.map(([, y]) => y)) + thickness / 2;
         const wall = {
           ...definition,
+          ...scopeFields,
           id: definition.id,
           type: "wall",
           path: { ...definition.path, points: resolvedPoints },
           base,
           baseZ,
-          top: roofOnly ? "roof" : { ...definition.top, level: topZ },
+          top: roofOnly ? "roof" : undersideLimits.length ? definition.top : { ...definition.top, level: topZ },
+          undersideLimits,
           topZ,
           thickness,
           x: x0,
@@ -7973,7 +8738,7 @@ const FloorPlanWalls = {
           throw new Error('A base da parede precisa ser "terrain" ou { level: "referência.z0" }');
         }
         if (wall.h <= 0) throw new Error("A cota superior da parede precisa ficar acima da base");
-        wall.geometryParts = this.geometryParts(wall).map((part) => ({ ...part, roofOnly }));
+        wall.geometryParts = this.geometryParts(wall).map((part) => ({ ...part, ...scopeFields, roofOnly, undersideLimits }));
         if (roofOnly) {
           const covered = resolvedPoints.slice(0, -1).some((from, i) =>
             this.roofSection([[0, baseZ], [1, baseZ], [1, topZ], [0, topZ]],
@@ -8227,7 +8992,7 @@ const FloorPlanReferences = {
       )
         return;
       const height = Number(floorConfig.z0 ?? 0);
-      const wallMaxHeight = Number(floorConfig.wall_max_height ?? 0);
+      const wallMaxHeight = Number(floorConfig.ceiling_height ?? floorConfig.wall_max_height ?? 0);
       plan.references.set(floorConfig.id, {
         z0: () => height,
         z1: () => height + wallMaxHeight,
@@ -8355,28 +9120,35 @@ const FloorPlanReferences = {
         ]
       : config.roofs ?? [];
 
-    roofs.forEach((roof) => {
-      if (
-        !roof.id ||
-        FloorPlanValidation.isReservedId(roof.id) ||
-        plan.references.has(roof.id)
-      ) {
-        return;
+    let pending = roofs.filter((roof) => roof.id
+      && !FloorPlanValidation.isReservedId(roof.id)
+      && !plan.references.has(roof.id));
+    while (pending.length) {
+      const unresolved = [];
+      const errors = [];
+      pending.forEach((roof) => {
+        if (plan.references.has(roof.id)) return;
+        try {
+          const baseDefinition = roof.base ?? roof;
+          const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
+          const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
+          plan.references.set(roof.id, base);
+        } catch (error) {
+          unresolved.push(roof);
+          errors.push({
+            category: "roof",
+            id: roof.id,
+            opening: roof,
+            message: error.message,
+          });
+        }
+      });
+      if (unresolved.length === pending.length) {
+        plan.errors.push(...errors);
+        break;
       }
-      try {
-        const baseDefinition = roof.base ?? roof;
-        const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
-        const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
-        plan.references.set(roof.id, base);
-      } catch (error) {
-        plan.errors.push({
-          category: "roof",
-          id: roof.id,
-          opening: roof,
-          message: error.message,
-        });
-      }
-    });
+      pending = unresolved;
+    }
   },
 
   validateGlobalObjectIds(plan, config) {
@@ -8677,30 +9449,42 @@ const FloorPlanReferences = {
     const localReferences = new Map();
     plan.partReferenceStack.push(localReferences);
     try {
-      return parts.map((part, index) => {
-        const geometry = {
-          ...plan.normalizeGeometry(part),
-          id: part.id || `part-${index + 1}`,
-        };
+      const geometries = new Map();
+      const pending = new Set();
+      const geometryAt = (index) => {
+        if (geometries.has(index)) return geometries.get(index);
+        const part = parts[index];
+        if (pending.has(index)) throw new Error(`Referência circular entre partes: ${part.id || index + 1}`);
+        pending.add(index);
+        try {
+          const geometry = { ...plan.normalizeGeometry(part), id: part.id || `part-${index + 1}` };
+          geometries.set(index, geometry);
+          return geometry;
+        } finally {
+          pending.delete(index);
+        }
+      };
+      parts.forEach((part, index) => {
         const reference = {
-          x0: () => geometry.x,
-          x1: () => geometry.x + geometry.w,
-          xc: () => geometry.x + geometry.w / 2,
-          y0: () => geometry.y,
-          y1: () => geometry.y + geometry.l,
-          yc: () => geometry.y + geometry.l / 2,
-          z0: () => geometry.z0,
-          z1: () => geometry.z1,
-          zc: () => (geometry.z0 + geometry.z1) / 2,
-          h: () => geometry.h,
-          w: () => geometry.w,
-          l: () => geometry.l,
-          area: () => geometry.w * geometry.l,
+          x0: () => geometryAt(index).x,
+          x1: () => geometryAt(index).x + geometryAt(index).w,
+          xc: () => geometryAt(index).x + geometryAt(index).w / 2,
+          y0: () => geometryAt(index).y,
+          y1: () => geometryAt(index).y + geometryAt(index).l,
+          yc: () => geometryAt(index).y + geometryAt(index).l / 2,
+          z0: () => geometryAt(index).z0,
+          z1: () => geometryAt(index).z1,
+          zc: () => (geometryAt(index).z0 + geometryAt(index).z1) / 2,
+          h: () => geometryAt(index).h,
+          w: () => geometryAt(index).w,
+          l: () => geometryAt(index).l,
+          area: () => geometryAt(index).w * geometryAt(index).l,
         };
-        FloorPlanGeometryBox.attach(reference, { label: geometry.id });
-        localReferences.set(geometry.id, reference);
-        return geometry;
+        const id = part.id || `part-${index + 1}`;
+        FloorPlanGeometryBox.attach(reference, { label: id });
+        localReferences.set(id, reference);
       });
+      return parts.map((_, index) => geometryAt(index));
     } finally {
       plan.partReferenceStack.pop();
     }
@@ -8936,6 +9720,8 @@ const FloorPlanLayers = {
       ) {
         const first = pieces[index];
         const second = pieces[otherIndex];
+        if (first.room.dataset.floorId && second.room.dataset.floorId &&
+          first.room.dataset.floorId !== second.room.dataset.floorId) continue;
         const overlapWidth =
           Math.min(first.part.x + first.part.w, second.part.x + second.part.w) -
           Math.max(first.part.x, second.part.x);
@@ -9060,6 +9846,14 @@ const FloorPlanLayers = {
   renderMultiFloorUnderlay(plan, floorConfig = null) {
     if (!plan.multiFloorLayer) return;
     plan.multiFloorLayer.replaceChildren();
+    if (plan.showAllFloors) {
+      if (plan.multiFloorSwitch) {
+        plan.multiFloorSwitch.hidden = true;
+        plan.multiFloorSwitch.closest(".visibility-switch")?.setAttribute("hidden", "");
+      }
+      plan.updateVisibilityHeading();
+      return;
+    }
     const config = plan.currentConfig;
     const activeFloor =
       floorConfig ||
@@ -9611,7 +10405,7 @@ const FloorPlanLists = {
     const headings = [
       "Telhado",
       "Tipo",
-      "Cumeeira",
+      "Cumeeira / borda alta",
       "Dimensões (m)",
       "Cota base (m)",
       "Altura (m)",
@@ -9669,13 +10463,14 @@ const FloorPlanLists = {
           baseLength + (longitudinal ? rake0 + rake1 : eave0 + eave1);
         const ridgeLength = longitudinal ? roofLength : roofWidth;
         const rise =
-          ((longitudinal ? baseWidth : baseLength) / 2) *
+          ((longitudinal ? baseWidth : baseLength) / (roof.type === "shed" ? 1 : 2)) *
           Math.tan((pitch * Math.PI) / 180);
         const baseSpan = longitudinal ? baseWidth : baseLength;
         const slopeA = longitudinal ? eave0 : rake0;
         const slopeB = longitudinal ? eave1 : rake1;
-        const roofSurfaceArea =
-          (Math.hypot(baseSpan / 2 + slopeA, rise) +
+        const roofSurfaceArea = roof.type === "shed"
+          ? roofWidth * roofLength / Math.cos(pitch * Math.PI / 180)
+          : (Math.hypot(baseSpan / 2 + slopeA, rise) +
             Math.hypot(baseSpan / 2 + slopeB, rise)) *
           ridgeLength;
         const baseElevation =
@@ -9686,7 +10481,7 @@ const FloorPlanLists = {
               : 0;
         values = [
           plan.roofTypeLabel(roof.type),
-          `${plan.roofOrientationLabel(roof.orientation)} · ${plan.formatMeters(ridgeLength)} m`,
+          FloorPlanRoofs.axisLabel(plan, roof, ridgeLength),
           `${plan.formatMeters(roofWidth)} × ${plan.formatMeters(roofLength)}`,
           plan.formatMeters(baseElevation),
           plan.formatMeters(rise),
@@ -9774,7 +10569,9 @@ const FloorPlanLists = {
     const communications = [];
     const pairs = [
       ["right", "left", "vertical"],
+      ["left", "right", "vertical"],
       ["bottom", "top", "horizontal"],
+      ["top", "bottom", "horizontal"],
     ];
     for (let index = 0; index < rooms.length; index += 1) {
       for (
@@ -9784,6 +10581,9 @@ const FloorPlanLists = {
       ) {
         const first = rooms[index];
         const second = rooms[otherIndex];
+        const firstFloor = plan.roomFloorConfigs?.get(first.dataset.id);
+        const secondFloor = plan.roomFloorConfigs?.get(second.dataset.id);
+        if (firstFloor && secondFloor && firstFloor.id !== secondFloor.id) continue;
 
         for (const [firstSide, secondSide, orientation] of pairs) {
           if (
@@ -9805,6 +10605,32 @@ const FloorPlanLists = {
 
           const firstId = first.dataset.id || `room-${index + 1}`;
           const secondId = second.dataset.id || `room-${otherIndex + 1}`;
+          let gaps = [[start, end]];
+          const epsilon = 1e-9;
+          const floorZ = Number(firstFloor?.z0 ?? first.z0?.() ?? 0);
+          for (const wall of plan.independentWalls?.values() ?? []) {
+            if (wall.scopeFloorId && firstFloor && wall.scopeFloorId !== firstFloor.id) continue;
+            // Somente paredes que alcançam o piso fecham a passagem em planta.
+            if (wall.z0 > floorZ + epsilon || wall.z1 <= floorZ + epsilon) continue;
+            const points = wall.path?.points ?? [];
+            for (let segment = 0; segment < points.length - 1; segment += 1) {
+              const from = points[segment];
+              const to = points[segment + 1];
+              const along = orientation === "vertical" ? 1 : 0;
+              const across = 1 - along;
+              if (Math.abs(from[across] - to[across]) > epsilon ||
+                Math.abs(from[across] - firstSegment.coordinate) > Math.max(epsilon, (wall.thickness ?? 0) / 2)) continue;
+              const wallStart = Math.min(from[along], to[along]);
+              const wallEnd = Math.max(from[along], to[along]);
+              gaps = gaps.flatMap(([a, b]) => {
+                if (wallEnd <= a + epsilon || wallStart >= b - epsilon) return [[a, b]];
+                return [[a, Math.min(b, wallStart)], [Math.max(a, wallEnd), b]]
+                  .filter(([left, right]) => right - left > epsilon);
+              });
+            }
+          }
+          const length = gaps.reduce((total, [a, b]) => total + b - a, 0);
+          if (length <= epsilon) continue;
           communications.push({
             id: `${firstId}-${secondId}`,
             firstId,
@@ -9812,7 +10638,7 @@ const FloorPlanLists = {
             firstLabel: first.dataset.label || firstId,
             secondLabel: second.dataset.label || secondId,
             orientation,
-            length: end - start,
+            length,
           });
         }
       }
@@ -9860,7 +10686,8 @@ const FloorPlanLists = {
     }
 
     plan.errors.forEach(
-      ({ index, id, opening, category = "opening", message }) => {
+      (error) => {
+        const { index, id, opening, category = "opening", message } = error;
         const item = document.createElement("div");
         item.className = "error-list-item";
         const labels = {
@@ -9875,9 +10702,17 @@ const FloorPlanLists = {
           object: "Objeto",
           guide: "Guia",
           floor: "Piso",
+          wall: "Parede",
         };
         const name = id || (index === undefined ? "" : ` ${index + 1}`);
         item.textContent = `${labels[category] || "Erro"}${name ? ` ${name}` : ""}: ${message} `;
+        const location = error.location ?? FloorPlanParser.errorLocation(error, plan.currentConfig);
+        if (location) {
+          const sourceLocation = document.createElement("div");
+          sourceLocation.className = "error-source-location";
+          sourceLocation.textContent = FloorPlanParser.formatLocation(location);
+          item.append(sourceLocation);
+        }
         const source = document.createElement("code");
         if (opening !== undefined) source.textContent = JSON.stringify(opening);
         item.append(source);
@@ -9915,7 +10750,7 @@ const FloorPlanTextExport = {
       const nextZ0 = Number(floors[index + 1]?.z0);
       const floorTop = Number.isFinite(nextZ0)
         ? nextZ0
-        : floorZ0 + Number(floor.wall_max_height ?? 0);
+        : floorZ0 + Number(floor.ceiling_height ?? floor.wall_max_height ?? 0);
       return wall.baseZ < floorTop && wall.topZ > floorZ0;
     });
     return intersectingFloor >= 0 ? intersectingFloor : null;
@@ -10370,7 +11205,7 @@ const FloorPlanTextExport = {
         "",
         `### ${heading}`,
         "",
-        "| Telhado | Tipo | Cumeeira | Dimensões (m) | Cota base (m) | Altura (m) | Superfície (m²) | Inclinação | Beiral (m) | Empena (m) |",
+        "| Telhado | Tipo | Cumeeira / borda alta | Dimensões (m) | Cota base (m) | Altura (m) | Superfície (m²) | Inclinação | Beiral (m) | Empena (m) |",
         "|---|---|---|---:|---:|---:|---:|---:|---:|---:|",
       );
       roofEntries.forEach((roof) => {
@@ -10382,7 +11217,7 @@ const FloorPlanTextExport = {
           return;
         }
         lines.push(
-          `| ${plan.markdownText(roof.label || roof.id || "Telhado")} | ${plan.markdownText(plan.roofTypeLabel(roof.type))} | ${plan.markdownText(plan.roofOrientationLabel(roof.orientation))} · ${plan.formatMeters(metrics.ridgeLength)} m | ${plan.formatMeters(metrics.roofWidth)} × ${plan.formatMeters(metrics.roofLength)} | ${plan.formatMeters(metrics.baseElevation)} | ${plan.formatMeters(metrics.rise)} | ${plan.formatMeters(metrics.surfaceArea)} | ${plan.formatMeters(metrics.pitch)}° | ${FloorPlanRoofs.formatOverhang(plan, metrics.eave)} | ${FloorPlanRoofs.formatOverhang(plan, metrics.rake)} |`,
+          `| ${plan.markdownText(roof.label || roof.id || "Telhado")} | ${plan.markdownText(plan.roofTypeLabel(roof.type))} | ${plan.markdownText(FloorPlanRoofs.axisLabel(plan, roof, metrics.ridgeLength))} | ${plan.formatMeters(metrics.roofWidth)} × ${plan.formatMeters(metrics.roofLength)} | ${plan.formatMeters(metrics.baseElevation)} | ${plan.formatMeters(metrics.rise)} | ${plan.formatMeters(metrics.surfaceArea)} | ${plan.formatMeters(metrics.pitch)}° | ${FloorPlanRoofs.formatOverhang(plan, metrics.eave)} | ${FloorPlanRoofs.formatOverhang(plan, metrics.rake)} |`,
         );
       });
     };
@@ -10663,7 +11498,7 @@ const FloorPlanGeometryDomain = {
       data = {
         ...itemType,
         ...data,
-        size: data.size ?? itemType.size,
+        size: data.size ?? (data.copy === undefined ? itemType.size : undefined),
         classes: data.classes ?? itemType.classes,
         label: data.label ?? itemType.label,
         title: data.title ?? itemType.title ?? itemType.label,
@@ -10674,6 +11509,25 @@ const FloorPlanGeometryDomain = {
       throw new Error("Rotation precisa ser um ângulo numérico em graus");
     }
     data = { ...data, rotation: ((rotation % 360) + 360) % 360 };
+    if (data.copy !== undefined) {
+      if (typeof data.copy !== "string" || !data.copy.trim()) {
+        throw new Error("Copy precisa informar o ID de uma referência geométrica");
+      }
+      if (["from", "to", "pos", "size", "rectangle", "inset", "outset", "x", "y", "w", "l", "z0", "h", "parts"]
+        .some((key) => data[key] !== undefined)) {
+        throw new Error("Copy não pode ser combinado com outra definição geométrica");
+      }
+      const id = data.copy.trim();
+      const reference = plan.partReferenceStack?.at(-1)?.get(id) ?? plan.references.get(id);
+      if (!reference) throw new Error(`Unknown geometric reference: ${id}`);
+      const x = reference.x0(), y = reference.y0(), w = reference.w(), l = reference.l();
+      const z0 = reference.z0 ? reference.z0() : plan.currentFloorHeight;
+      const h = reference.h ? reference.h() : 0;
+      if (![x, y, w, l, z0, h].every(Number.isFinite) || w <= 0 || l <= 0 || h < 0) {
+        throw new Error(`Copy precisa de uma geometria retangular válida: ${id}`);
+      }
+      return { ...data, x, y, w, l, z0, z1: z0 + h, h };
+    }
     const isStair = data.classes?.split(/\s+/).includes("stair-flight");
     if (data.inset !== undefined && data.outset !== undefined) {
       throw new Error("Uma geometria não pode combinar inset e outset");
@@ -10971,6 +11825,24 @@ window.FloorPlanGeometryDomain = FloorPlanGeometryDomain;
 
 
 const FloorPlanDom = {
+  applyStairGradient(element, geometry, range) {
+    const color = (z) => `color-mix(in srgb, var(--theme-circulation), var(--theme-roof-gradient-dark) ${
+      ((1 - FloorPlanGeometry.stairGradientRatio(z, range)) * 100).toFixed(4)}%)`;
+    let background = color(geometry.z0);
+    if (geometry.h > 0) {
+      const count = Math.max(1, Math.round(geometry.h / 0.16));
+      const increasing = (geometry.stairDirection !== "reverse") === (geometry.stairRise !== "down");
+      const stops = Array.from({ length: count }, (_, index) => {
+        const step = increasing ? index + 1 : count - index;
+        return `${color(geometry.z0 + geometry.h * step / count)} ${index / count * 100}% ${(index + 1) / count * 100}%`;
+      });
+      background = `linear-gradient(to ${geometry.stairAxis === "horizontal" ? "right" : "bottom"}, ${stops.join(", ")})`;
+      element.style.setProperty("--stair-step", (geometry.stairAxis === "horizontal" ? geometry.w : geometry.l) / count);
+    }
+    element.dataset.stairGradient = "height";
+    element.style.setProperty("background", background, "important");
+  },
+
   add(plan, data) {
     const {
       label = "",
@@ -11030,6 +11902,11 @@ const FloorPlanDom = {
       arrow.className = "stair-arrow";
       arrow.setAttribute("aria-hidden", "true");
       element.append(arrow);
+    }
+    if (classes.split(/\s+/).some((name) => ["stair-flight", "stair-landing"].includes(name))) {
+      const sourceFloor = plan.roomFloorConfigs?.get(data.id);
+      const base = Number(sourceFloor?.z0 ?? plan.currentFloorHeight);
+      this.applyStairGradient(element, normalized, FloorPlanGeometry.stairGradientRange(base, [normalized]));
     }
     if (title) element.title = title;
     if (!room && showLabel && (label || title)) {
@@ -11095,6 +11972,11 @@ const FloorPlanDom = {
     const parts = room.parts?.length
       ? plan.normalizeParts(room.parts)
       : undefined;
+    const stairParts = parts?.filter((part) => String(part.classes ?? "").split(/\s+/)
+      .some((name) => ["stair-flight", "stair-landing"].includes(name))) ?? [];
+    const sourceFloor = plan.roomFloorConfigs?.get(room.id);
+    const stairGradient = stairParts.length ? FloorPlanGeometry.stairGradientRange(
+      Number(sourceFloor?.z0 ?? plan.currentFloorHeight), stairParts) : null;
     const geometry = parts?.length
       ? {
           x: Math.min(...parts.map((part) => part.x)),
@@ -11211,6 +12093,9 @@ const FloorPlanDom = {
         const partColor = part.color ?? room.color;
         if (partColor)
           partElement.style.backgroundColor = plan.themeFillColor(partColor);
+        if (stairGradient && partClasses.split(/\s+/).some((name) => ["stair-flight", "stair-landing"].includes(name))) {
+          this.applyStairGradient(partElement, part, stairGradient);
+        }
         if (partClasses.split(/\s+/).includes("stair-flight")) {
           partElement.dataset.stairAxis = part.stairAxis;
           partElement.dataset.stairDirection = part.stairDirection || "forward";
@@ -11471,7 +12356,7 @@ class FloorPlan {
    * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
    * @param {number} [options.scale=56] Escala inicial em pixels por metro.
    */
-  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, facade3dCameraControls = null, solarSeasonSelect = null, solarTimeDisplay = null, solarTimePrevious = null, solarTimeNext = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, facade3dCameraControls = null, solarSeasonSelect = null, solarTimeDisplay = null, solarTimePrevious = null, solarTimeNext = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, roofOnlySwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
@@ -11508,6 +12393,7 @@ class FloorPlan {
     this.dxfButton = dxfButton;
     this.multiFloorSwitch = multiFloorSwitch;
     this.roofSwitch = roofSwitch;
+    this.roofOnlySwitch = roofOnlySwitch;
     this.visibilityHeading = visibilityHeading;
     this.jsonInput = jsonInput;
     this.layerOptions = layerOptions;
@@ -11526,6 +12412,7 @@ class FloorPlan {
     this.errors = [];
     this.currentConfig = null;
     this.currentFloorId = null;
+    this.showAllFloors = false;
     this.currentFloorHeight = 0;
     this.currentSourceText = null;
     this.model = null;
@@ -11560,6 +12447,7 @@ class FloorPlan {
     root.prepend(this.multiFloorLayer);
     this.multiFloorMode = false;
     this.showRoofs = false;
+    this.showOnlyRoofs = false;
 
     root.style.setProperty("--m", `${scale}px`);
     root.addEventListener("pointerdown", (event) => this.beginViewportPan(event));
@@ -11594,7 +12482,23 @@ class FloorPlan {
       roofSwitch.checked = false;
       roofSwitch.addEventListener("change", () => {
         this.showRoofs = roofSwitch.checked;
+        if (!this.showRoofs) {
+          this.showOnlyRoofs = false;
+          if (this.roofOnlySwitch) this.roofOnlySwitch.checked = false;
+        }
         this.updateRoofVisibility();
+        if (this.currentConfig) this.renderFacade3D();
+      });
+    }
+    if (roofOnlySwitch) {
+      roofOnlySwitch.checked = false;
+      roofOnlySwitch.addEventListener("change", () => {
+        this.showOnlyRoofs = roofOnlySwitch.checked;
+        if (this.showOnlyRoofs) {
+          this.showRoofs = true;
+          if (this.roofSwitch) this.roofSwitch.checked = true;
+          this.updateRoofVisibility();
+        }
         if (this.currentConfig) this.renderFacade3D();
       });
     }
@@ -11612,6 +12516,12 @@ class FloorPlan {
       floorOptions.addEventListener("change", (event) => {
         const floors = this.currentConfig?.floors;
         if (!Array.isArray(floors)) return;
+        if (event.target.value === "__all_floors__") {
+          this.showAllFloors = true;
+          this.load(this.currentConfig, { preservePresentation: true });
+          return;
+        }
+        this.showAllFloors = false;
         const activeFloor = floors.findIndex(
           (floorConfig) => String(floorConfig.id) === event.target.value,
         );
@@ -11766,6 +12676,72 @@ class FloorPlan {
       }
       pending = next;
     }
+  }
+
+  renderPlanFloors(config, selectedFloor) {
+    const floors = this.showAllFloors ? (config.floors ?? [config]) : [selectedFloor];
+    const keys = ["roomElements", "stairElements", "itemElements", "openings", "windows"];
+    const combined = Object.fromEntries(keys.map((key) => [key, []]));
+    const collisionErrors = [];
+    const originalFloorId = this.currentFloorId;
+    const originalHeight = this.currentFloorHeight;
+    try {
+      for (const floorConfig of floors) {
+        this.currentFloorId = floorConfig.id || null;
+        this.currentFloorHeight = Number(floorConfig.z0 ?? 0);
+        keys.forEach((key) => { this[key] = []; });
+        const invalidRoomIds = this.invalidRoomIds ?? new Set();
+        const validRooms = (floorConfig.rooms ?? []).filter((room) => room.id
+          && this.roomDefinitions.get(room.id) === room
+          && !invalidRoomIds.has(room.id));
+        this.addRooms(validRooms);
+        if (!this.showAllFloors) this.addSpanningStairs(config, floorConfig);
+        this.updateOverlaps();
+        this.renderWallsForFloor(floorConfig);
+        if (!this.showAllFloors) this.addVisibleVerticalOpenings(config, floorConfig);
+        const validZoneIds = this.validZoneIds ?? new Set();
+        this.addZones(this.visibleZones(this.showAllFloors ? { ...config, zones: [] } : config, floorConfig).filter((zone) => validZoneIds.has(zone.id)));
+        (floorConfig.items ?? []).forEach((item, index) => {
+          try {
+            this.addItem(item);
+          } catch (error) {
+            this.errors.push({ index, opening: item, category: "item", message: error.message });
+          }
+        });
+        this.updateOverlaps();
+        [...(floorConfig.openings ?? []), ...this.roomOpenings(floorConfig)].forEach((opening, index) => {
+          if (this.isVerticalOpening(opening)) return;
+          try {
+            this.addOpening(opening);
+          } catch (error) {
+            this.errors.push({ index, opening, category: opening.type === "window" ? "window" : "opening", message: error.message });
+          }
+        });
+        (floorConfig.windows ?? []).forEach((window, index) => {
+          try {
+            this.addWindow(window);
+          } catch (error) {
+            this.errors.push({ index, opening: window, category: "window", message: error.message });
+          }
+        });
+        keys.forEach((key) => {
+          this[key].forEach((entry) => {
+            if (entry.dataset) entry.dataset.floorId = floorConfig.id || "";
+          });
+          combined[key].push(...this[key]);
+        });
+        collisionErrors.push(...this.errors.filter((error) => ["collision", "overlap"].includes(error.category)));
+      }
+      keys.forEach((key) => { this[key] = combined[key]; });
+      this.errors = [...this.errors.filter((error) => !["collision", "overlap"].includes(error.category)), ...collisionErrors];
+      if (this.showAllFloors && config.floors) {
+        this.addZones((config.zones ?? []).filter((zone) => this.validZoneIds?.has(zone.id)));
+      }
+    } finally {
+      this.currentFloorId = originalFloorId;
+      this.currentFloorHeight = originalHeight;
+    }
+    FloorPlanWalls.renderIndependentWalls(this);
   }
 
   renderWallsForFloor(floorConfig) {
@@ -11965,6 +12941,7 @@ class FloorPlan {
     this.root.querySelectorAll(".roof-plan").forEach((roof) => {
       roof.classList.toggle("roof-hidden", !this.showRoofs);
     });
+    FloorPlanFacades.updateRoofVisibility(this);
     this.updateVisibilityHeading();
   }
 
@@ -12151,12 +13128,15 @@ class FloorPlan {
     this.globalObjectIds ??= new Set();
     this.validZoneIds ??= new Set();
     this.model = FloorPlanModel.fromConfig(config);
+    config = this.model.config;
     this.currentConfig = config;
     document.querySelector("#empty-state")?.setAttribute("hidden", "");
     document.querySelector("#plan-workspace")?.removeAttribute("hidden");
     document.body?.classList.remove("page-empty");
     document.body?.classList.add("page-has-plan");
     if (!preservePresentation) {
+      this.showAllFloors = false;
+      this.showOnlyRoofs = false;
       this.facade3dCamera = { azimuthStep: 0, elevation: 30, zoom: 1 };
       this.solarSeason = config.solar?.season ?? "equinox";
       this.solarTime = config.solar?.time ?? "15:00";
@@ -12198,12 +13178,27 @@ class FloorPlan {
           input.name = "floor-selection";
           input.value = String(availableFloor.id || "");
           input.id = optionId;
-          input.checked = String(availableFloor.id) === String(this.currentFloorId);
+          input.checked = !this.showAllFloors && String(availableFloor.id) === String(this.currentFloorId);
           const text = document.createElement("span");
           text.textContent = availableFloor.label || availableFloor.id || "Pavimento";
           label.append(input, text);
           this.floorOptions.append(label);
         });
+        if (config.floors.length > 1) {
+          const label = document.createElement("label");
+          label.className = "floor-option";
+          label.title = "Mostrar todos os pisos na planta baixa e na perspectiva 3D";
+          const input = document.createElement("input");
+          input.type = "radio";
+          input.name = "floor-selection";
+          input.value = "__all_floors__";
+          input.id = "floor-option-all";
+          input.checked = this.showAllFloors;
+          const text = document.createElement("span");
+          text.textContent = "Todos os pisos";
+          label.append(input, text);
+          this.floorOptions.append(label);
+        }
         this.floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", config.floors.length < 2);
       } else {
         this.floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", true);
@@ -12215,48 +13210,14 @@ class FloorPlan {
     document.querySelector("#project-overview")?.removeAttribute("hidden");
     this.clear();
     this.prepareRoomReferences(config);
-    this.validateInactiveFloorFeatures(config, floorIndex);
+    if (!this.showAllFloors) this.validateInactiveFloorFeatures(config, floorIndex);
     this.prepareGlobalLists(config);
     try {
       this.renderTerrain(config.terrain);
     } catch (error) {
       this.errors.push({ category: "presentation", message: error.message });
     }
-    const invalidRoomIds = this.invalidRoomIds ?? new Set();
-    const validRooms = (floorConfig.rooms ?? []).filter((room) => room.id
-      && this.roomDefinitions.get(room.id) === room
-      && !invalidRoomIds.has(room.id));
-    this.addRooms(validRooms);
-    this.addSpanningStairs(config, floorConfig);
-    this.updateOverlaps();
-    this.renderWallsForFloor(floorConfig);
-    FloorPlanWalls.renderIndependentWalls(this);
-    this.addVisibleVerticalOpenings(config, floorConfig);
-    const validZoneIds = this.validZoneIds ?? new Set();
-    this.addZones(this.visibleZones(config, floorConfig).filter((zone) => validZoneIds.has(zone.id)));
-    (floorConfig.items ?? []).forEach((item, index) => {
-      try {
-        this.addItem(item);
-      } catch (error) {
-        this.errors.push({ index, opening: item, category: "item", message: error.message });
-      }
-    });
-    this.updateOverlaps();
-    [...(floorConfig.openings ?? []), ...this.roomOpenings(floorConfig)].forEach((opening, index) => {
-      if (this.isVerticalOpening(opening)) return;
-      try {
-        this.addOpening(opening);
-      } catch (error) {
-        this.errors.push({ index, opening, category: opening.type === "window" ? "window" : "opening", message: error.message });
-      }
-    });
-    (floorConfig.windows ?? []).forEach((window, index) => {
-      try {
-        this.addWindow(window);
-      } catch (error) {
-        this.errors.push({ index, opening: window, category: "window", message: error.message });
-      }
-    });
+    this.renderPlanFloors(config, floorConfig);
     this.updateLayerVisibility();
     this.renderMultiFloorUnderlay(floorConfig);
     try {
@@ -12264,7 +13225,9 @@ class FloorPlan {
     } catch (error) {
       this.errors.push({ category: "presentation", message: error.message });
     }
-    const visibleRoofs = this.visibleRoofs(config, floorConfig);
+    const visibleRoofs = this.showAllFloors && config.floors
+      ? [...(config.roofs ?? []), ...config.floors.flatMap((floor) => floor.roofs ?? [])]
+      : this.visibleRoofs(config, floorConfig);
     this.renderRoofs(visibleRoofs);
     if (this.roofSwitch) {
       const hasRoofs = visibleRoofs.length > 0;
@@ -12273,7 +13236,15 @@ class FloorPlan {
       this.roofSwitch.closest(".visibility-switch")?.toggleAttribute("hidden", !hasRoofs);
     }
     this.updateRoofVisibility();
-    this.renderGuides(this.visibleGuides(config, floorConfig));
+    if (this.roofOnlySwitch) {
+      const hasRoofs = this.allRoofs.length > 0;
+      this.roofOnlySwitch.checked = this.showOnlyRoofs;
+      this.roofOnlySwitch.disabled = !hasRoofs;
+      this.roofOnlySwitch.closest(".visibility-switch")?.toggleAttribute("hidden", !hasRoofs);
+    }
+    this.renderGuides(this.showAllFloors && config.floors
+      ? [...(config.guides ?? []), ...config.floors.flatMap((floor) => floor.guides ?? [])]
+      : this.visibleGuides(config, floorConfig));
     const defaultFacades = [
       { id: "front", label: "Fachada frontal", direction: "front" },
       { id: "rear", label: "Fachada posterior", direction: "rear" },
@@ -12315,7 +13286,7 @@ class FloorPlan {
    */
   async loadFile(file) {
     const sourceText = await file.text();
-    const config = FloorPlanParser.parse(sourceText);
+    const config = FloorPlanParser.parse(sourceText, { filename: file.name });
     this.currentSourceText = sourceText;
     return this.load(config);
   }
@@ -12524,6 +13495,7 @@ const floor = new FloorPlan({
   dxfButton: document.querySelector("#download-dxf"),
   multiFloorSwitch: document.querySelector("#show-multi-floor"),
   roofSwitch: document.querySelector("#show-roofs"),
+  roofOnlySwitch: document.querySelector("#show-only-roofs"),
   jsonInput: document.querySelector("#json-file"),
   layerOptions: document.querySelector("#layer-options"),
   visibilityHeading: document.querySelector(".visibility-heading"),

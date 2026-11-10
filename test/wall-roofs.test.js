@@ -436,3 +436,16 @@ test('floor plan hides walls belonging to another scope while keeping unscoped w
   walls.renderIndependentWalls(plan);
   assert.equal(elements.length, 1);
 });
+
+test('adjacent front-wall segments have no vertical seam below the gable ridge', () => {
+  const polygons = [
+    [[0, 0], [4, 0], [4, 9], [0, 4]],
+    [[4, 0], [8, 0], [8, 4], [4, 9]],
+  ];
+  const edges = walls.elevationOutline(polygons);
+  assert.equal(edges.length, 12);
+  for (let i = 0; i < edges.length; i += 2) {
+    assert.ok(!(Math.abs(edges[i][0] - 4) < 1e-8 && Math.abs(edges[i + 1][0] - 4) < 1e-8),
+      'internal join below ridge must not be outlined');
+  }
+});
