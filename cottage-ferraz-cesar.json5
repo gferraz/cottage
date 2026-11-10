@@ -450,7 +450,7 @@
           id: "bedroom-north",
           label: "Quarto N",
           from: ["knee-left.x0", "hall.y0"],
-          to: ["knee-left.x0 + 2.9", "y0 + 4.6"],
+          to: ["knee-left.x0 + 3.3", "y0 + 4.6"],
           walls: ["right", "bottom"],
           openings: [
             { type: "door", from: "bottom", to: "upper-corridor"},
@@ -461,7 +461,7 @@
         {
           id: "bedroom-east",
           label: "Quarto E",
-          from: ["knee-right.x0", "hall.y0"],
+          from: ["right.x1", "hall.y0"],
           to: ["bedroom-north.x1", "y0 + 3.6"],
           walls: ["bottom"],
           openings: [
@@ -629,7 +629,7 @@
     {
       id: "office-walls",
       scope: "ground",
-      top: { level: "upper.z0 + 1" },
+      top: { level: "upper.z0" },
       path: {
         points: [
           ["office.x0", "office.y1"],
@@ -647,19 +647,6 @@
         points: [
           ["knee-left.x0", "stairs.y0 - 0.9"],
           ["x0", "left.y1"]
-        ]
-      },
-      base: { level: "upper.z0" },
-    },
-    {
-      id: "knee-wall-right",
-      scope: "upper",
-      color: "blue",
-      path: {
-        points: [
-          ["knee-right.x0", "right.y0"],
-          ["x0", "transverse-roof.y0 + params.knee_setback + 0.8"],
-          ["right.x1", "y0"]
         ]
       },
       base: { level: "upper.z0" },
@@ -820,7 +807,7 @@
     { id: "central-left", label: "central esquerda", pos: ["l-axis.x0 - 0.7", -2.5], l: 20, color: "green" },
     { id: "central-right", label: "central direita", pos: ["l-axis.x0 + 0.7", -2.5], l: 20, color: "green" },
     { id: "knee-bottom", label: "meia parede traseira", pos: [-4.0, "dorm.y1"], w: 20, color: "green" },
-    { id: "knee-left",   label: "meia parede esquerda", pos: ["main-roof.x0 + 0.4 + params.knee_setback", -2.5], l: 20, color: "terracotta" },
+    { id: "knee-left",   label: "meia parede esquerda", pos: ["main-roof.x0 + params.knee_setback", -2.5], l: 20, color: "terracotta" },
     { id: "knee-right",  label: "meia parede direita",  pos: ["main-roof.x1 - params.knee_setback", -2.5], l: 20, color: "terracotta" },
     { id: "l-axis", label: "eixo longitudinal", pos: ["central.xc", -2.5], l: 20, color: "green" },
     { id: "main-bottom", label: "parede traseira", pos: [-4.0, "main.y1"], w: 20, color: "green" },
