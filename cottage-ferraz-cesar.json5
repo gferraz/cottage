@@ -159,7 +159,7 @@
           id: "dining",
           label: "Jantar",
           from: ["right.x0", "porch.y1"],
-          to: ["right.x1", "y0 + 3.4"],
+          to: ["right.x1", "y0 + 3.6"],
           openings: [
             { type: "window", from: "top", to: "exterior", w: 2.4, h: 1.5 }
           ]
@@ -225,7 +225,7 @@
           id: "living",
           label: "Estar",
           from: ["master.x1", "dining.y1"],
-          to: ["right.x1", "y0 + 3.5"]
+          to: ["right.x1", "y0 + 3.4"]
         },
         {
           id: "master",
@@ -508,6 +508,9 @@
           label: "Sem uso",
           from: ["left.x0", "office.y0"],
           to: ["knee-left.x0", "bathroom.y0"],
+          openings: [
+            { type: "window", from: "top", w: 0.8, h: 0.6 }
+          ]
         },
         {
           id: "upper-corridor",
@@ -702,7 +705,6 @@
     {
       id: "upper-front-wall",
       scope: "upper",
-      color: "aroma-de-uva",
       base: { level: "upper.z0" },
       top: "roof",
       path: {
@@ -717,7 +719,6 @@
     {
       id: "upper-left-wall",
       scope: "upper",
-      color: "aroma-de-uva",
       base: { level: "upper.z0" },
       top: "roof",
       path: {
@@ -743,7 +744,6 @@
     {
       id: "upper-rear-wall",
       scope: "upper",
-      color: "aroma-de-uva",
       base: { level: "upper.z0" },
       top: "roof",
       from: ["main.x0", "main.y1"],
@@ -752,7 +752,6 @@
     {
       id: "upper-right-wall",
       scope: "upper",
-      color: "aroma-de-uva",
       base: { level: "upper.z0" },
       top: "roof",
       from: ["right.x1", "right.y0"],
