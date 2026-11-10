@@ -16,6 +16,7 @@ window.FloorPlanCatalog = {
     "abobrinha-italiana": "#9ea67d", // SW 9038
     "aroma-de-uva": "#c5c0c9", // SW 6548
     furniture: "#d8c19a",
+    bed: "#78b8b2",
     appliance: "#c7d2dc",
     sanitary: "#d9e8ee",
     circulation: "#f5eede",
@@ -33,13 +34,13 @@ window.FloorPlanCatalog = {
       label: "Cama Queen",
       size: [1.6, 2.0, 0.55],
       classes: "furniture queen-bed",
-      color: "furniture",
+      color: "bed",
     },
     "twin-bed": {
       label: "Cama Twin",
       size: [0.97, 1.91, 0.55],
       classes: "furniture twin-bed",
-      color: "furniture",
+      color: "bed",
     },
     "three-seat-sofa": {
       label: "Sofá de 3 lugares",
