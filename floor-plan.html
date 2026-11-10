@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Planta térrea — separada por módulos</title>
     <link rel="stylesheet" href="src/config/theme.css" />
-  <link rel="stylesheet" href="src/floor-plan.css?v=bed-colors-2" />
+  <link rel="stylesheet" href="src/floor-plan.css?v=nightstands-1" />
   </head>
   <body class="page-empty">
 <template id="portable-export-css"><style>
@@ -538,6 +538,26 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .fireplace { background: #555; border: 2px solid #222; }
 .table { border: 2px solid #7a5b3a; background: #caa878; z-index: 5; }
 .car { border: 2px solid #666; border-radius: 14px; background: #bbb; z-index: 5; }
+.plan-item.nightstand {
+  opacity: 0.85;
+  border: 1px solid #6e5241;
+  border-radius: 2px;
+}
+.plan-item.storage-chest {
+  opacity: 1;
+  border: 1px solid #6e5241;
+  border-radius: 2px;
+}
+.storage-chest::after {
+  content: attr(data-label);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  writing-mode: vertical-rl;
+  font-size: 9px;
+  color: #3d2d24;
+}
 .queen-bed { border: 2px solid #6d7890; border-radius: 5px; background: #d9deea; }
 .plan-item.twin-bed {
   opacity: 0.85;

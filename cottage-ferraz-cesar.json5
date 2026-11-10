@@ -149,7 +149,7 @@
           id: "closet",
           label: "Closet",
           from: ["left.x0", "master.y1"],
-          to: ["x0 + 2.8", "y0 + 2.4"],
+          to: ["x0 + 2.8", "y0 + 2.2"],
           openings: [
             { type: "opening", from: "right", to: "vestibule" }
           ],
@@ -231,7 +231,7 @@
         {
           id: "master",
           label: "Suíte Master",
-          rectangle: ["left.x0", "office.y1", "left.x1", "y0 + 3.2"],
+          rectangle: ["left.x0", "office.y1", "left.x1 - 0.4", "y0 + 3.6"],
           walls: ["top", "right", "left"],
           openings: [
             { type: "window", from: "left", to: "exterior", dy: 0.6 },
@@ -242,7 +242,7 @@
           id: "master-bath",
           label: "Banheiro Master",
           from: ["left.x0", "closet.y1"],
-          to: ["left.x1", "knee-bottom.y0"],
+          to: ["master.x1", "knee-bottom.y0"],
           walls: ["top", "left", "right"],
           openings: [
             { type: "door", from: "top", to: "vestibule" },
@@ -263,7 +263,7 @@
           id: "office",
           label: "Escritório",
           from: ["left.x0 - 0.8", "left.y0  - 2.5"],
-          to: ["left.x1 - 1.1", "left.y0 + 1.5"],
+          to: ["left.x1 - 1.1", "left.y0 + 1.3"],
           openings: [
             { type: "door", from: "right", to: "hall" },
             { type: "window", from: "top", w: 1.2},
@@ -304,8 +304,8 @@
         {
           id: "rear-corridor",
           label: "C-2.",
-          rectangle: ["central.x0", "living.y1", "central.x1", "kitchen.y0"],
-          walls: ["left"],
+          rectangle: ["master.x1", "living.y1", "central.x1", "kitchen.y0"],
+          walls: [],
           classes: "circulation"
         },
         // Escada anterior — dois lances e patamar intermediário na cota 1,67 m.
@@ -434,7 +434,12 @@
         { type: "washing-machine", pos: ["middle-flight.x1 - 0.625", "middle-flight.y1 - 0.65"], rotation: 180 },
         // Sob o patamar de 1 m: somente armazenamento baixo.
         { title: "Armário baixo", pos: ["lower-landing.x0 + 0.1", "lower-landing.y0 + 0.1"], size: ["lower-landing.w - 0.2", 0.4, 0.6], classes: "storage", color: "furniture" },
-        { type: "queen-bed", pos: ["master.x0 + 1", "master.y0"] },
+        // Cabeceira na parede frontal; cama centralizada e criados a 5 cm das laterais.
+        { id: "master-bed", type: "queen-bed", pos: ["master.xc - 0.8", "master.y0 + params.wall_thickness / 2 + 0.1"] },
+        // Baú centralizado aos pés da cama, com 10 cm de folga.
+        { id: "master-chest", label: "Baú", title: "Baú — Suíte Master", pos: ["master-bed.xc - 0.225", "master-bed.y1 - 0.375"], size: [0.45, 1.4, 0.45], rotation: 270, classes: "furniture storage storage-chest", color: "furniture" },
+        { id: "master-nightstand-front", title: "Criado-mudo — Suíte Master", pos: ["master-bed.x0 - 0.55", "master-bed.y0"], size: [0.5, 0.5, 0.55], classes: "furniture storage", color: "furniture" },
+        { id: "master-nightstand-rear", title: "Criado-mudo — Suíte Master", pos: ["master-bed.x1 + 0.05", "master-bed.y0"], size: [0.5, 0.5, 0.55], classes: "furniture storage", color: "furniture" },
 
         { type: "railing", pos: ["porch.x0",        "porch.y0"], size: ["hall.xc - 0.9 - porch.x0", 0.08, 1.1] },
         { type: "railing", pos: ["hall.xc + 0.9",   "porch.y0"], size: ["porch.x1 - hall.xc - 0.9", 0.08, 1.1] },
@@ -603,6 +608,13 @@
         // Quarto Oeste: cabeceiras à direita; faixa de circulação aos pés e entre camas.
         { id: "bed-west-1", type: "twin-bed", pos: ["bedroom-west.x1 - 1.44 - params.wall_thickness / 2", "bedroom-west.y0 + 0.3"], rotation: 90 },
         { id: "bed-west-2", type: "twin-bed", pos: ["bedroom-west.x1 - 1.44 - params.wall_thickness / 2", "bedroom-west.y1 - 1.74"], rotation: 90 },
+        // Criados junto às cabeceiras; modelos compactos nos quartos com camas Twin.
+        { id: "nightstand-east-1", label: "Criado-mudo", pos: ["bed-east.xc + bed-east.l / 2 - 0.4", "bed-east.yc - bed-east.w / 2 - 0.45"], size: [0.4, 0.4, 0.55], classes: "furniture storage nightstand", color: "furniture" },
+        { id: "nightstand-east-2", label: "Criado-mudo", pos: ["bed-east-2.xc + bed-east-2.l / 2 - 0.4", "bed-east-2.yc + bed-east-2.w / 2 + 0.05"], size: [0.4, 0.4, 0.55], classes: "furniture storage nightstand", color: "furniture" },
+        { id: "nightstand-north-1", label: "Criado-mudo", pos: ["bed-north-1.xc - bed-north-1.l / 2", "bed-north-1.yc - bed-north-1.w / 2 - 0.55"], size: [0.5, 0.5, 0.55], classes: "furniture storage nightstand", color: "furniture" },
+        { id: "nightstand-north-2", label: "Criado-mudo", pos: ["bed-north-1.xc - bed-north-1.l / 2", "bed-north-1.yc + bed-north-1.w / 2 + 0.05"], size: [0.5, 0.5, 0.55], classes: "furniture storage nightstand", color: "furniture" },
+        { id: "nightstand-west-1", label: "Criado-mudo", pos: ["bed-west-1.xc + bed-west-1.l / 2 - 0.4", "bed-west-1.yc - bed-west-1.w / 2 - 0.45"], size: [0.4, 0.4, 0.55], classes: "furniture storage nightstand", color: "furniture" },
+        { id: "nightstand-west-2", label: "Criado-mudo", pos: ["bed-west-2.xc + bed-west-2.l / 2 - 0.4", "bed-west-2.yc - bed-west-2.w / 2 - 0.45"], size: [0.4, 0.4, 0.55], classes: "furniture storage nightstand", color: "furniture" },
         // Armários baixos sob a água do telhado; portas de correr a detalhar.
         { id: "wardrobe-west-front", title: "Armário baixo — Quarto Oeste", pos: ["bedroom-west.x0 + 0.06", "bedroom-west.y0 + 0.06"], size: [0.8, 0.6, 1.2], classes: "storage", color: "furniture" },
         { id: "wardrobe-west-rear", title: "Armário baixo — Quarto Oeste", pos: ["bedroom-west.x0 + 0.06", "bedroom-west.y1 - 0.66"], size: [0.8, 0.6, 1.2], classes: "storage", color: "furniture" },
