@@ -226,6 +226,11 @@
                 "left"
               ],
               "description": "Caimento do shed; longitudinal: left/right; transverse: top/bottom."
+            },
+            "thickness": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Espessura vertical da cobertura no 3D, em metros. Padrão: 0.12."
             }
           },
           "additionalProperties": false
@@ -2432,6 +2437,11 @@
           "type": "boolean",
           "default": true,
           "description": "Recorta a superfície nos encontros com outros telhados. Use false para preservar uma cobertura inferior completa."
+        },
+        "thickness": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Espessura vertical da cobertura no 3D, em metros. Padrão: 0.12."
         }
       },
       "additionalProperties": false,

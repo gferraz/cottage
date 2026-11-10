@@ -245,3 +245,5 @@ planta continua sendo escolhido pelo botão “Carregar JSON”.
 - `src/config/`: catálogo de tipos e cores, tema, parser JSON5 e inicialização da aplicação.
 - `src/floor-plan.css`: estilos gerais da página.
 - `cottage-ferraz-cesar.json`: exemplo com terreno e múltiplos pisos.
+
+No 3D, as superfícies dos telhados têm espessura vertical padrão de 0,12 m, com topo, face inferior e bordas fechadas. Use `thickness` no telhado (ou em `config.roofs`) para ajustar em metros; `0` mantém uma superfície sem volume. A espessura cresce acima da superfície de referência, preservando o contato das paredes. A planta, as elevações e as cotas de referência continuam representando a superfície original.

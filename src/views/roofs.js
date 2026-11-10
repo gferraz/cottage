@@ -158,7 +158,23 @@ const FloorPlanRoofs = {
     });
   },
 
-  surfaceEdges(polygons) {
+  // Thickness is vertical: the existing surface remains the wall contact plane.
+  solidSurface(polygons, thickness) {
+    const top = (point) => [point[0], point[1], point[2] + thickness];
+    const faces = polygons.map((polygon) => polygon.map(top));
+    if (thickness > 0) {
+      faces.push(...polygons.map((polygon) => [...polygon].reverse()));
+      const boundary = this.surfaceEdges(polygons, true);
+      for (let i = 0; i < boundary.length; i += 2) {
+        const a = boundary[i];
+        const b = boundary[i + 1];
+        faces.push([a, b, top(b), top(a)]);
+      }
+    }
+    return { faces, edges: this.surfaceEdges(faces) };
+  },
+
+  surfaceEdges(polygons, boundaryOnly = false) {
     const vertices = polygons.flat();
     const edges = new Map();
     const key = (point) => point.map((value) => Math.round(value * 1e7)).join(",");
@@ -196,7 +212,7 @@ const FloorPlanRoofs = {
     });
     // Shared edges between slopes are ridges/valleys; shared coplanar edges
     // are harmless subdivision seams and need no extra line.
-    return [...edges.values()].filter((edge) => edge.count === 1 || edge.crease).flatMap(({ a, b }) => [a, b]);
+    return [...edges.values()].filter((edge) => edge.count === 1 || (!boundaryOnly && edge.crease)).flatMap(({ a, b }) => [a, b]);
   },
 
   asGeometryBox(base, label = "roof base") {

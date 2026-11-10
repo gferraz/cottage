@@ -79,3 +79,16 @@ for (const type of ['gable', 'shed']) for (const orientation of ['longitudinal',
     assert.ok(Math.abs(area([entries[1]]) - 28) < 1e-8);
   });
 }
+
+for (const type of ['gable', 'shed']) {
+  test(`${type} thickness closes perimeter without internal ridge walls`, () => {
+    const [{ polygons }] = roofs.intersectingSurfaces(fixture([definition('roof', 'longitudinal', { type })]));
+    const boundary = roofs.surfaceEdges(polygons, true);
+    const { faces } = roofs.solidSurface(polygons, 0.12);
+    assert.equal(faces.length, polygons.length * 2 + boundary.length / 2);
+    const originalMax = Math.max(...polygons.flat().map(point => point[2]));
+    assert.ok(Math.abs(Math.max(...faces.flat().map(point => point[2])) - originalMax - 0.12) < 1e-8);
+    assert.equal(roofs.surfaceEdges(faces, true).length, 0, 'solid has no open boundary');
+    assert.deepEqual(roofs.solidSurface(polygons, 0).faces, polygons);
+  });
+}

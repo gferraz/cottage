@@ -65,7 +65,7 @@ const FloorPlanModel = {
     config = this.resolveParameters(config);
     const defaults = config.config ?? {};
     const roofDefaults = Object.fromEntries(
-      ["type", "pitch", "eave", "rake", "slope"].filter((key) => defaults.roofs?.[key] !== undefined)
+      ["type", "pitch", "eave", "rake", "slope", "thickness"].filter((key) => defaults.roofs?.[key] !== undefined)
         .map((key) => [key, defaults.roofs[key]]),
     );
     const expand = (floor) => {
