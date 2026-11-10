@@ -73,3 +73,13 @@ test('invalid ceiling_height is reported instead of falling back to a valid lega
   assert.deepEqual(globalThis.FloorPlanValidation.validateFloors({ z0: 0, ceiling_height: 3 }), []);
   assert.deepEqual(globalThis.FloorPlanValidation.validateFloors({ z0: 0, wall_max_height: 3 }), []);
 });
+
+
+test('eaves defaults merge per property and local legacy widths still override defaults', () => {
+  const source = { config: { roofs: { pitch: 51, eaves: { left: 0.5, right: 0.6, pitch: 30 } } },
+    roofs: [{ eaves: { left: 0 } }, { eave: [1, 2] }] };
+  const result = model.applyDefaults(source);
+  assert.deepEqual(result.roofs[0].eaves, { left: 0, right: 0.6, pitch: 30 });
+  assert.deepEqual(result.roofs[1].eaves, { left: 1, right: 2, pitch: 30 });
+  assert.equal(source.roofs[0].eaves.pitch, undefined);
+});

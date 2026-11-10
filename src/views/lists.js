@@ -420,7 +420,7 @@ const FloorPlanLists = {
         base = null;
       }
       const pitch = Number(roof.pitch);
-      const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
+      const [eave0, eave1] = FloorPlanRoofs.eavePair(roof);
       const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
       let values = [
         plan.roofTypeLabel(roof.type),
@@ -430,7 +430,7 @@ const FloorPlanLists = {
         "—",
         "—",
         Number.isFinite(pitch) ? `${plan.formatMeters(pitch)}°` : "—",
-        FloorPlanRoofs.formatOverhang(plan, roof.eave),
+        FloorPlanRoofs.formatOverhang(plan, FloorPlanRoofs.eavePair(roof)),
         FloorPlanRoofs.formatOverhang(plan, roof.rake),
       ];
       if (base && Number.isFinite(pitch)) {
@@ -448,7 +448,9 @@ const FloorPlanLists = {
         const baseSpan = longitudinal ? baseWidth : baseLength;
         const slopeA = longitudinal ? eave0 : rake0;
         const slopeB = longitudinal ? eave1 : rake1;
-        const roofSurfaceArea = roof.type === "shed"
+        const roofSurfaceArea = roof.eaves?.pitch !== undefined
+          ? FloorPlanRoofs.surfaceArea(roof, baseSpan, ridgeLength)
+          : roof.type === "shed"
           ? roofWidth * roofLength / Math.cos(pitch * Math.PI / 180)
           : (Math.hypot(baseSpan / 2 + slopeA, rise) +
             Math.hypot(baseSpan / 2 + slopeB, rise)) *
@@ -466,8 +468,8 @@ const FloorPlanLists = {
           plan.formatMeters(baseElevation),
           plan.formatMeters(rise),
           plan.formatMeters(roofSurfaceArea),
-          `${plan.formatMeters(pitch)}°`,
-          FloorPlanRoofs.formatOverhang(plan, roof.eave),
+          `${plan.formatMeters(pitch)}°${roof.eaves?.pitch !== undefined ? ` / beiral ${plan.formatMeters(FloorPlanRoofs.eavePitch(roof))}°` : ""}`,
+          FloorPlanRoofs.formatOverhang(plan, FloorPlanRoofs.eavePair(roof)),
           FloorPlanRoofs.formatOverhang(plan, roof.rake),
         ];
       }

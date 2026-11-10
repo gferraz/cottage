@@ -231,6 +231,35 @@
               "type": "number",
               "minimum": 0,
               "description": "Espessura vertical da cobertura no 3D, em metros. Padrão: 0.12."
+            },
+            "eaves": {
+              "type": "object",
+              "description": "Beirais: left/right correspondem ao primeiro/segundo lado de eave, no eixo transversal ao caimento da cumeeira.",
+              "properties": {
+                "left": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "right": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "pitch": {
+                  "description": "Inclinação do beiral em graus; ausente: segue pitch do telhado.",
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "minimum": 0,
+                      "exclusiveMaximum": 90
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  ]
+                }
+              },
+              "additionalProperties": false
             }
           },
           "additionalProperties": false
@@ -2442,6 +2471,35 @@
           "type": "number",
           "minimum": 0,
           "description": "Espessura vertical da cobertura no 3D, em metros. Padrão: 0.12."
+        },
+        "eaves": {
+          "type": "object",
+          "description": "Beirais: left/right correspondem ao primeiro/segundo lado de eave, no eixo transversal ao caimento da cumeeira.",
+          "properties": {
+            "left": {
+              "type": "number",
+              "minimum": 0
+            },
+            "right": {
+              "type": "number",
+              "minimum": 0
+            },
+            "pitch": {
+              "description": "Inclinação do beiral em graus; ausente: segue pitch do telhado.",
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0,
+                  "exclusiveMaximum": 90
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false,

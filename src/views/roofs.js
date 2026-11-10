@@ -1,4 +1,69 @@
 const FloorPlanRoofs = {
+  eavePair(roof) {
+    const legacy = this.overhangPair(roof.eave);
+    return [Number(roof.eaves?.left ?? legacy[0]), Number(roof.eaves?.right ?? legacy[1])];
+  },
+
+  eavePitch(roof) {
+    const pitch = Number(roof.eaves?.pitch ?? roof.pitch);
+    if (!Number.isFinite(pitch) || pitch < 0 || pitch >= 90) {
+      throw new Error("A inclinação do beiral (eaves.pitch) precisa estar entre 0 e 90 graus, exclusive 90");
+    }
+    return pitch;
+  },
+
+  // Split at the support lines before changing the overhang slope. Each
+  // resulting patch has its own clipping volume, including at roof crossings.
+  eavePatches(plan, definition) {
+    const { roof } = definition;
+    if (roof.eaves?.pitch === undefined) return [definition];
+    const tangent = Math.tan(this.eavePitch(roof) * Math.PI / 180);
+    const base = this.resolveBase(plan, roof.base ?? roof, this.floorForRoof(plan, roof, roof.base ?? roof));
+    const axis = roof.orientation === "longitudinal" ? 0 : 1;
+    const start = axis === 0 ? base.x0() : base.y0();
+    const end = axis === 0 ? base.x1() : base.y1();
+    const halfspace = (sign, edge) => axis === 0 ? [sign, 0, 0, -sign * edge] : [0, sign, 0, -sign * edge];
+    return definition.polygons.flatMap((polygon) => {
+      const delta = polygon[1].map((v, i) => v - polygon[0][i]);
+      const other = polygon[2].map((v, i) => v - polygon[0][i]);
+      const normal = [delta[1] * other[2] - delta[2] * other[1], delta[2] * other[0] - delta[0] * other[2], delta[0] * other[1] - delta[1] * other[0]];
+      const gradient = -normal[axis] / normal[2];
+      return [
+        { bounds: [halfspace(1, start)], edge: start },
+        { bounds: [halfspace(-1, start), halfspace(1, end)] },
+        { bounds: [halfspace(-1, end)], edge: end },
+      ].flatMap(({ bounds, edge }) => {
+        let patch = polygon;
+        bounds.forEach((plane) => { patch = this.clipPolygon(patch, plane); });
+        if (!patch.length) return [];
+        if (edge !== undefined) patch = patch.map((point) => point.map((v, i) => i === 2
+          ? v + (point[axis] - edge) * (Math.sign(gradient) * tangent - gradient) : v));
+        const a = patch[1].map((v, i) => v - patch[0][i]);
+        const b = patch[2].map((v, i) => v - patch[0][i]);
+        const n = [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+        if (Math.abs(n[2]) < 1e-10) return [];
+        const plane = [n[0] / n[2], n[1] / n[2], 1];
+        plane.push(-plane.reduce((sum, value, i) => sum + value * patch[0][i], 0));
+        // Bound each patch by its projected polygon edges (also separates gable halves).
+        const footprint = patch.map(([x, y]) => [x, y, 0]);
+        const center = [0, 1].map((i) => footprint.reduce((sum, p) => sum + p[i], 0) / footprint.length);
+        const limits = footprint.map((p, i) => {
+          const q = footprint[(i + 1) % footprint.length];
+          const boundary = [q[1] - p[1], p[0] - q[0], 0, 0];
+          boundary[3] = -boundary[0] * p[0] - boundary[1] * p[1];
+          return boundary[0] * center[0] + boundary[1] * center[1] + boundary[3] > 0 ? boundary.map(v => -v) : boundary;
+        });
+        return [{ roof, polygons: [patch], planes: [...definition.planes.filter(p => p[2] === 0), ...limits, plane] }];
+      });
+    });
+  },
+
+  surfaceArea(roof, baseSpan, ridgeLength) {
+    const eaves = this.eavePair(roof);
+    return ridgeLength * (baseSpan / Math.cos(Number(roof.pitch) * Math.PI / 180)
+      + (eaves[0] + eaves[1]) / Math.cos(this.eavePitch(roof) * Math.PI / 180));
+  },
+
   axisLabel(plan, roof, length) {
     if (roof.type !== "shed") return `${plan.roofOrientationLabel(roof.orientation)} · ${plan.formatMeters(length)} m`;
     const slope = roof.slope ?? (roof.orientation === "longitudinal" ? "right" : "bottom");
@@ -20,7 +85,7 @@ const FloorPlanRoofs = {
     const base = this.resolveBase(plan, roof.base ?? roof, floor);
     const pitch = Number(roof.pitch);
     if (!(pitch > 0 && pitch < 90)) throw new Error("A inclinação do telhado precisa estar entre 0 e 90 graus");
-    const eave = this.overhangPair(roof.eave), rake = this.overhangPair(roof.rake);
+    const eave = this.eavePair(roof), rake = this.overhangPair(roof.rake);
     if (![...eave, ...rake].every((value) => Number.isFinite(value) && value >= 0)) {
       throw new Error("Os beirais do telhado precisam ser números não negativos");
     }
@@ -47,7 +112,7 @@ const FloorPlanRoofs = {
       ridgeLength: longitudinal ? y1 - y0 : x1 - x0,
       ridgeX0: longitudinal ? high : x0, ridgeX1: longitudinal ? high : x1,
       ridgeY0: longitudinal ? y0 : high, ridgeY1: longitudinal ? y1 : high,
-      surfaceArea: (x1 - x0) * (y1 - y0) / Math.cos(pitch * Math.PI / 180),
+      surfaceArea: this.surfaceArea(roof, end - start, longitudinal ? y1 - y0 : x1 - x0),
       minZ: Math.min(...polygon.map((point) => point[2])),
       peakZ: Math.max(...polygon.map((point) => point[2])),
       bounds: [[-1, 0, 0, x0], [1, 0, 0, -x1], [0, -1, 0, y0], [0, 1, 0, -y1]],
@@ -75,6 +140,7 @@ const FloorPlanRoofs = {
 
   intersectingSurfaces(plan, roofs = plan.allRoofs ?? []) {
     const definitions = roofs.flatMap((roof) => {
+      try { this.eavePitch(roof); } catch { return []; }
       if (roof.type === "shed") {
         try {
           const geometry = this.shedGeometry(plan, roof);
@@ -93,7 +159,7 @@ const FloorPlanRoofs = {
         const floor = this.floorForRoof(plan, roof, roof.base ?? roof);
         const base = this.resolveBase(plan, roof.base ?? roof, floor);
         const longitudinal = roof.orientation === "longitudinal";
-        const [e0, e1] = this.overhangPair(roof.eave);
+        const [e0, e1] = this.eavePair(roof);
         const [r0, r1] = this.overhangPair(roof.rake);
         const x0 = base.x0() - (longitudinal ? e0 : r0), x1 = base.x1() + (longitudinal ? e1 : r1);
         const y0 = base.y0() - (longitudinal ? r0 : e0), y1 = base.y1() + (longitudinal ? r1 : e1);
@@ -128,12 +194,13 @@ const FloorPlanRoofs = {
         return [];
       }
     });
-    return definitions.map((definition, index) => {
+    const patches = definitions.flatMap((definition) => this.eavePatches(plan, definition));
+    const clipped = patches.map((definition, index) => {
       let polygons = definition.polygons;
       // Uma cobertura inferior pode continuar sob os beirais de outro volume.
       if (definition.roof.clip_intersections === false) return { roof: definition.roof, polygons };
-      definitions.forEach((other, otherIndex) => {
-        if (otherIndex === index) return;
+      patches.forEach((other, otherIndex) => {
+        if (otherIndex === index || other.roof === definition.roof) return;
         polygons = polygons.flatMap((polygon) => {
           // Coplanar overlap belongs to the earlier definition only.
           let inside = polygon;
@@ -156,6 +223,8 @@ const FloorPlanRoofs = {
       });
       return { roof: definition.roof, polygons };
     });
+
+    return definitions.map(({ roof }) => ({ roof, polygons: clipped.filter(entry => entry.roof === roof).flatMap(entry => entry.polygons) }));
   },
 
   // Thickness is vertical: the existing surface remains the wall contact plane.
@@ -362,6 +431,7 @@ const FloorPlanRoofs = {
     const clippedRoofs = this.intersectingSurfaces(plan, plan.allRoofs?.length ? plan.allRoofs : roofs);
     roofs.forEach((roof, index) => {
       try {
+        this.eavePitch(roof);
         if (!["gable", "shed"].includes(roof.type))
           throw new Error(`Unsupported roof type: ${roof.type || "undefined"}`);
         const baseDefinition = roof.base ?? roof;
@@ -381,7 +451,7 @@ const FloorPlanRoofs = {
           throw new Error(
             "A gable roof pitch must be between 0 and 90 degrees",
           );
-        const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
+        const [eave0, eave1] = FloorPlanRoofs.eavePair(roof);
         const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
         if (
           ![eave0, eave1, rake0, rake1].every(Number.isFinite) ||
@@ -505,6 +575,7 @@ const FloorPlanRoofs = {
         group.dataset.orientation = roof.orientation;
         if (shed) group.dataset.slope = shed.slope;
         group.dataset.pitch = String(pitch);
+        group.dataset.eavePitch = String(this.eavePitch(roof));
         group.dataset.eave = JSON.stringify([eave0, eave1]);
         group.dataset.rake = JSON.stringify([rake0, rake1]);
         group.dataset.baseZ = String(z0);
@@ -540,6 +611,7 @@ const FloorPlanRoofs = {
             class: "roof-label-details",
           });
           details.textContent = `${shed ? "Borda alta" : "Cumeeira"}: ${plan.formatMeters(ridgeLength)} m — Altura: ${plan.formatMeters(rise)} m — Inclinação: ${plan.formatMeters(pitch)}°`;
+          if (roof.eaves?.pitch !== undefined) details.textContent += ` — Beiral: ${plan.formatMeters(this.eavePitch(roof))}°`;
           label.append(title, details);
           group.append(label);
         }

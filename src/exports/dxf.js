@@ -10,7 +10,7 @@ const FloorPlanExport = {
       return null;
     }
     const pitch = Number(roof.pitch);
-    const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
+    const [eave0, eave1] = FloorPlanRoofs.eavePair(roof);
     const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
     if (
       !base ||
@@ -34,7 +34,9 @@ const FloorPlanExport = {
     const ridgeLength = longitudinal ? roofLength : roofWidth;
     const slopeA = longitudinal ? eave0 : rake0;
     const slopeB = longitudinal ? eave1 : rake1;
-    const surfaceArea =
+    const surfaceArea = roof.eaves?.pitch !== undefined
+      ? FloorPlanRoofs.surfaceArea(roof, baseSpan, ridgeLength)
+      :
       (Math.hypot(baseSpan / 2 + slopeA, rise) +
         Math.hypot(baseSpan / 2 + slopeB, rise)) *
       ridgeLength;
@@ -271,6 +273,16 @@ const FloorPlanExport = {
         const metrics = FloorPlanExport.roofMetrics(plan, roof);
         if (!metrics) return;
         const { x0, x1, y0, y1, ridgeX0, ridgeY0, ridgeX1, ridgeY1 } = metrics;
+        if (roof.eaves?.pitch !== undefined) {
+          const surfaces = FloorPlanRoofs.intersectingSurfaces(plan, [roof]);
+          const edges = FloorPlanRoofs.surfaceEdges(surfaces.flatMap(entry => entry.polygons));
+          for (let i = 0; i < edges.length; i += 2) {
+            const a = edges[i], b = edges[i + 1];
+            line("ROOFS", a[0], a[1], b[0], b[1], a[2], b[2]);
+          }
+          if (roof.label) text("ROOF_LABELS", roof.label, (x0 + x1) / 2, (y0 + y1) / 2);
+          return;
+        }
         if (roof.type === "shed") {
           metrics.polygon.forEach((point, index) => {
             const next = metrics.polygon[(index + 1) % metrics.polygon.length];

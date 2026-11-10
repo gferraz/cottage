@@ -44,7 +44,7 @@
     roofs: {
       type: "gable",
       pitch: 51,
-      eave: 0.5,
+      eaves: { left: 0.5, right: 0.5, pitch: 30 },
       rake: 0.5
     },
     openings: {
@@ -149,11 +149,11 @@
           id: "closet",
           label: "Closet",
           from: ["left.x0", "master.y1"],
-          to: ["x0 + 3.2", "y0 + 2.4"],
+          to: ["x0 + 2.8", "y0 + 2.4"],
           openings: [
             { type: "opening", from: "right", to: "vestibule" }
           ],
-          walls: ["top"]
+          walls: ["top", "left"]
         },
         {
           id: "dining",
@@ -204,13 +204,14 @@
         {
           id: "kitchen",
           label: "Cozinha",
-          from: ["dorm.x0", "master-bath.y1"],
+          from: ["office.x0", "master-bath.y1"],
           to: ["right.x0", "y0 + 3.9"],
           openings: [
             { type: "window", from: "left", to: "exterior", w: 2.4 },
             { type: "door", from: "bottom", to: "terrace" }
           ],
-          classes: "wet"
+          classes: "wet",
+          walls: ["top", "left"]
         },
         {
           id: "laundry",
@@ -230,8 +231,8 @@
         {
           id: "master",
           label: "Suíte Master",
-          rectangle: ["left.x0", "office.y1", "left.x1 + 0.3", "y0 + 3.2"],
-          walls: ["top", "right"],
+          rectangle: ["left.x0", "office.y1", "left.x1", "y0 + 3.2"],
+          walls: ["top", "right", "left"],
           openings: [
             { type: "window", from: "left", to: "exterior", dy: 0.6 },
             { type: "window", from: "left", to: "exterior", dy: 2.1 }
@@ -242,7 +243,7 @@
           label: "Banheiro Master",
           from: ["left.x0", "closet.y1"],
           to: ["left.x1", "knee-bottom.y0"],
-          walls: ["top", "bottom", "right"],
+          walls: ["top", "left", "right"],
           openings: [
             { type: "door", from: "top", to: "vestibule" },
             { type: "window", from: "left", to: "exterior" }
@@ -268,7 +269,8 @@
             { type: "window", from: "top", w: 1.2},
             { type: "window", from: "left" }
           ],
-          classes: "office"
+          classes: "office",
+          walls: ["bottom"]
         },
         {
           id: "pantry",
@@ -654,18 +656,18 @@
       },
       base: { level: "upper.z0" },
     },
-    {
-      id: "left-wall",
-      scope: "ground",
-      top: { level: "upper.z0" },
-      path: {
-        points: [
-          ["office.x0", "office.y1"],
-          ["left.x0", "y0"],
-          ["x0", "kitchen.y1"]
-        ]
-      },
-    },
+    // {
+    //   id: "left-wall",
+    //   scope: "ground",
+    //   top: { level: "upper.z0" },
+    //   path: {
+    //     points: [
+    //       ["office.x0", "office.y1"],
+    //       ["left.x0", "y0"],
+    //       ["x0", "kitchen.y1"]
+    //     ]
+    //   },
+    // },
     {
       id: "rear-wall",
       scope: "ground",
@@ -770,9 +772,9 @@
       base: "porch",
       orientation: "transverse",
       slope: "top",
-      pitch: 12,
-      z0: "ground.z0 + 2.6",
-      eave: [0.35, 0],
+      pitch: 20,
+      z0: "ground.z0 + 2.7",
+      eaves: { left: 0.45, right: 0, pitch: 20 },
       rake: [0, 0.25]
     },
     {
@@ -781,7 +783,7 @@
       z0: "upper.z0 + 1",
       rectangle: ["office.x1 - 1.6", "hall.y0", "main.x1", "main.y1"],
       orientation: "longitudinal",
-      eave: [0.0, 0.5],
+      eaves: { left: 0, right: 0.5 },
       rake: [0.5, 0.5]
     },
     {
@@ -797,7 +799,7 @@
       from: ["top.x0", "top.y0 + 2", "upper.z0 + 1"],
       to: ["top.x1", "bottom.y1 - 1", "z0"],
       orientation: "transverse",
-      eave: [0, 0],
+      eaves: { left: 0, right: 0 },
     }
   ],
 

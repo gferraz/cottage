@@ -294,7 +294,7 @@ const FloorPlanFacades = {
           return null;
         }
         const longitudinal = roof.orientation === "longitudinal";
-        const [eave0, eave1] = FloorPlanRoofs.overhangPair(roof.eave);
+        const [eave0, eave1] = FloorPlanRoofs.eavePair(roof);
         const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
         const pitch = Number(roof.pitch);
         const baseSpan = longitudinal ? base.w() : base.l();

@@ -65,16 +65,27 @@ const FloorPlanModel = {
     config = this.resolveParameters(config);
     const defaults = config.config ?? {};
     const roofDefaults = Object.fromEntries(
-      ["type", "pitch", "eave", "rake", "slope", "thickness"].filter((key) => defaults.roofs?.[key] !== undefined)
+      ["type", "pitch", "eaves", "eave", "rake", "slope", "thickness"].filter((key) => defaults.roofs?.[key] !== undefined)
         .map((key) => [key, defaults.roofs[key]]),
     );
+    const roofWithDefaults = (roof) => {
+      const result = { ...roofDefaults, ...roof };
+      if (roofDefaults.eaves || roof.eaves) {
+        const localLegacy = roof.eave === undefined ? {} : {
+          left: Array.isArray(roof.eave) ? roof.eave[0] : roof.eave,
+          right: Array.isArray(roof.eave) ? roof.eave[1] : roof.eave,
+        };
+        result.eaves = { ...roofDefaults.eaves, ...localLegacy, ...roof.eaves };
+      }
+      return result;
+    };
     const expand = (floor) => {
       const ceilingHeight = floor.ceiling_height ?? floor.wall_max_height ??
         defaults.floors?.ceiling_height ?? defaults.floors?.wall_max_height;
       const result = {
         ...floor,
         ...(ceilingHeight !== undefined ? { ceiling_height: ceilingHeight } : {}),
-        ...(floor.roofs ? { roofs: floor.roofs.map((roof) => ({ ...roofDefaults, ...roof })) } : {}),
+        ...(floor.roofs ? { roofs: floor.roofs.map(roofWithDefaults) } : {}),
       };
       if (floor.roofs) result.roofs.forEach((roof, index) => window.FloorPlanParser?.copyLocation(floor.roofs[index], roof));
       return window.FloorPlanParser?.copyLocation(floor, result) ?? result;

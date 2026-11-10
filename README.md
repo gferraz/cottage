@@ -247,3 +247,9 @@ planta continua sendo escolhido pelo botão “Carregar JSON”.
 - `cottage-ferraz-cesar.json`: exemplo com terreno e múltiplos pisos.
 
 No 3D, as superfícies dos telhados têm espessura vertical padrão de 0,12 m, com topo, face inferior e bordas fechadas. Use `thickness` no telhado (ou em `config.roofs`) para ajustar em metros; `0` mantém uma superfície sem volume. A espessura cresce acima da superfície de referência, preservando o contato das paredes. A planta, as elevações e as cotas de referência continuam representando a superfície original.
+
+### Inclinação dos beirais
+
+Use `eaves: { left: 0.5, right: 0.5, pitch: 30 }` no telhado ou em `config.roofs` para reunir os avanços horizontais (metros) e o ângulo dos beirais (graus). Exemplo: `{ type: "gable", base: "main", orientation: "longitudinal", pitch: 51, eaves: { left: 0.8, right: 0.8, pitch: 30 } }`.
+
+A quebra reta começa no limite da base, preservando o trecho principal, a cumeeira e `rake`. `left` e `right` correspondem aos dois lados da seção do telhado: esquerda/direita na orientação longitudinal; frente/fundos na transversal (a mesma ordem do antigo array `eave`). Aceita ângulo de 0° a menos de 90°; sem `eaves.pitch`, o beiral segue `pitch`. Aplica-se também às duas extremidades de coberturas `shed`. O campo antigo `eave` continua aceito; os valores presentes em `eaves.left/right` têm prioridade sobre ele, e lados ausentes usam `eave` ou zero. A configuração representa geometria de estudo, sem validar a inclinação mínima do fabricante do shingle.
