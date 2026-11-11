@@ -991,12 +991,10 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .round-table { border-radius: 50%; }
 .car { border: 2px solid #666; border-radius: 14px; background: #bbb; z-index: 5; }
 .plan-item.nightstand {
-  opacity: 0.85;
   border: 1px solid #6e5241;
   border-radius: 2px;
 }
 .plan-item.storage-chest {
-  opacity: 1;
   border: 1px solid #6e5241;
   border-radius: 2px;
 }
@@ -1005,7 +1003,6 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 }
 .queen-bed { border: 2px solid #365e5b; border-radius: 5px; background: #78b8b2; }
 .plan-item.twin-bed {
-  opacity: 0.85;
   border: 2px solid var(--theme-label);
   border-radius: 4px;
 }
