@@ -8804,7 +8804,8 @@ const FloorPlanWalls = {
         if (FloorPlanValidation.isReservedId(definition.id)) {
           throw new Error(`ID reservado: ${definition.id}`);
         }
-        if (plan.references.has(definition.id)) {
+        if (plan.references.has(definition.id) &&
+          plan.references.get(definition.id) !== plan.wallReferences?.get(definition.id)) {
           throw new Error(`ID global duplicado: ${definition.id}`);
         }
         let scopeFields = {};
@@ -8920,7 +8921,7 @@ const FloorPlanWalls = {
         }
         FloorPlanGeometryBox.attach(wall, { compound: true, label: wall.id });
         plan.independentWalls.set(wall.id, wall);
-        plan.references.set(wall.id, wall);
+        plan.references.set(wall.id, plan.wallReferences?.get(wall.id) ?? wall);
       } catch (error) {
         plan.errors.push({
           category: "wall",
@@ -9085,6 +9086,7 @@ const FloorPlanReferences = {
     plan.registerStaticGuideReferences(config);
     plan.registerStaticZoneReferences(config);
     FloorPlanReferences.registerStaticItemReferences(plan, config);
+    FloorPlanReferences.registerWallReferences(plan, config);
     plan.registerRoofReferences(config);
     const previousFloorHeight = plan.currentFloorHeight;
     plan.roomDefinitions.forEach((_room, id) => {
@@ -9310,6 +9312,64 @@ const FloorPlanReferences = {
         ));
       });
     });
+  },
+
+  registerWallReferences(plan, config) {
+    plan.wallReferences = new Map();
+    const resolving = new Set();
+    const floors = config.floors ?? [config];
+    const ground = Number(floors[0]?.z0 ?? 0);
+    for (const source of config.walls ?? []) {
+      if (!source.id || FloorPlanValidation.isReservedId(source.id) || plan.references.has(source.id)) continue;
+      const definition = { ...(config.config?.walls ?? {}), ...source };
+      const guarded = (key, calculate) => {
+        const token = `${source.id}.${key}`;
+        if (resolving.has(token)) throw new Error(`Referência circular de parede: ${token}`);
+        resolving.add(token);
+        try { return calculate(); } finally { resolving.delete(token); }
+      };
+      // Resolve the footprint separately: a room may depend on the wall's
+      // position while the wall's height depends on that room.
+      const footprint = () => guarded("path", () => {
+        const endpoints = definition.from !== undefined || definition.to !== undefined;
+        if (endpoints && definition.path !== undefined) throw new Error("Use from/to ou path.points para definir a parede, sem combinar os dois formatos");
+        const points = endpoints ? [definition.from, definition.to] : definition.path?.points;
+        if (!Array.isArray(points) || points.length < 2) throw new Error("Parede independente precisa de from/to ou path.points com ao menos dois pontos");
+        let origin = null;
+        const resolved = points.map((point) => {
+          if (!Array.isArray(point) || point.length !== 2) throw new Error("Cada ponto da parede precisa ser [x, y]");
+          const result = point.map((value) => plan.resolve(value, origin));
+          origin = { x0: result[0], y0: result[1] };
+          return result;
+        });
+        const thickness = Number(definition.thickness ?? plan.catalog.walls?.thickness ?? 0.12);
+        if (!Number.isFinite(thickness) || thickness <= 0) throw new Error("A espessura da parede precisa ser positiva");
+        const x = Math.min(...resolved.map(([x]) => x)) - thickness / 2;
+        const y = Math.min(...resolved.map(([, y]) => y)) - thickness / 2;
+        return FloorPlanGeometryBox.fromValues({ x, y,
+          w: Math.max(...resolved.map(([x]) => x)) + thickness / 2 - x,
+          l: Math.max(...resolved.map(([, y]) => y)) + thickness / 2 - y });
+      });
+      const base = () => guarded("z0", () => {
+        const value = definition.base ?? "terrain";
+        return value === "terrain" ? Math.min(ground, ...Object.values(config.terrain?.corners ?? {})
+          .map((corner) => Number(corner.z)).filter(Number.isFinite)) : plan.resolve(value.level);
+      });
+      const top = () => guarded("z1", () => {
+        if (definition.top === "roof") return Math.max(...FloorPlanWalls.roofLimits(plan, config).map((roof) => roof.peakZ));
+        const limits = FloorPlanWalls.undersideLimits(plan, definition.top,
+          Number(definition.thickness ?? plan.catalog.walls?.thickness ?? 0.12) / 2);
+        return plan.resolve(definition.top?.level ?? (limits.length
+          ? Math.max(...limits.map((limit) => limit.peakZ), ...floors.map((floor) =>
+            Number(floor.z0 ?? 0) + Number(floor.ceiling_height ?? floor.wall_max_height ?? 0))) : ground));
+      });
+      const reference = Object.fromEntries(["x0", "x1", "xc", "y0", "y1", "yc", "w", "l", "area"]
+        .map((method) => [method, () => footprint()[method]() ]));
+      Object.assign(reference, { z0: base, z1: top, zc: () => (base() + top()) / 2, h: () => top() - base() });
+      FloorPlanGeometryBox.attach(reference, { compound: true, label: source.id });
+      plan.wallReferences.set(source.id, reference);
+      plan.references.set(source.id, reference);
+    }
   },
 
   registerRoofReferences(plan, config) {

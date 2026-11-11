@@ -810,7 +810,8 @@ const FloorPlanWalls = {
         if (FloorPlanValidation.isReservedId(definition.id)) {
           throw new Error(`ID reservado: ${definition.id}`);
         }
-        if (plan.references.has(definition.id)) {
+        if (plan.references.has(definition.id) &&
+          plan.references.get(definition.id) !== plan.wallReferences?.get(definition.id)) {
           throw new Error(`ID global duplicado: ${definition.id}`);
         }
         let scopeFields = {};
@@ -926,7 +927,7 @@ const FloorPlanWalls = {
         }
         FloorPlanGeometryBox.attach(wall, { compound: true, label: wall.id });
         plan.independentWalls.set(wall.id, wall);
-        plan.references.set(wall.id, wall);
+        plan.references.set(wall.id, plan.wallReferences?.get(wall.id) ?? wall);
       } catch (error) {
         plan.errors.push({
           category: "wall",

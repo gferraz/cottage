@@ -194,3 +194,45 @@ test('direct object IDs and ID lists work for room and independent tops', () => 
   assert.equal(roof.slopes.length, 2);
   assert.equal(walls.undersideLimits(plan, 'roof').length, 0);
 });
+
+test('rooms resolve independent wall bounds before walls are normalized', () => {
+  const source = {
+    floors: [{ id: 'ground', z0: 0, ceiling_height: 3, rooms: [
+      { id: 'room', from: ['later.x0', 'later.y0 - 1'], to: [6, 6, 3], walls: [] },
+    ] }],
+    walls: [
+      { id: 'later', from: ['anchor.x1', 2], to: ['x0', 'y0 + 2'], thickness: 0.2,
+        base: { level: 0 }, top: { level: 'room.z1' } },
+      { id: 'anchor', path: { points: [[1, 0], [1, 4], [3, 4]] }, thickness: 0.2,
+        base: { level: 0 }, top: { level: 3 } },
+    ],
+  };
+  const plan = prepare(source);
+  assert.deepEqual(plan.errors, []);
+  const room = plan.getRoomGeometry('room');
+  assert.ok(Math.abs(room.x0() - 3) < 1e-9);
+  assert.ok(Math.abs(room.y0() - 0.9) < 1e-9);
+  assert.equal(plan.resolve('later.z1'), 3);
+  assert.ok(Math.abs(plan.resolve('anchor.xc') - 2) < 1e-9);
+  assert.ok(Math.abs(plan.resolve('anchor.w') - 2.2) < 1e-9);
+});
+
+test('wall cycles report a useful error without overflowing the stack', () => {
+  const source = { rooms: [], walls: ['a', 'b'].map((id, index) => ({
+    id, from: [`${index ? 'a' : 'b'}.x0`, 0], to: [2, 2],
+    base: { level: 0 }, top: { level: 3 },
+  })) };
+  const plan = prepare(source);
+  assert.ok(plan.errors.some((error) => /Referência circular de parede/.test(error.message)));
+  assert.ok(plan.errors.every((error) => !/call stack/i.test(error.message)));
+});
+
+test('current cottage bedroom resolves the rear knee wall reference', () => {
+  const fs = require('node:fs');
+  const source = FloorPlanParser.parse(fs.readFileSync('cottage-ferraz-cesar.json5', 'utf8'));
+  source.floors.flatMap((floor) => floor.rooms ?? []).find((room) => room.id === 'bedroom-west')
+    .from[1] = 'knee-wall-rear.y0 - 1';
+  const plan = prepare(source);
+  assert.deepEqual(plan.errors.filter((error) => error.id === 'bedroom-west'), []);
+  assert.ok(Math.abs(plan.getRoomGeometry('bedroom-west').y0() - Math.min(plan.resolve('knee-wall-rear.y0') - 1, plan.resolve('main.y1'))) < 1e-9);
+});

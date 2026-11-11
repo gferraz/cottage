@@ -234,7 +234,7 @@
           id: "dining",
           label: "Jantar",
           from: ["master.x1", "living.y1"],
-          to: ["house-left.x1", "y0 + 3.4"]
+          to: ["house-left.x1", "y0 + 3.6"]
         },
         {
           id: "master",
@@ -312,8 +312,8 @@
           id: "powder",
           label: "Lavabo",
           top: "stairs",
-          // Ocupa exatamente a projeção do lance 3 e do patamar 2.
-          rectangle: ["upper-flight.x0", "upper-flight.y0", "upper-flight.x1", "upper-landing.y1"],
+          from: ["house-left.x0", "stairs.y0"],
+          to: ["x0 + 2.4", "upper-landing.y1"],
           walls: ["top", "right", "bottom", "left"],
           openings: [
             { type: "door", from: "left", to: "rear-corridor", dy: 0.1 }
@@ -327,8 +327,9 @@
           walls: [],
           classes: "circulation"
         },
-        // Escada anterior — dois lances e patamar intermediário na cota 1,67 m.
-        /*
+        // Escada experimental — 18 espelhos iguais: 11 no lance inferior e 7 no superior.
+        // Para 3 m de desnível: espelhos de 16,67 cm e patamar na cota 1,83 m.
+        // Chegada de 1,20 m; lance superior de 1,90 m; patamar de 1,20 m.
         {
           id: "stairs",
           label: "Escada",
@@ -336,7 +337,7 @@
             {
               id: "lower-flight",
               from: ["lower-landing.x0", "lower-landing.y0", "lower-landing.z0"],
-              to: ["x0 - 2.7", "lower-landing.y1", 0],
+              to: ["house-left.x0", "lower-landing.y1", 0],
               walls: ["top", "bottom"],
               classes: "stair-flight"
             },
@@ -350,8 +351,8 @@
             },
             {
               id: "upper-flight",
-              from: ["house-left.x0", "dining.y1", "upper.z0"],
-              to: ["house-left.x0 + 2.1", "y0 + 1.2", "z0 - 1.33"],
+              from: ["house-left.x0 + 1.2", "dining.y1", "upper.z0"],
+              to: ["house-left.x1 - 1.2", "y0 + 1.2", "ground.z0 + (upper.z0 - ground.z0) * 11 / 18"],
               classes: "stair-flight"
             },
             {
@@ -367,7 +368,7 @@
           overlaps: ["powder", "laundry"],
           overlays: ["powder", "laundry"]
         },
-        */
+        /*
         // Escada em U — três lances de 6 espelhos (18 no total).
         // Projeção dos lances 1 e 3: 1,40 m; do lance 2: 1,30 m.
         // Com 5 pisos por lance: 0,28 m nos lances 1 e 3; 0,26 m no lance 2.
@@ -418,6 +419,7 @@
           overlaps: ["powder", "laundry"],
           overlays: ["powder", "laundry"]
         },
+        */
         {
           id: "terrace",
           label: "Terraço Traseiro",
@@ -495,8 +497,8 @@
         {
           id: "bedroom-west",
           label: "Quarto Oeste",
-          from: ["knee-right.x0", "bathroom.y0 - 0.9"],
-          to: ["stairs.x0", "main.y1"],
+          from: ["knee-right.x0", "transversal-rear.y0"],
+          to: ["house-left.x0", "main.y1"],
           walls: ["top", "left"],
           openings: [
             { type: "door", from: "top", to: "upper-corridor" },
@@ -517,7 +519,7 @@
         {
           id: "bathroom",
           label: "Banheiro",
-          from: ["house-right.x0", "stairs.y0"],
+          from: ["house-right.x0", "transversal-rear.y0 + 1"],
           to: ["knee-right.x0", "main.y1"],
           walls: ["top"],
           openings: [
@@ -534,6 +536,14 @@
           openings: [
             { type: "window", from: "top", w: 0.8, h: 0.6 }
           ]
+        },
+        {
+          id: "stair-arrival",
+          label: "Circulação",
+          from: ["house-left.x0", "upper-flight.y0"],
+          to: ["upper-flight.x0", "upper-flight.y1"],
+          walls: [],
+          classes: "circulation"
         },
         {
           id: "upper-corridor",
@@ -639,7 +649,7 @@
       ],
       // Aberturas do pavimento; aberturas locais ficam dentro do cômodo.
       openings: [
-        { type: "opening", from: "upper", to: "ground", pos: ["stairs.x0", "stairs.y0"], size: ["stairs.w", "stairs.l"] }
+        { type: "opening", from: "upper", to: "ground", rectangle: ["stairs.x0 + 1.2", "stairs.y0", "stairs.x1", "stairs.y1"] }
       ]
     }
   ],
@@ -680,7 +690,7 @@
       color: "blue",
       path: {
         points: [
-          ["knee-right.x0", "stairs.y0 - 0.9"],
+          ["knee-right.x0", "w-axis.y0 + 0.7"],
           ["x0", "house-right.y1"]
         ]
       },
@@ -843,6 +853,8 @@
     { id: "main-right", label: "parede direita", pos: ["house-right.x0", -2.5], l: 20, color: "green" },
     { id: "main-left", label: "parede esquerda", pos: ["house-left.x1", -2.5], l: 20, color: "green" },
     { id: "main-top", label: "parede frontal", pos: [-4.0, "main.y0"], w: 20, color: "green" },
+    { id: "transversal-front", label: "transversal frontal", pos: [-4.0, "w-axis.y0 - 0.7"], w: 20, color: "green" },
+    { id: "transversal-rear", label: "transversal traseira", pos: [-4.0, "w-axis.y0 + 0.7"], w: 20, color: "green" },
     { id: "w-axis", label: "eixo transversal", pos: [-4.0, "main.yc + 0.5"], w: 20, color: "green" }
   ]
 }
