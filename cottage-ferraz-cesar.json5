@@ -226,7 +226,7 @@
           label: "Lavanderia",
           top: "stairs",
           // Faixa técnica sob o lance 2 e o patamar 1; acesso pelo lado dos fundos.
-          rectangle: ["powder.x1", "powder.y1 - 0.8", "house-left.x1", "y0 + 1"],
+          rectangle: ["lower-flight.x0 + 2.5", "lower-flight.y0 + 0.4", "house-left.x1", "y0 + 2"],
           walls: ["top"],
           classes: "service laundry wet"
         },
