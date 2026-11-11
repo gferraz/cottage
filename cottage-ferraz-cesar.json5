@@ -126,7 +126,7 @@
     { id: "dorm-top-left", rectangle: ["office.x0 + params.knee_setback", "top.y0", "top.x1 - params.knee_setback", "top.y1"], color: "blue", visible: false },
     { id: "hall-roof-base", from: ["office-main.x1", "porch.y0"], to: ["hall.x1", "porch.y1"], visible: false },
     { id: "house-right",    rectangle: ["main.x0", "main.y0", "central.x0", "central.y1"], visible: false },
-    { id: "main",    pos: [0, 2.5], size: [10, 10.4], visible: false },
+    { id: "main",    pos: [0, 2.5], size: [10, 9.6], visible: false },
     { id: "office-roof-base", from: ["office.x0", "office.y0"], to: ["hall.x1", "office.y1"], visible: false },
     { id: "perimeter", pos: [0, 2.5], size: [9.6, 12.6], visible: false },
     { id: "house-left",   rectangle: ["central.x1", "central.y0", "main.x1", "main.y1"], visible: false },
@@ -225,8 +225,8 @@
           label: "Lavanderia",
           top: "stairs",
           // Faixa técnica sob o lance 2 e o patamar 1; acesso pelo lado dos fundos.
-          rectangle: ["middle-flight.x0", "middle-flight.y0", "lower-landing.x1", "lower-landing.y1 + 0.1"],
-          walls: ["right"],
+          rectangle: ["powder.x1", "powder.y1 - 0.8", "house-left.x1", "y0 + 1"],
+          walls: ["top"],
           classes: "service laundry wet"
         },
         {
@@ -446,19 +446,14 @@
           classes: "fireplace"
         },
         { title: "Carro", pos: ["garage.x0 + 1", "garage.y0 + 1"], size: [1.8, 4.0], classes: "car" },
-        // Lavadoras frontais lado a lado, voltadas para a circulação/mudroom.
-        // Folga de 5 cm entre máquinas e 2,5 cm nas extremidades do lance.
-        // A lavadora do lado baixo exige conferir a espessura real da escada.
-        { type: "washing-machine", pos: ["middle-flight.x0 + 0.025", "middle-flight.y1 - 0.65"], rotation: 180 },
-        { type: "washing-machine", pos: ["middle-flight.x1 - 0.625", "middle-flight.y1 - 0.65"], rotation: 180 },
-        // Sob o patamar de 1 m: somente armazenamento baixo.
-        { title: "Armário baixo", pos: ["lower-landing.x0 + 0.1", "lower-landing.y0 + 0.1"], size: ["lower-landing.w - 0.2", 0.4, 0.6], classes: "storage", color: "furniture" },
+        { type: "washing-machine", pos: ["laundry.x1 - 0.8", "laundry.y0 + 0.1"], rotation: 180 },
+        { type: "washing-machine", pos: ["laundry.x1 - 1.4", "laundry.y0 + 0.1"], rotation: 180 },
         // Cabeceira na parede frontal; cama centralizada e criados a 5 cm das laterais.
         { id: "master-bed", type: "queen-bed", pos: ["master.xc - 0.8", "master.y0 + params.wall_thickness / 2 + 0.1"] },
         // Baú centralizado aos pés da cama, com 10 cm de folga.
-        { id: "master-chest", label: "Baú", title: "Baú — Suíte Master", pos: ["master-bed.xc - 0.225", "master-bed.y1 - 0.375"], size: [0.45, 1.4, 0.45], rotation: 270, classes: "furniture storage storage-chest", color: "furniture" },
-        { id: "master-nightstand-front", title: "Criado-mudo — Suíte Master", pos: ["master-bed.x0 - 0.55", "master-bed.y0"], size: [0.5, 0.5, 0.55], classes: "furniture storage", color: "furniture" },
-        { id: "master-nightstand-rear", title: "Criado-mudo — Suíte Master", pos: ["master-bed.x1 + 0.05", "master-bed.y0"], size: [0.5, 0.5, 0.55], classes: "furniture storage", color: "furniture" },
+        { id: "master-chest", label: "Baú", title: "baú — Suíte Master", pos: ["master-bed.xc - 0.225", "master-bed.y1 - 0.375"], size: [0.45, 1.4, 0.45], rotation: 270, classes: "furniture storage storage-chest", color: "furniture" },
+        { id: "master-nightstand-front", title: "criado-mudo — Suíte Master", pos: ["master-bed.x0 - 0.55", "master-bed.y0"], size: [0.5, 0.5, 0.55], classes: "furniture storage", color: "furniture" },
+        { id: "master-nightstand-rear", title: "criado-mudo — Suíte Master", pos: ["master-bed.x1 + 0.05", "master-bed.y0"], size: [0.5, 0.5, 0.55], classes: "furniture storage", color: "furniture" },
 
         { type: "railing", pos: ["porch.x0",        "porch.y0"], size: ["hall.xc - 0.9 - porch.x0", 0.08, 1.1] },
         { type: "railing", pos: ["hall.xc + 0.9",   "porch.y0"], size: ["porch.x1 - hall.xc - 0.9", 0.08, 1.1] },

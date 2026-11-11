@@ -40,6 +40,17 @@ const floor = new FloorPlan({
 
 window.floor = floor;
 
+document.addEventListener("keydown", (event) => {
+  if (
+    !(event.metaKey || event.ctrlKey) ||
+    event.repeat || event.isComposing ||
+    !(event.key === "/" || event.code === "Slash" || event.code === "NumpadDivide")
+  ) return;
+
+  event.preventDefault();
+  document.querySelector("#json-file").click();
+}, { capture: true });
+
 function loadJsonFromCommandLine() {
   const encoded = window.location.hash.startsWith("#json=")
     ? window.location.hash.slice("#json=".length)

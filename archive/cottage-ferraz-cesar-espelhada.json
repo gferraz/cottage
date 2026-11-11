@@ -1,0 +1,1932 @@
+{
+  "$schema": "./floor-plan.schema.json",
+  "title": "Cottage Ferraz-César — espelhada longitudinalmente",
+  "summary": "Residência de dois pavimentos em terreno cadastrado com diferença de cota de 6 m entre frente e fundos. Planta refletida no eixo longitudinal do corpo principal (x = 5,20 m), mantendo terreno e implantação.",
+  "coordinates": [
+    "25°45'06.7\"S",
+    "49°15'29.1\"W"
+  ],
+  "viewport": {
+    "size": [
+      24,
+      32
+    ],
+    "origin": [
+      1,
+      1
+    ]
+  },
+  "config": {
+    "walls": {
+      "base": {
+        "level": "ground.z0"
+      },
+      "top": "roof",
+      "thickness": "params.wall_thickness",
+      "color": "desejo-ambar"
+    },
+    "roofs": {
+      "type": "gable",
+      "pitch": 51,
+      "eaves": {
+        "left": 0.5,
+        "right": 0.5,
+        "pitch": 30
+      },
+      "rake": 0.5
+    },
+    "openings": {
+      "door": {
+        "w": 0.8,
+        "h": 2.1,
+        "z0": 0
+      },
+      "window": {
+        "w": 0.9,
+        "h": 1.5,
+        "z0": 0.9
+      },
+      "opening": {
+        "w": 1,
+        "h": 2.1,
+        "z0": 0
+      }
+    },
+    "floors": {
+      "ceiling_height": "params.ground_height"
+    }
+  },
+  "parameters": {
+    "wall_thickness": 0.12,
+    "ground_height": 3,
+    "headroom_2m_inset": 0.809785,
+    "headroom_3m_inset": 1.619569,
+    "dining_headroom_2m_inset": 0.809785,
+    "dining_headroom_3m_inset": 1.619569,
+    "knee_setback": 0.8
+  },
+  "terrain": {
+    "front": {
+      "edge": [
+        "P01",
+        "P02"
+      ],
+      "position": "top",
+      "label": "RUA/FRENTE"
+    },
+    "rear": {
+      "edge": [
+        "P18",
+        "P19"
+      ],
+      "position": "bottom",
+      "label": "JARDIM"
+    },
+    "north": {
+      "label": "N"
+    },
+    "unit": "m",
+    "boundary_order": [
+      "P02",
+      "P01",
+      "P19",
+      "P18"
+    ],
+    "corners": {
+      "P01": {
+        "easting": 674802.65,
+        "northing": 7150515.678,
+        "z": 0
+      },
+      "P02": {
+        "easting": 674787.417,
+        "northing": 7150525.268,
+        "z": 0
+      },
+      "P18": {
+        "easting": 674768.743,
+        "northing": 7150486.108,
+        "z": -6
+      },
+      "P19": {
+        "easting": 674787.138,
+        "northing": 7150477.614,
+        "z": -6
+      }
+    },
+    "segments": [
+      {
+        "from": "P01",
+        "to": "P02",
+        "distance": 18,
+        "azimuth_deg": 302.192641,
+        "azimuth_dms": "302° 11' 34\""
+      },
+      {
+        "from": "P02",
+        "to": "P18",
+        "distance": 43.385,
+        "azimuth_deg": 205.494801,
+        "azimuth_dms": "205° 29' 41\""
+      },
+      {
+        "from": "P18",
+        "to": "P19",
+        "distance": 20.261,
+        "azimuth_deg": 114.785411,
+        "azimuth_dms": "114° 47' 07\""
+      },
+      {
+        "from": "P19",
+        "to": "P01",
+        "distance": 41.103,
+        "azimuth_deg": 22.172083,
+        "azimuth_dms": " 22° 10' 19\""
+      }
+    ]
+  },
+  "building": {
+    "anchor": "terrain.front-start",
+    "position": {
+      "x": 4,
+      "y": 3
+    }
+  },
+  "zones": [
+    {
+      "id": "attic",
+      "inset": [
+        "main",
+        3,
+        0
+      ],
+      "color": "red",
+      "visible": false
+    },
+    {
+      "id": "bottom",
+      "rectangle": [
+        "10.4 - ((10.4 - main.x1))",
+        "main.y0 + main.l / 2",
+        "10.4 - ((10.4 - main.x0))",
+        "main.y1"
+      ],
+      "visible": false
+    },
+    {
+      "id": "central",
+      "from": [
+        "10.4 - ((10.4 - main.xc) - 0.7)",
+        "main.y0"
+      ],
+      "to": [
+        "10.4 - ((10.4 - x0) + 1.4)",
+        "main.y1"
+      ],
+      "visible": false
+    },
+    {
+      "id": "comfort-zone",
+      "inset": [
+        "main",
+        1.8,
+        0
+      ],
+      "color": "blue",
+      "visible": false
+    },
+    {
+      "id": "dorm",
+      "rectangle": [
+        "10.4 - ((10.4 - dorm-top.x1))",
+        "dorm-top.y0",
+        "10.4 - ((10.4 - dorm-bottom.x0))",
+        "dorm-bottom.y1"
+      ],
+      "color": "blue",
+      "visible": false
+    },
+    {
+      "id": "dorm-bottom",
+      "rectangle": [
+        "10.4 - ((10.4 - bottom.x1))",
+        "bottom.y0",
+        "10.4 - ((10.4 - bottom.x0))",
+        "bottom.y1 - params.knee_setback"
+      ],
+      "color": "blue",
+      "visible": false
+    },
+    {
+      "id": "dorm-top",
+      "rectangle": [
+        "10.4 - ((10.4 - top.x1))",
+        "top.y0 + params.knee_setback",
+        "10.4 - ((10.4 - top.x0))",
+        "top.y1"
+      ],
+      "color": "blue",
+      "visible": false
+    },
+    {
+      "id": "dorm-top-right",
+      "rectangle": [
+        "10.4 - ((10.4 - dining.x1) + params.knee_setback)",
+        "top.y0",
+        "10.4 - ((10.4 - top.x0) - params.knee_setback)",
+        "top.y1"
+      ],
+      "color": "blue",
+      "visible": false
+    },
+    {
+      "id": "hall-roof-base",
+      "from": [
+        "10.4 - ((10.4 - hall.x1))",
+        "front-porch.y0"
+      ],
+      "to": [
+        "10.4 - ((10.4 - hall.x0))",
+        "porch.y1"
+      ],
+      "visible": false
+    },
+    {
+      "id": "house-left",
+      "rectangle": [
+        "10.4 - ((10.4 - main.x1))",
+        "main.y0",
+        "10.4 - ((10.4 - central.x1))",
+        "central.y1"
+      ],
+      "visible": false
+    },
+    {
+      "id": "main",
+      "pos": [
+        0,
+        2.5
+      ],
+      "size": [
+        10.4,
+        10.4
+      ],
+      "visible": false
+    },
+    {
+      "id": "dining-roof-base",
+      "from": [
+        "10.4 - ((10.4 - dining.x1))",
+        "dining.y0"
+      ],
+      "to": [
+        "10.4 - ((10.4 - hall.x0))",
+        "dining.y1"
+      ],
+      "visible": false
+    },
+    {
+      "id": "perimeter",
+      "pos": [
+        0.8,
+        2.5
+      ],
+      "size": [
+        9.6,
+        12.6
+      ],
+      "visible": false
+    },
+    {
+      "id": "house-right",
+      "rectangle": [
+        "10.4 - ((10.4 - central.x0))",
+        "central.y0",
+        "10.4 - ((10.4 - main.x0))",
+        "main.y1"
+      ],
+      "visible": false
+    },
+    {
+      "id": "top",
+      "rectangle": [
+        "10.4 - ((10.4 - main.x1))",
+        "main.y0",
+        "10.4 - ((10.4 - main.x0))",
+        "y0 + main.l / 2"
+      ],
+      "visible": false
+    }
+  ],
+  "floors": [
+    {
+      "id": "ground",
+      "label": "Térreo",
+      "z0": 0,
+      "rooms": [
+        {
+          "id": "circulation",
+          "label": "Circulação",
+          "rectangle": [
+            "10.4 - ((10.4 - house-right.x1))",
+            "laundry.y1",
+            "10.4 - ((10.4 - x0) + 2)",
+            "y0 + 1"
+          ],
+          "classes": "circulation"
+        },
+        {
+          "id": "closet",
+          "label": "Closet",
+          "from": [
+            "10.4 - ((10.4 - house-left.x1))",
+            "master.y1"
+          ],
+          "to": [
+            "10.4 - ((10.4 - x0) + 2.5)",
+            "y0 + 2.2"
+          ],
+          "openings": [
+            {
+              "type": "opening",
+              "from": "left",
+              "to": "vestibule"
+            }
+          ],
+          "walls": [
+            "top",
+            "right"
+          ]
+        },
+        {
+          "id": "office",
+          "label": "Escritório",
+          "from": [
+            "house-right.x0",
+            "house-right.y0"
+          ],
+          "to": [
+            "central.x0",
+            "y0 + 3"
+          ],
+          "openings": [
+            {
+              "type": "window",
+              "from": "top",
+              "to": "exterior",
+              "w": 2.4,
+              "h": 1.5
+            }
+          ],
+          "classes": "office"
+        },
+        {
+          "id": "front-corridor",
+          "label": "C-1.",
+          "rectangle": [
+            "10.4 - ((10.4 - master.x0))",
+            "hall.y1",
+            "10.4 - ((10.4 - central.x0))",
+            "living.y0"
+          ],
+          "walls": [
+            "right"
+          ],
+          "classes": "circulation"
+        },
+        {
+          "id": "front-stairs",
+          "label": "Escada da varanda",
+          "from": [
+            "10.4 - ((10.4 - porch.x1) + 0.2)",
+            "porch.y0 - 1",
+            "porch.z0 - 0.45"
+          ],
+          "to": [
+            "10.4 - ((10.4 - x0) + 2.1)",
+            "porch.y0",
+            0
+          ],
+          "orientation": "longitudinal",
+          "classes": "stair-flight"
+        },
+        {
+          "id": "garage",
+          "label": "Garagem",
+          "pos": [
+            "main.x1",
+            12.200000000000001
+          ],
+          "size": [
+            4,
+            6.5
+          ],
+          "walls": [
+            "top",
+            "right",
+            "bottom"
+          ],
+          "openings": [
+            {
+              "type": "door",
+              "from": "top",
+              "to": "exterior",
+              "w": 3.2
+            },
+            {
+              "type": "door",
+              "from": "bottom",
+              "to": "exterior",
+              "w": 3.2
+            }
+          ],
+          "classes": "service garage"
+        },
+        {
+          "id": "hall",
+          "label": "Hall",
+          "from": [
+            "10.4 - ((10.4 - dining.x0))",
+            "main.y0"
+          ],
+          "to": [
+            "10.4 - ((10.4 - house-right.x1))",
+            "dining.y1"
+          ],
+          "openings": [
+            {
+              "type": "door",
+              "from": "top",
+              "to": "porch",
+              "w": 1
+            }
+          ],
+          "classes": "circulation"
+        },
+        {
+          "id": "kitchen",
+          "label": "Cozinha",
+          "from": [
+            "10.4 - ((10.4 - dining.x1))",
+            "master-bath.y1"
+          ],
+          "to": [
+            "10.4 - ((10.4 - house-right.x1))",
+            "y0 + 3.9"
+          ],
+          "openings": [
+            {
+              "type": "window",
+              "from": "right",
+              "to": "exterior",
+              "w": 2.4
+            },
+            {
+              "type": "door",
+              "from": "bottom",
+              "to": "terrace"
+            }
+          ],
+          "classes": "wet",
+          "walls": [
+            "right"
+          ]
+        },
+        {
+          "id": "laundry",
+          "label": "Lavanderia",
+          "top": "stairs",
+          "rectangle": [
+            "10.4 - ((10.4 - middle-flight.x1))",
+            "middle-flight.y0",
+            "10.4 - ((10.4 - lower-landing.x0))",
+            "lower-landing.y1 + 0.1"
+          ],
+          "walls": [
+            "right"
+          ],
+          "classes": "service laundry wet"
+        },
+        {
+          "id": "living",
+          "label": "Estar",
+          "from": [
+            "10.4 - ((10.4 - master.x0))",
+            "office.y1"
+          ],
+          "to": [
+            "10.4 - ((10.4 - house-right.x0))",
+            "y0 + 3.4"
+          ]
+        },
+        {
+          "id": "master",
+          "label": "Suíte Master",
+          "rectangle": [
+            "10.4 - ((10.4 - house-left.x1))",
+            "dining.y1",
+            "10.4 - ((10.4 - house-left.x0) - 0.4)",
+            "y0 + 3.6"
+          ],
+          "walls": [
+            "top",
+            "left",
+            "right"
+          ],
+          "openings": [
+            {
+              "type": "window",
+              "from": "right",
+              "to": "exterior",
+              "dy": 0.6
+            },
+            {
+              "type": "window",
+              "from": "right",
+              "to": "exterior",
+              "dy": 2.1
+            }
+          ]
+        },
+        {
+          "id": "master-bath",
+          "label": "Banheiro Master",
+          "from": [
+            "10.4 - ((10.4 - house-left.x1))",
+            "closet.y1"
+          ],
+          "to": [
+            "10.4 - ((10.4 - master.x0))",
+            "knee-bottom.y0"
+          ],
+          "walls": [
+            "top",
+            "left",
+            "bottom",
+            "right"
+          ],
+          "openings": [
+            {
+              "type": "door",
+              "from": "top",
+              "to": "vestibule"
+            },
+            {
+              "type": "window",
+              "from": "right",
+              "to": "exterior"
+            }
+          ],
+          "classes": "wet"
+        },
+        {
+          "id": "mudroom",
+          "label": "Mudroom",
+          "rectangle": [
+            "10.4 - ((10.4 - pantry.x0))",
+            "laundry.y1",
+            "10.4 - ((10.4 - house-right.x0))",
+            "pantry.y1"
+          ],
+          "openings": [
+            {
+              "type": "door",
+              "from": "left",
+              "to": "exterior"
+            }
+          ],
+          "classes": "service mudroom"
+        },
+        {
+          "id": "dining",
+          "label": "Jantar",
+          "from": [
+            "10.4 - ((10.4 - house-left.x1))",
+            "porch-front.y0"
+          ],
+          "to": [
+            "10.4 - ((10.4 - house-left.x0) - 1.1)",
+            "y0 + 5.2"
+          ],
+          "openings": [
+            {
+              "type": "door",
+              "from": "left",
+              "to": "hall"
+            },
+            {
+              "type": "window",
+              "from": "top",
+              "w": 1.2
+            },
+            {
+              "type": "window",
+              "from": "right"
+            }
+          ],
+          "classes": "dining",
+          "walls": [
+            "bottom"
+          ]
+        },
+        {
+          "id": "pantry",
+          "label": "Despensa",
+          "rectangle": [
+            "10.4 - ((10.4 - house-right.x1))",
+            "circulation.y1",
+            "10.4 - ((10.4 - circulation.x0))",
+            "y0 + 1.8"
+          ],
+          "walls": [
+            "top",
+            "left",
+            "right"
+          ],
+          "openings": [
+            {
+              "type": "opening",
+              "from": "top",
+              "to": "circulation"
+            }
+          ],
+          "classes": "service pantry"
+        },
+        {
+          "id": "porch",
+          "label": "Varanda",
+          "from": [
+            "10.4 - ((10.4 - dining.x0))",
+            "porch-front.y0"
+          ],
+          "to": [
+            "10.4 - ((10.4 - house-right.x0))",
+            "house-right.y0"
+          ],
+          "classes": "outdoor porch"
+        },
+        {
+          "id": "powder",
+          "label": "Lavabo",
+          "top": "stairs",
+          "rectangle": [
+            "10.4 - ((10.4 - upper-flight.x1))",
+            "upper-flight.y0",
+            "10.4 - ((10.4 - upper-flight.x0))",
+            "upper-landing.y1"
+          ],
+          "walls": [
+            "top",
+            "left",
+            "bottom",
+            "right"
+          ],
+          "openings": [
+            {
+              "type": "door",
+              "from": "right",
+              "to": "rear-corridor",
+              "dy": 0.1
+            }
+          ],
+          "classes": "powder wet"
+        },
+        {
+          "id": "rear-corridor",
+          "label": "C-2.",
+          "rectangle": [
+            "10.4 - ((10.4 - master.x0))",
+            "living.y1",
+            "10.4 - ((10.4 - central.x0))",
+            "kitchen.y0"
+          ],
+          "walls": [],
+          "classes": "circulation"
+        },
+        {
+          "id": "stairs",
+          "label": "Escada",
+          "parts": [
+            {
+              "id": "lower-flight",
+              "from": [
+                "10.4 - ((10.4 - house-right.x0) - 1.4)",
+                "living.y1",
+                "ground.z0"
+              ],
+              "to": [
+                "10.4 - ((10.4 - house-right.x0))",
+                "y0 + 1.3",
+                "ground.z0 + (upper.z0 - ground.z0) / 3"
+              ],
+              "orientation": "longitudinal",
+              "classes": "stair-flight"
+            },
+            {
+              "id": "lower-landing",
+              "from": [
+                "10.4 - ((10.4 - lower-flight.x1))",
+                "lower-flight.y1",
+                "lower-flight.z1"
+              ],
+              "to": [
+                "10.4 - ((10.4 - lower-flight.x0))",
+                "y0 + 1.3",
+                "z0"
+              ],
+              "classes": "stair-landing"
+            },
+            {
+              "id": "middle-flight",
+              "from": [
+                "10.4 - ((10.4 - lower-landing.x1))",
+                "lower-landing.y0",
+                "lower-landing.z0"
+              ],
+              "to": [
+                "10.4 - ((10.4 - x0) - 1.3)",
+                "lower-landing.y1",
+                "ground.z0 + 2 * (upper.z0 - ground.z0) / 3"
+              ],
+              "orientation": "transverse",
+              "classes": "stair-flight"
+            },
+            {
+              "id": "upper-flight",
+              "from": [
+                "10.4 - ((10.4 - upper-landing.x1))",
+                "upper-landing.y0",
+                "upper-landing.z0"
+              ],
+              "to": [
+                "10.4 - ((10.4 - upper-landing.x0))",
+                "lower-flight.y0",
+                "upper.z0"
+              ],
+              "orientation": "longitudinal",
+              "classes": "stair-flight"
+            },
+            {
+              "id": "upper-landing",
+              "from": [
+                "10.4 - ((10.4 - middle-flight.x1))",
+                "middle-flight.y0",
+                "middle-flight.z1"
+              ],
+              "to": [
+                "10.4 - ((10.4 - central-right.x1))",
+                "middle-flight.y1",
+                "z0"
+              ],
+              "classes": "stair-landing"
+            }
+          ],
+          "walls": [],
+          "overlaps": [
+            "powder",
+            "laundry"
+          ],
+          "overlays": [
+            "powder",
+            "laundry"
+          ]
+        },
+        {
+          "id": "terrace",
+          "label": "Terraço Traseiro",
+          "from": [
+            "10.4 - ((10.4 - kitchen.x1))",
+            "kitchen.y1"
+          ],
+          "to": [
+            "10.4 - ((10.4 - kitchen.x0))",
+            "y0 +  3"
+          ],
+          "classes": "outdoor terrace"
+        },
+        {
+          "id": "vestibule",
+          "label": "Vest.",
+          "rectangle": [
+            "10.4 - ((10.4 - closet.x0))",
+            "closet.y0",
+            "10.4 - ((10.4 - master.x0))",
+            "closet.y1"
+          ],
+          "walls": [
+            "left",
+            "bottom",
+            "right"
+          ],
+          "overlaps": "rear-corridor",
+          "openings": [
+            {
+              "type": "door",
+              "from": "left",
+              "to": "living",
+              "dy": 1.2
+            }
+          ]
+        }
+      ],
+      "items": [
+        {
+          "title": "Mesa",
+          "pos": [
+            "dining.xc - 0.55",
+            "dining.y0 + params.wall_thickness / 2 + 1"
+          ],
+          "size": [
+            1.1,
+            3
+          ],
+          "classes": "table"
+        },
+        {
+          "title": "Lareira",
+          "pos": [
+            "10.4 - ((10.4 - living.x0) - 0.2) - (0.5)",
+            "living.y0 + 0.5"
+          ],
+          "size": [
+            0.5,
+            1.8
+          ],
+          "classes": "fireplace"
+        },
+        {
+          "title": "Carro",
+          "pos": [
+            "garage.x0 + 1",
+            "garage.y0 + 1"
+          ],
+          "size": [
+            1.8,
+            4
+          ],
+          "classes": "car"
+        },
+        {
+          "type": "washing-machine",
+          "pos": [
+            "10.4 - ((10.4 - middle-flight.x1) + 0.025) - (0.6)",
+            "middle-flight.y1 - 0.65"
+          ],
+          "rotation": 180,
+          "size": [
+            0.6,
+            0.6,
+            0.85
+          ]
+        },
+        {
+          "type": "washing-machine",
+          "pos": [
+            "10.4 - ((10.4 - middle-flight.x0) - 0.625) - (0.6)",
+            "middle-flight.y1 - 0.65"
+          ],
+          "rotation": 180,
+          "size": [
+            0.6,
+            0.6,
+            0.85
+          ]
+        },
+        {
+          "title": "Armário baixo",
+          "pos": [
+            "10.4 - ((10.4 - lower-landing.x1) + 0.1) - (lower-landing.w - 0.2)",
+            "lower-landing.y0 + 0.1"
+          ],
+          "size": [
+            "lower-landing.w - 0.2",
+            0.4,
+            0.6
+          ],
+          "classes": "storage",
+          "color": "furniture"
+        },
+        {
+          "id": "master-bed",
+          "type": "queen-bed",
+          "pos": [
+            "10.4 - ((10.4 - master.xc) - 0.8) - (1.6)",
+            "master.y0 + params.wall_thickness / 2 + 0.1"
+          ],
+          "size": [
+            1.6,
+            2,
+            0.55
+          ]
+        },
+        {
+          "id": "master-chest",
+          "label": "Baú",
+          "title": "Baú — Suíte Master",
+          "pos": [
+            "10.4 - ((10.4 - master-bed.xc) - 0.225) - (0.45)",
+            "master-bed.y1 - 0.375"
+          ],
+          "size": [
+            0.45,
+            1.4,
+            0.45
+          ],
+          "rotation": 90,
+          "classes": "furniture storage storage-chest",
+          "color": "furniture"
+        },
+        {
+          "id": "master-nightstand-front",
+          "title": "Criado-mudo — Suíte Master",
+          "pos": [
+            "10.4 - ((10.4 - master-bed.x1) - 0.55) - (0.5)",
+            "master-bed.y0"
+          ],
+          "size": [
+            0.5,
+            0.5,
+            0.55
+          ],
+          "classes": "furniture storage",
+          "color": "furniture"
+        },
+        {
+          "id": "master-nightstand-rear",
+          "title": "Criado-mudo — Suíte Master",
+          "pos": [
+            "10.4 - ((10.4 - master-bed.x0) + 0.05) - (0.5)",
+            "master-bed.y0"
+          ],
+          "size": [
+            0.5,
+            0.5,
+            0.55
+          ],
+          "classes": "furniture storage",
+          "color": "furniture"
+        },
+        {
+          "type": "railing",
+          "pos": [
+            "10.4 - ((10.4 - porch.x1)) - ((10.4 - hall.xc) - 0.9 - (10.4 - porch.x1))",
+            "porch.y0"
+          ],
+          "size": [
+            "(10.4 - hall.xc) - 0.9 - (10.4 - porch.x1)",
+            0.08,
+            1.1
+          ]
+        },
+        {
+          "type": "railing",
+          "pos": [
+            "10.4 - ((10.4 - hall.xc) + 0.9) - ((10.4 - porch.x0) - (10.4 - hall.xc) - 0.9)",
+            "porch.y0"
+          ],
+          "size": [
+            "(10.4 - porch.x0) - (10.4 - hall.xc) - 0.9",
+            0.08,
+            1.1
+          ]
+        },
+        {
+          "type": "railing",
+          "pos": [
+            "10.4 - ((10.4 - porch.x0) - 0.08) - (0.08)",
+            "porch.y0"
+          ],
+          "size": [
+            0.08,
+            "porch.l",
+            1.1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "upper",
+      "label": "Dormitórios",
+      "z0": "params.ground_height",
+      "rooms": [
+        {
+          "id": "bedroom-north",
+          "label": "Quarto N",
+          "from": [
+            "10.4 - ((10.4 - knee-left.x1))",
+            "hall.y0"
+          ],
+          "to": [
+            "10.4 - ((10.4 - knee-left.x1) + 3.3)",
+            "y0 + 4.6"
+          ],
+          "walls": [
+            "left",
+            "bottom"
+          ],
+          "openings": [
+            {
+              "type": "door",
+              "from": "bottom",
+              "to": "upper-corridor"
+            },
+            {
+              "type": "window",
+              "from": "top",
+              "to": "exterior",
+              "w": 0.9,
+              "h": 1.2,
+              "z0": "upper.z0 + 1",
+              "dx": "bedroom-north.w - ((10.4 - main-roof.xc) - 1.2 - 0.45 - (10.4 - bedroom-north.x1)) - (0.9)"
+            }
+          ]
+        },
+        {
+          "id": "bedroom-east",
+          "label": "Quarto E",
+          "from": [
+            "10.4 - ((10.4 - house-right.x0))",
+            "hall.y0"
+          ],
+          "to": [
+            "10.4 - ((10.4 - bedroom-north.x0))",
+            "y0 + 3.6"
+          ],
+          "walls": [
+            "bottom"
+          ],
+          "openings": [
+            {
+              "type": "door",
+              "from": "bottom",
+              "to": "playroom",
+              "w": 0.8,
+              "dx": "bedroom-east.w - (0.2) - (0.8)"
+            },
+            {
+              "type": "window",
+              "from": "top",
+              "to": "exterior",
+              "w": 0.9,
+              "h": 1.2,
+              "z0": "upper.z0 + 1",
+              "dx": "bedroom-east.w - ((10.4 - main-roof.xc) + 1.2 - 0.45 - (10.4 - bedroom-east.x1)) - (0.9)"
+            }
+          ]
+        },
+        {
+          "id": "bedroom-west",
+          "label": "Quarto Oeste",
+          "from": [
+            "10.4 - ((10.4 - knee-left.x1))",
+            "bathroom.y0 - 0.9"
+          ],
+          "to": [
+            "10.4 - ((10.4 - stairs.x1))",
+            "main.y1"
+          ],
+          "walls": [
+            "top",
+            "left"
+          ],
+          "openings": [
+            {
+              "type": "door",
+              "from": "top",
+              "to": "upper-corridor"
+            },
+            {
+              "type": "window",
+              "from": "bottom",
+              "to": "exterior",
+              "w": 1.2,
+              "h": 1.2,
+              "z0": "upper.z0 + 0.9",
+              "dx": "bedroom-west.w - (bedroom-west.w - 1.8) - (1.2)"
+            }
+          ]
+        },
+        {
+          "id": "playroom",
+          "label": "Sala de Estar",
+          "from": [
+            "10.4 - ((10.4 - bedroom-east.x1))",
+            "bedroom-east.y1"
+          ],
+          "to": [
+            "10.4 - ((10.4 - house-right.x0))",
+            "stairs.y0"
+          ],
+          "walls": [],
+          "openings": [
+            {
+              "type": "window",
+              "from": "left",
+              "w": 0.9,
+              "dy": "transverse-roof.yc - playroom.y0 - 0.45"
+            }
+          ]
+        },
+        {
+          "id": "bathroom",
+          "label": "Banheiro",
+          "from": [
+            "10.4 - ((10.4 - house-left.x1))",
+            "stairs.y0"
+          ],
+          "to": [
+            "10.4 - ((10.4 - knee-left.x1))",
+            "main.y1"
+          ],
+          "walls": [
+            "top"
+          ],
+          "openings": [
+            {
+              "type": "door",
+              "from": "top",
+              "to": "unused-left"
+            },
+            {
+              "type": "window",
+              "from": "bottom",
+              "to": "exterior",
+              "w": 0.8,
+              "h": 0.6,
+              "z0": "upper.z0 + 1.5",
+              "dx": "bathroom.w - (0.7) - (0.8)"
+            }
+          ]
+        },
+        {
+          "id": "unused-left",
+          "label": "Sem uso",
+          "from": [
+            "10.4 - ((10.4 - house-left.x1))",
+            "dining.y0"
+          ],
+          "to": [
+            "10.4 - ((10.4 - knee-left.x1))",
+            "bathroom.y0"
+          ],
+          "openings": [
+            {
+              "type": "window",
+              "from": "top",
+              "w": 0.8,
+              "h": 0.6
+            }
+          ]
+        },
+        {
+          "id": "upper-corridor",
+          "label": "Corredorr",
+          "from": [
+            "10.4 - ((10.4 - unused-left.x0))",
+            "bedroom-north.y1"
+          ],
+          "to": [
+            "10.4 - ((10.4 - playroom.x1))",
+            "bedroom-west.y0"
+          ]
+        }
+      ],
+      "zones": [
+        {
+          "id": "headroom-main-roof-2m",
+          "label": "Telhado principal — altura ≥ 2 m",
+          "rectangle": [
+            "10.4 - ((10.4 - main-roof.x1) + params.headroom_2m_inset)",
+            "main-roof.y0",
+            "10.4 - ((10.4 - main-roof.x0) - params.headroom_2m_inset)",
+            "main-roof.y1"
+          ],
+          "color": "rgba(98, 139, 90, 0.35)"
+        },
+        {
+          "id": "headroom-main-roof-3m",
+          "label": "Telhado principal — altura ≥ 3 m",
+          "rectangle": [
+            "10.4 - ((10.4 - main-roof.x1) + params.headroom_3m_inset)",
+            "main-roof.y0",
+            "10.4 - ((10.4 - main-roof.x0) - params.headroom_3m_inset)",
+            "main-roof.y1"
+          ],
+          "color": "rgba(77, 120, 153, 0.35)"
+        },
+        {
+          "id": "headroom-dining-roof-2m",
+          "label": "Telhado da sala de jantar — altura ≥ 2 m",
+          "rectangle": [
+            "10.4 - ((10.4 - dining-roof.x1) + params.dining_headroom_2m_inset)",
+            "dining-roof.y0",
+            "10.4 - ((10.4 - dining-roof.x0) - params.dining_headroom_2m_inset)",
+            "dining-roof.y1"
+          ],
+          "color": "rgba(98, 139, 90, 0.35)"
+        },
+        {
+          "id": "headroom-dining-roof-3m",
+          "label": "Telhado da sala de jantar — altura ≥ 3 m",
+          "rectangle": [
+            "10.4 - ((10.4 - dining-roof.x1) + params.dining_headroom_3m_inset)",
+            "dining-roof.y0",
+            "10.4 - ((10.4 - dining-roof.x0) - params.dining_headroom_3m_inset)",
+            "dining-roof.y1"
+          ],
+          "color": "rgba(77, 120, 153, 0.35)"
+        },
+        {
+          "id": "headroom-transverse-roof-2m",
+          "label": "Telhado transversal — altura ≥ 2 m",
+          "rectangle": [
+            "10.4 - ((10.4 - transverse-roof.x1))",
+            "transverse-roof.y0 + params.headroom_2m_inset",
+            "10.4 - ((10.4 - transverse-roof.x0))",
+            "transverse-roof.y1 - params.headroom_2m_inset"
+          ],
+          "color": "rgba(98, 139, 90, 0.35)"
+        },
+        {
+          "id": "headroom-transverse-roof-3m",
+          "label": "Telhado transversal — altura ≥ 3 m",
+          "rectangle": [
+            "10.4 - ((10.4 - transverse-roof.x1))",
+            "transverse-roof.y0 + params.headroom_3m_inset",
+            "10.4 - ((10.4 - transverse-roof.x0))",
+            "transverse-roof.y1 - params.headroom_3m_inset"
+          ],
+          "color": "rgba(77, 120, 153, 0.35)"
+        }
+      ],
+      "items": [
+        {
+          "id": "bed-east",
+          "type": "twin-bed",
+          "pos": [
+            "10.4 - ((10.4 - bedroom-east.x0) - 1.44 - params.wall_thickness / 2) - (0.97)",
+            "bedroom-east.y0 + params.wall_thickness / 2 + (bedroom-east.l - params.wall_thickness - 1.94) / 3 - 0.47"
+          ],
+          "rotation": 270,
+          "size": [
+            0.97,
+            1.91,
+            0.55
+          ]
+        },
+        {
+          "id": "bed-east-2",
+          "type": "twin-bed",
+          "pos": [
+            "10.4 - ((10.4 - bedroom-east.x0) - 1.44 - params.wall_thickness / 2) - (0.97)",
+            "bedroom-east.y0 + params.wall_thickness / 2 + 2 * (bedroom-east.l - params.wall_thickness - 1.94) / 3 + 0.97 - 0.47"
+          ],
+          "rotation": 270,
+          "size": [
+            0.97,
+            1.91,
+            0.55
+          ]
+        },
+        {
+          "id": "bed-north-1",
+          "type": "queen-bed",
+          "pos": [
+            "10.4 - ((10.4 - bedroom-north.x1) + 0.2 + params.wall_thickness / 2) - (1.6)",
+            "bedroom-north.yc - 1"
+          ],
+          "rotation": 90,
+          "size": [
+            1.6,
+            2,
+            0.55
+          ]
+        },
+        {
+          "id": "bed-west-1",
+          "type": "twin-bed",
+          "pos": [
+            "10.4 - ((10.4 - bedroom-west.x0) - 1.44 - params.wall_thickness / 2) - (0.97)",
+            "bedroom-west.y0 + 0.3"
+          ],
+          "rotation": 270,
+          "size": [
+            0.97,
+            1.91,
+            0.55
+          ]
+        },
+        {
+          "id": "bed-west-2",
+          "type": "twin-bed",
+          "pos": [
+            "10.4 - ((10.4 - bedroom-west.x0) - 1.44 - params.wall_thickness / 2) - (0.97)",
+            "bedroom-west.y1 - 1.74"
+          ],
+          "rotation": 270,
+          "size": [
+            0.97,
+            1.91,
+            0.55
+          ]
+        },
+        {
+          "id": "nightstand-east-1",
+          "label": "Criado-mudo",
+          "pos": [
+            "10.4 - ((10.4 - bed-east.xc) + bed-east.l / 2 - 0.4) - (0.4)",
+            "bed-east.yc - bed-east.w / 2 - 0.45"
+          ],
+          "size": [
+            0.4,
+            0.4,
+            0.55
+          ],
+          "classes": "furniture storage nightstand",
+          "color": "furniture"
+        },
+        {
+          "id": "nightstand-east-2",
+          "label": "Criado-mudo",
+          "pos": [
+            "10.4 - ((10.4 - bed-east-2.xc) + bed-east-2.l / 2 - 0.4) - (0.4)",
+            "bed-east-2.yc + bed-east-2.w / 2 + 0.05"
+          ],
+          "size": [
+            0.4,
+            0.4,
+            0.55
+          ],
+          "classes": "furniture storage nightstand",
+          "color": "furniture"
+        },
+        {
+          "id": "nightstand-north-1",
+          "label": "Criado-mudo",
+          "pos": [
+            "10.4 - ((10.4 - bed-north-1.xc) - bed-north-1.l / 2) - (0.5)",
+            "bed-north-1.yc - bed-north-1.w / 2 - 0.55"
+          ],
+          "size": [
+            0.5,
+            0.5,
+            0.55
+          ],
+          "classes": "furniture storage nightstand",
+          "color": "furniture"
+        },
+        {
+          "id": "nightstand-north-2",
+          "label": "Criado-mudo",
+          "pos": [
+            "10.4 - ((10.4 - bed-north-1.xc) - bed-north-1.l / 2) - (0.5)",
+            "bed-north-1.yc + bed-north-1.w / 2 + 0.05"
+          ],
+          "size": [
+            0.5,
+            0.5,
+            0.55
+          ],
+          "classes": "furniture storage nightstand",
+          "color": "furniture"
+        },
+        {
+          "id": "nightstand-west-1",
+          "label": "Criado-mudo",
+          "pos": [
+            "10.4 - ((10.4 - bed-west-1.xc) + bed-west-1.l / 2 - 0.4) - (0.4)",
+            "bed-west-1.yc - bed-west-1.w / 2 - 0.45"
+          ],
+          "size": [
+            0.4,
+            0.4,
+            0.55
+          ],
+          "classes": "furniture storage nightstand",
+          "color": "furniture"
+        },
+        {
+          "id": "nightstand-west-2",
+          "label": "Criado-mudo",
+          "pos": [
+            "10.4 - ((10.4 - bed-west-2.xc) + bed-west-2.l / 2 - 0.4) - (0.4)",
+            "bed-west-2.yc - bed-west-2.w / 2 - 0.45"
+          ],
+          "size": [
+            0.4,
+            0.4,
+            0.55
+          ],
+          "classes": "furniture storage nightstand",
+          "color": "furniture"
+        },
+        {
+          "id": "wardrobe-west-front",
+          "title": "Armário baixo — Quarto Oeste",
+          "pos": [
+            "10.4 - ((10.4 - bedroom-west.x1) + 0.06) - (0.8)",
+            "bedroom-west.y0 + 0.06"
+          ],
+          "size": [
+            0.8,
+            0.6,
+            1.2
+          ],
+          "classes": "storage",
+          "color": "furniture"
+        },
+        {
+          "id": "wardrobe-west-rear",
+          "title": "Armário baixo — Quarto Oeste",
+          "pos": [
+            "10.4 - ((10.4 - bedroom-west.x1) + 0.06) - (0.8)",
+            "bedroom-west.y1 - 0.66"
+          ],
+          "size": [
+            0.8,
+            0.6,
+            1.2
+          ],
+          "classes": "storage",
+          "color": "furniture"
+        },
+        {
+          "id": "stair-arrival-railing",
+          "type": "railing",
+          "label": "Guarda-corpo do desembarque",
+          "pos": [
+            "10.4 - ((10.4 - upper-flight.x0)) - ((10.4 - stairs.x0) - (10.4 - upper-flight.x0) - params.wall_thickness / 2)",
+            "stairs.y0 - 0.08"
+          ],
+          "size": [
+            "(10.4 - stairs.x0) - (10.4 - upper-flight.x0) - params.wall_thickness / 2",
+            0.08,
+            1.1
+          ]
+        }
+      ],
+      "openings": [
+        {
+          "type": "opening",
+          "from": "upper",
+          "to": "ground",
+          "pos": [
+            "10.4 - ((10.4 - stairs.x1)) - (stairs.w)",
+            "stairs.y0"
+          ],
+          "size": [
+            "stairs.w",
+            "stairs.l"
+          ]
+        }
+      ]
+    }
+  ],
+  "walls": [
+    {
+      "id": "front-wall",
+      "scope": "ground",
+      "top": {
+        "level": "upper.z0"
+      },
+      "path": {
+        "points": [
+          [
+            "10.4 - ((10.4 - hall.x1))",
+            "hall.y0"
+          ],
+          [
+            "10.4 - ((10.4 - hall.x0))",
+            "y0"
+          ],
+          [
+            "10.4 - ((10.4 - x0))",
+            "house-right.y0"
+          ],
+          [
+            "10.4 - ((10.4 - house-right.x0))",
+            "y0"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "dining-walls",
+      "scope": "ground",
+      "top": {
+        "level": "upper.z0"
+      },
+      "path": {
+        "points": [
+          [
+            "10.4 - ((10.4 - dining.x1))",
+            "dining.y1"
+          ],
+          [
+            "10.4 - ((10.4 - x0))",
+            "dining.y0"
+          ],
+          [
+            "10.4 - ((10.4 - dining.x0))",
+            "y0"
+          ],
+          [
+            "10.4 - ((10.4 - x0))",
+            "dining.y1"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "knee-wall-rear",
+      "scope": "upper",
+      "color": "blue",
+      "path": {
+        "points": [
+          [
+            "10.4 - ((10.4 - knee-left.x1))",
+            "stairs.y0 - 0.9"
+          ],
+          [
+            "10.4 - ((10.4 - x0))",
+            "house-left.y1"
+          ]
+        ]
+      },
+      "base": {
+        "level": "upper.z0"
+      }
+    },
+    {
+      "id": "rear-wall",
+      "scope": "ground",
+      "top": {
+        "level": "upper.z0"
+      },
+      "path": {
+        "points": [
+          [
+            "10.4 - ((10.4 - kitchen.x1))",
+            "kitchen.y1"
+          ],
+          [
+            "10.4 - ((10.4 - kitchen.x0))",
+            "y0"
+          ],
+          [
+            "10.4 - ((10.4 - pantry.x1))",
+            "pantry.y1"
+          ],
+          [
+            "10.4 - ((10.4 - mudroom.x0))",
+            "mudroom.y1"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "right-wall",
+      "scope": "ground",
+      "top": {
+        "level": "upper.z0"
+      },
+      "from": [
+        "10.4 - ((10.4 - house-right.x0))",
+        "office.y0"
+      ],
+      "to": [
+        "10.4 - ((10.4 - x0))",
+        "mudroom.y1"
+      ]
+    },
+    {
+      "id": "upper-dining-walls",
+      "scope": "upper",
+      "color": "red",
+      "base": {
+        "level": "upper.z0"
+      },
+      "top": "roof",
+      "path": {
+        "points": [
+          [
+            "10.4 - ((10.4 - main-left.x1))",
+            "dining.y1"
+          ],
+          [
+            "10.4 - ((10.4 - dining.x1))",
+            "y0"
+          ],
+          [
+            "10.4 - ((10.4 - x0))",
+            "dining.y0"
+          ],
+          [
+            "10.4 - ((10.4 - dining.x0))",
+            "y0"
+          ],
+          [
+            "10.4 - ((10.4 - x0))",
+            "main.y0"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "upper-front-wall",
+      "scope": "upper",
+      "base": {
+        "level": "upper.z0"
+      },
+      "top": "roof",
+      "path": {
+        "points": [
+          [
+            "10.4 - ((10.4 - knee-left.x1))",
+            "hall.y0"
+          ],
+          [
+            "10.4 - ((10.4 - hall.x0))",
+            "y0"
+          ],
+          [
+            "10.4 - ((10.4 - x0))",
+            "house-right.y0"
+          ],
+          [
+            "10.4 - ((10.4 - house-right.x0))",
+            "y0"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "upper-left-wall",
+      "scope": "upper",
+      "base": {
+        "level": "upper.z0"
+      },
+      "top": "roof",
+      "path": {
+        "points": [
+          [
+            "10.4 - ((10.4 - house-left.x1))",
+            "dining.y1"
+          ],
+          [
+            "10.4 - ((10.4 - x0))",
+            "main.y1"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "knee-wall-front-left",
+      "scope": "upper",
+      "color": "blue",
+      "base": {
+        "level": "upper.z0"
+      },
+      "top": "roof",
+      "path": {
+        "points": [
+          [
+            "10.4 - ((10.4 - knee-left.x1))",
+            "main.y0"
+          ],
+          [
+            "10.4 - ((10.4 - x0))",
+            "y0 + 4.6"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "upper-rear-wall",
+      "scope": "upper",
+      "base": {
+        "level": "upper.z0"
+      },
+      "top": "roof",
+      "from": [
+        "10.4 - ((10.4 - main.x1))",
+        "main.y1"
+      ],
+      "to": [
+        "10.4 - ((10.4 - main.x0))",
+        "y0"
+      ]
+    },
+    {
+      "id": "upper-right-wall",
+      "scope": "upper",
+      "base": {
+        "level": "upper.z0"
+      },
+      "top": "roof",
+      "from": [
+        "10.4 - ((10.4 - house-right.x0))",
+        "house-right.y0"
+      ],
+      "to": [
+        "10.4 - ((10.4 - x0))",
+        "main.y1"
+      ]
+    }
+  ],
+  "roofs": [
+    {
+      "id": "porch-roof",
+      "label": "Cobertura da varanda",
+      "type": "shed",
+      "clip_intersections": false,
+      "base": "porch",
+      "orientation": "transverse",
+      "slope": "top",
+      "pitch": 20,
+      "z0": "ground.z0 + 2.7",
+      "eaves": {
+        "left": 0.45,
+        "right": 0,
+        "pitch": 20
+      },
+      "rake": [
+        0.25,
+        0
+      ]
+    },
+    {
+      "id": "main-roof",
+      "label": "Telhado Principal",
+      "z0": "upper.z0 + 1",
+      "rectangle": [
+        "10.4 - ((10.4 - dining.x0) - 1.6)",
+        "hall.y0",
+        "10.4 - ((10.4 - main.x0))",
+        "main.y1"
+      ],
+      "orientation": "longitudinal",
+      "eaves": {
+        "left": 0.5,
+        "right": 0
+      },
+      "rake": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "id": "dining-roof",
+      "label": "Telhado da sala de jantar",
+      "z0": "upper.z0 + 1",
+      "rectangle": [
+        "10.4 - ((10.4 - dining.x1))",
+        "dining.y0",
+        "10.4 - ((10.4 - dining.x0))",
+        "main.y1"
+      ],
+      "orientation": "longitudinal"
+    },
+    {
+      "id": "transverse-roof",
+      "label": "Telhado Transversal",
+      "from": [
+        "10.4 - ((10.4 - top.x1))",
+        "top.y0 + 2",
+        "upper.z0 + 1"
+      ],
+      "to": [
+        "10.4 - ((10.4 - top.x0))",
+        "bottom.y1 - 1",
+        "z0"
+      ],
+      "orientation": "transverse",
+      "eaves": {
+        "left": 0,
+        "right": 0
+      }
+    }
+  ],
+  "guides": [
+    {
+      "id": "central-left",
+      "label": "central esquerda",
+      "pos": [
+        "10.4 - ((10.4 - l-axis.x1) - 0.7) - (0)",
+        -2.5
+      ],
+      "l": 20,
+      "color": "green"
+    },
+    {
+      "id": "central-right",
+      "label": "central direita",
+      "pos": [
+        "10.4 - ((10.4 - l-axis.x1) + 0.7) - (0)",
+        -2.5
+      ],
+      "l": 20,
+      "color": "green"
+    },
+    {
+      "id": "knee-bottom",
+      "label": "meia parede traseira",
+      "pos": [
+        -5.6,
+        "dorm.y1"
+      ],
+      "w": 20,
+      "color": "green"
+    },
+    {
+      "id": "knee-left",
+      "label": "meia parede esquerda",
+      "pos": [
+        "10.4 - ((10.4 - main-roof.x1) + params.knee_setback) - (0)",
+        -2.5
+      ],
+      "l": 20,
+      "color": "terracotta"
+    },
+    {
+      "id": "knee-right",
+      "label": "meia parede direita",
+      "pos": [
+        "10.4 - ((10.4 - main-roof.x0) - params.knee_setback) - (0)",
+        -2.5
+      ],
+      "l": 20,
+      "color": "terracotta"
+    },
+    {
+      "id": "l-axis",
+      "label": "eixo longitudinal",
+      "pos": [
+        "10.4 - ((10.4 - central.xc)) - (0)",
+        -2.5
+      ],
+      "l": 20,
+      "color": "green"
+    },
+    {
+      "id": "main-bottom",
+      "label": "parede traseira",
+      "pos": [
+        -5.6,
+        "main.y1"
+      ],
+      "w": 20,
+      "color": "green"
+    },
+    {
+      "id": "main-left",
+      "label": "parede esquerda",
+      "pos": [
+        "10.4 - ((10.4 - house-left.x1)) - (0)",
+        -2.5
+      ],
+      "l": 20,
+      "color": "green"
+    },
+    {
+      "id": "main-right",
+      "label": "parede direita",
+      "pos": [
+        "10.4 - ((10.4 - house-right.x0)) - (0)",
+        -2.5
+      ],
+      "l": 20,
+      "color": "green"
+    },
+    {
+      "id": "main-top",
+      "label": "parede frontal",
+      "pos": [
+        -5.6,
+        "main.y0"
+      ],
+      "w": 20,
+      "color": "green"
+    },
+    {
+      "id": "porch-front",
+      "label": "frente da varanda",
+      "pos": [
+        -5.6,
+        0
+      ],
+      "w": 20,
+      "color": "green"
+    },
+    {
+      "id": "w-axis",
+      "label": "eixo transversal",
+      "pos": [
+        -5.6,
+        "main.yc + 0.5"
+      ],
+      "w": 20,
+      "color": "green"
+    }
+  ]
+}
