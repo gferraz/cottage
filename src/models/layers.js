@@ -1,4 +1,8 @@
 const FloorPlanLayers = {
+  isLayerVisible(layer, cutoff) {
+    return cutoff === "above-zero" ? layer > 0 : cutoff === null || layer <= cutoff;
+  },
+
   updateOverlaps(plan) {
     const rooms = [...plan.roomElements, ...plan.stairElements];
     plan.errors = plan.errors.filter(
@@ -177,7 +181,8 @@ const FloorPlanLayers = {
       return;
     }
     plan.layerCutoff =
-      plan.layerCutoff === null ? plan.maxLayer - 1 : plan.layerCutoff - 1;
+      plan.layerCutoff === null || plan.layerCutoff === "above-zero"
+        ? plan.maxLayer - 1 : plan.layerCutoff - 1;
     if (plan.layerCutoff < 0) plan.layerCutoff = null;
     plan.updateLayerVisibility();
   },
@@ -197,16 +202,19 @@ const FloorPlanLayers = {
         );
         element.classList.toggle(
           "layer-hidden",
-          cutoff !== null && layer > cutoff,
+          !this.isLayerVisible(layer, cutoff),
         );
       });
     if (plan.layerOptions) {
       const visible = Boolean(plan.currentConfig && plan.maxLayer > 0);
       const container = plan.layerOptions.closest(".layer-selector");
       container?.toggleAttribute("hidden", !visible);
-      if (visible && plan.layerOptions.childElementCount !== plan.maxLayer + 1) {
+      if (visible && plan.layerOptions.childElementCount !== plan.maxLayer + 2) {
         plan.layerOptions.replaceChildren();
-        const options = [{ value: "all", label: "Todas" }];
+        const options = [
+          { value: "all", label: "Todas" },
+          { value: "above-zero", label: "Acima da camada 0" },
+        ];
         for (let layer = 0; layer < plan.maxLayer; layer += 1) {
           options.push({ value: String(layer), label: `Camada ${layer}` });
         }
@@ -217,7 +225,7 @@ const FloorPlanLayers = {
           input.type = "radio";
           input.name = "layer-selection";
           input.value = value;
-          input.checked = cutoff === null ? value === "all" : Number(value) === cutoff;
+          input.checked = value === String(cutoff ?? "all");
           const caption = document.createElement("span");
           caption.textContent = text;
           label.append(input, caption);
@@ -225,9 +233,7 @@ const FloorPlanLayers = {
         });
       }
       plan.layerOptions.querySelectorAll("input").forEach((input) => {
-        input.checked = cutoff === null
-          ? input.value === "all"
-          : Number(input.value) === cutoff;
+        input.checked = input.value === String(cutoff ?? "all");
       });
     }
   },

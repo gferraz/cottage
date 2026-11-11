@@ -43,6 +43,9 @@ const FloorPlanDom = {
     } = normalized;
     const element = document.createElement("div");
     element.className = `plan-item plan-generated${room ? " room" : ""}${classes ? ` ${classes}` : ""}${visible === false ? " plan-hidden" : ""}`;
+    if (classes.split(/\s+/).includes("round-table")) {
+      element.style.borderRadius = "50%";
+    }
     if (data.color)
       element.style.backgroundColor = plan.themeFillColor(data.color);
     element.style.setProperty("--x", x);

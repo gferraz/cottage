@@ -157,7 +157,7 @@ class FloorPlan {
       layerOptions.addEventListener("change", (event) => {
         this.layerCutoff = event.target.value === "all"
           ? null
-          : Number(event.target.value);
+          : event.target.value === "above-zero" ? "above-zero" : Number(event.target.value);
         this.updateLayerVisibility();
       });
     }

@@ -443,6 +443,7 @@
       ],
       // Mobiliário e equipamentos.
       items: [
+        { id: "kitchen-table", label: "Mesa Ø 1,2 m", title: "Mesa redonda — Cozinha — Ø 1,2 m", pos: ["kitchen.xc - 0.6", "kitchen.yc - 0.6"], size: [1.2, 1.2, 0.75], classes: "table round-table" },
         // Sofá linear voltado para a frente da casa; passagem de 90 cm atrás do encosto.
         { id: "living-sofa", type: "three-seat-sofa", label: "Sofá linear", title: "Sofá linear de 3 lugares — Estar", pos: ["living.xc - 1.05", "living.y1 - 0.9 - 0.9"], rotation: 180 },
         // Mesa a 1 m da face interna da parede exterior esquerda e da borda frontal da sala.
@@ -543,8 +544,8 @@
         {
           id: "stair-arrival",
           label: "Circulação",
-          from: ["house-left.x0", "upper-flight.y0"],
-          to: ["upper-flight.x0", "upper-flight.y1"],
+          from: ["house-left.x0", "stairs.y0"],
+          to: ["stairs.x0", "main.y1"],
           walls: [],
           classes: "circulation"
         },

@@ -71,8 +71,19 @@ const FloorPlan3DElements = {
         box(0.76, 0.48, 0.4, 0, -0.03, 0.8, glass);
         for (const cx of [-0.45, 0.45]) for (const cy of [-0.32, 0.32]) box(0.1, 0.16, 0.26, cx, cy, 0.13, dark);
       } else if (kind === "table") {
-        box(1, 1, 0.1, 0, 0, 0.95);
-        for (const cx of [-0.42, 0.42]) for (const cy of [-0.4, 0.4]) box(0.08, 0.08, 0.9, cx, cy, 0.45);
+        if (classes.includes("round-table")) {
+          const top = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, h * 0.1, 48), material);
+          top.rotation.x = Math.PI / 2;
+          top.scale.set(w, 1, l);
+          top.position.set(0, 0, h * 0.95);
+          top.castShadow = true;
+          top.receiveShadow = true;
+          top.userData.domainId = item.id || "";
+          group.add(top);
+        } else {
+          box(1, 1, 0.1, 0, 0, 0.95);
+        }
+        for (const cx of (classes.includes("round-table") ? [-0.28, 0.28] : [-0.42, 0.42])) for (const cy of (classes.includes("round-table") ? [-0.28, 0.28] : [-0.4, 0.4])) box(0.08, 0.08, 0.9, cx, cy, 0.45);
       } else if (kind === "three-seat-sofa" || kind === "armchair") {
         box(1, 1, 0.45, 0, 0, 0.225);
         box(1, 0.16, 0.55, 0, -0.42, 0.725);
