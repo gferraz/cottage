@@ -384,7 +384,7 @@
           id: "bedroom-north",
           label: "Quarto N",
           from: ["knee-right.x1", "hall.y0"],
-          to: ["knee-right.x1 - 3.3", "y0 + 4.6"],
+          to: ["knee-right.x1 - 3.3", "y0 + 3.8"],
           walls: ["left", "bottom"],
           openings: [
             { type: "door", from: "bottom", to: "upper-corridor" },
@@ -413,7 +413,7 @@
         {
           id: "bedroom-west",
           label: "Quarto Oeste",
-          from: ["knee-right.x1", "transversal-rear.y0"],
+          from: ["knee-right.x1", "main.y1 - 3.8"],
           to: ["house-left.x1", "main.y1"],
           walls: ["top", "left"],
           openings: [
@@ -576,32 +576,16 @@
         {
           id: "bed-west-1",
           type: "twin-bed",
-          nightstand: { w: 0.4, side: "left" },
-          pos: ["bedroom-west.x0 + params.wall_thickness / 2 + 0.47", "bedroom-west.y0 + 0.3"],
-          rotation: 270
+          nightstand: { w: 0.4, side: "right" },
+          pos: ["bedroom-west.x1 - params.wall_thickness / 2 - 1.44", "bedroom-west.y0 + 0.3"],
+          rotation: 90
         },
         {
           id: "bed-west-2",
           type: "twin-bed",
-          nightstand: { w: 0.4, side: "left" },
-          pos: ["bedroom-west.x0 + params.wall_thickness / 2 + 0.47", "bedroom-west.y1 - 1.74"],
-          rotation: 270
-        },
-        {
-          id: "wardrobe-west-front",
-          title: "Armário baixo — Quarto Oeste",
-          pos: ["bedroom-west.x1 - 0.86", "bedroom-west.y0 + 0.06"],
-          size: [0.8, 0.6, 1.2],
-          classes: "storage",
-          color: "furniture"
-        },
-        {
-          id: "wardrobe-west-rear",
-          title: "Armário baixo — Quarto Oeste",
-          pos: ["bedroom-west.x1 - 0.86", "bedroom-west.y1 - 0.66"],
-          size: [0.8, 0.6, 1.2],
-          classes: "storage",
-          color: "furniture"
+          nightstand: { w: 0.4, side: "right" },
+          pos: ["bedroom-west.x1 - params.wall_thickness / 2 - 1.44", "bedroom-west.y1 - 1.74"],
+          rotation: 90
         },
         {
           id: "stair-arrival-railing",
