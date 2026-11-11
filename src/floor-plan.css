@@ -244,6 +244,9 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   transform-box: fill-box;
   transform-origin: center;
 }
+.storage-chest:hover::after {
+  opacity: 1;
+}
 .site .room-part .part-dimensions {
   top: auto;
   bottom: calc(50% + 14px);

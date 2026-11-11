@@ -1,15 +1,21 @@
 const FloorPlanElements = {
+  bedAccessoryGap: 0.05,
   nightstandSource: Symbol("nightstand-source"),
+  recamierSource: Symbol("recamier-source"),
 
   items(plan, floor) {
     return (floor.items ?? []).flatMap((item) => {
       const nightstand = item.nightstand ?? plan.itemTypes?.[item.type]?.nightstand;
-      if (nightstand === undefined) return [item];
+
       const definition = plan.itemTypes?.[item.type];
       const classes = String(item.classes ?? definition?.classes ?? "").split(/\s+/);
       const side = nightstand?.side ?? definition?.nightstand?.side ?? (classes.includes("twin-bed") ? "right" : "both");
-      const sides = side === "none" ? [] : side === "both" ? ["left", "right"] : [side];
-      return [item, ...sides.map((side) => ({
+      const sides = nightstand === undefined || side === "none" ? [] : side === "both" ? ["left", "right"] : [side];
+      const recamier = item.recamier ?? definition?.recamier;
+      return [item, ...(recamier === true ? [{
+        ...(item.id ? { id: `${item.id}-recamier` } : {}),
+        [this.recamierSource]: { bed: item, floor },
+      }] : []), ...sides.map((side) => ({
         ...(item.id ? { id: `${item.id}-nightstand-${side}` } : {}),
         [this.nightstandSource]: { bed: item, side, floor },
       }))];
@@ -22,7 +28,7 @@ const FloorPlanElements = {
     const w = plan.resolve(definition.nightstand.w);
     const angle = geometry.rotation * Math.PI / 180;
     // Rotate each square's center around the bed's center, just like the bed.
-    const dx = (side === "left" ? -1 : 1) * (geometry.w + w) / 2;
+    const dx = (side === "left" ? -1 : 1) * ((geometry.w + w) / 2 + this.bedAccessoryGap);
     const dy = (w - geometry.l) / 2;
     return {
       ...(id ? { id } : {}),
@@ -41,6 +47,29 @@ const FloorPlanElements = {
       overlays: definition.overlays,
     };
   },
+  resolveRecamier(plan, { bed, floor }, id) {
+    const definition = this.resolveItemType(plan, bed);
+    const geometry = plan.normalizeGeometryAtFloor(definition, floor);
+    const angle = geometry.rotation * Math.PI / 180;
+    const dy = geometry.l / 2 + this.bedAccessoryGap + 0.45 / 2;
+    return {
+      ...(id ? { id } : {}),
+      label: "Recamier",
+      title: `Recamier — ${definition.title || definition.label || "Cama Queen"}`,
+      classes: "furniture storage storage-chest",
+      color: "furniture",
+      pos: [
+        geometry.x + geometry.w / 2 - dy * Math.sin(angle) - 0.45 / 2,
+        geometry.y + geometry.l / 2 + dy * Math.cos(angle) - 1.4 / 2,
+        geometry.z0,
+      ],
+      size: [0.45, 1.4, 0.45],
+      rotation: (geometry.rotation + 90) % 360,
+      overlaps: definition.overlaps,
+      overlays: definition.overlays,
+    };
+  },
+
   addItem(plan, item) {
     const resolvedItem = plan.resolveItemType(item);
     const element = plan.add({ ...resolvedItem, showLabel: true });
@@ -59,10 +88,13 @@ const FloorPlanElements = {
   },
 
   resolveItemType(plan, item) {
+    if (item[this.recamierSource]) {
+      return this.resolveRecamier(plan, item[this.recamierSource], item.id);
+    }
     if (item[this.nightstandSource]) {
       return this.resolveNightstand(plan, item[this.nightstandSource], item.id);
     }
-    if (!item.type && item.nightstand === undefined) return item;
+    if (!item.type && item.nightstand === undefined && item.recamier === undefined) return item;
     const definition = item.type ? plan.itemTypes?.[item.type] : {};
     if (!definition) throw new Error(`Unknown item type: ${item.type}`);
     const result = {
@@ -73,6 +105,12 @@ const FloorPlanElements = {
       label: item.label ?? definition.label,
       title: item.title ?? definition.title ?? definition.label,
     };
+    if (result.recamier !== undefined) {
+      if (typeof result.recamier !== "boolean") throw new Error("Recamier precisa ser true ou false");
+      if (!String(result.classes || "").split(/\s+/).includes("queen-bed")) {
+        throw new Error("Recamier só pode ser usado em camas queen");
+      }
+    }
     if (result.nightstand !== undefined) {
       const classes = String(result.classes || "").split(/\s+/);
       if (!["queen-bed", "twin-bed"].some((type) => classes.includes(type))) {

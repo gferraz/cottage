@@ -82,7 +82,7 @@ Os IDs dos cômodos são obrigatórios, globais e únicos. IDs de zonas, itens, 
 
 Tipos reutilizáveis de itens, padrões de portas/janelas e tokens de cor ficam em [`src/config/catalog.js`](src/config/catalog.js). Uma planta pode sobrescrever tipos em `item-types`, valores de abertura no próprio objeto e cores em `theme.colors`. A prioridade é: definição explícita da planta, catálogo compartilhado e padrão interno.
 
-Camas (`queen-bed` e `twin-bed`) aceitam `nightstand: { w: 0.5, side: "both" }`. A largura `w` é sempre opcional (0,5 m para queen e 0,4 m para twin, salvo definição no catálogo). Ela também define a profundidade: os criados-mudos são quadrados, encostados nas laterais e alinhados à cabeceira. Eles herdam a altura e a rotação da cama. Use `side: "left"`, `"right"` ou `"both"` para escolher o lado antes da rotação da cama. Use `nightstand: { side: "none" }` para remover os criados-mudos, sem precisar informar `w`. O padrão é `"right"` para `twin-bed` e `"both"` para `queen-bed`. Sem `nightstand`, a cama queen inclui dois criados-mudos de 0,5 × 0,5 m, e a cama twin inclui um criado-mudo à direita de 0,4 × 0,4 m. A opção também pode ser definida no catálogo ou em `item-types`.
+Camas (`queen-bed` e `twin-bed`) aceitam `nightstand: { w: 0.5, side: "both" }`. A largura `w` é sempre opcional (0,5 m para queen e 0,4 m para twin, salvo definição no catálogo). Ela também define a profundidade: os criados-mudos são quadrados, afastados 5 cm das laterais e alinhados à cabeceira. Eles herdam a altura e a rotação da cama. Use `side: "left"`, `"right"` ou `"both"` para escolher o lado antes da rotação da cama. Use `nightstand: { side: "none" }` para remover os criados-mudos, sem precisar informar `w`. O padrão é `"right"` para `twin-bed` e `"both"` para `queen-bed`. Sem `nightstand`, a cama queen inclui dois criados-mudos de 0,5 × 0,5 m, e a cama twin inclui um criado-mudo à direita de 0,4 × 0,4 m. A opção também pode ser definida no catálogo ou em `item-types`.
 
 ```json5
 {
@@ -104,6 +104,8 @@ Exemplo para cama de solteiro (omitir `side` também seleciona o lado direito):
 ```
 
 O ID da cama continua representando apenas a cama. Os criados-mudos recebem os IDs `master-bed-nightstand-left` e `master-bed-nightstand-right` (lados antes da rotação), com referências geométricas próprias. Eles aparecem nas vistas, nas listas de itens e nas exportações; a configuração original continua contendo apenas o conjunto.
+
+Camas queen também aceitam `recamier: true`. O recamier mede 1,4 × 0,45 × 0,45 m e fica centralizado aos pés da cama, com afastamento de 0,05 m, acompanhando sua rotação e elevação. O padrão é não incluir recamier; `recamier: false` também desativa uma definição do catálogo. O ID gerado é `<id-da-cama>-recamier`.
 
 ## Escopo de paredes independentes
 

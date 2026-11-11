@@ -367,18 +367,8 @@
         {
           id: "master-bed",
           type: "queen-bed",
-          nightstand: { w: 0.5, side: "both" },
+          recamier: true,
           pos: ["master.xc - 0.8", "master.y0 + params.wall_thickness / 2 + 0.1"]
-        },
-        {
-          id: "master-chest",
-          label: "Recamier",
-          title: "recamier — Suíte Master",
-          pos: ["master-bed.xc - 0.23", "master-bed.y1 - 0.37"],
-          size: [0.45, 1.4, 0.45],
-          rotation: 90,
-          classes: "furniture storage storage-chest",
-          color: "furniture"
         },
         { type: "railing", pos: ["hall.xc + 0.9", "porch.y0"], size: ["-hall.xc + porch.x1 - 0.9", 0.08, 1.1] },
         { type: "railing", pos: ["porch.x0", "porch.y0"], size: ["-porch.x0 + hall.xc - 0.9", 0.08, 1.1] },

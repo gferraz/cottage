@@ -558,6 +558,11 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   writing-mode: vertical-rl;
   font-size: 9px;
   color: #3d2d24;
+  opacity: 0;
+  pointer-events: none;
+}
+.storage-chest:hover::after {
+  opacity: 1;
 }
 .queen-bed { border: 2px solid #6d7890; border-radius: 5px; background: #d9deea; }
 .plan-item.twin-bed {

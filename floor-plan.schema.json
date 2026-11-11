@@ -1336,8 +1336,12 @@
     "item": {
       "type": "object",
       "properties": {
+        "recamier": {
+          "type": "boolean",
+          "description": "Somente queen-bed: adiciona um recamier de 1.4 × 0.45 × 0.45 m, centralizado aos pés da cama, com afastamento de 0.05 m. Padrão: false."
+        },
         "nightstand": {
-          "description": "Criados-mudos quadrados, alinhados à cabeceira e com a altura da cama. O lado padrão é right em camas twin e both em camas queen.",
+          "description": "Criados-mudos quadrados, afastados 0.05 m das laterais da cama, alinhados à cabeceira e com a altura da cama. O lado padrão é right em camas twin e both em camas queen.",
           "type": "object",
           "additionalProperties": false,
           "properties": {

@@ -19,8 +19,8 @@ test('square nightstands keep the bed footprint and inherit its elevation and he
   const { plan, items } = setup(bed, 3);
   assert.equal(items.length, 3);
   const [left, right] = items.slice(1).map((item) => plan.resolveItemType(item));
-  left.pos.forEach((value, index) => close(value, [1.5, 3, 3][index]));
-  right.pos.forEach((value, index) => close(value, [3.6, 3, 3][index]));
+  left.pos.forEach((value, index) => close(value, [1.45, 3, 3][index]));
+  right.pos.forEach((value, index) => close(value, [3.65, 3, 3][index]));
   assert.deepEqual(left.size, [0.5, 0.5, 0.55]);
   assert.deepEqual(right.size, left.size);
   assert.equal(left.id, 'bed-nightstand-left');
@@ -38,7 +38,7 @@ test('nightstand centers follow the bed rotation, including arbitrary angles', (
     const angle = rotation * Math.PI / 180;
     items.slice(1).forEach((item, index) => {
       const stand = plan.resolveItemType(item);
-      const dx = (index === 0 ? -1 : 1) * 1.1;
+      const dx = (index === 0 ? -1 : 1) * 1.15;
       const dy = -0.9;
       close(stand.pos[0] + 0.2, 2.9 + dx * Math.cos(angle) - dy * Math.sin(angle));
       close(stand.pos[1] + 0.2, 4.1 + dx * Math.sin(angle) + dy * Math.cos(angle));
@@ -77,7 +77,7 @@ test('generated nightstands have lazy references and appear in global 3D lists',
   const config = { floors: [{ id: 'upper', z0: 3, items: [bed] }] };
   Object.assign(plan, { references: new Map(), roomDefinitions: new Map(), roomReferences: new Map() });
   FloorPlanReferences.registerStaticItemReferences(plan, config);
-  close(plan.references.get('bed-nightstand-left').x0(), 1.5);
+  close(plan.references.get('bed-nightstand-left').x0(), 1.45);
   close(plan.references.get('bed-nightstand-right').z1(), 3.55);
   FloorPlanReferences.prepareGlobalLists(plan, config);
   assert.equal(plan.allItems.length, 3);
@@ -98,7 +98,7 @@ test('twin beds default to the right and support either side or both through rot
       items.slice(1).forEach((item, index) => {
         const stand = plan.resolveItemType(item);
         assert.equal(stand.id, `twin-nightstand-${expectedSides[index]}`);
-        const dx = (expectedSides[index] === 'left' ? -1 : 1) * (0.97 + 0.4) / 2;
+        const dx = (expectedSides[index] === 'left' ? -1 : 1) * ((0.97 + 0.4) / 2 + 0.05);
         const dy = (0.4 - 1.91) / 2;
         close(stand.pos[0] + 0.2, 2.485 + dx * Math.cos(angle) - dy * Math.sin(angle));
         close(stand.pos[1] + 0.2, 3.955 + dx * Math.sin(angle) + dy * Math.cos(angle));
@@ -122,7 +122,7 @@ test('queen beds default to both sides and support either side or both through r
       items.slice(1).forEach((item, index) => {
         const stand = plan.resolveItemType(item);
         assert.equal(stand.id, `queen-nightstand-${expectedSides[index]}`);
-        const dx = (expectedSides[index] === 'left' ? -1 : 1) * (1.6 + 0.4) / 2;
+        const dx = (expectedSides[index] === 'left' ? -1 : 1) * ((1.6 + 0.4) / 2 + 0.05);
         const dy = (0.4 - 2) / 2;
         close(stand.pos[0] + 0.2, 2.8 + dx * Math.cos(angle) - dy * Math.sin(angle));
         close(stand.pos[1] + 0.2, 4 + dx * Math.sin(angle) + dy * Math.cos(angle));
@@ -217,4 +217,32 @@ test('side-only settings inherit custom catalog widths', () => {
   const items = FloorPlanElements.items(plan, { items: [bed] });
   assert.equal(items.length, 2);
   assert.deepEqual(plan.resolveItemType(items[1]).size, [0.65, 0.65, 0.55]);
+});
+
+test('queen recamier follows the bed through rotation and elevation independently of nightstands', () => {
+  for (const rotation of [0, 90, 180, 270, 37]) {
+    const bed = { id: 'bed', type: 'queen-bed', pos: [2, 3], rotation,
+      recamier: true, nightstand: { side: 'none' } };
+    const { plan, items } = setup(bed, 3);
+    assert.equal(items.length, 2);
+    const recamier = plan.resolveItemType(items[1]);
+    const angle = rotation * Math.PI / 180;
+    assert.equal(recamier.id, 'bed-recamier');
+    close(recamier.pos[0] + 0.225, 2.8 - 1.275 * Math.sin(angle));
+    close(recamier.pos[1] + 0.7, 4 + 1.275 * Math.cos(angle));
+    assert.equal(recamier.pos[2], 3);
+    assert.deepEqual(recamier.size, [0.45, 1.4, 0.45]);
+    assert.equal(recamier.rotation, (rotation + 90) % 360);
+  }
+});
+
+test('recamier is opt-in, supports catalog defaults, and rejects invalid configurations', () => {
+  const { plan } = setup({});
+  const bed = { type: 'queen-bed', pos: [0, 0] };
+  assert.equal(FloorPlanElements.items(plan, { items: [bed] }).length, 3);
+  plan.itemTypes = { ...plan.itemTypes, 'queen-bed': { ...plan.itemTypes['queen-bed'], recamier: true } };
+  assert.equal(FloorPlanElements.items(plan, { items: [bed] }).length, 4);
+  assert.equal(FloorPlanElements.items(plan, { items: [{ ...bed, recamier: false }] }).length, 3);
+  assert.throws(() => plan.resolveItemType({ ...bed, recamier: {} }), /Recamier/);
+  assert.throws(() => plan.resolveItemType({ type: 'twin-bed', recamier: true }), /queen/);
 });
