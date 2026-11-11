@@ -34,12 +34,14 @@ window.FloorPlanCatalog = {
       label: "Cama Queen",
       size: [1.6, 2.0, 0.55],
       classes: "furniture queen-bed",
+      nightstand: { w: 0.5, side: "both" },
       color: "bed",
     },
     "twin-bed": {
       label: "Cama Twin",
       size: [0.97, 1.91, 0.55],
       classes: "furniture twin-bed",
+      nightstand: { w: 0.4, side: "right" },
       color: "bed",
     },
     "three-seat-sofa": {

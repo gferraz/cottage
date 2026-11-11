@@ -9294,8 +9294,8 @@ const FloorPlanElements = {
       if (nightstand === undefined) return [item];
       const definition = plan.itemTypes?.[item.type];
       const classes = String(item.classes ?? definition?.classes ?? "").split(/\s+/);
-      const side = nightstand?.side ?? (classes.includes("twin-bed") ? "right" : "both");
-      const sides = side === "both" ? ["left", "right"] : [side];
+      const side = nightstand?.side ?? definition?.nightstand?.side ?? (classes.includes("twin-bed") ? "right" : "both");
+      const sides = side === "none" ? [] : side === "both" ? ["left", "right"] : [side];
       return [item, ...sides.map((side) => ({
         ...(item.id ? { id: `${item.id}-nightstand-${side}` } : {}),
         [this.nightstandSource]: { bed: item, side, floor },
@@ -9367,17 +9367,21 @@ const FloorPlanElements = {
       }
       const settings = result.nightstand;
       if (!settings || typeof settings !== "object" || Array.isArray(settings)
-        || Object.keys(settings).some((key) => !["w", "side"].includes(key))
-        || settings.w === undefined) {
-        throw new Error("Nightstand precisa informar { w: largura, side?: left | right | both }");
+        || Object.keys(settings).some((key) => !["w", "side"].includes(key))) {
+        throw new Error("Nightstand aceita { w?: largura, side?: left | right | both | none }");
       }
-      if (settings.side !== undefined && !["left", "right", "both"].includes(settings.side)) {
-        throw new Error("Nightstand.side precisa ser left, right ou both");
+      if (settings.side !== undefined && !["left", "right", "both", "none"].includes(settings.side)) {
+        throw new Error("Nightstand.side precisa ser left, right, both ou none");
       }
-      const width = plan.resolve(settings.w);
+      if (settings.side === "none" && settings.w === undefined) return result;
+      const w = settings.w === undefined
+        ? definition.nightstand?.w ?? (classes.includes("twin-bed") ? 0.4 : 0.5)
+        : settings.w;
+      const width = plan.resolve(w);
       if (!Number.isFinite(width) || width <= 0) {
         throw new Error("Nightstand.w precisa ser positivo");
       }
+      result.nightstand = { ...settings, w };
     }
     return result;
   },
@@ -14105,12 +14109,14 @@ window.FloorPlanCatalog = {
       label: "Cama Queen",
       size: [1.6, 2.0, 0.55],
       classes: "furniture queen-bed",
+      nightstand: { w: 0.5, side: "both" },
       color: "bed",
     },
     "twin-bed": {
       label: "Cama Twin",
       size: [0.97, 1.91, 0.55],
       classes: "furniture twin-bed",
+      nightstand: { w: 0.4, side: "right" },
       color: "bed",
     },
     "three-seat-sofa": {

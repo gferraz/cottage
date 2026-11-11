@@ -367,7 +367,7 @@
         {
           id: "master-bed",
           type: "queen-bed",
-          nightstand: { w: 0.5 },
+          nightstand: { w: 0.5, side: "both" },
           pos: ["master.xc - 0.8", "master.y0 + params.wall_thickness / 2 + 0.1"]
         },
         {
@@ -579,7 +579,7 @@
         {
           id: "bed-north-1",
           type: "queen-bed",
-          nightstand: { w: 0.5 },
+          nightstand: { w: 0.5, side: "both" },
           pos: ["bedroom-north.x1 - params.wall_thickness / 2 - 1.8", "bedroom-north.yc - 1"],
           rotation: 90
         },

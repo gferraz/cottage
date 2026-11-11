@@ -1339,15 +1339,15 @@
         "nightstand": {
           "description": "Criados-mudos quadrados, alinhados à cabeceira e com a altura da cama. O lado padrão é right em camas twin e both em camas queen.",
           "type": "object",
-          "required": ["w"],
           "additionalProperties": false,
           "properties": {
             "side": {
               "type": "string",
-              "enum": ["left", "right", "both"],
-              "description": "Lado antes da rotação da cama. Padrão: right para twin-bed; both para queen-bed."
+              "enum": ["left", "right", "both", "none"],
+              "description": "Use none para não criar criados-mudos. Lado antes da rotação da cama. Padrão: right para twin-bed; both para queen-bed."
             },
             "w": {
+              "description": "Largura e profundidade opcionais em metros. Padrão: 0.5 para queen-bed; 0.4 para twin-bed (ou o valor do catálogo).",
               "anyOf": [
                 { "type": "number", "exclusiveMinimum": 0 },
                 { "type": "string", "minLength": 1 }
