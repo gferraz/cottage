@@ -3766,7 +3766,7 @@ const FloorPlanExport = {
           );
         }
       };
-      (floor.items ?? []).forEach((item) => {
+      (window.FloorPlanElements?.items(plan, floor) ?? floor.items ?? []).forEach((item) => {
         try {
           const definition = plan.resolveItemType(item);
           const geometry = plan.normalizeGeometryAtFloor(definition, floor);
@@ -8000,9 +8000,10 @@ const FloorPlanOpenings = {
         plan.currentFloorHeight = previousHeight;
       }
     });
-    (lowerFloor.items ?? []).forEach((item) => {
+    (window.FloorPlanElements?.items(plan, lowerFloor) ?? lowerFloor.items ?? []).forEach((item) => {
       try {
-        addProjection(item, plan.normalizeGeometryAtFloor(item, lowerFloor));
+        const definition = plan.resolveItemType(item);
+        addProjection(definition, plan.normalizeGeometryAtFloor(definition, lowerFloor));
       } catch (error) {
         plan.errors.push({
           opening: item,
@@ -9285,6 +9286,48 @@ window.FloorPlanWalls = FloorPlanWalls;
 
 
 const FloorPlanElements = {
+  nightstandSource: Symbol("nightstand-source"),
+
+  items(plan, floor) {
+    return (floor.items ?? []).flatMap((item) => {
+      const nightstand = item.nightstand ?? plan.itemTypes?.[item.type]?.nightstand;
+      if (nightstand === undefined) return [item];
+      const definition = plan.itemTypes?.[item.type];
+      const classes = String(item.classes ?? definition?.classes ?? "").split(/\s+/);
+      const side = nightstand?.side ?? (classes.includes("twin-bed") ? "right" : "both");
+      const sides = side === "both" ? ["left", "right"] : [side];
+      return [item, ...sides.map((side) => ({
+        ...(item.id ? { id: `${item.id}-nightstand-${side}` } : {}),
+        [this.nightstandSource]: { bed: item, side, floor },
+      }))];
+    });
+  },
+
+  resolveNightstand(plan, { bed, side, floor }, id) {
+    const definition = this.resolveItemType(plan, bed);
+    const geometry = plan.normalizeGeometryAtFloor(definition, floor);
+    const w = plan.resolve(definition.nightstand.w);
+    const angle = geometry.rotation * Math.PI / 180;
+    // Rotate each square's center around the bed's center, just like the bed.
+    const dx = (side === "left" ? -1 : 1) * (geometry.w + w) / 2;
+    const dy = (w - geometry.l) / 2;
+    return {
+      ...(id ? { id } : {}),
+      label: "Criado-mudo",
+      title: `Criado-mudo — ${definition.title || definition.label || "Cama"}`,
+      classes: "furniture storage nightstand",
+      color: "furniture",
+      pos: [
+        geometry.x + geometry.w / 2 + dx * Math.cos(angle) - dy * Math.sin(angle) - w / 2,
+        geometry.y + geometry.l / 2 + dx * Math.sin(angle) + dy * Math.cos(angle) - w / 2,
+        geometry.z0,
+      ],
+      size: [w, w, geometry.h],
+      rotation: geometry.rotation,
+      overlaps: definition.overlaps,
+      overlays: definition.overlays,
+    };
+  },
   addItem(plan, item) {
     const resolvedItem = plan.resolveItemType(item);
     const element = plan.add({ ...resolvedItem, showLabel: true });
@@ -9303,18 +9346,40 @@ const FloorPlanElements = {
   },
 
   resolveItemType(plan, item) {
-    if (!item.type) return item;
-    const definition = plan.itemTypes?.[item.type];
+    if (item[this.nightstandSource]) {
+      return this.resolveNightstand(plan, item[this.nightstandSource], item.id);
+    }
+    if (!item.type && item.nightstand === undefined) return item;
+    const definition = item.type ? plan.itemTypes?.[item.type] : {};
     if (!definition) throw new Error(`Unknown item type: ${item.type}`);
-    return {
+    const result = {
       ...definition,
       ...item,
-      type: item.type,
       size: item.size ?? definition.size,
       classes: item.classes ?? definition.classes,
       label: item.label ?? definition.label,
       title: item.title ?? definition.title ?? definition.label,
     };
+    if (result.nightstand !== undefined) {
+      const classes = String(result.classes || "").split(/\s+/);
+      if (!["queen-bed", "twin-bed"].some((type) => classes.includes(type))) {
+        throw new Error("Nightstand só pode ser usado em camas");
+      }
+      const settings = result.nightstand;
+      if (!settings || typeof settings !== "object" || Array.isArray(settings)
+        || Object.keys(settings).some((key) => !["w", "side"].includes(key))
+        || settings.w === undefined) {
+        throw new Error("Nightstand precisa informar { w: largura, side?: left | right | both }");
+      }
+      if (settings.side !== undefined && !["left", "right", "both"].includes(settings.side)) {
+        throw new Error("Nightstand.side precisa ser left, right ou both");
+      }
+      const width = plan.resolve(settings.w);
+      if (!Number.isFinite(width) || width <= 0) {
+        throw new Error("Nightstand.w precisa ser positivo");
+      }
+    }
+    return result;
   },
 
   addZone(plan, zone) {
@@ -9632,7 +9697,7 @@ const FloorPlanReferences = {
   registerStaticItemReferences(plan, config) {
     const resolving = new Set();
     (config.floors ?? [config]).forEach((floor) => {
-      (floor.items ?? []).forEach((item) => {
+      (window.FloorPlanElements?.items(plan, floor) ?? floor.items ?? []).forEach((item) => {
         if (!item.id || plan.references.has(item.id)) return;
         const geometry = () => {
           if (resolving.has(item.id)) {
@@ -9824,7 +9889,7 @@ const FloorPlanReferences = {
     });
     floorConfigs.forEach((floorConfig) => {
       [
-        ...(floorConfig.items ?? []),
+        ...(window.FloorPlanElements?.items(plan, floorConfig) ?? floorConfig.items ?? []),
         ...(floorConfig.openings ?? []),
         ...plan.roomOpenings(floorConfig),
         ...(floorConfig.windows ?? []),
@@ -9884,7 +9949,7 @@ const FloorPlanReferences = {
             });
           }
         });
-        (floorConfig.items ?? []).forEach((item, index) => {
+        (window.FloorPlanElements?.items(plan, floorConfig) ?? floorConfig.items ?? []).forEach((item, index) => {
           try {
             plan.normalizeGeometry(plan.resolveItemType(item));
           } catch (error) {
@@ -9969,7 +10034,7 @@ const FloorPlanReferences = {
           floorLabel: floorConfig.label,
         });
       });
-      (floorConfig.items ?? []).forEach((item) => {
+      (window.FloorPlanElements?.items(plan, floorConfig) ?? floorConfig.items ?? []).forEach((item) => {
         try {
           const resolvedItem = plan.resolveItemType(item);
           const geometry = plan.normalizeGeometry(resolvedItem);
@@ -10576,7 +10641,7 @@ const FloorPlanLayers = {
             });
           });
 
-          (floor.items ?? []).forEach((item) => {
+          (window.FloorPlanElements?.items(plan, floor) ?? floor.items ?? []).forEach((item) => {
             const definition = plan.resolveItemType(item);
             const geometry = plan.normalizeGeometry(definition);
             const {
@@ -13313,7 +13378,7 @@ class FloorPlan {
         if (!this.showAllFloors) this.addVisibleVerticalOpenings(config, floorConfig);
         const validZoneIds = this.validZoneIds ?? new Set();
         this.addZones(this.visibleZones(this.showAllFloors ? { ...config, zones: [] } : config, floorConfig).filter((zone) => validZoneIds.has(zone.id)));
-        (floorConfig.items ?? []).forEach((item, index) => {
+        (window.FloorPlanElements?.items(this, floorConfig) ?? floorConfig.items ?? []).forEach((item, index) => {
           try {
             this.addItem(item);
           } catch (error) {

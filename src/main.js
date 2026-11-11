@@ -351,7 +351,7 @@ class FloorPlan {
         if (!this.showAllFloors) this.addVisibleVerticalOpenings(config, floorConfig);
         const validZoneIds = this.validZoneIds ?? new Set();
         this.addZones(this.visibleZones(this.showAllFloors ? { ...config, zones: [] } : config, floorConfig).filter((zone) => validZoneIds.has(zone.id)));
-        (floorConfig.items ?? []).forEach((item, index) => {
+        (window.FloorPlanElements?.items(this, floorConfig) ?? floorConfig.items ?? []).forEach((item, index) => {
           try {
             this.addItem(item);
           } catch (error) {

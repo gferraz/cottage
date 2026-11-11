@@ -206,9 +206,10 @@ const FloorPlanOpenings = {
         plan.currentFloorHeight = previousHeight;
       }
     });
-    (lowerFloor.items ?? []).forEach((item) => {
+    (window.FloorPlanElements?.items(plan, lowerFloor) ?? lowerFloor.items ?? []).forEach((item) => {
       try {
-        addProjection(item, plan.normalizeGeometryAtFloor(item, lowerFloor));
+        const definition = plan.resolveItemType(item);
+        addProjection(definition, plan.normalizeGeometryAtFloor(definition, lowerFloor));
       } catch (error) {
         plan.errors.push({
           opening: item,

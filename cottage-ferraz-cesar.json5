@@ -367,6 +367,7 @@
         {
           id: "master-bed",
           type: "queen-bed",
+          nightstand: { w: 0.5 },
           pos: ["master.xc - 0.8", "master.y0 + params.wall_thickness / 2 + 0.1"]
         },
         {
@@ -377,22 +378,6 @@
           size: [0.45, 1.4, 0.45],
           rotation: 90,
           classes: "furniture storage storage-chest",
-          color: "furniture"
-        },
-        {
-          id: "master-nightstand-front",
-          title: "criado-mudo — Suíte Master",
-          pos: ["master-bed.x1 + 0.05", "master-bed.y0"],
-          size: [0.5, 0.5, 0.55],
-          classes: "furniture storage",
-          color: "furniture"
-        },
-        {
-          id: "master-nightstand-rear",
-          title: "criado-mudo — Suíte Master",
-          pos: ["master-bed.x0 - 0.55", "master-bed.y0"],
-          size: [0.5, 0.5, 0.55],
-          classes: "furniture storage",
           color: "furniture"
         },
         { type: "railing", pos: ["hall.xc + 0.9", "porch.y0"], size: ["-hall.xc + porch.x1 - 0.9", 0.08, 1.1] },
@@ -413,15 +398,7 @@
           walls: ["left", "bottom"],
           openings: [
             { type: "door", from: "bottom", to: "upper-corridor" },
-            {
-              type: "window",
-              from: "top",
-              to: "exterior",
-              w: 0.9,
-              h: 1.2,
-              z0: "upper.z0 + 1",
-              dx: "bedroom-north.w + main-roof.xc - bedroom-north.x1 + 0.75"
-            }
+            { type: "window", from: "top", w: 0.9, h: 1.2, z0: "upper.z0 + 1", dx: "bedroom-north.w + main-roof.xc - bedroom-north.x1 + 0.75"}
           ]
         },
         {
@@ -482,9 +459,16 @@
           ]
         },
         {
+          id: "prayer-room",
+          label: "Sala de oração",
+          from: ["house-right.x1", "office.y0"],
+          to: ["porch.x1", "porch.y1"],
+          openings: [{ type: "window", from: "top", w: 0.8, h: 0.6 }]
+        },
+        {
           id: "unused-right",
           label: "Sem uso",
-          from: ["house-right.x1", "office.y0"],
+          from: ["house-right.x1", "prayer-room.y1"],
           to: ["knee-right.x1", "bathroom.y0"],
           openings: [{ type: "window", from: "top", w: 0.8, h: 0.6 }]
         },
@@ -575,6 +559,7 @@
         {
           id: "bed-east",
           type: "twin-bed",
+          nightstand: { w: 0.4, side: "left" },
           pos: [
             "bedroom-east.x0 + params.wall_thickness / 2 + 0.47",
             "bedroom-east.y0 + params.wall_thickness / 2 + (bedroom-east.l - params.wall_thickness - 1.94) / 3 - 0.47"
@@ -584,6 +569,7 @@
         {
           id: "bed-east-2",
           type: "twin-bed",
+          nightstand: { w: 0.4 },
           pos: [
             "bedroom-east.x0 + params.wall_thickness / 2 + 0.47",
             "bedroom-east.y0 + params.wall_thickness / 2 + 2 * (bedroom-east.l - params.wall_thickness - 1.94) / 3 + 0.97 - 0.47"
@@ -593,68 +579,23 @@
         {
           id: "bed-north-1",
           type: "queen-bed",
+          nightstand: { w: 0.5 },
           pos: ["bedroom-north.x1 - params.wall_thickness / 2 - 1.8", "bedroom-north.yc - 1"],
           rotation: 90
         },
         {
           id: "bed-west-1",
           type: "twin-bed",
+          nightstand: { w: 0.4, side: "left" },
           pos: ["bedroom-west.x0 + params.wall_thickness / 2 + 0.47", "bedroom-west.y0 + 0.3"],
           rotation: 270
         },
         {
           id: "bed-west-2",
           type: "twin-bed",
+          nightstand: { w: 0.4, side: "left" },
           pos: ["bedroom-west.x0 + params.wall_thickness / 2 + 0.47", "bedroom-west.y1 - 1.74"],
           rotation: 270
-        },
-        {
-          id: "nightstand-east-1",
-          label: "Criado-mudo",
-          pos: ["bed-east.xc - bed-east.l / 2", "bed-east.yc - bed-east.w / 2 - 0.45"],
-          size: [0.4, 0.4, 0.55],
-          classes: "furniture storage nightstand",
-          color: "furniture"
-        },
-        {
-          id: "nightstand-east-2",
-          label: "Criado-mudo",
-          pos: ["bed-east-2.xc - bed-east-2.l / 2", "bed-east-2.yc + bed-east-2.w / 2 + 0.05"],
-          size: [0.4, 0.4, 0.55],
-          classes: "furniture storage nightstand",
-          color: "furniture"
-        },
-        {
-          id: "nightstand-north-1",
-          label: "Criado-mudo",
-          pos: ["bed-north-1.xc + bed-north-1.l / 2 - 0.5", "bed-north-1.yc - bed-north-1.w / 2 - 0.55"],
-          size: [0.5, 0.5, 0.55],
-          classes: "furniture storage nightstand",
-          color: "furniture"
-        },
-        {
-          id: "nightstand-north-2",
-          label: "Criado-mudo",
-          pos: ["bed-north-1.xc + bed-north-1.l / 2 - 0.5", "bed-north-1.yc + bed-north-1.w / 2 + 0.05"],
-          size: [0.5, 0.5, 0.55],
-          classes: "furniture storage nightstand",
-          color: "furniture"
-        },
-        {
-          id: "nightstand-west-1",
-          label: "Criado-mudo",
-          pos: ["bed-west-1.xc - bed-west-1.l / 2", "bed-west-1.yc - bed-west-1.w / 2 - 0.45"],
-          size: [0.4, 0.4, 0.55],
-          classes: "furniture storage nightstand",
-          color: "furniture"
-        },
-        {
-          id: "nightstand-west-2",
-          label: "Criado-mudo",
-          pos: ["bed-west-2.xc - bed-west-2.l / 2", "bed-west-2.yc - bed-west-2.w / 2 - 0.45"],
-          size: [0.4, 0.4, 0.55],
-          classes: "furniture storage nightstand",
-          color: "furniture"
         },
         {
           id: "wardrobe-west-front",

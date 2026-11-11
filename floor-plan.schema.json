@@ -1336,6 +1336,25 @@
     "item": {
       "type": "object",
       "properties": {
+        "nightstand": {
+          "description": "Criados-mudos quadrados, alinhados à cabeceira e com a altura da cama. O lado padrão é right em camas twin e both em camas queen.",
+          "type": "object",
+          "required": ["w"],
+          "additionalProperties": false,
+          "properties": {
+            "side": {
+              "type": "string",
+              "enum": ["left", "right", "both"],
+              "description": "Lado antes da rotação da cama. Padrão: right para twin-bed; both para queen-bed."
+            },
+            "w": {
+              "anyOf": [
+                { "type": "number", "exclusiveMinimum": 0 },
+                { "type": "string", "minLength": 1 }
+              ]
+            }
+          }
+        },
         "id": {
           "type": "string",
           "minLength": 1

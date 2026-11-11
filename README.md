@@ -82,6 +82,29 @@ Os IDs dos cômodos são obrigatórios, globais e únicos. IDs de zonas, itens, 
 
 Tipos reutilizáveis de itens, padrões de portas/janelas e tokens de cor ficam em [`src/config/catalog.js`](src/config/catalog.js). Uma planta pode sobrescrever tipos em `item-types`, valores de abertura no próprio objeto e cores em `theme.colors`. A prioridade é: definição explícita da planta, catálogo compartilhado e padrão interno.
 
+Camas (`queen-bed` e `twin-bed`) aceitam `nightstand: { w: 0.5 }`. A largura em metros também define a profundidade: os criados-mudos são quadrados, encostados nas laterais e alinhados à cabeceira. Eles herdam a altura e a rotação da cama. Use `side: "left"`, `"right"` ou `"both"` para escolher o lado antes da rotação da cama. O padrão é `"right"` para `twin-bed` e `"both"` para `queen-bed`. Sem `nightstand`, a cama permanece sozinha. A opção também pode ser definida no catálogo ou em `item-types`.
+
+```json5
+{
+  id: "master-bed",
+  type: "queen-bed",
+  pos: [2, 3],
+  nightstand: { w: 0.5 }
+}
+```
+
+Exemplo para cama de solteiro (omitir `side` também seleciona o lado direito):
+
+```json5
+{
+  type: "twin-bed",
+  pos: [2, 3],
+  nightstand: { w: 0.4, side: "right" }
+}
+```
+
+O ID da cama continua representando apenas a cama. Os criados-mudos recebem os IDs `master-bed-nightstand-left` e `master-bed-nightstand-right` (lados antes da rotação), com referências geométricas próprias. Eles aparecem nas vistas, nas listas de itens e nas exportações; a configuração original continua contendo apenas o conjunto.
+
 ## Escopo de paredes independentes
 
 Use `scope` com o ID de um pavimento ou cômodo:

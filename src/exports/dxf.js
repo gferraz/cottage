@@ -238,7 +238,7 @@ const FloorPlanExport = {
           );
         }
       };
-      (floor.items ?? []).forEach((item) => {
+      (window.FloorPlanElements?.items(plan, floor) ?? floor.items ?? []).forEach((item) => {
         try {
           const definition = plan.resolveItemType(item);
           const geometry = plan.normalizeGeometryAtFloor(definition, floor);

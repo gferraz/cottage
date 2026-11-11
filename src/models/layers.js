@@ -384,7 +384,7 @@ const FloorPlanLayers = {
             });
           });
 
-          (floor.items ?? []).forEach((item) => {
+          (window.FloorPlanElements?.items(plan, floor) ?? floor.items ?? []).forEach((item) => {
             const definition = plan.resolveItemType(item);
             const geometry = plan.normalizeGeometry(definition);
             const {

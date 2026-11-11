@@ -1,4 +1,46 @@
 const FloorPlanElements = {
+  nightstandSource: Symbol("nightstand-source"),
+
+  items(plan, floor) {
+    return (floor.items ?? []).flatMap((item) => {
+      const nightstand = item.nightstand ?? plan.itemTypes?.[item.type]?.nightstand;
+      if (nightstand === undefined) return [item];
+      const definition = plan.itemTypes?.[item.type];
+      const classes = String(item.classes ?? definition?.classes ?? "").split(/\s+/);
+      const side = nightstand?.side ?? (classes.includes("twin-bed") ? "right" : "both");
+      const sides = side === "both" ? ["left", "right"] : [side];
+      return [item, ...sides.map((side) => ({
+        ...(item.id ? { id: `${item.id}-nightstand-${side}` } : {}),
+        [this.nightstandSource]: { bed: item, side, floor },
+      }))];
+    });
+  },
+
+  resolveNightstand(plan, { bed, side, floor }, id) {
+    const definition = this.resolveItemType(plan, bed);
+    const geometry = plan.normalizeGeometryAtFloor(definition, floor);
+    const w = plan.resolve(definition.nightstand.w);
+    const angle = geometry.rotation * Math.PI / 180;
+    // Rotate each square's center around the bed's center, just like the bed.
+    const dx = (side === "left" ? -1 : 1) * (geometry.w + w) / 2;
+    const dy = (w - geometry.l) / 2;
+    return {
+      ...(id ? { id } : {}),
+      label: "Criado-mudo",
+      title: `Criado-mudo — ${definition.title || definition.label || "Cama"}`,
+      classes: "furniture storage nightstand",
+      color: "furniture",
+      pos: [
+        geometry.x + geometry.w / 2 + dx * Math.cos(angle) - dy * Math.sin(angle) - w / 2,
+        geometry.y + geometry.l / 2 + dx * Math.sin(angle) + dy * Math.cos(angle) - w / 2,
+        geometry.z0,
+      ],
+      size: [w, w, geometry.h],
+      rotation: geometry.rotation,
+      overlaps: definition.overlaps,
+      overlays: definition.overlays,
+    };
+  },
   addItem(plan, item) {
     const resolvedItem = plan.resolveItemType(item);
     const element = plan.add({ ...resolvedItem, showLabel: true });
@@ -17,18 +59,40 @@ const FloorPlanElements = {
   },
 
   resolveItemType(plan, item) {
-    if (!item.type) return item;
-    const definition = plan.itemTypes?.[item.type];
+    if (item[this.nightstandSource]) {
+      return this.resolveNightstand(plan, item[this.nightstandSource], item.id);
+    }
+    if (!item.type && item.nightstand === undefined) return item;
+    const definition = item.type ? plan.itemTypes?.[item.type] : {};
     if (!definition) throw new Error(`Unknown item type: ${item.type}`);
-    return {
+    const result = {
       ...definition,
       ...item,
-      type: item.type,
       size: item.size ?? definition.size,
       classes: item.classes ?? definition.classes,
       label: item.label ?? definition.label,
       title: item.title ?? definition.title ?? definition.label,
     };
+    if (result.nightstand !== undefined) {
+      const classes = String(result.classes || "").split(/\s+/);
+      if (!["queen-bed", "twin-bed"].some((type) => classes.includes(type))) {
+        throw new Error("Nightstand só pode ser usado em camas");
+      }
+      const settings = result.nightstand;
+      if (!settings || typeof settings !== "object" || Array.isArray(settings)
+        || Object.keys(settings).some((key) => !["w", "side"].includes(key))
+        || settings.w === undefined) {
+        throw new Error("Nightstand precisa informar { w: largura, side?: left | right | both }");
+      }
+      if (settings.side !== undefined && !["left", "right", "both"].includes(settings.side)) {
+        throw new Error("Nightstand.side precisa ser left, right ou both");
+      }
+      const width = plan.resolve(settings.w);
+      if (!Number.isFinite(width) || width <= 0) {
+        throw new Error("Nightstand.w precisa ser positivo");
+      }
+    }
+    return result;
   },
 
   addZone(plan, zone) {

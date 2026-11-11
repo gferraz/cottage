@@ -252,7 +252,7 @@ const FloorPlanReferences = {
   registerStaticItemReferences(plan, config) {
     const resolving = new Set();
     (config.floors ?? [config]).forEach((floor) => {
-      (floor.items ?? []).forEach((item) => {
+      (window.FloorPlanElements?.items(plan, floor) ?? floor.items ?? []).forEach((item) => {
         if (!item.id || plan.references.has(item.id)) return;
         const geometry = () => {
           if (resolving.has(item.id)) {
@@ -444,7 +444,7 @@ const FloorPlanReferences = {
     });
     floorConfigs.forEach((floorConfig) => {
       [
-        ...(floorConfig.items ?? []),
+        ...(window.FloorPlanElements?.items(plan, floorConfig) ?? floorConfig.items ?? []),
         ...(floorConfig.openings ?? []),
         ...plan.roomOpenings(floorConfig),
         ...(floorConfig.windows ?? []),
@@ -504,7 +504,7 @@ const FloorPlanReferences = {
             });
           }
         });
-        (floorConfig.items ?? []).forEach((item, index) => {
+        (window.FloorPlanElements?.items(plan, floorConfig) ?? floorConfig.items ?? []).forEach((item, index) => {
           try {
             plan.normalizeGeometry(plan.resolveItemType(item));
           } catch (error) {
@@ -589,7 +589,7 @@ const FloorPlanReferences = {
           floorLabel: floorConfig.label,
         });
       });
-      (floorConfig.items ?? []).forEach((item) => {
+      (window.FloorPlanElements?.items(plan, floorConfig) ?? floorConfig.items ?? []).forEach((item) => {
         try {
           const resolvedItem = plan.resolveItemType(item);
           const geometry = plan.normalizeGeometry(resolvedItem);
