@@ -238,7 +238,6 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .site .room > small,
 .site .part-dimensions,
 .site .direction,
-.site .storage-chest::after { rotate: 180deg; }
 .site svg text:not(.guide-label) {
   rotate: 180deg;
   transform-box: fill-box;
@@ -1002,14 +1001,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   border-radius: 2px;
 }
 .storage-chest::after {
-  content: attr(data-label);
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  writing-mode: vertical-rl;
-  font-size: 9px;
-  color: #3d2d24;
+  content: none;
 }
 .queen-bed { border: 2px solid #365e5b; border-radius: 5px; background: #78b8b2; }
 .plan-item.twin-bed {
