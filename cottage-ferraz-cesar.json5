@@ -451,8 +451,7 @@
         { type: "washing-machine", pos: ["laundry.x1 - 1.4", "laundry.y0 + 0.1"], rotation: 180 },
         // Cabeceira na parede frontal; cama centralizada e criados a 5 cm das laterais.
         { id: "master-bed", type: "queen-bed", pos: ["master.xc - 0.8", "master.y0 + params.wall_thickness / 2 + 0.1"] },
-        // Baú centralizado aos pés da cama, com 10 cm de folga.
-        { id: "master-chest", label: "Baú", title: "baú — Suíte Master", pos: ["master-bed.xc - 0.225", "master-bed.y1 - 0.375"], size: [0.45, 1.4, 0.45], rotation: 270, classes: "furniture storage storage-chest", color: "furniture" },
+        { id: "master-chest", label: "Recamier", title: "recamier — Suíte Master", pos: ["master-bed.xc - 0.22", "master-bed.y1 - 0.37"], size: [0.45, 1.4, 0.45], rotation: 270, classes: "furniture storage storage-chest", color: "furniture" },
         { id: "master-nightstand-front", title: "criado-mudo — Suíte Master", pos: ["master-bed.x0 - 0.55", "master-bed.y0"], size: [0.5, 0.5, 0.55], classes: "furniture storage", color: "furniture" },
         { id: "master-nightstand-rear", title: "criado-mudo — Suíte Master", pos: ["master-bed.x1 + 0.05", "master-bed.y0"], size: [0.5, 0.5, 0.55], classes: "furniture storage", color: "furniture" },
 
@@ -720,7 +719,6 @@
     {
       id: "upper-office-walls",
       scope: "upper",
-      color: "red",
       base: { level: "upper.z0" },
       top: "roof",
       path: {
