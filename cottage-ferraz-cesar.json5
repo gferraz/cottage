@@ -39,6 +39,21 @@
   terrain: {
     front: { edge: ["P001", "P002"], position: "top", label: "RUA/FRENTE" },
     rear: { edge: ["P013", "P014"], position: "bottom", label: "JARDIM" },
+    // Perfil longitudinal de estudo. IDs e cotas intermediárias provisórios.
+    // Y local do terreno; piso térreo = 0. Não são cotas de execução.
+    grading: {
+      profile: [
+        { id: "tp-01-rua", y: 0, z: 0 },
+        { id: "tp-02-entrada", y: 3, z: -0.45 },
+        { id: "tp-03-inicio-descida", y: 12, z: -0.45 },
+        // Recuo de 3 m + envelope térreo de 20,8 m (inclui garagem).
+        { id: "tp-04-fundos-casa", y: 23.8, z: -0.9 },
+        { id: "tp-05-jardim", y: 29, z: -1.5 },
+        // Início aproximado da divisa oblíqua dos fundos em Y.
+        // A cota fica constante em -6 m depois deste ponto.
+        { id: "tp-06-fundos-terreno", y: 44.32, z: -6 }
+      ]
+    },
     north: { label: "N" },
     unit: "m",
     boundary_order: ["P002", "P001", "P014", "P013"],

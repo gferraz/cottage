@@ -3227,6 +3227,7 @@ const FloorPlanModel = {
       delete config.coordinate_system;
     }
     config = this.applyDefaults(config);
+    if (config.terrain?.grading !== undefined) FloorPlanTerrainGeometry.profile(config.terrain.grading);
     const floors = config.floors ?? [config];
     const viewport = config.viewport ?? {
       size: [20, 20],
@@ -4359,6 +4360,90 @@ const FloorPlanViewport = {
 window.FloorPlanViewport = FloorPlanViewport;
 
 
+const FloorPlanTerrainGeometry = {
+  // Coordinates are local to the cadastral front-start, before display padding.
+  profile(grading) {
+    if (grading === undefined) return null;
+    const points = grading?.profile;
+    const fail = () => { throw new Error("terrain.grading.profile precisa de ao menos dois pontos numéricos, todos com x ou todos com y, em ordem estritamente crescente, e z"); };
+    if (!grading || Object.keys(grading).some((key) => key !== "profile") ||
+      !Array.isArray(points) || points.length < 2) fail();
+    const axis = Object.hasOwn(points[0] ?? {}, "x") ? "x" : "y";
+    const ids = new Set();
+    points.forEach((point, index) => {
+      if (!point || typeof point !== "object" ||
+        Object.keys(point).some((key) => ![axis, "z", "id"].includes(key)) ||
+        !Number.isFinite(point[axis]) || !Number.isFinite(point.z) ||
+        (index > 0 && point[axis] <= points[index - 1][axis])) fail();
+      if (point.id !== undefined) {
+        if (typeof point.id !== "string" || !point.id.trim() || ids.has(point.id)) {
+          throw new Error("Os IDs de terrain.grading.profile precisam ser textos não vazios e únicos no perfil");
+        }
+        ids.add(point.id);
+      }
+    });
+    return { axis, points: points.map((point) => ({ ...point })) };
+  },
+
+  interpolate(points, axis, coordinate) {
+    if (coordinate <= points[0][axis]) return points[0].z;
+    for (let index = 1; index < points.length; index += 1) {
+      const before = points[index - 1], after = points[index];
+      if (coordinate <= after[axis]) {
+        const progress = (coordinate - before[axis]) / (after[axis] - before[axis]);
+        return before.z + progress * (after.z - before.z);
+      }
+    }
+    return points.at(-1).z;
+  },
+
+  elevationAt(reference, x, y) {
+    if (!reference) return null;
+    if (reference.grading) {
+      const { axis, points } = reference.grading;
+      const coordinate = axis === "x" ? x - reference.frontStart.x : y - reference.frontStart.y;
+      return this.interpolate(points, axis, coordinate);
+    }
+    const { frontY, rearY, frontZ, rearZ } = reference;
+    if (![frontY, rearY, frontZ, rearZ].every(Number.isFinite) || frontY === rearY) return null;
+    const progress = Math.max(0, Math.min(1, (y - frontY) / (rearY - frontY)));
+    return frontZ + progress * (rearZ - frontZ);
+  },
+
+  // Exact mesh/polyline breaks, including the clamped ends of the legacy ramp.
+  breaks(reference, axis) {
+    if (!reference) return [];
+    if (reference.grading) {
+      if (reference.grading.axis !== axis) return [];
+      return reference.grading.points.map((point) => point[axis] + reference.frontStart[axis]);
+    }
+    return axis === "y" ? [reference.frontY, reference.rearY].filter(Number.isFinite) : [];
+  },
+
+  surface(reference, bounds, offset = { x: 0, y: 0 }) {
+    const coordinates = (axis, low, high) => [low,
+      ...this.breaks(reference, axis).map((value) => value - offset[axis])
+        .filter((value) => value > low && value < high), high];
+    const xs = coordinates("x", bounds.x0, bounds.x1);
+    const ys = coordinates("y", bounds.y0, bounds.y1);
+    const vertices = [], indices = [];
+    ys.forEach((y) => xs.forEach((x) => {
+      vertices.push(x, y, this.elevationAt(reference, x + offset.x, y + offset.y) ?? 0);
+    }));
+    for (let row = 0; row < ys.length - 1; row += 1) {
+      for (let column = 0; column < xs.length - 1; column += 1) {
+        const a = row * xs.length + column, b = a + 1, c = a + xs.length, d = c + 1;
+        indices.push(a, b, d, a, d, c);
+      }
+    }
+    return { vertices, indices };
+  },
+
+};
+
+window.FloorPlanTerrainGeometry = FloorPlanTerrainGeometry;
+
+
 const FloorPlanTerrain = {
   clear(plan) {
     plan.terrainLayer?.replaceChildren();
@@ -4510,6 +4595,7 @@ const FloorPlanTerrain = {
     const rearEdge = terrain.rear?.edge ?? order.slice(-2);
     plan.terrainReference = {
       frontStart: { x: offsetX, y: offsetY },
+      grading: FloorPlanTerrainGeometry.profile(terrain.grading),
       frontY: edgeMean(frontEdge, "y"),
       rearY: edgeMean(rearEdge, "y"),
       frontZ: edgeMean(frontEdge, "z"),
@@ -5231,13 +5317,27 @@ const FloorPlanFacades = {
             Math.tan((geometry.pitch * Math.PI) / 180),
         );
       }, 0);
+      const buildingOffsetY = Number.parseFloat(
+        getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
+      ) || 0;
+      const terrainElevationAt = (x, y) => FloorPlanTerrainGeometry.elevationAt(
+        plan.terrainReference, x + buildingOffsetX, y + buildingOffsetY,
+      );
+      const terrainAxis = side ? "y" : "x";
+      const terrainOffset = side ? buildingOffsetY : buildingOffsetX;
+      const terrainCoordinates = [facadeMin,
+        ...FloorPlanTerrainGeometry.breaks(plan.terrainReference, terrainAxis).map((value) => value - terrainOffset)
+          .filter((value) => value > facadeMin && value < facadeMax), facadeMax];
+      const terrainPoints = terrainCoordinates.map((coordinate) => [coordinate,
+        side ? terrainElevationAt(edge, coordinate) : terrainElevationAt(coordinate, edge)]);
+      const terrainDrop = Math.max(0, ...terrainPoints.map(([, z]) => Number.isFinite(z) ? -z : 0));
       const viewWidth = frontAligned
         ? Number(plan.viewport?.size?.[0] ?? width + padding * 2) * scale
         : (width + padding * 2) * scale;
       const viewY = -roofRise * scale;
       const dimensionGap = 0.35;
       const viewHeight =
-        (floorHeight + padding * 2 + roofRise + roofDrop + dimensionGap) * scale;
+        (floorHeight + padding * 2 + roofRise + Math.max(roofDrop, terrainDrop) + dimensionGap) * scale;
       const svg = document.createElementNS(svgNamespace, "svg");
       svg.classList.add("facade-view");
       svg.setAttribute("width", `${viewWidth}`);
@@ -5725,21 +5825,6 @@ const FloorPlanFacades = {
 
       });
 
-      const terrainElevationAt = (y) => {
-        const profile = plan.terrainReference;
-        if (
-          !profile ||
-          ![profile.frontY, profile.rearY, profile.frontZ, profile.rearZ].every(Number.isFinite) ||
-          profile.frontY === profile.rearY
-        ) return null;
-        const offset = Number.parseFloat(
-          getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
-        ) || 0;
-        const progress = Math.max(0, Math.min(1,
-          (y + offset - profile.frontY) / (profile.rearY - profile.frontY),
-        ));
-        return profile.frontZ + progress * (profile.rearZ - profile.frontZ);
-      };
       const projectedIndependentWalls = [];
       plan.independentWalls?.forEach((wall) => {
         const points = wall.path?.points ?? [];
@@ -5765,10 +5850,10 @@ const FloorPlanFacades = {
             ? y0 <= y1 ? [x1, y1] : [x0, y0]
             : x0 <= x1 ? [x1, y1] : [x0, y0];
           const startBase = wall.base === "terrain"
-            ? terrainElevationAt(startPoint[1])
+            ? terrainElevationAt(...startPoint)
             : wall.baseZ;
           const endBase = wall.base === "terrain"
-            ? terrainElevationAt(endPoint[1])
+            ? terrainElevationAt(...endPoint)
             : wall.baseZ;
           if (![startBase, endBase, wall.topZ].every(Number.isFinite)) return;
           projectedIndependentWalls.push({ wall, segmentIndex, depth, start, end, startBase, endBase, startPoint, endPoint });
@@ -5916,50 +6001,16 @@ const FloorPlanFacades = {
       this.depthOrderedFaces(facadeFaces, facadeEdge)
         .forEach(({ group }) => svg.append(group));
 
-      if (frontAligned && plan.terrainReference) {
-        const profile = plan.terrainReference;
-        const buildingOffsetY = Number.parseFloat(
-          getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
-        ) || 0;
-        const profileValues = [
-          profile.frontY,
-          profile.rearY,
-          profile.frontZ,
-          profile.rearZ,
-        ];
-        if (
-          profileValues.every(Number.isFinite) &&
-          profile.rearY !== profile.frontY
-        ) {
-          const siteY = edge + buildingOffsetY;
-          const progress = Math.max(
-            0,
-            Math.min(
-              1,
-              (siteY - profile.frontY) / (profile.rearY - profile.frontY),
-            ),
-          );
-          const terrainZ =
-            profile.frontZ + progress * (profile.rearZ - profile.frontZ);
-          const terrainY = (floorHeight - terrainZ + padding) * scale;
-          const profileLine = document.createElementNS(svgNamespace, "line");
+      if (plan.terrainReference) {
+        const points = terrainPoints;
+        if (points.every(([, z]) => Number.isFinite(z))) {
+          const profileLine = document.createElementNS(svgNamespace, "polyline");
           profileLine.classList.add("facade-terrain-profile");
-          profileLine.setAttribute(
-            "x1",
-            `${(facadeMin - min + padding) * scale}`,
-          );
-          profileLine.setAttribute(
-            "x2",
-            `${(facadeMax - min + padding) * scale}`,
-          );
-          profileLine.setAttribute("y1", `${terrainY}`);
-          profileLine.setAttribute("y2", `${terrainY}`);
-          profileLine.setAttribute(
-            "stroke",
-            getComputedStyle(plan.root)
-              .getPropertyValue("--theme-terrain-boundary")
-              .trim() || "#55724d",
-          );
+          profileLine.setAttribute("points", points.map(([coordinate, z]) =>
+            `${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`).join(" "));
+          profileLine.setAttribute("fill", "none");
+          profileLine.setAttribute("stroke", getComputedStyle(plan.root)
+            .getPropertyValue("--theme-terrain-boundary").trim() || "#55724d");
           profileLine.setAttribute("stroke-width", "2");
           svg.append(profileLine);
         }
@@ -6003,52 +6054,24 @@ window.FloorPlanFacades = FloorPlanFacades;
 
 
 const FloorPlan3DSite = {
-  render({ THREE, scene, rooms, terrainProfile, buildingOffsetY, terrainMaterial }) {
-    const terrainBounds = rooms.reduce(
-      (bounds, room) => ({
-        x0: Math.min(bounds.x0, room.x0()),
-        x1: Math.max(bounds.x1, room.x1()),
-        y0: Math.min(bounds.y0, room.y0()),
-        y1: Math.max(bounds.y1, room.y1()),
-      }),
-      { x0: Infinity, x1: -Infinity, y0: Infinity, y1: -Infinity },
+  render({ THREE, scene, rooms, terrainProfile, buildingOffsetX, buildingOffsetY, terrainMaterial }) {
+    if (!rooms.length) return;
+    const x0 = Math.min(...rooms.map((room) => room.x0())) - 4;
+    const x1 = Math.max(...rooms.map((room) => room.x1())) + 4;
+    const y0 = Math.min(...rooms.map((room) => room.y0())) - 4;
+    const y1 = Math.max(...rooms.map((room) => room.y1())) + 4;
+    const { vertices, indices } = FloorPlanTerrainGeometry.surface(
+      terrainProfile, { x0, x1, y0, y1 }, { x: buildingOffsetX, y: buildingOffsetY },
     );
-    const terrain = new THREE.Mesh(
-      new THREE.PlaneGeometry(
-        terrainBounds.x1 - terrainBounds.x0 + 8,
-        terrainBounds.y1 - terrainBounds.y0 + 8,
-      ),
-      terrainMaterial,
-    );
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    geometry.computeBoundingBox();
+    geometry.computeBoundingSphere();
+    const terrain = new THREE.Mesh(geometry, terrainMaterial);
+    terrain.position.z = -0.03;
     terrain.receiveShadow = true;
-    terrain.position.set(
-      (terrainBounds.x0 + terrainBounds.x1) / 2,
-      (terrainBounds.y0 + terrainBounds.y1) / 2,
-      -0.03,
-    );
-    if (terrainProfile) {
-      const positions = terrain.geometry.attributes.position;
-      for (let index = 0; index < positions.count; index += 1) {
-        const siteY =
-          terrain.position.y + positions.getY(index) + buildingOffsetY;
-        const progress = Math.max(
-          0,
-          Math.min(
-            1,
-            (siteY - terrainProfile.frontY) /
-              (terrainProfile.rearY - terrainProfile.frontY),
-          ),
-        );
-        const elevation =
-          terrainProfile.frontZ +
-          progress * (terrainProfile.rearZ - terrainProfile.frontZ);
-        positions.setZ(index, elevation);
-      }
-      positions.needsUpdate = true;
-      terrain.geometry.computeVertexNormals();
-      terrain.geometry.computeBoundingBox();
-      terrain.geometry.computeBoundingSphere();
-    }
     terrain.renderOrder = -10;
     scene.add(terrain);
   },
@@ -6703,32 +6726,14 @@ const FloorPlanFacades3D = {
     const height = 420;
     const floors = plan.currentConfig?.floors ?? [plan.currentConfig];
     const terrainProfile = plan.terrainReference;
+    const buildingOffsetX = Number.parseFloat(
+      getComputedStyle(plan.root).getPropertyValue("--building-offset-x"),
+    ) || 0;
     const buildingOffsetY = Number.parseFloat(
       getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
     ) || 0;
-    const hasTerrainProfile =
-      terrainProfile &&
-      [
-        terrainProfile.frontY,
-        terrainProfile.rearY,
-        terrainProfile.frontZ,
-        terrainProfile.rearZ,
-      ].every(Number.isFinite) &&
-      terrainProfile.rearY !== terrainProfile.frontY;
-    const terrainElevationAt = (y) => {
-      if (!hasTerrainProfile) return null;
-      const siteY = y + buildingOffsetY;
-      const progress = Math.max(
-        0,
-        Math.min(
-          1,
-          (siteY - terrainProfile.frontY) /
-            (terrainProfile.rearY - terrainProfile.frontY),
-        ),
-      );
-      return terrainProfile.frontZ +
-        progress * (terrainProfile.rearZ - terrainProfile.frontZ);
-    };
+    const hasTerrainProfile = terrainProfile &&
+      FloorPlanTerrainGeometry.elevationAt(terrainProfile, buildingOffsetX, buildingOffsetY) !== null;
     const facadeSide = direction === "front" ? "top" : "bottom";
     const isStairFlight = (definition) =>
       String(definition?.classes || "")
@@ -7076,8 +7081,8 @@ const FloorPlanFacades3D = {
       stairFlights,
       stairLandings,
       terrainProfile: hasTerrainProfile ? terrainProfile : null,
+      buildingOffsetX,
       buildingOffsetY,
-      terrainElevationAt,
       externalOpenings,
       openingsByWall,
       wallMaterial,

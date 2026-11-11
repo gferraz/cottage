@@ -123,6 +123,7 @@ const FloorPlanModel = {
       delete config.coordinate_system;
     }
     config = this.applyDefaults(config);
+    if (config.terrain?.grading !== undefined) FloorPlanTerrainGeometry.profile(config.terrain.grading);
     const floors = config.floors ?? [config];
     const viewport = config.viewport ?? {
       size: [20, 20],

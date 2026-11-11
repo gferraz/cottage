@@ -271,3 +271,25 @@ Use `eaves: { left: 0.5, right: 0.5, pitch: 30 }` no telhado ou em `config.roofs
 A quebra reta começa no limite da base, preservando o trecho principal, a cumeeira e `rake`. `left` e `right` correspondem aos dois lados da seção do telhado: `x0`/`x1` na orientação longitudinal (direita/esquerda na planta com a frente embaixo); frente/fundos na transversal (a mesma ordem do antigo array `eave`). Aceita ângulo de 0° a menos de 90°; sem `eaves.pitch`, o beiral segue `pitch`. Aplica-se também às duas extremidades de coberturas `shed`. O campo antigo `eave` continua aceito; os valores presentes em `eaves.left/right` têm prioridade sobre ele, e lados ausentes usam `eave` ou zero. A configuração representa geometria de estudo, sem validar a inclinação mínima do fabricante do shingle.
 
 O controle **Camadas → Acima da camada 0** oculta a camada base da planta baixa e mantém visíveis todas as camadas de sobreposição superiores. **Todas** restaura a visualização completa; **Camada 0** mantém a opção de visualizar apenas a base.
+
+### Perfil de cotas do terreno
+
+`terrain.grading.profile` substitui a rampa padrão entre frente e fundos nas fachadas e na superfície 3D. Os dados cadastrais em `corners` permanecem preservados. Exemplo ilustrativo em JSON5:
+
+```json5
+grading: {
+  profile: [
+    { y: 0, z: 0 },
+    { y: 3, z: -0.45 },
+    { y: 18, z: -0.45 },
+    { y: 23, z: -1.5 },
+    { y: 45, z: -6 }
+  ]
+}
+```
+
+Use todos os pontos com `y` para um perfil longitudinal, ou todos com `x` para um perfil transversal. São metros no referencial local do terreno: origem no primeiro vértice de `boundary_order`, X ao longo da frente em direção ao segundo vértice e Y perpendicular à frente, positivo para dentro do lote. Esse referencial não muda com `coordinate_system` da casa, com `building.position` ou com o deslocamento visual da planta. Z usa a mesma referência vertical dos pisos e vértices cadastrais.
+
+São necessários pelo menos dois pontos numéricos, com coordenadas estritamente crescentes. A interpolação é linear, cotas iguais formam patamares e a cota permanece constante antes/depois das extremidades. A superfície é constante no eixo perpendicular ao perfil. Não há suporte nesta versão a degraus verticais, expressões/referências ou perfis combinados em X e Y. Sem `grading`, permanece a interpolação anterior entre as cotas médias da frente e dos fundos. A perspectiva continua exibindo apenas o trecho de terreno ao redor da casa; a planta cadastral não é alterada pelo perfil.
+
+Cada ponto aceita um `id` opcional, não vazio e único dentro do perfil, por exemplo `{ id: "tp-02-entrada", y: 3, z: -0.45 }`. O ID identifica o ponto para edição; ainda não funciona como referência em expressões geométricas. O arquivo `cottage-ferraz-cesar.json5` contém seis pontos longitudinais provisórios (`tp-01-rua` a `tp-06-fundos-terreno`), com patamar em −0,45 m e início da descida em Y = 12 m. A cota de estudo nos fundos do envelope térreo é −0,90 m em Y = 23,8 m. O perfil alcança −6 m em Y = 44,32 m e mantém essa cota até o restante da divisa oblíqua. As cotas intermediárias são hipóteses editáveis, não um projeto de terraplenagem.

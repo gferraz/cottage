@@ -70,32 +70,14 @@ const FloorPlanFacades3D = {
     const height = 420;
     const floors = plan.currentConfig?.floors ?? [plan.currentConfig];
     const terrainProfile = plan.terrainReference;
+    const buildingOffsetX = Number.parseFloat(
+      getComputedStyle(plan.root).getPropertyValue("--building-offset-x"),
+    ) || 0;
     const buildingOffsetY = Number.parseFloat(
       getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
     ) || 0;
-    const hasTerrainProfile =
-      terrainProfile &&
-      [
-        terrainProfile.frontY,
-        terrainProfile.rearY,
-        terrainProfile.frontZ,
-        terrainProfile.rearZ,
-      ].every(Number.isFinite) &&
-      terrainProfile.rearY !== terrainProfile.frontY;
-    const terrainElevationAt = (y) => {
-      if (!hasTerrainProfile) return null;
-      const siteY = y + buildingOffsetY;
-      const progress = Math.max(
-        0,
-        Math.min(
-          1,
-          (siteY - terrainProfile.frontY) /
-            (terrainProfile.rearY - terrainProfile.frontY),
-        ),
-      );
-      return terrainProfile.frontZ +
-        progress * (terrainProfile.rearZ - terrainProfile.frontZ);
-    };
+    const hasTerrainProfile = terrainProfile &&
+      FloorPlanTerrainGeometry.elevationAt(terrainProfile, buildingOffsetX, buildingOffsetY) !== null;
     const facadeSide = direction === "front" ? "top" : "bottom";
     const isStairFlight = (definition) =>
       String(definition?.classes || "")
@@ -443,8 +425,8 @@ const FloorPlanFacades3D = {
       stairFlights,
       stairLandings,
       terrainProfile: hasTerrainProfile ? terrainProfile : null,
+      buildingOffsetX,
       buildingOffsetY,
-      terrainElevationAt,
       externalOpenings,
       openingsByWall,
       wallMaterial,

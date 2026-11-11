@@ -478,7 +478,25 @@
       "additionalProperties": false
     },
     "terrain": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "grading": {
+          "type": "object",
+          "required": ["profile"],
+          "additionalProperties": false,
+          "properties": {
+            "profile": {
+              "description": "Perfil no referencial local do terreno. Todos os pontos usam x ou todos y, estritamente crescentes. Interpolação linear; cotas constantes além das extremidades.",
+              "type": "array",
+              "minItems": 2,
+              "oneOf": [
+                { "items": { "$ref": "#/definitions/terrain-profile-x" } },
+                { "items": { "$ref": "#/definitions/terrain-profile-y" } }
+              ]
+            }
+          }
+        }
+      }
     },
     "building": {
       "type": "object"
@@ -592,6 +610,18 @@
   },
   "additionalProperties": false,
   "definitions": {
+    "terrain-profile-x": {
+      "type": "object",
+      "required": ["x", "z"],
+      "additionalProperties": false,
+      "properties": { "id": { "type": "string", "pattern": "\\S", "description": "Identificador opcional, único dentro do perfil." }, "x": { "type": "number" }, "z": { "type": "number" } }
+    },
+    "terrain-profile-y": {
+      "type": "object",
+      "required": ["y", "z"],
+      "additionalProperties": false,
+      "properties": { "id": { "type": "string", "pattern": "\\S", "description": "Identificador opcional, único dentro do perfil." }, "y": { "type": "number" }, "z": { "type": "number" } }
+    },
     "geometry": {
       "type": "object",
       "properties": {

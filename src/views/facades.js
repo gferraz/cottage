@@ -474,13 +474,27 @@ const FloorPlanFacades = {
             Math.tan((geometry.pitch * Math.PI) / 180),
         );
       }, 0);
+      const buildingOffsetY = Number.parseFloat(
+        getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
+      ) || 0;
+      const terrainElevationAt = (x, y) => FloorPlanTerrainGeometry.elevationAt(
+        plan.terrainReference, x + buildingOffsetX, y + buildingOffsetY,
+      );
+      const terrainAxis = side ? "y" : "x";
+      const terrainOffset = side ? buildingOffsetY : buildingOffsetX;
+      const terrainCoordinates = [facadeMin,
+        ...FloorPlanTerrainGeometry.breaks(plan.terrainReference, terrainAxis).map((value) => value - terrainOffset)
+          .filter((value) => value > facadeMin && value < facadeMax), facadeMax];
+      const terrainPoints = terrainCoordinates.map((coordinate) => [coordinate,
+        side ? terrainElevationAt(edge, coordinate) : terrainElevationAt(coordinate, edge)]);
+      const terrainDrop = Math.max(0, ...terrainPoints.map(([, z]) => Number.isFinite(z) ? -z : 0));
       const viewWidth = frontAligned
         ? Number(plan.viewport?.size?.[0] ?? width + padding * 2) * scale
         : (width + padding * 2) * scale;
       const viewY = -roofRise * scale;
       const dimensionGap = 0.35;
       const viewHeight =
-        (floorHeight + padding * 2 + roofRise + roofDrop + dimensionGap) * scale;
+        (floorHeight + padding * 2 + roofRise + Math.max(roofDrop, terrainDrop) + dimensionGap) * scale;
       const svg = document.createElementNS(svgNamespace, "svg");
       svg.classList.add("facade-view");
       svg.setAttribute("width", `${viewWidth}`);
@@ -968,21 +982,6 @@ const FloorPlanFacades = {
 
       });
 
-      const terrainElevationAt = (y) => {
-        const profile = plan.terrainReference;
-        if (
-          !profile ||
-          ![profile.frontY, profile.rearY, profile.frontZ, profile.rearZ].every(Number.isFinite) ||
-          profile.frontY === profile.rearY
-        ) return null;
-        const offset = Number.parseFloat(
-          getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
-        ) || 0;
-        const progress = Math.max(0, Math.min(1,
-          (y + offset - profile.frontY) / (profile.rearY - profile.frontY),
-        ));
-        return profile.frontZ + progress * (profile.rearZ - profile.frontZ);
-      };
       const projectedIndependentWalls = [];
       plan.independentWalls?.forEach((wall) => {
         const points = wall.path?.points ?? [];
@@ -1008,10 +1007,10 @@ const FloorPlanFacades = {
             ? y0 <= y1 ? [x1, y1] : [x0, y0]
             : x0 <= x1 ? [x1, y1] : [x0, y0];
           const startBase = wall.base === "terrain"
-            ? terrainElevationAt(startPoint[1])
+            ? terrainElevationAt(...startPoint)
             : wall.baseZ;
           const endBase = wall.base === "terrain"
-            ? terrainElevationAt(endPoint[1])
+            ? terrainElevationAt(...endPoint)
             : wall.baseZ;
           if (![startBase, endBase, wall.topZ].every(Number.isFinite)) return;
           projectedIndependentWalls.push({ wall, segmentIndex, depth, start, end, startBase, endBase, startPoint, endPoint });
@@ -1159,50 +1158,16 @@ const FloorPlanFacades = {
       this.depthOrderedFaces(facadeFaces, facadeEdge)
         .forEach(({ group }) => svg.append(group));
 
-      if (frontAligned && plan.terrainReference) {
-        const profile = plan.terrainReference;
-        const buildingOffsetY = Number.parseFloat(
-          getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
-        ) || 0;
-        const profileValues = [
-          profile.frontY,
-          profile.rearY,
-          profile.frontZ,
-          profile.rearZ,
-        ];
-        if (
-          profileValues.every(Number.isFinite) &&
-          profile.rearY !== profile.frontY
-        ) {
-          const siteY = edge + buildingOffsetY;
-          const progress = Math.max(
-            0,
-            Math.min(
-              1,
-              (siteY - profile.frontY) / (profile.rearY - profile.frontY),
-            ),
-          );
-          const terrainZ =
-            profile.frontZ + progress * (profile.rearZ - profile.frontZ);
-          const terrainY = (floorHeight - terrainZ + padding) * scale;
-          const profileLine = document.createElementNS(svgNamespace, "line");
+      if (plan.terrainReference) {
+        const points = terrainPoints;
+        if (points.every(([, z]) => Number.isFinite(z))) {
+          const profileLine = document.createElementNS(svgNamespace, "polyline");
           profileLine.classList.add("facade-terrain-profile");
-          profileLine.setAttribute(
-            "x1",
-            `${(facadeMin - min + padding) * scale}`,
-          );
-          profileLine.setAttribute(
-            "x2",
-            `${(facadeMax - min + padding) * scale}`,
-          );
-          profileLine.setAttribute("y1", `${terrainY}`);
-          profileLine.setAttribute("y2", `${terrainY}`);
-          profileLine.setAttribute(
-            "stroke",
-            getComputedStyle(plan.root)
-              .getPropertyValue("--theme-terrain-boundary")
-              .trim() || "#55724d",
-          );
+          profileLine.setAttribute("points", points.map(([coordinate, z]) =>
+            `${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`).join(" "));
+          profileLine.setAttribute("fill", "none");
+          profileLine.setAttribute("stroke", getComputedStyle(plan.root)
+            .getPropertyValue("--theme-terrain-boundary").trim() || "#55724d");
           profileLine.setAttribute("stroke-width", "2");
           svg.append(profileLine);
         }
