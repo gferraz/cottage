@@ -1,77 +1,4 @@
 const FloorPlanModel = {
-  // Numeric Cartesian snapshots use X to the right and Y toward the rear.
-  // Adapt local geometry to the renderer's original axes without changing
-  // georeferenced terrain coordinates or the building's site placement.
-  reflectNumericX(config) {
-    const result = structuredClone(config);
-    if (result.viewport?.origin && result.viewport?.size) {
-      result.viewport.origin[0] = -result.viewport.origin[0] - result.viewport.size[0];
-    }
-    const side = (value) => value === "left" ? "right" : value === "right" ? "left" : value;
-    const point = (value) => {
-      if (!Array.isArray(value) || !Number.isFinite(value[0])) {
-        throw new Error("A convenção cartesiana exige coordenadas X numéricas");
-      }
-      return [-value[0], ...value.slice(1)];
-    };
-    const geometry = (entry) => {
-      if (entry.pos) {
-        const width = entry.size?.[0] ?? entry.w ?? 0;
-        if (!Number.isFinite(width)) throw new Error("A convenção cartesiana exige larguras numéricas");
-        entry.pos = point(entry.pos);
-        entry.pos[0] -= width;
-      }
-      if (Array.isArray(entry.from)) entry.from = point(entry.from);
-      if (Array.isArray(entry.to)) entry.to = point(entry.to);
-      if (entry.path?.points) entry.path.points = entry.path.points.map(point);
-      if (entry.rotation !== undefined) entry.rotation = (360 - entry.rotation) % 360;
-      if (Array.isArray(entry.walls)) entry.walls = entry.walls.map(side);
-      else if (entry.walls && typeof entry.walls === "object") {
-        entry.walls = Object.fromEntries(Object.entries(entry.walls).map(([key, value]) => [side(key), value]));
-      }
-      entry.parts?.forEach(geometry);
-      const roomWidth = entry.size?.[0] ?? (entry.parts?.length
-        ? Math.max(...entry.parts.map((part) => Math.max(part.from?.[0] ?? part.pos[0], part.to?.[0] ?? part.pos[0] + part.size[0])))
-          - Math.min(...entry.parts.map((part) => Math.min(part.from?.[0] ?? part.pos[0], part.to?.[0] ?? part.pos[0])))
-        : undefined);
-      entry.openings?.forEach((opening) => openingGeometry(opening, roomWidth));
-    };
-    const openingGeometry = (opening, roomWidth) => {
-      if (opening.pos) geometry(opening);
-      if (typeof opening.from !== "string") return;
-      const match = opening.from.match(/^(.*\.)(left|right|top|bottom)$/);
-      const wall = match?.[2] ?? opening.from;
-      if ((wall === "top" || wall === "bottom") && opening.dx !== undefined) {
-        if (![roomWidth, opening.dx, opening.w].every(Number.isFinite)) {
-          throw new Error("A abertura cartesiana exige largura do cômodo, dx e w numéricos");
-        }
-        opening.dx = roomWidth - opening.dx - opening.w;
-      }
-      opening.from = (match?.[1] ?? "") + side(wall);
-    };
-    const roof = (entry) => {
-      if (typeof entry.base === "object") geometry(entry.base);
-      if (entry.orientation === "longitudinal") {
-        if (entry.eaves) [entry.eaves.left, entry.eaves.right] = [entry.eaves.right, entry.eaves.left];
-        if (Array.isArray(entry.eave)) entry.eave.reverse();
-        if (entry.slope) entry.slope = side(entry.slope);
-      } else if (Array.isArray(entry.rake)) entry.rake.reverse();
-    };
-    result.zones?.forEach(geometry);
-    result.guides?.forEach(geometry);
-    result.walls?.forEach(geometry);
-    result.roofs?.forEach(roof);
-    result.floors?.forEach((floor) => {
-      floor.rooms?.forEach(geometry);
-      floor.items?.forEach(geometry);
-      floor.zones?.forEach(geometry);
-      floor.guides?.forEach(geometry);
-      floor.roofs?.forEach(roof);
-      floor.openings?.forEach((opening) => openingGeometry(opening));
-    });
-    return result;
-  },
-
   resolveParameters(config) {
     if (!config.parameters) return config;
     const values = new Map();
@@ -192,7 +119,7 @@ const FloorPlanModel = {
 
   fromConfig(config) {
     if (config.coordinate_system === "cartesian") {
-      config = this.reflectNumericX(config);
+      config = FloorPlanCoordinates.reflectX(config);
       delete config.coordinate_system;
     }
     config = this.applyDefaults(config);

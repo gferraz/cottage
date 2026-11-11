@@ -6,7 +6,7 @@
   "properties": {
     "coordinate_system": {
       "enum": ["cartesian"],
-      "description": "Snapshot com geometria local numérica: X cresce para a direita e Y para cima na planta (fundos). X = 0 na lateral direita do corpo principal; coordenadas X à esquerda são negativas. Terreno georreferenciado e building mantêm o referencial de implantação."
+      "description": "Geometria local numérica ou paramétrica: X cresce para a direita e Y para cima na planta (fundos). X = 0 na lateral direita do corpo principal; coordenadas X à esquerda são negativas. Terreno georreferenciado e building mantêm o referencial de implantação."
     },
     "$schema": {
       "type": "string"

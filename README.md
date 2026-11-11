@@ -23,7 +23,15 @@ O seletor de piso muda apenas o desenho. **Todos os pisos** sobrepõe os pavimen
 
 O arquivo ativo é `cottage-ferraz-cesar.json5`. O índice no início contém marcadores para buscar com Ctrl+F / Cmd+F. Listas de objetos com `id` ficam em ordem alfabética; listas sem IDs e coordenadas mantêm sua ordem. A ordem das seções do primeiro nível é preservada. As aberturas laterais ficam junto ao cômodo, em `rooms[].openings`; `from: "left"` refere-se à face `x0` do cômodo (à direita na planta girada). Vãos entre pavimentos continuam em `floors[].openings`.
 
-A versão separada `cottage-ferraz-cesar-cartesiana.json` usa `coordinate_system: "cartesian"`: X cresce da esquerda para a direita e Y da frente para os fundos (de baixo para cima na planta). O corpo principal ocupa X de −10 a 0; a origem X está na lateral direita. É uma cópia independente com medidas numéricas resolvidas, sem as fórmulas paramétricas do original. Paredes locais e aberturas usam `left = x0` e `right = x1`; os beirais longitudinais seguem essa mesma ordem. Nas coberturas transversais, `eaves.left/right` continuam representando frente/fundos. Coordenadas cadastrais do terreno, implantação e cotas Z são preservadas. A aplicação adapta esse arquivo ao referencial interno ao carregar; o arquivo original permanece no formato anterior. A convenção cartesiana aceita geometria local numérica em `pos/size`, `from/to` e `path.points`.
+A versão separada `cottage-ferraz-cesar-cartesiana.json` usa `coordinate_system: "cartesian"`: X cresce da esquerda para a direita e Y da frente para os fundos (de baixo para cima na planta). O corpo principal ocupa X de −10 a 0; a origem X está na lateral direita. É uma cópia independente com medidas numéricas resolvidas, sem as fórmulas paramétricas do original. Paredes locais e aberturas usam `left = x0` e `right = x1`; os beirais longitudinais seguem essa mesma ordem. Nas coberturas transversais, `eaves.left/right` continuam representando frente/fundos. Coordenadas cadastrais do terreno, implantação e cotas Z são preservadas. A aplicação adapta esse arquivo ao referencial interno ao carregar; o arquivo original permanece no formato anterior. A convenção cartesiana aceita medidas numéricas e fórmulas em `pos/size`, `from/to`, `rectangle`, `inset`, `outset` e `path.points`.
+
+A versão `cottage-ferraz-cesar-cartesiana-parametrica.json5` usa os mesmos eixos cartesianos e preserva `parameters` e as fórmulas entre objetos. É a alternativa para continuar editando o projeto com X crescente da esquerda para a direita. A conversão ajusta limites X, posições pela largura, aberturas, rotações e lados dos beirais, sem alterar Y, Z ou a implantação. Os padrões de beirais são escritos em cada telhado para respeitar sua orientação. A adaptação para o desenho acontece simbolicamente antes da resolução dos parâmetros. O original não é substituído.
+
+Para regenerar essa cópia a partir do original (sobrescrevendo somente a versão paramétrica cartesiana):
+
+```sh
+node bin/migrate-cartesian.cjs
+```
 
 Medidas reutilizáveis ficam em `parameters`:
 

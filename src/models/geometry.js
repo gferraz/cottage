@@ -89,7 +89,7 @@ const FloorPlanGeometry = {
     if (localOrigin && ["x0", "y0", "z0"].includes(reference)) {
       return localOrigin[reference];
     }
-    if (reference.includes("*") || reference.includes("/") || /\s[+-]\s/.test(reference)
+    if (/[()]/.test(reference) || /^[+-]/.test(reference) || reference.includes("*") || reference.includes("/") || /\s[+-]\s/.test(reference)
       || /^(?:x0|y0|z0)\s*[+-]/.test(reference)) {
       return this.resolveExpression(reference, localOrigin);
     }
