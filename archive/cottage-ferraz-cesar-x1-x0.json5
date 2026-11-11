@@ -1,0 +1,868 @@
+// Planta Cottage Ferraz-César.
+//
+// ÍNDICE DE EDIÇÃO — use Ctrl+F / Cmd+F para buscar os marcadores abaixo.
+// [01] Metadados e apresentação: título, resumo, coordenadas e viewport.
+//      [01.1] Configuração — padrões de paredes, telhados, aberturas e pavimentos.
+// [01.2] Parâmetros — parameters: espessura, pé-direito e recuo das meias-paredes.
+// [02] Terreno e implantação: terrain (limites/cotas) e building (posição).
+// [03] Zonas de referência: main, central, top, bottom, house-left, house-right e dorm.
+// [04] Pavimentos e cômodos:
+//      [04.1] Térreo — ground; office, hall, master, stairs, kitchen e garage.
+//      [04.2] Dormitórios — upper; unused-north, bedroom-north e zonas headroom-*-2m.
+//      Cômodos e partes ordenados alfabeticamente pelo id.
+//      Aberturas laterais ficam em rooms[].openings; vãos entre pisos em floors[].openings.
+// [05] Paredes independentes por pavimento:
+//      Térreo — front-wall, right-wall, rear-wall e left-wall; topo em upper.z0.
+//      Piso superior — upper-*-wall; base em upper.z0 e topo na cobertura.
+//      Meias-paredes — IDs com prefixo knee-wall e knee-corner.
+// [06] Telhados: main-roof, office-roof e transverse-roof.
+// [07] Guias de desenho: w-axis, l-axis e referências das knee-walls.
+//
+// Para localizar uma definição por ID, busque, por exemplo: id: "right-wall".
+// Coordenadas em metros. x0/y0/z0 em "to" referem-se à origem de "from".
+// Em path.points, x0/y0 referem-se ao ponto anterior.
+// Paredes: top: "roof" termina na cobertura e omite trechos sem telhado acima.
+{
+  $schema: "./floor-plan.schema.json",
+
+  // [01] Metadados e apresentação
+  title: "Cottage Ferraz-César",
+  summary: "Residência de dois pavimentos em terreno cadastrado com diferença de cota de 6 m entre frente e fundos.",
+  coordinates: ["25°45'06.7\"S", "49°15'29.1\"W"],
+  viewport: { size: [24.0, 32.0], origin: [1.0, 1.0] },
+
+  // [01.1] Configuração
+  config: {
+    // Em walls dos cômodos e partes, left é x1 e right é x0 (lados da casa).
+    // Em openings, left é x0 e right é x1 (eixos geométricos, antes do giro da vista).
+    room_wall_sides: "house",
+    // Propriedades de cada elemento têm prioridade sobre os padrões.
+    // walls aplica-se somente às paredes independentes.
+    walls: {
+      base: { level: "ground.z0" },
+      top: "roof",
+      thickness: "params.wall_thickness",
+      color: "desejo-ambar"
+    },
+    roofs: {
+      type: "gable",
+      pitch: 51,
+      eaves: { left: 0.5, right: 0.5, pitch: 30 },
+      rake: 0.5
+    },
+    openings: {
+      door: { w: 0.8, h: 2.1, z0: 0 },
+      window: { w: 0.9, h: 1.5, z0: 0.9 },
+      opening: { w: 1.0, h: 2.1, z0: 0 }
+    },
+    floors: {
+      ceiling_height: "params.ground_height"
+    }
+  },
+
+  // [01.2] Parâmetros
+  // Use params.nome nas medidas e expressões. Valores em metros.
+  parameters: {
+    // Estrutura e pé-direito
+    wall_thickness: 0.12,
+    ground_height: 3,
+
+    // Aproveitamento do espaço sob a cobertura
+    // Telhados principais: base 1 m acima do piso superior.
+    // Altura livre de 2 m: (2 - 1) / tan(51°), arredondado para cima.
+    // Recalcular se mudar a inclinação ou a diferença de cota entre piso e base dos telhados.
+    headroom_2m_inset: 0.809785,
+    // Altura livre de 3 m: (3 - 1) / tan(51°), arredondado para cima.
+    headroom_3m_inset: 1.619569,
+    // Escritório: base do telhado 1 m acima do piso; (2 - 1) / tan(51°).
+    office_headroom_2m_inset: 0.809785,
+    // Escritório: altura livre de 3 m; (3 - 1) / tan(51°).
+    office_headroom_3m_inset: 1.619569,
+    knee_setback: 0.8
+  },
+
+  // [02] Terreno e implantação
+  // Coordenadas UTM da tabela de estaqueamento da Área 1; segmentos em reta.
+  terrain: {
+    front: {"edge": ["P001", "P002"], "position": "top", "label": "RUA/FRENTE"},
+    rear: {"edge": ["P013", "P014"], "position": "bottom", "label": "JARDIM"},
+    north: {"label": "N"},
+    unit: "m",
+    boundary_order: ["P002", "P001", "P014", "P013"],
+    corners: {
+      P001: {"easting": 674815.253, "northing": 7150521.976, "z": 0},
+      P002: {"easting": 674798.334, "northing": 7150529.176, "z": 0},
+      P013: {"easting": 674783.457, "northing": 7150487.338, "z": -6},
+      P014: {"easting": 674800.113, "northing": 7150476.994, "z": -6}
+    },
+    segments: [
+      {"from": "P001", "to": "P002", "distance": 18.387, "azimuth_deg": 293.052521, "azimuth_dms": "293° 03' 09\""},
+      {"from": "P002", "to": "P013", "distance": 44.404, "azimuth_deg": 199.574666, "azimuth_dms": "199° 34' 29\""},
+      {"from": "P013", "to": "P014", "distance": 19.607, "azimuth_deg": 121.84183, "azimuth_dms": "121° 50' 31\""},
+      {"from": "P014", "to": "P001", "distance": 47.462, "azimuth_deg": 18.601256, "azimuth_dms": "18° 36' 05\""}
+    ]
+  },
+  building: { anchor: "terrain.front-start", position: { x: 4, y: 3 } },
+
+  // [03] Zonas de referência
+  // Laterais da casa definidas olhando da rua para a fachada principal.
+  // Com a frente embaixo, house-left fica à esquerda da planta (x1); house-right à direita (x0).
+  zones: [
+    { id: "attic", inset: ["main", 3.0, 0.0], color: "red", visible: false },
+    { id: "bottom",  rectangle: ["main.x0",  "main.y0 + main.l / 2", "main.x1", "main.y1"], visible: false },
+    { id: "central", from: ["main.xc - 0.7", "main.y0"], to: ["x0 + 1.4", "main.y1"], visible: false },
+    { id: "comfort-zone", inset: ["main", 1.8, 0.0], color: "blue", visible: false },
+    {
+      id: "dorm",
+      rectangle: ["dorm-top.x0", "dorm-top.y0", "dorm-bottom.x1", "dorm-bottom.y1"],
+      color: "blue",
+      visible: false
+    },
+    {
+      id: "dorm-bottom",
+      rectangle: ["bottom.x0", "bottom.y0", "bottom.x1", "bottom.y1 - params.knee_setback"],
+      color: "blue",
+      visible: false
+    },
+    { id: "dorm-top", rectangle: ["top.x0", "top.y0 + params.knee_setback", "top.x1", "top.y1"], color: "blue", visible: false },
+    { id: "dorm-top-left", rectangle: ["office.x0 + params.knee_setback", "top.y0", "top.x1 - params.knee_setback", "top.y1"], color: "blue", visible: false },
+    { id: "hall-roof-base", from: ["office-main.x1", "porch.y0"], to: ["hall.x1", "porch.y1"], visible: false },
+    { id: "house-right",    rectangle: ["main.x0", "main.y0", "central.x0", "central.y1"], visible: false },
+    { id: "main",    pos: [0, 2.5], size: [10, 9.6], visible: false },
+    { id: "office-roof-base", from: ["office.x0", "office.y0"], to: ["hall.x1", "office.y1"], visible: false },
+    { id: "perimeter", pos: [0, 2.5], size: [9.6, 12.6], visible: false },
+    { id: "house-left",   rectangle: ["central.x1", "central.y0", "main.x1", "main.y1"], visible: false },
+    { id: "top",     rectangle: ["main.x0",    "main.y0", "main.x1", "y0 + main.l / 2"], visible: false }
+  ],
+
+  // [04] Pavimentos e cômodos
+  floors: [
+    // [04.1] Térreo — ground
+    {
+      id: "ground",
+      label: "Térreo",
+      z0: 0,
+      // Ordem das propriedades: identidade, geometria, paredes, aberturas e aparência.
+      // As referências podem apontar para blocos posteriores.
+      rooms: [
+        {
+          id: "circulation",
+          label: "Circulação",
+          rectangle: ["house-left.x0", "laundry.y1", "x0 + 2", "y0 + 1"],
+          classes: "circulation"
+        },
+        {
+          id: "closet",
+          label: "Closet",
+          from: ["house-right.x0", "master.y1"],
+          to: ["x0 + 2.7", "y0 + 2.2"],
+          openings: [
+            { type: "opening", from: "right", to: "vestibule" }
+          ],
+          walls: ["top", "right"]
+        },
+        {
+          id: "living",
+          label: "Estar",
+          from: ["house-left.x0", "porch.y1"],
+          to: ["house-left.x1", "y0 + 3.6"],
+          openings: [
+            { type: "window", from: "top", to: "exterior", w: 2.4, h: 1.5 }
+          ],
+          walls: ["bottom"]
+        },
+        {
+          id: "front-corridor",
+          label: "C-1.",
+          rectangle: ["master.x1", "hall.y1", "central.x1", "dining.y0"],
+          walls: ["right"],
+          classes: "circulation"
+        },
+        {
+          id: "front-stairs",
+          label: "Escada da varanda",
+          from: ["porch.x0 + 0.2", "porch.y0 - 1", "porch.z0 - 0.45"],
+          to: ["x0 + 2.1", "porch.y0", 0],
+          orientation: "longitudinal",
+          classes: "stair-flight"
+        },
+        {
+          id: "garage",
+          label: "Garagem",
+          pos: ["laundry.x1", "laundry.y1"],
+          size: [4, 6.5],
+          walls: ["top", "left", "bottom"],
+          openings: [
+            { type: "door", from: "top", to: "exterior", w: 3.2 },
+            { type: "door", from: "bottom", to: "exterior", w: 3.2 }
+          ],
+          classes: "service garage"
+        },
+        {
+          id: "hall",
+          label: "Hall",
+          from: ["office-extension.x1", "main.y0"],
+          to: ["house-left.x0", "y0 + 2.2"],
+          openings: [
+            { type: "door", from: "top",    to: "porch",          w: 1 },
+            { type: "door", from: "bottom", to: "front-corridor", w: 1 },
+            { type: "door", from: "left",   to: "office" }
+          ],
+          walls: ["bottom", "left"],
+          classes: "circulation"
+        },
+        {
+          id: "kitchen",
+          label: "Cozinha",
+          from: ["office.x0", "master-bath.y1"],
+          to: ["house-left.x0", "y0 + 3.9"],
+          openings: [
+            { type: "window", from: "left", to: "exterior", w: 2.4 },
+            { type: "door", from: "bottom", to: "terrace" }
+          ],
+          classes: "wet",
+          walls: ["right"]
+        },
+        {
+          id: "laundry",
+          label: "Lavanderia",
+          top: "stairs",
+          // Faixa técnica sob o lance 2 e o patamar 1; acesso pelo lado dos fundos.
+          rectangle: ["lower-flight.x0 + 2.5", "lower-flight.y0 + 0.4", "house-left.x1", "y0 + 2"],
+          walls: ["top"],
+          classes: "service laundry wet"
+        },
+        {
+          id: "dining",
+          label: "Jantar",
+          from: ["master.x1", "living.y1"],
+          to: ["house-left.x1", "y0 + 3.6"]
+        },
+        {
+          id: "master",
+          label: "Suíte Master",
+          rectangle: ["house-right.x0", "office-main.y1", "house-right.x1 - 0.4", "y0 + 3.6"],
+          walls: ["top", "right", "left"],
+          openings: [
+            { type: "window", from: "left", to: "exterior", dy: 0.6 },
+            { type: "window", from: "left", to: "exterior", dy: 2.1 }
+          ]
+        },
+        {
+          id: "master-bath",
+          label: "Banheiro Master",
+          from: ["house-right.x0", "closet.y1"],
+          to: ["master.x1", "y0 + 1.7"],
+          walls: ["top", "right", "bottom", "left"],
+          openings: [
+            { type: "door", from: "top", to: "vestibule" },
+            { type: "window", from: "left", to: "exterior" }
+          ],
+          classes: "wet"
+        },
+        {
+          id: "mudroom",
+          label: "Mudroom",
+          rectangle: ["pantry.x1", "laundry.y1", "house-left.x1", "pantry.y1"],
+          openings: [
+            { type: "door", from: "right", to: "garage" }
+          ],
+          classes: "service mudroom"
+        },
+        {
+          id: "office",
+          label: "Escritório",
+          classes: "office",
+          color: "rgba(255, 255, 255, 0.95)",
+          openings: [
+            { type: "window", from: "top", w: 1.2, dx: "(office-main.w - 1.2) / 2" },
+            { type: "window", from: "left" }
+          ],
+          parts: [
+            {
+              id: "office-main",
+              from: ["house-right.x0", "house-right.y0 - 2.5"],
+              to: ["house-right.x1 - 1.1", "house-right.y0 + 1.3"],
+              walls: ["bottom"]
+            },
+            {
+              id: "office-extension",
+              from: ["office-main.x1", "main.y0"],
+              to: ["master.x1", "office-main.y1"],
+              walls: []
+            }
+          ]
+        },
+        {
+          id: "pantry",
+          label: "Despensa",
+          rectangle: ["house-left.x0", "circulation.y1", "circulation.x1", "y0 + 1.8"],
+          walls: ["top", "right", "left"],
+          openings: [
+            { type: "opening", from: "top", to: "circulation" }
+          ],
+          classes: "service pantry"
+        },
+        {
+          id: "porch",
+          label: "Varanda",
+          from: ["office-main.x1", "house-left.y0 - 2.5"],
+          to: ["house-left.x1", "house-left.y0"],
+          classes: "outdoor porch"
+        },
+        {
+          id: "powder",
+          label: "Lavabo",
+          top: "stairs",
+          from: ["house-left.x0", "stairs.y0"],
+          to: ["x0 + 2.4", "upper-landing.y1"],
+          walls: ["top", "right", "bottom", "left"],
+          openings: [
+            { type: "door", from: "left", to: "rear-corridor", dy: 0.1 }
+          ],
+          classes: "powder wet"
+        },
+        {
+          id: "rear-corridor",
+          label: "C-2.",
+          rectangle: ["master.x1", "dining.y1", "central.x1", "kitchen.y0"],
+          walls: [],
+          classes: "circulation"
+        },
+        // Escada experimental — 18 espelhos iguais: 11 no lance inferior e 7 no superior.
+        // Para 3 m de desnível: espelhos de 16,67 cm e patamar na cota 1,83 m.
+        // Pisadas iguais de 0,31 m: 10 no lance inferior e 6 no superior.
+        // Chegada de 1,20 m; lance superior de 1,86 m; patamar superior de 1,24 m.
+        {
+          id: "stairs",
+          label: "Escada",
+          parts: [
+            {
+              id: "lower-flight",
+              risers: 11,
+              from: ["lower-landing.x0", "lower-landing.y0", "lower-landing.z0"],
+              to: ["house-left.x0", "lower-landing.y1", 0],
+              walls: ["top", "bottom"],
+              classes: "stair-flight"
+            },
+            {
+              id: "lower-landing",
+              from: ["house-left.x1", "upper-landing.y1", "upper-landing.z0"],
+              to: ["x0 - 1.2", "y0 + upper-flight.l", "z0"],
+              walls: ["bottom"],
+              classes: "stair-landing",
+              color: "terracotta"
+            },
+            {
+              id: "upper-flight",
+              risers: 7,
+              from: ["house-left.x0 + 1.2", "dining.y1", "upper.z0"],
+              to: ["x0 + 1.86", "y0 + 1.2", "ground.z0 + (upper.z0 - ground.z0) * 11 / 18"],
+              classes: "stair-flight"
+            },
+            {
+              id: "upper-landing",
+              // z0 é a extremidade inferior do lance, pois as cotas são normalizadas.
+              from: ["upper-flight.x1", "upper-flight.y0", "upper-flight.z0"],
+              to: ["house-left.x1", "upper-flight.y1", "z0"],
+              classes: "stair-landing",
+              color: "terracotta"
+            }
+          ],
+          walls: [],
+          overlaps: ["powder", "laundry"],
+          overlays: ["powder", "laundry"]
+        },
+        /*
+        // Escada em U — três lances de 6 espelhos (18 no total).
+        // Projeção dos lances 1 e 3: 1,40 m; do lance 2: 1,30 m.
+        // Com 5 pisos por lance: 0,28 m nos lances 1 e 3; 0,26 m no lance 2.
+        // Largura dos três lances: 1,40 m.
+        // Dois patamares de 1,40 × 1,40 m.
+        // Caixa de 4,10 × 2,80 m, sem paredes.
+        // Lance inferior à esquerda da planta (x1, lado baixo do telhado); chegada à direita (x0).
+        // Borda direita da caixa na planta (x0) alinhada à guia central esquerda da casa.
+        {
+          id: "stairs",
+          label: "Escada",
+          parts: [
+            {
+              id: "lower-flight",
+              from: ["house-left.x1 - 1.4", "dining.y1", "ground.z0"],
+              to: ["house-left.x1", "y0 + 1.3", "ground.z0 + (upper.z0 - ground.z0) / 3"],
+              orientation: "longitudinal",
+              classes: "stair-flight"
+            },
+            {
+              id: "lower-landing",
+              from: ["lower-flight.x0", "lower-flight.y1", "lower-flight.z1"],
+              to: ["lower-flight.x1", "y0 + 1.3", "z0"],
+              classes: "stair-landing"
+            },
+            {
+              id: "middle-flight",
+              from: ["lower-landing.x0", "lower-landing.y0", "lower-landing.z0"],
+              to: ["x0 - 1.3", "lower-landing.y1", "ground.z0 + 2 * (upper.z0 - ground.z0) / 3"],
+              orientation: "transverse",
+              classes: "stair-flight"
+            },
+            {
+              id: "upper-flight",
+              from: ["upper-landing.x0", "upper-landing.y0", "upper-landing.z0"],
+              to: ["upper-landing.x1", "lower-flight.y0", "upper.z0"],
+              orientation: "longitudinal",
+              classes: "stair-flight"
+            },
+            {
+              id: "upper-landing",
+              from: ["middle-flight.x0", "middle-flight.y0", "middle-flight.z1"],
+              to: ["central-left.x0", "middle-flight.y1", "z0"],
+              classes: "stair-landing"
+            }
+          ],
+          walls: [],
+          overlaps: ["powder", "laundry"],
+          overlays: ["powder", "laundry"]
+        },
+        */
+        {
+          id: "terrace",
+          label: "Terraço Traseiro",
+          from: ["kitchen.x0", "kitchen.y1"],
+          to: ["kitchen.x1", "y0 +  3"],
+          classes: "outdoor terrace"
+        },
+        {
+          id: "vestibule",
+          label: "Vest.",
+          rectangle: ["closet.x1", "closet.y0", "master.x1", "closet.y1"],
+          walls: ["right", "bottom", "left"],
+          overlaps: "rear-corridor",
+          openings: [
+            { type: "door", from: "right", to: "dining", dy: 1.2 }
+          ]
+        }
+      ],
+      // Mobiliário e equipamentos.
+      items: [
+        { id: "kitchen-table", label: "Mesa Ø 1,2 m", title: "Mesa redonda — Cozinha — Ø 1,2 m", pos: ["kitchen.xc - 0.6", "kitchen.yc - 0.6"], size: [1.2, 1.2, 0.75], classes: "table round-table" },
+        // Sofá linear voltado para a frente da casa; passagem de 90 cm atrás do encosto.
+        { id: "living-sofa", type: "three-seat-sofa", label: "Sofá linear", title: "Sofá linear de 3 lugares — Estar", pos: ["living.xc - 1.05", "living.y1 - 0.9 - 0.9"], rotation: 180 },
+        // Mesa a 1 m da face interna da parede exterior esquerda e da borda frontal da sala.
+        { title: "Mesa", pos: ["house-left.x1 - params.wall_thickness / 2 - 1 - 2.7", "dining.y0 + params.wall_thickness / 2 + 1"], size: [2.7, 1.1], classes: "table" },
+        {
+          title: "Lareira",
+          pos: ["living.x1 - 0.4", "living.yc - 0.9"],
+          size: [0.5, 1.4],
+          classes: "fireplace"
+        },
+        { title: "Carro", pos: ["garage.x0 + 1", "garage.y0 + 1"], size: [1.8, 4.0], classes: "car" },
+        { type: "washing-machine", pos: ["laundry.x1 - 0.8", "laundry.y0 + 0.1"], rotation: 180 },
+        { type: "washing-machine", pos: ["laundry.x1 - 1.4", "laundry.y0 + 0.1"], rotation: 180 },
+        // Cabeceira na parede frontal; cama centralizada e criados a 5 cm das laterais.
+        { id: "master-bed", type: "queen-bed", pos: ["master.xc - 0.8", "master.y0 + params.wall_thickness / 2 + 0.1"] },
+        { id: "master-chest", label: "Recamier", title: "recamier — Suíte Master", pos: ["master-bed.xc - 0.22", "master-bed.y1 - 0.37"], size: [0.45, 1.4, 0.45], rotation: 270, classes: "furniture storage storage-chest", color: "furniture" },
+        { id: "master-nightstand-front", title: "criado-mudo — Suíte Master", pos: ["master-bed.x0 - 0.55", "master-bed.y0"], size: [0.5, 0.5, 0.55], classes: "furniture storage", color: "furniture" },
+        { id: "master-nightstand-rear", title: "criado-mudo — Suíte Master", pos: ["master-bed.x1 + 0.05", "master-bed.y0"], size: [0.5, 0.5, 0.55], classes: "furniture storage", color: "furniture" },
+
+        { type: "railing", pos: ["porch.x0",        "porch.y0"], size: ["hall.xc - 0.9 - porch.x0", 0.08, 1.1] },
+        { type: "railing", pos: ["hall.xc + 0.9",   "porch.y0"], size: ["porch.x1 - hall.xc - 0.9", 0.08, 1.1] },
+        { type: "railing", pos: ["porch.x1 - 0.08", "porch.y0"], size: [0.08, "porch.l", 1.1] }
+      ]
+    },
+    // [04.2] Dormitórios — upper
+    {
+      id: "upper",
+      label: "Dormitórios",
+      z0: "params.ground_height",
+
+      rooms: [
+        {
+          id: "bedroom-north",
+          label: "Quarto N",
+          from: ["knee-right.x0", "hall.y0"],
+          to: ["knee-right.x0 + 3.3", "y0 + 4.6"],
+          walls: ["left", "bottom"],
+          openings: [
+            { type: "door", from: "bottom", to: "upper-corridor"},
+            // Par de janelas simétrico em relação ao eixo do frontão principal.
+            { type: "window", from: "top", to: "exterior", w: 0.9, h: 1.2, z0: "upper.z0 + 1", dx: "main-roof.xc - 1.2 - 0.45 - bedroom-north.x0" }
+          ]
+        },
+        {
+          id: "bedroom-east",
+          label: "Quarto E",
+          from: ["house-left.x1", "hall.y0"],
+          to: ["bedroom-north.x1", "y0 + 3.6"],
+          walls: ["bottom"],
+          openings: [
+            { type: "door", from: "bottom", to: "playroom", w: 0.8, dx: 0.2 },
+            { type: "window", from: "top", to: "exterior", w: 0.9, h: 1.2, z0: "upper.z0 + 1", dx: "main-roof.xc + 1.2 - 0.45 - bedroom-east.x0" }
+          ]
+        },
+        {
+          id: "bedroom-west",
+          label: "Quarto Oeste",
+          from: ["knee-right.x0", "transversal-rear.y0"],
+          to: ["house-left.x0", "main.y1"],
+          walls: ["top", "left"],
+          openings: [
+            { type: "door", from: "top", to: "upper-corridor" },
+            // Janela no frontão dos fundos, na faixa mais alta da cobertura principal.
+            { type: "window", from: "bottom", to: "exterior", w: 1.2, h: 1.2, z0: "upper.z0 + 0.9", dx: "bedroom-west.w - 1.8" }
+          ]
+        },
+        {
+          id: "playroom",
+          label: "Sala de Estar",
+          from: ["bedroom-east.x0", "bedroom-east.y1"],
+          to: ["house-left.x1", "stairs.y0"],
+          walls: [],
+          openings: [
+            { type: "window", from: "right", w: 0.9, dy: "transverse-roof.yc - playroom.y0 - 0.45" }
+          ]
+        },
+        {
+          id: "bathroom",
+          label: "Banheiro",
+          from: ["house-right.x0", "transversal-rear.y0 + 1"],
+          to: ["knee-right.x0", "main.y1"],
+          walls: ["top"],
+          openings: [
+            { type: "door", from: "top", to: "unused-right" },
+            // Janela alta no frontão do escritório; abertura operável a detalhar.
+            { type: "window", from: "bottom", to: "exterior", w: 0.8, h: 0.6, z0: "upper.z0 + 1.5", dx: 0.7 }
+          ]
+        },
+        {
+          id: "unused-right",
+          label: "Sem uso",
+          from: ["house-right.x0", "office.y0"],
+          to: ["knee-right.x0", "bathroom.y0"],
+          openings: [
+            { type: "window", from: "top", w: 0.8, h: 0.6 }
+          ]
+        },
+        {
+          id: "stair-arrival",
+          label: "Circulação",
+          from: ["house-left.x0", "stairs.y0"],
+          to: ["stairs.x0", "main.y1"],
+          walls: [],
+          classes: "circulation"
+        },
+        {
+          id: "upper-corridor",
+          label: "Corredorr",
+          from: ["unused-right.x1", "bedroom-north.y1"],
+          to: ["playroom.x0", "bedroom-west.y0"]
+        }
+      ],
+      // Altura livre no piso superior: verde >= 2 m; azul >= 3 m.
+      // Cada telhado tem suas faixas de altura livre de 2 m e 3 m.
+      // Sem beirais; as sobreposições representam regiões atendidas por mais de um telhado.
+      zones: [
+        {
+          id: "headroom-main-roof-2m",
+          label: "Telhado principal — altura ≥ 2 m",
+          rectangle: [
+            "main-roof.x0 + params.headroom_2m_inset",
+            "main-roof.y0",
+            "main-roof.x1 - params.headroom_2m_inset",
+            "main-roof.y1"
+          ],
+          color: "rgba(98, 139, 90, 0.35)"
+        },
+        {
+          id: "headroom-main-roof-3m",
+          label: "Telhado principal — altura ≥ 3 m",
+          rectangle: [
+            "main-roof.x0 + params.headroom_3m_inset",
+            "main-roof.y0",
+            "main-roof.x1 - params.headroom_3m_inset",
+            "main-roof.y1"
+          ],
+          color: "rgba(77, 120, 153, 0.35)"
+        },
+        {
+          id: "headroom-office-roof-2m",
+          label: "Telhado do escritório — altura ≥ 2 m",
+          rectangle: [
+            "office-roof.x0 + params.office_headroom_2m_inset",
+            "office-roof.y0",
+            "office-roof.x1 - params.office_headroom_2m_inset",
+            "office-roof.y1"
+          ],
+          color: "rgba(98, 139, 90, 0.35)"
+        },
+        {
+          id: "headroom-office-roof-3m",
+          label: "Telhado do escritório — altura ≥ 3 m",
+          rectangle: [
+            "office-roof.x0 + params.office_headroom_3m_inset",
+            "office-roof.y0",
+            "office-roof.x1 - params.office_headroom_3m_inset",
+            "office-roof.y1"
+          ],
+          color: "rgba(77, 120, 153, 0.35)"
+        },
+        {
+          id: "headroom-transverse-roof-2m",
+          label: "Telhado transversal — altura ≥ 2 m",
+          rectangle: [
+            "transverse-roof.x0",
+            "transverse-roof.y0 + params.headroom_2m_inset",
+            "transverse-roof.x1",
+            "transverse-roof.y1 - params.headroom_2m_inset"
+          ],
+          color: "rgba(98, 139, 90, 0.35)"
+        },
+        {
+          id: "headroom-transverse-roof-3m",
+          label: "Telhado transversal — altura ≥ 3 m",
+          rectangle: [
+            "transverse-roof.x0",
+            "transverse-roof.y0 + params.headroom_3m_inset",
+            "transverse-roof.x1",
+            "transverse-roof.y1 - params.headroom_3m_inset"
+          ],
+          color: "rgba(77, 120, 153, 0.35)"
+        }
+      ],
+      // Mobiliário e equipamentos.
+      items: [
+        // Camas Twin de 0,97 × 1,91 m; posições compensam a rotação em torno do centro.
+        // Quarto E: cabeceiras à esquerda da planta (x1); três espaços iguais entre camas e faces internas frontal/traseira.
+        { id: "bed-east", type: "twin-bed", pos: ["bedroom-east.x1 - 1.44 - params.wall_thickness / 2", "bedroom-east.y0 + params.wall_thickness / 2 + (bedroom-east.l - params.wall_thickness - 1.94) / 3 - 0.47"], rotation: 90 },
+        { id: "bed-east-2", type: "twin-bed", pos: ["bedroom-east.x1 - 1.44 - params.wall_thickness / 2", "bedroom-east.y0 + params.wall_thickness / 2 + 2 * (bedroom-east.l - params.wall_thickness - 1.94) / 3 + 0.97 - 0.47"], rotation: 90 },
+        // Quarto N: cabeceira à direita da planta (x0), cama centralizada entre frente e fundo.
+        { id: "bed-north-1", type: "queen-bed", pos: ["bedroom-north.x0 + 0.2 + params.wall_thickness / 2", "bedroom-north.yc - 1"], rotation: 270 },
+        // Quarto Oeste: cabeceiras à esquerda da planta (x1); faixa de circulação aos pés e entre camas.
+        { id: "bed-west-1", type: "twin-bed", pos: ["bedroom-west.x1 - 1.44 - params.wall_thickness / 2", "bedroom-west.y0 + 0.3"], rotation: 90 },
+        { id: "bed-west-2", type: "twin-bed", pos: ["bedroom-west.x1 - 1.44 - params.wall_thickness / 2", "bedroom-west.y1 - 1.74"], rotation: 90 },
+        // Criados junto às cabeceiras; modelos compactos nos quartos com camas Twin.
+        { id: "nightstand-east-1", label: "Criado-mudo", pos: ["bed-east.xc + bed-east.l / 2 - 0.4", "bed-east.yc - bed-east.w / 2 - 0.45"], size: [0.4, 0.4, 0.55], classes: "furniture storage nightstand", color: "furniture" },
+        { id: "nightstand-east-2", label: "Criado-mudo", pos: ["bed-east-2.xc + bed-east-2.l / 2 - 0.4", "bed-east-2.yc + bed-east-2.w / 2 + 0.05"], size: [0.4, 0.4, 0.55], classes: "furniture storage nightstand", color: "furniture" },
+        { id: "nightstand-north-1", label: "Criado-mudo", pos: ["bed-north-1.xc - bed-north-1.l / 2", "bed-north-1.yc - bed-north-1.w / 2 - 0.55"], size: [0.5, 0.5, 0.55], classes: "furniture storage nightstand", color: "furniture" },
+        { id: "nightstand-north-2", label: "Criado-mudo", pos: ["bed-north-1.xc - bed-north-1.l / 2", "bed-north-1.yc + bed-north-1.w / 2 + 0.05"], size: [0.5, 0.5, 0.55], classes: "furniture storage nightstand", color: "furniture" },
+        { id: "nightstand-west-1", label: "Criado-mudo", pos: ["bed-west-1.xc + bed-west-1.l / 2 - 0.4", "bed-west-1.yc - bed-west-1.w / 2 - 0.45"], size: [0.4, 0.4, 0.55], classes: "furniture storage nightstand", color: "furniture" },
+        { id: "nightstand-west-2", label: "Criado-mudo", pos: ["bed-west-2.xc + bed-west-2.l / 2 - 0.4", "bed-west-2.yc - bed-west-2.w / 2 - 0.45"], size: [0.4, 0.4, 0.55], classes: "furniture storage nightstand", color: "furniture" },
+        // Armários baixos sob a água do telhado; portas de correr a detalhar.
+        { id: "wardrobe-west-front", title: "Armário baixo — Quarto Oeste", pos: ["bedroom-west.x0 + 0.06", "bedroom-west.y0 + 0.06"], size: [0.8, 0.6, 1.2], classes: "storage", color: "furniture" },
+        { id: "wardrobe-west-rear", title: "Armário baixo — Quarto Oeste", pos: ["bedroom-west.x0 + 0.06", "bedroom-west.y1 - 0.66"], size: [0.8, 0.6, 1.2], classes: "storage", color: "furniture" },
+        // Borda frontal do vão; chegada do lance superior permanece livre à direita da planta (x0).
+        { id: "stair-arrival-railing", type: "railing", label: "Guarda-corpo do desembarque", pos: ["upper-flight.x1", "stairs.y0 - 0.08"], size: ["stairs.x1 - upper-flight.x1 - params.wall_thickness / 2", 0.08, 1.1] }
+      ],
+      // Aberturas do pavimento; aberturas locais ficam dentro do cômodo.
+      openings: [
+        { type: "opening", from: "upper", to: "ground", rectangle: ["stairs.x0 + 1.2", "stairs.y0", "stairs.x1", "stairs.y1"] }
+      ]
+    }
+  ],
+
+  // [05] Paredes independentes
+  walls: [
+    {
+      id: "front-wall",
+      scope: "ground",
+      top: { level: "upper.z0" },
+      path: {
+        points: [
+          ["hall.x0", "hall.y0"],
+          ["hall.x1", "y0"],
+          ["x0", "house-left.y0"],
+          ["house-left.x1", "y0"]
+        ]
+      },
+    },
+    {
+      id: "office-walls",
+      scope: "ground",
+      top: { level: "upper.z0" },
+      path: {
+        points: [
+          ["office.x0", "office.y1"],
+          ["x0", "office.y0"],
+          ["office-main.x1", "y0"],
+          ["x0", "hall.y0"],
+          ["office-extension.x1", "y0"],
+          ["x0", "office.y1"],
+        ]
+      },
+    },
+    {
+      id: "knee-wall-rear",
+      scope: "upper",
+      color: "blue",
+      path: {
+        points: [
+          ["knee-right.x0", "w-axis.y0 + 0.7"],
+          ["x0", "house-right.y1"]
+        ]
+      },
+      base: { level: "upper.z0" },
+    },
+    // {
+    //   id: "right-wall",
+    //   scope: "ground",
+    //   top: { level: "upper.z0" },
+    //   path: {
+    //     points: [
+    //       ["office.x0", "office.y1"],
+    //       ["house-right.x0", "y0"],
+    //       ["x0", "kitchen.y1"]
+    //     ]
+    //   },
+    // },
+    {
+      id: "rear-wall",
+      scope: "ground",
+      top: { level: "upper.z0" },
+      path: {
+        points: [
+          ["kitchen.x0", "kitchen.y1"],
+          ["kitchen.x1", "y0"],
+          ["pantry.x0", "pantry.y1"],
+          ["mudroom.x1", "mudroom.y1"]
+        ]
+      },
+    },
+    {
+      id: "left-wall",
+      scope: "ground",
+      top: { level: "upper.z0" },
+      from: ["house-left.x1", "living.y0"],
+      to: ["x0", "mudroom.y1"],
+    },
+    {
+      id: "upper-office-walls",
+      scope: "upper",
+      base: { level: "upper.z0" },
+      top: "roof",
+      path: {
+        points: [
+          ["main-right.x0", "office.y1"],
+          ["office.x0", "y0"],
+          ["x0", "office.y0"],
+          ["office-main.x1", "y0"],
+          ["x0", "main.y0"]
+        ]
+      }
+    },
+    {
+      id: "upper-front-wall",
+      scope: "upper",
+      base: { level: "upper.z0" },
+      top: "roof",
+      path: {
+        points: [
+          ["knee-right.x0", "hall.y0"],
+          ["hall.x1", "y0"],
+          ["x0", "house-left.y0"],
+          ["house-left.x1", "y0"]
+        ]
+      }
+    },
+    {
+      id: "upper-right-wall",
+      scope: "upper",
+      base: { level: "upper.z0" },
+      top: "roof",
+      path: {
+        points: [
+          ["house-right.x0", "office.y1"],
+          ["x0", "main.y1"]
+        ]
+      }
+    },
+    {
+      id: "knee-wall-front-right",
+      scope: "upper",
+      color: "blue",
+      base: { level: "upper.z0" },
+      top: "roof",
+      path: {
+        points: [
+          ["knee-right.x0", "main.y0"],
+          ["x0", "y0 + 4.6"]
+        ]
+      }
+    },
+    {
+      id: "upper-rear-wall",
+      scope: "upper",
+      base: { level: "upper.z0" },
+      top: "roof",
+      from: ["main.x0", "main.y1"],
+      to: ["main.x1", "y0"]
+    },
+    {
+      id: "upper-left-wall",
+      scope: "upper",
+      base: { level: "upper.z0" },
+      top: "roof",
+      from: ["house-left.x1", "house-left.y0"],
+      to: ["x0", "main.y1"]
+    }
+  ],
+
+  // [06] Telhados
+  // eaves.left/right seguem a seção geométrica, não os lados da casa:
+  // longitudinal: x0/x1 (direita/esquerda na vista girada); transverse: frente/fundos.
+  roofs: [
+    {
+      id: "porch-roof",
+      label: "Cobertura da varanda",
+      type: "shed",
+      // Mantém a cobertura inteira sob os beirais dos corpos mais altos.
+      clip_intersections: false,
+      base: "porch",
+      orientation: "transverse",
+      slope: "top",
+      pitch: 20,
+      z0: "ground.z0 + 2.7",
+      eaves: { left: 0.45, right: 0, pitch: 20 },
+      rake: [0, 0.25]
+    },
+    {
+      id: "main-roof",
+      label: "Telhado Principal",
+      z0: "upper.z0 + 1",
+      rectangle: ["office-main.x1 - 1.6", "hall.y0", "main.x1", "main.y1"],
+      orientation: "longitudinal",
+      eaves: { left: 0, right: 0.5 },
+      rake: [0.5, 0.5]
+    },
+    {
+      id: "office-roof",
+      label: "Escritório",
+      z0: "upper.z0 + 1",
+      rectangle: ["office.x0", "office.y0", "office-main.x1", "main.y1"],
+      orientation: "longitudinal",
+    },
+    {
+      id: "transverse-roof",
+      label: "Telhado Transversal",
+      from: ["top.x0", "top.y0 + 2", "upper.z0 + 1"],
+      to: ["top.x1", "bottom.y1 - 1", "z0"],
+      orientation: "transverse",
+      eaves: { left: 0, right: 0 },
+    }
+  ],
+
+  // [07] Guias de desenho
+  guides: [
+    { id: "central-right", label: "central direita", pos: ["l-axis.x0 - 0.7", -2.5], l: 20, color: "green" },
+    { id: "central-left", label: "central esquerda", pos: ["l-axis.x0 + 0.7", -2.5], l: 20, color: "green" },
+    { id: "knee-right",   label: "meia parede direita", pos: ["main-roof.x0 + params.knee_setback", -2.5], l: 20, color: "terracotta" },
+    { id: "knee-left",  label: "meia parede esquerda",  pos: ["main-roof.x1 - params.knee_setback", -2.5], l: 20, color: "terracotta" },
+    { id: "l-axis", label: "eixo longitudinal", pos: ["central.xc", -2.5], l: 20, color: "green" },
+    { id: "main-bottom", label: "parede traseira", pos: [-4.0, "main.y1"], w: 20, color: "green" },
+    { id: "main-right", label: "parede direita", pos: ["house-right.x0", -2.5], l: 20, color: "green" },
+    { id: "main-left", label: "parede esquerda", pos: ["house-left.x1", -2.5], l: 20, color: "green" },
+    { id: "main-top", label: "parede frontal", pos: [-4.0, "main.y0"], w: 20, color: "green" },
+    { id: "transversal-front", label: "transversal frontal", pos: [-4.0, "w-axis.y0 - 0.7"], w: 20, color: "green" },
+    { id: "transversal-rear", label: "transversal traseira", pos: [-4.0, "w-axis.y0 + 0.7"], w: 20, color: "green" },
+    { id: "w-axis", label: "eixo transversal", pos: [-4.0, "main.yc + 0.5"], w: 20, color: "green" }
+  ]
+}
