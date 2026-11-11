@@ -153,7 +153,7 @@
           id: "closet",
           label: "Closet",
           from: ["house-right.x0", "master.y1"],
-          to: ["x0 + 2.5", "y0 + 2.2"],
+          to: ["x0 + 2.7", "y0 + 2.2"],
           openings: [
             { type: "opening", from: "right", to: "vestibule" }
           ],
@@ -202,10 +202,11 @@
           from: ["office-extension.x1", "main.y0"],
           to: ["house-left.x0", "y0 + 2.2"],
           openings: [
-            { type: "door", from: "top", to: "porch", w: 1 },
-            { type: "door", from: "left", to: "office" }
+            { type: "door", from: "top",    to: "porch",          w: 1 },
+            { type: "door", from: "bottom", to: "front-corridor", w: 1 },
+            { type: "door", from: "left",   to: "office" }
           ],
-          walls: ["left"],
+          walls: ["bottom", "left"],
           classes: "circulation"
         },
         {
