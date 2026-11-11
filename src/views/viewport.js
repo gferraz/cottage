@@ -56,8 +56,8 @@ const FloorPlanViewport = {
     if (!plan.pointerPan || event.pointerId !== plan.pointerPan.id) return;
     const dx = (event.clientX - plan.pointerPan.x) / plan.viewportScale;
     const dy = (event.clientY - plan.pointerPan.y) / plan.viewportScale;
-    plan.viewport.origin[0] = plan.pointerPan.origin[0] - dx;
-    plan.viewport.origin[1] = plan.pointerPan.origin[1] - dy;
+    plan.viewport.origin[0] = plan.pointerPan.origin[0] + dx;
+    plan.viewport.origin[1] = plan.pointerPan.origin[1] + dy;
     plan.root.style.setProperty("--viewport-origin-x", plan.viewport.origin[0]);
     plan.root.style.setProperty("--viewport-origin-y", plan.viewport.origin[1]);
     this.updateTerrain(plan);

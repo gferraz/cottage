@@ -105,19 +105,14 @@ const FloorPlanGuides = {
           class: "guide-label",
           fill: plan.themeColor(guide.color),
         });
-        if (hasEndpoint) {
-          let angle = (Math.atan2(y2 - y, x2 - x) * 180) / Math.PI;
-          const reverseLabel = angle > 90 || angle < -90;
-          if (reverseLabel) angle += 180;
-          label.setAttribute("dy", -labelGap);
-          label.setAttribute("text-anchor", reverseLabel ? "end" : "start");
-          label.setAttribute("transform", `rotate(${angle} ${x} ${y})`);
-        } else if (hasWidth) {
-          label.setAttribute("dy", -labelGap);
-        } else {
-          label.setAttribute("dy", -labelGap);
-          label.setAttribute("transform", `rotate(90 ${x} ${y})`);
-        }
+        // Counter-rotate around the line endpoint, rather than the text box:
+        // SVG text with an existing rotation otherwise moves away from its guide.
+        let angle = (Math.atan2(y2 - y, x2 - x) * 180) / Math.PI;
+        const reverseLabel = angle > 90 || angle < -90;
+        if (reverseLabel) angle += 180;
+        label.setAttribute("dy", -labelGap);
+        label.setAttribute("text-anchor", reverseLabel ? "start" : "end");
+        label.setAttribute("transform", `rotate(${angle + 180} ${x} ${y})`);
         label.textContent = guide.label;
         plan.guidesLayer.append(label);
       }

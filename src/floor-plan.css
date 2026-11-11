@@ -231,6 +231,24 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   user-select: none;
 }
 
+/* Rotate the projection while keeping annotations upright. */
+.site { rotate: 180deg; }
+.site .room { flex-direction: column-reverse; }
+.site .room-label,
+.site .room > small,
+.site .part-dimensions,
+.site .direction,
+.site .storage-chest::after { rotate: 180deg; }
+.site svg text:not(.guide-label) {
+  rotate: 180deg;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.site .room-part .part-dimensions {
+  top: auto;
+  bottom: calc(50% + 14px);
+}
+
 .site.is-panning { cursor: grabbing; }
 
 .floor-export-stack {

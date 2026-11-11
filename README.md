@@ -21,7 +21,9 @@ O seletor de piso muda apenas o desenho. **Todos os pisos** sobrepõe os pavimen
 
 ## Editar a planta
 
-O arquivo ativo é `cottage-ferraz-cesar-front-gables.json5`. O índice no início contém marcadores para buscar com Ctrl+F / Cmd+F. Listas de objetos com `id` ficam em ordem alfabética; listas sem IDs e coordenadas mantêm sua ordem. A ordem das seções do primeiro nível é preservada. As aberturas laterais ficam junto ao cômodo, em `rooms[].openings`; `from: "left"` refere-se à lateral esquerda desse cômodo. Vãos entre pavimentos continuam em `floors[].openings`.
+O arquivo ativo é `cottage-ferraz-cesar.json5`. O índice no início contém marcadores para buscar com Ctrl+F / Cmd+F. Listas de objetos com `id` ficam em ordem alfabética; listas sem IDs e coordenadas mantêm sua ordem. A ordem das seções do primeiro nível é preservada. As aberturas laterais ficam junto ao cômodo, em `rooms[].openings`; `from: "left"` refere-se à face `x0` do cômodo (à direita na planta girada). Vãos entre pavimentos continuam em `floors[].openings`.
+
+A versão separada `cottage-ferraz-cesar-cartesiana.json` usa `coordinate_system: "cartesian"`: X cresce da esquerda para a direita e Y da frente para os fundos (de baixo para cima na planta). O corpo principal ocupa X de −10 a 0; a origem X está na lateral direita. É uma cópia independente com medidas numéricas resolvidas, sem as fórmulas paramétricas do original. Paredes locais e aberturas usam `left = x0` e `right = x1`; os beirais longitudinais seguem essa mesma ordem. Nas coberturas transversais, `eaves.left/right` continuam representando frente/fundos. Coordenadas cadastrais do terreno, implantação e cotas Z são preservadas. A aplicação adapta esse arquivo ao referencial interno ao carregar; o arquivo original permanece no formato anterior. A convenção cartesiana aceita geometria local numérica em `pos/size`, `from/to` e `path.points`.
 
 Medidas reutilizáveis ficam em `parameters`:
 
@@ -159,7 +161,7 @@ O padrão é quatro paredes sólidas. Use `walls` com `solid`, `open` ou `virtua
 "walls": { "top": "solid", "right": "open", "bottom": "virtual", "left": "solid" }
 ```
 
-Com `config.room_wall_sides: "house"`, como em `cottage-ferraz-cesar.json5`, `left` segue a esquerda da casa (`x1`, à direita na planta) e `right` segue a direita da casa (`x0`, à esquerda na planta). A opção vale para `walls` dos cômodos e de suas partes. Sem ela, `left` é `x0` e `right` é `x1`. As aberturas em `openings` usam os lados da planta.
+Com `config.room_wall_sides: "house"`, como em `cottage-ferraz-cesar.json5`, `left` segue a esquerda da casa (`x1`, à esquerda na planta com a frente embaixo) e `right` segue a direita da casa (`x0`, à direita nessa vista). A opção vale para `walls` dos cômodos e de suas partes. Sem ela, `left` é `x0` e `right` é `x1`. As aberturas em `openings` mantêm os eixos geométricos anteriores ao giro: `left = x0` e `right = x1`. O giro da vista não altera coordenadas ou referências. IDs como `house-left`, `central-left`, `knee-left`, `main-left` e `upper-left-wall` seguem os lados da casa; seus pares `right` seguem o lado oposto.
 
 Como atalho, `walls: ["top", "bottom"]` torna somente esses lados sólidos; `walls: "virtual"` torna todos pontilhados. `virtual` é separação visual, não parede sólida. Sobreposição intencional é declarada com `"overlaps": "corridor"` ou uma lista. Ela é descontada da área útil do elemento que recebe a autorização; itens também podem descontar área de cômodos.
 
@@ -258,6 +260,6 @@ No 3D, as superfícies dos telhados têm espessura vertical padrão de 0,12 m, c
 
 Use `eaves: { left: 0.5, right: 0.5, pitch: 30 }` no telhado ou em `config.roofs` para reunir os avanços horizontais (metros) e o ângulo dos beirais (graus). Exemplo: `{ type: "gable", base: "main", orientation: "longitudinal", pitch: 51, eaves: { left: 0.8, right: 0.8, pitch: 30 } }`.
 
-A quebra reta começa no limite da base, preservando o trecho principal, a cumeeira e `rake`. `left` e `right` correspondem aos dois lados da seção do telhado: esquerda/direita na orientação longitudinal; frente/fundos na transversal (a mesma ordem do antigo array `eave`). Aceita ângulo de 0° a menos de 90°; sem `eaves.pitch`, o beiral segue `pitch`. Aplica-se também às duas extremidades de coberturas `shed`. O campo antigo `eave` continua aceito; os valores presentes em `eaves.left/right` têm prioridade sobre ele, e lados ausentes usam `eave` ou zero. A configuração representa geometria de estudo, sem validar a inclinação mínima do fabricante do shingle.
+A quebra reta começa no limite da base, preservando o trecho principal, a cumeeira e `rake`. `left` e `right` correspondem aos dois lados da seção do telhado: `x0`/`x1` na orientação longitudinal (direita/esquerda na planta com a frente embaixo); frente/fundos na transversal (a mesma ordem do antigo array `eave`). Aceita ângulo de 0° a menos de 90°; sem `eaves.pitch`, o beiral segue `pitch`. Aplica-se também às duas extremidades de coberturas `shed`. O campo antigo `eave` continua aceito; os valores presentes em `eaves.left/right` têm prioridade sobre ele, e lados ausentes usam `eave` ou zero. A configuração representa geometria de estudo, sem validar a inclinação mínima do fabricante do shingle.
 
 O controle **Camadas → Acima da camada 0** oculta a camada base da planta baixa e mantém visíveis todas as camadas de sobreposição superiores. **Todas** restaura a visualização completa; **Camada 0** mantém a opção de visualizar apenas a base.

@@ -33,7 +33,8 @@
 
   // [01.1] Configuração
   config: {
-    // Em walls dos cômodos e partes, left é x1 e right é x0.
+    // Em walls dos cômodos e partes, left é x1 e right é x0 (lados da casa).
+    // Em openings, left é x0 e right é x1 (eixos geométricos, antes do giro da vista).
     room_wall_sides: "house",
     // Propriedades de cada elemento têm prioridade sobre os padrões.
     // walls aplica-se somente às paredes independentes.
@@ -81,30 +82,31 @@
   },
 
   // [02] Terreno e implantação
+  // Coordenadas UTM da tabela de estaqueamento da Área 1; segmentos em reta.
   terrain: {
-    front: { edge: ["P01", "P02"], position: "top", label: "RUA/FRENTE" },
-    rear: { edge: ["P18", "P19"], position: "bottom", label: "JARDIM" },
-    north: { label: "N" },
+    front: {"edge": ["P001", "P002"], "position": "top", "label": "RUA/FRENTE"},
+    rear: {"edge": ["P013", "P014"], "position": "bottom", "label": "JARDIM"},
+    north: {"label": "N"},
     unit: "m",
-    boundary_order: ["P02", "P01", "P19", "P18"],
+    boundary_order: ["P002", "P001", "P014", "P013"],
     corners: {
-      P01: { easting: 674802.650, northing: 7150515.678, z: 0 },
-      P02: { easting: 674787.417, northing: 7150525.268, z: 0 },
-      P18: { easting: 674768.743, northing: 7150486.108, z: -6 },
-      P19: { easting: 674787.138, northing: 7150477.614, z: -6 }
+      P001: {"easting": 674815.253, "northing": 7150521.976, "z": 0},
+      P002: {"easting": 674798.334, "northing": 7150529.176, "z": 0},
+      P013: {"easting": 674783.457, "northing": 7150487.338, "z": -6},
+      P014: {"easting": 674800.113, "northing": 7150476.994, "z": -6}
     },
     segments: [
-      { from: "P01", to: "P02", distance: 18.000, azimuth_deg: 302.192641, azimuth_dms: "302° 11' 34\"" },
-      { from: "P02", to: "P18", distance: 43.385, azimuth_deg: 205.494801, azimuth_dms: "205° 29' 41\"" },
-      { from: "P18", to: "P19", distance: 20.261, azimuth_deg: 114.785411, azimuth_dms: "114° 47' 07\"" },
-      { from: "P19", to: "P01", distance: 41.103, azimuth_deg: 22.1720830, azimuth_dms: " 22° 10' 19\"" }
+      {"from": "P001", "to": "P002", "distance": 18.387, "azimuth_deg": 293.052521, "azimuth_dms": "293° 03' 09\""},
+      {"from": "P002", "to": "P013", "distance": 44.404, "azimuth_deg": 199.574666, "azimuth_dms": "199° 34' 29\""},
+      {"from": "P013", "to": "P014", "distance": 19.607, "azimuth_deg": 121.84183, "azimuth_dms": "121° 50' 31\""},
+      {"from": "P014", "to": "P001", "distance": 47.462, "azimuth_deg": 18.601256, "azimuth_dms": "18° 36' 05\""}
     ]
   },
   building: { anchor: "terrain.front-start", position: { x: 4, y: 3 } },
 
   // [03] Zonas de referência
   // Laterais da casa definidas olhando da rua para a fachada principal.
-  // house-left fica à direita da planta; house-right fica à esquerda da planta.
+  // Com a frente embaixo, house-left fica à esquerda da planta (x1); house-right à direita (x0).
   zones: [
     { id: "attic", inset: ["main", 3.0, 0.0], color: "red", visible: false },
     { id: "bottom",  rectangle: ["main.x0",  "main.y0 + main.l / 2", "main.x1", "main.y1"], visible: false },
@@ -378,8 +380,8 @@
         // Largura dos três lances: 1,40 m.
         // Dois patamares de 1,40 × 1,40 m.
         // Caixa de 4,10 × 2,80 m, sem paredes.
-        // Lance inferior à direita da planta (lado baixo do telhado); chegada à esquerda da planta.
-        // Borda esquerda da caixa na planta alinhada à guia central esquerda da casa.
+        // Lance inferior à esquerda da planta (x1, lado baixo do telhado); chegada à direita (x0).
+        // Borda direita da caixa na planta (x0) alinhada à guia central esquerda da casa.
         {
           id: "stairs",
           label: "Escada",
@@ -630,12 +632,12 @@
       // Mobiliário e equipamentos.
       items: [
         // Camas Twin de 0,97 × 1,91 m; posições compensam a rotação em torno do centro.
-        // Quarto E: cabeceiras à direita da planta; três espaços iguais entre camas e faces internas frontal/traseira.
+        // Quarto E: cabeceiras à esquerda da planta (x1); três espaços iguais entre camas e faces internas frontal/traseira.
         { id: "bed-east", type: "twin-bed", pos: ["bedroom-east.x1 - 1.44 - params.wall_thickness / 2", "bedroom-east.y0 + params.wall_thickness / 2 + (bedroom-east.l - params.wall_thickness - 1.94) / 3 - 0.47"], rotation: 90 },
         { id: "bed-east-2", type: "twin-bed", pos: ["bedroom-east.x1 - 1.44 - params.wall_thickness / 2", "bedroom-east.y0 + params.wall_thickness / 2 + 2 * (bedroom-east.l - params.wall_thickness - 1.94) / 3 + 0.97 - 0.47"], rotation: 90 },
-        // Quarto N: cabeceira à esquerda da planta, cama centralizada entre frente e fundo.
+        // Quarto N: cabeceira à direita da planta (x0), cama centralizada entre frente e fundo.
         { id: "bed-north-1", type: "queen-bed", pos: ["bedroom-north.x0 + 0.2 + params.wall_thickness / 2", "bedroom-north.yc - 1"], rotation: 270 },
-        // Quarto Oeste: cabeceiras à direita da planta; faixa de circulação aos pés e entre camas.
+        // Quarto Oeste: cabeceiras à esquerda da planta (x1); faixa de circulação aos pés e entre camas.
         { id: "bed-west-1", type: "twin-bed", pos: ["bedroom-west.x1 - 1.44 - params.wall_thickness / 2", "bedroom-west.y0 + 0.3"], rotation: 90 },
         { id: "bed-west-2", type: "twin-bed", pos: ["bedroom-west.x1 - 1.44 - params.wall_thickness / 2", "bedroom-west.y1 - 1.74"], rotation: 90 },
         // Criados junto às cabeceiras; modelos compactos nos quartos com camas Twin.
@@ -648,7 +650,7 @@
         // Armários baixos sob a água do telhado; portas de correr a detalhar.
         { id: "wardrobe-west-front", title: "Armário baixo — Quarto Oeste", pos: ["bedroom-west.x0 + 0.06", "bedroom-west.y0 + 0.06"], size: [0.8, 0.6, 1.2], classes: "storage", color: "furniture" },
         { id: "wardrobe-west-rear", title: "Armário baixo — Quarto Oeste", pos: ["bedroom-west.x0 + 0.06", "bedroom-west.y1 - 0.66"], size: [0.8, 0.6, 1.2], classes: "storage", color: "furniture" },
-        // Borda frontal do vão; chegada do lance superior permanece livre à esquerda da planta.
+        // Borda frontal do vão; chegada do lance superior permanece livre à direita da planta (x0).
         { id: "stair-arrival-railing", type: "railing", label: "Guarda-corpo do desembarque", pos: ["upper-flight.x1", "stairs.y0 - 0.08"], size: ["stairs.x1 - upper-flight.x1 - params.wall_thickness / 2", 0.08, 1.1] }
       ],
       // Aberturas do pavimento; aberturas locais ficam dentro do cômodo.
@@ -805,6 +807,8 @@
   ],
 
   // [06] Telhados
+  // eaves.left/right seguem a seção geométrica, não os lados da casa:
+  // longitudinal: x0/x1 (direita/esquerda na vista girada); transverse: frente/fundos.
   roofs: [
     {
       id: "porch-roof",
