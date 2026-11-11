@@ -66,3 +66,17 @@ test('wall scope filters by owning floor even when its volume spans both floors'
   assert.equal(renderer.floorView(source), source);
   assert.equal(source.independentWalls.size, 2);
 });
+
+test('ground view retains the terrain-to-floor plinth and hides it on upper floors', () => {
+  const source = plan();
+  source.wallRenderParts.push({ id: 'plinth', scopeFloorId: 'ground', base: 'terrain',
+    from: [0, 0, -6], to: [2, 0, -6], pos: [0, 0, -6], size: [2, 0.12, 6], z0: -6, z1: 0 });
+  source.independentWalls.set('plinth', { scopeFloorId: 'ground', base: 'terrain', z0: -6, topZ: 0 });
+  const ground = renderer.floorView(source);
+  assert.equal(ground.wallRenderParts.find((wall) => wall.id === 'plinth').z0, -6);
+  assert.ok(ground.independentWalls.has('plinth'));
+  source.currentFloorId = 'upper';
+  const upper = renderer.floorView(source);
+  assert.ok(!upper.wallRenderParts.some((wall) => wall.id === 'plinth'));
+  assert.ok(!upper.independentWalls.has('plinth'));
+});

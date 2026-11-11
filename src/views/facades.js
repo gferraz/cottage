@@ -1024,7 +1024,11 @@ const FloorPlanFacades = {
         .forEach(({ wall, segmentIndex, depth, start, end, startBase, endBase, startPoint, endPoint }) => {
           const polygons = FloorPlanWalls.wallElevation({
             from: startPoint, to: endPoint, thickness: wall.thickness,
-            baseStart: startBase, baseEnd: endBase, top: wall.topZ,
+            baseStart: wall.base === "terrain" ? wall.baseZ : startBase,
+            baseEnd: wall.base === "terrain" ? wall.baseZ : endBase,
+            top: wall.topZ,
+            terrainReference: wall.base === "terrain" ? plan.terrainReference : null,
+            terrainOffset: { x: buildingOffsetX, y: buildingOffsetY },
             roofOnly: wall.top === "roof",
             undersideLimits: wall.undersideLimits,
           }, roofLimits, side);

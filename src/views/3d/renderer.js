@@ -13,7 +13,7 @@ const FloorPlanFacades3D = {
     const inFloor = (entry) => entry.floorId === floor.id;
     const clipWall = (wall) => {
       if (wall.scopeFloorId && wall.scopeFloorId !== floor.id) return [];
-      const bottom = Math.max(Number(wall.z0), z0);
+      const bottom = wall.base === "terrain" && index === 0 ? Number(wall.z0) : Math.max(Number(wall.z0), z0);
       const top = Math.min(Number(wall.z1), z1);
       if (top - bottom <= 1e-9) return [];
       return [{ ...wall, z0: bottom, z1: top, h: top - bottom,
@@ -30,7 +30,8 @@ const FloorPlanFacades3D = {
     view.wallRenderParts = (plan.wallRenderParts ?? []).flatMap(clipWall);
     view.independentWalls = new Map([...(plan.independentWalls ?? [])].flatMap(([id, wall]) => {
       if (wall.scopeFloorId && wall.scopeFloorId !== floor.id) return [];
-      const bottom = Math.max(wall.z0, z0), top = Math.min(wall.topZ, z1);
+      const bottom = wall.base === "terrain" && index === 0 ? wall.z0 : Math.max(wall.z0, z0);
+      const top = Math.min(wall.topZ, z1);
       return top - bottom > 1e-9 ? [[id, { ...wall, z0: bottom, topZ: top }]] : [];
     }));
     view.visibleFloor = floor;
@@ -191,7 +192,14 @@ const FloorPlanFacades3D = {
     (plan.independentWalls || new Map()).forEach((wall) => {
       drawingBounds.x0 = Math.min(drawingBounds.x0, wall.x0());
       drawingBounds.x1 = Math.max(drawingBounds.x1, wall.x1());
-      drawingBounds.z0 = Math.min(drawingBounds.z0, wall.z0);
+      let baseZ = wall.z0;
+      if (wall.base === "terrain" && hasTerrainProfile) {
+        const surface = FloorPlanTerrainGeometry.surface(terrainProfile,
+          { x0: wall.x0(), x1: wall.x1(), y0: wall.y0(), y1: wall.y1() },
+          { x: buildingOffsetX, y: buildingOffsetY });
+        baseZ = Math.max(baseZ, Math.min(...surface.vertices.filter((_, index) => index % 3 === 2)));
+      }
+      drawingBounds.z0 = Math.min(drawingBounds.z0, baseZ);
       drawingBounds.z1 = Math.max(drawingBounds.z1, wall.topZ);
       drawingBounds.y0 = Math.min(drawingBounds.y0, wall.y0());
       drawingBounds.y1 = Math.max(drawingBounds.y1, wall.y1());

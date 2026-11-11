@@ -104,6 +104,38 @@ const FloorPlanWalls = {
     return solids;
   },
 
+  // Trim the lower surface in strips at every terrain-profile break.
+  terrainSolids(faces, reference, offset = { x: 0, y: 0 }) {
+    if (!reference) return [faces];
+    const axis = reference.grading?.axis ?? "y";
+    const index = axis === "x" ? 0 : 1;
+    const coordinates = faces.flat().map((point) => point[index]);
+    const low = Math.min(...coordinates), high = Math.max(...coordinates);
+    const breaks = [low, ...FloorPlanTerrainGeometry.breaks(reference, axis)
+      .map((value) => value - offset[axis]).filter((value) => value > low && value < high), high];
+    const elevation = (coordinate) => FloorPlanTerrainGeometry.elevationAt(reference,
+      offset.x + (axis === "x" ? coordinate : 0),
+      offset.y + (axis === "y" ? coordinate : 0));
+    return breaks.slice(0, -1).flatMap((start, i) => {
+      const end = breaks[i + 1];
+      if (end - start <= 1e-9) return [];
+      const z0 = elevation(start), z1 = elevation(end);
+      if (z0 === null || z1 === null) return [faces];
+      const gradient = (z1 - z0) / (end - start);
+      const before = [0, 0, 0, start], after = [0, 0, 0, -end];
+      before[index] = -1;
+      after[index] = 1;
+      const ground = [0, 0, -1, z0 - gradient * start];
+      ground[index] = gradient;
+      let part = faces;
+      for (const plane of [before, after, ground]) {
+        part = this.clipSolid(part, plane);
+        if (!part.length) return [];
+      }
+      return [part];
+    });
+  },
+
   // Clip a convex solid, closing the cut with a face ordered around its normal.
   clipSolid(faces, plane) {
     const distance = (point) => plane.slice(0, 3).reduce((sum, n, i) => sum + n * point[i], plane[3]);
@@ -306,7 +338,7 @@ const FloorPlanWalls = {
     return result;
   },
 
-  wallElevation({ from, to, thickness, baseStart, baseEnd, top, roofOnly, undersideLimits }, roofs, side) {
+  wallElevation({ from, to, thickness, baseStart, baseEnd, top, roofOnly, undersideLimits, terrainReference, terrainOffset }, roofs, side) {
     const dx = to[0] - from[0], dy = to[1] - from[1];
     const length = Math.hypot(dx, dy);
     if (length <= 1e-9) return [];
@@ -317,7 +349,10 @@ const FloorPlanWalls = {
         from[1] + uy * x + ux * y,
         z === baseStart && x === length ? baseEnd : z,
       ]));
-    return this.wallSolids(faces, roofs, roofOnly, undersideLimits).flatMap((solid) => {
+    const solids = this.wallSolids(faces, roofs, roofOnly, undersideLimits);
+    const visibleSolids = terrainReference ? solids.flatMap((solid) =>
+      this.terrainSolids(solid, terrainReference, terrainOffset)) : solids;
+    return visibleSolids.flatMap((solid) => {
       // A clipped piece is convex, so its orthographic silhouette is the hull
       // of its projected vertices, including both faces across the thickness.
       const points = solid.flat().map(([x, y, z]) => [side ? y : x, z]
@@ -416,6 +451,7 @@ const FloorPlanWalls = {
         return [{
           id: `${wall.id}-segment-${index + 1}`,
           sourceWallId: wall.id,
+          base: wall.base,
           pathSegment: index,
           axis: "path",
           from: [from[0], from[1], wall.baseZ],
@@ -444,6 +480,7 @@ const FloorPlanWalls = {
       return [{
         id: `${wall.id}-segment-${index + 1}`,
         sourceWallId: wall.id,
+        base: wall.base,
         pathSegment: index,
         axis,
         from: horizontal
@@ -796,7 +833,7 @@ const FloorPlanWalls = {
     });
 
     const groundLevel = Number(floors[0]?.z0 ?? 0);
-    const terrainElevations = Object.values(config.terrain?.corners ?? {})
+    const terrainElevations = [...Object.values(config.terrain?.corners ?? {}), ...(config.terrain?.grading?.profile ?? [])]
       .map((corner) => Number(corner.z))
       .filter(Number.isFinite);
     const terrainMinimumZ = Math.min(groundLevel, ...terrainElevations);

@@ -313,7 +313,7 @@ const FloorPlanReferences = {
       });
       const base = () => guarded("z0", () => {
         const value = definition.base ?? "terrain";
-        return value === "terrain" ? Math.min(ground, ...Object.values(config.terrain?.corners ?? {})
+        return value === "terrain" ? Math.min(ground, ...[...Object.values(config.terrain?.corners ?? {}), ...(config.terrain?.grading?.profile ?? [])]
           .map((corner) => Number(corner.z)).filter(Number.isFinite)) : plan.resolve(value.level);
       });
       const top = () => guarded("z1", () => {

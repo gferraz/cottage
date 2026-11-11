@@ -24,6 +24,7 @@ const FloorPlan3DWalls = {
 
   renderRoomWall({
     THREE, scene, wall, openings, material, wallLineMaterial,
+    terrainProfile, buildingOffsetX, buildingOffsetY,
     windowMaterial, doorMaterial, finite, reportInvalid, roofLimits,
   }) {
     const diagonal = wall.axis === "path";
@@ -104,7 +105,10 @@ const FloorPlan3DWalls = {
           wall.from[0] + x * Math.cos(angle) - y * Math.sin(angle),
           wall.from[1] + x * Math.sin(angle) + y * Math.cos(angle), z,
         ])) : faces;
-        FloorPlanWalls.wallSolids(worldFaces, roofLimits, wall.roofOnly, wall.undersideLimits).forEach((solid) => {
+        const solids = FloorPlanWalls.wallSolids(worldFaces, roofLimits, wall.roofOnly, wall.undersideLimits);
+        const visibleSolids = wall.base === "terrain" ? solids.flatMap((solid) =>
+          FloorPlanWalls.terrainSolids(solid, terrainProfile, { x: buildingOffsetX, y: buildingOffsetY })) : solids;
+        visibleSolids.forEach((solid) => {
           wallSolids.push(solid);
           solid.forEach((face) => {
             for (let j = 1; j < face.length - 1; j += 1) vertices.push(...face[0], ...face[j], ...face[j + 1]);

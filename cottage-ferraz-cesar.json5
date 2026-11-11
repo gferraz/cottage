@@ -693,6 +693,31 @@
   // Paredes independentes
   walls: [
     {
+      id: "perimeter-plinth",
+      color: "mate-amargo",
+      scope: "ground",
+      base: "terrain",
+      top: { level: "ground.z0" },
+      thickness: "params.wall_thickness",
+      // Mureta de fechamento entre terreno e piso; contorno do térreo.
+      // Inclui varanda, terraço e garagem; a escada frontal fica externa.
+      path: {
+        points: [
+          ["office.x1", "office.y0"],
+          ["porch.x0", "porch.y0"],
+          ["porch.x0", "garage.y0"],
+          ["garage.x0", "garage.y0"],
+          ["garage.x0", "garage.y1"],
+          ["garage.x1", "garage.y1"],
+          ["garage.x1", "mudroom.y1"],
+          ["pantry.x1", "pantry.y1"],
+          ["terrace.x0", "terrace.y1"],
+          ["terrace.x1", "terrace.y1"],
+          ["office.x1", "office.y0"]
+        ]
+      }
+    },
+    {
       id: "front-wall",
       scope: "ground",
       top: { level: "upper.z0" },
