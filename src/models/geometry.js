@@ -1,4 +1,14 @@
 const FloorPlanGeometry = {
+  stairSteps(stair) {
+    const risers = stair.risers ?? Math.max(1, Math.round(stair.h / 0.16));
+    if (!Number.isInteger(risers) || risers < 2 && stair.risers !== undefined) {
+      throw new Error("O número de espelhos precisa ser um inteiro maior ou igual a 2");
+    }
+    const treads = stair.risers === undefined ? risers : risers - 1;
+    const run = stair.stairAxis === "horizontal" ? stair.w : stair.l;
+    return { risers, treads, rise: stair.h / risers, run: run / treads };
+  },
+
   stairGradientRange(floorZ, parts) {
     return {
       base: Math.min(floorZ, ...parts.map((part) => part.z0)),

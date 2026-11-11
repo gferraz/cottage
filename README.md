@@ -107,6 +107,8 @@ Expressões podem combinar referências e operações: `"living.x1 - 0.3"`, `"ro
 
 Cômodos compostos usam `parts`; cada parte tem sua própria geometria e pode referenciar outras partes, independentemente da ordem de declaração. Referências circulares geram erro. As partes também podem ser referenciadas globalmente por ID, por exemplo `flight-1.y0`, a partir de qualquer cômodo. A regra de não sobreposição também é aplicada às partes.
 
+Lances de escada aceitam `risers` (inteiro ≥ 2) para fixar o número de espelhos. A planta e o 3D desenham `risers - 1` pisadas: o último espelho termina no piso ou patamar de destino. A altura de cada espelho é `h / risers`, e a profundidade da pisada é a projeção do lance dividida por `risers - 1`. O plano inferior ideal acompanha as quinas inferiores dos espelhos, sem espessura estrutural presumida. Sem `risers`, permanece a representação automática anterior, estimada a partir de 16 cm de altura.
+
 Degraus e patamares de uma escada composta compartilham um gradiente de altura, do tom escuro de cobertura nas cotas baixas até a cor clara de circulação nas cotas altas. A escala usa o piso de origem e a maior cota de toda a escada, sem reiniciar por lance. A cor de cada degrau corresponde à sua cota superior; o patamar usa a própria cota. A planta e o 3D mantêm a mesma escala, inclusive ao visualizar a escada por outro piso.
 
 Portas, janelas e vãos aceitam `z0` e `h` para a projeção vertical: `z1 = z0 + h`. Quando omitidos, portas e vãos usam `z0: 0, h: 2.1`, e janelas usam `z0: 0.9, h: 1.2`. A largura continua sendo informada por `w` e a posição relativa por `dx` ou `dy`.

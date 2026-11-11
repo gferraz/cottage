@@ -799,6 +799,11 @@
           "type": "string",
           "minLength": 1,
           "description": "Reutiliza os limites retangulares e a extensão vertical do objeto referenciado. Não herda aparência nem aberturas."
+        },
+        "risers": {
+          "type": "integer",
+          "minimum": 2,
+          "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
         }
       },
       "allOf": [
@@ -1198,6 +1203,11 @@
               "deprecated": true
             }
           ]
+        },
+        "risers": {
+          "type": "integer",
+          "minimum": 2,
+          "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
         }
       },
       "required": [
@@ -1506,6 +1516,11 @@
           "type": "string",
           "minLength": 1,
           "description": "Reutiliza os limites retangulares e a extensão vertical do objeto referenciado. Não herda aparência nem aberturas."
+        },
+        "risers": {
+          "type": "integer",
+          "minimum": 2,
+          "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
         }
       },
       "allOf": [
@@ -2350,6 +2365,11 @@
                   "type": "string",
                   "minLength": 1,
                   "description": "Reutiliza os limites retangulares e a extensão vertical do objeto referenciado. Não herda aparência nem aberturas."
+                },
+                "risers": {
+                  "type": "integer",
+                  "minimum": 2,
+                  "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
                 }
               },
               "allOf": [
@@ -2504,6 +2524,11 @@
             }
           },
           "additionalProperties": false
+        },
+        "risers": {
+          "type": "integer",
+          "minimum": 2,
+          "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
         }
       },
       "additionalProperties": false,

@@ -2,9 +2,13 @@ const FloorPlanWalls = {
   stairUndersidePlane(stair, offset = 0) {
     const alongX = stair.stairAxis === "horizontal";
     const increasing = (stair.stairDirection !== "reverse") === (stair.stairRise !== "down");
-    const slope = stair.h / (alongX ? stair.w : stair.l) * (increasing ? 1 : -1);
+    // With explicit risers the last rise belongs to the destination floor.
+    // The inclined reference runs below the nosings of the actual treads.
+    const height = stair.risers === undefined ? stair.h
+      : stair.h - FloorPlanGeometry.stairSteps(stair).rise;
+    const slope = height / (alongX ? stair.w : stair.l) * (increasing ? 1 : -1);
     const ax = alongX ? slope : 0, ay = alongX ? 0 : slope;
-    const intercept = stair.z0 + (increasing ? 0 : stair.h) - ax * stair.x - ay * stair.y - offset;
+    const intercept = stair.z0 + (increasing ? 0 : height) - ax * stair.x - ay * stair.y - offset;
     return [-ax, -ay, 1, -intercept];
   },
 

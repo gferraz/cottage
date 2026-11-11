@@ -84,14 +84,16 @@ test('unknown references, invalid offsets and rotated volumes report errors', ()
 test('stair meshes leave the inclined underside clear instead of filling down to the landing', () => {
   const vm = require('node:vm');
   const fs = require('node:fs');
-  const elements = vm.runInNewContext(fs.readFileSync('src/views/3d/elements.js', 'utf8') + '\nFloorPlan3DElements;', { FloorPlanWalls: walls });
+  const elements = vm.runInNewContext(fs.readFileSync('src/views/3d/elements.js', 'utf8') + '\nFloorPlan3DElements;', { FloorPlanWalls: walls, FloorPlanGeometry });
   class BufferGeometry {
     setAttribute(name, value) { this.vertices = value.values; }
     computeVertexNormals() {}
   }
   class Float32BufferAttribute { constructor(values) { this.values = values; } }
   class Mesh { constructor(geometry) { this.geometry = geometry; this.userData = {}; } }
-  for (const definition of [stair([0, 0, 1], [1, 2, 3]), stair([2, 0, 1], [0, 1, 3], 'transverse')]) {
+  for (const definition of [stair([0, 0, 1], [1, 2, 3]), stair([2, 0, 1], [0, 1, 3], 'transverse'),
+    { ...stair([0, 0, 1], [1, 1.86, 1 + 7 / 6]), risers: 7 },
+    { ...stair([1.86, 0, 1 + 7 / 6], [0, 1, 1], 'transverse'), risers: 7 }]) {
     const plan = fixture([definition]);
     const geometry = plan.normalizeGeometry(definition);
     const meshes = [];
@@ -100,6 +102,11 @@ test('stair meshes leave the inclined underside clear instead of filling down to
       finite: (...values) => values.every(Number.isFinite), reportInvalid: () => assert.fail('invalid stair'),
     });
     assert.ok(meshes.length > 1);
+    if (definition.risers) {
+      assert.equal(meshes.length, definition.risers - 1);
+      const top = Math.max(...meshes.flatMap((mesh) => mesh.geometry.vertices.filter((_, i) => i % 3 === 2)));
+      assert.ok(Math.abs(top - (geometry.z1 - geometry.h / definition.risers)) < 1e-8);
+    }
     const plane = walls.stairUndersidePlane(geometry);
     for (const mesh of meshes) {
       assert.ok(mesh.geometry.vertices.length > 0);

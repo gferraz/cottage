@@ -3659,6 +3659,16 @@ window.FloorPlanExport = FloorPlanExport;
 
 
 const FloorPlanGeometry = {
+  stairSteps(stair) {
+    const risers = stair.risers ?? Math.max(1, Math.round(stair.h / 0.16));
+    if (!Number.isInteger(risers) || risers < 2 && stair.risers !== undefined) {
+      throw new Error("O número de espelhos precisa ser um inteiro maior ou igual a 2");
+    }
+    const treads = stair.risers === undefined ? risers : risers - 1;
+    const run = stair.stairAxis === "horizontal" ? stair.w : stair.l;
+    return { risers, treads, rise: stair.h / risers, run: run / treads };
+  },
+
   stairGradientRange(floorZ, parts) {
     return {
       base: Math.min(floorZ, ...parts.map((part) => part.z0)),
@@ -6055,9 +6065,14 @@ const FloorPlan3DElements = {
         return;
       }
 
-      const stepCount = Math.max(1, Math.round(height / 0.16));
-      const stepRun = run / stepCount;
-      const stepRise = height / stepCount;
+      let steps;
+      try {
+        steps = FloorPlanGeometry.stairSteps({ ...stair, stairAxis: axis });
+      } catch (error) {
+        reportInvalid("lance de escada", stair.id);
+        return;
+      }
+      const { treads: stepCount, run: stepRun, rise: stepRise } = steps;
       const ascendsWithIncreasingAxis =
         (stair.stairDirection !== "reverse") === (stair.stairRise !== "down");
       for (let index = 0; index < stepCount; index += 1) {
@@ -7996,9 +8011,13 @@ const FloorPlanWalls = {
   stairUndersidePlane(stair, offset = 0) {
     const alongX = stair.stairAxis === "horizontal";
     const increasing = (stair.stairDirection !== "reverse") === (stair.stairRise !== "down");
-    const slope = stair.h / (alongX ? stair.w : stair.l) * (increasing ? 1 : -1);
+    // With explicit risers the last rise belongs to the destination floor.
+    // The inclined reference runs below the nosings of the actual treads.
+    const height = stair.risers === undefined ? stair.h
+      : stair.h - FloorPlanGeometry.stairSteps(stair).rise;
+    const slope = height / (alongX ? stair.w : stair.l) * (increasing ? 1 : -1);
     const ax = alongX ? slope : 0, ay = alongX ? 0 : slope;
-    const intercept = stair.z0 + (increasing ? 0 : stair.h) - ax * stair.x - ay * stair.y - offset;
+    const intercept = stair.z0 + (increasing ? 0 : height) - ax * stair.x - ay * stair.y - offset;
     return [-ax, -ay, 1, -intercept];
   },
 
@@ -12092,11 +12111,11 @@ const FloorPlanDom = {
       ((1 - FloorPlanGeometry.stairGradientRatio(z, range)) * 100).toFixed(4)}%)`;
     let background = color(geometry.z0);
     if (geometry.h > 0) {
-      const count = Math.max(1, Math.round(geometry.h / 0.16));
+      const { treads: count, rise } = FloorPlanGeometry.stairSteps(geometry);
       const increasing = (geometry.stairDirection !== "reverse") === (geometry.stairRise !== "down");
       const stops = Array.from({ length: count }, (_, index) => {
         const step = increasing ? index + 1 : count - index;
-        return `${color(geometry.z0 + geometry.h * step / count)} ${index / count * 100}% ${(index + 1) / count * 100}%`;
+        return `${color(geometry.z0 + rise * step)} ${index / count * 100}% ${(index + 1) / count * 100}%`;
       });
       background = `linear-gradient(to ${geometry.stairAxis === "horizontal" ? "right" : "bottom"}, ${stops.join(", ")})`;
       element.style.setProperty("--stair-step", (geometry.stairAxis === "horizontal" ? geometry.w : geometry.l) / count);

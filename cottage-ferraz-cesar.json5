@@ -329,13 +329,15 @@
         },
         // Escada experimental — 18 espelhos iguais: 11 no lance inferior e 7 no superior.
         // Para 3 m de desnível: espelhos de 16,67 cm e patamar na cota 1,83 m.
-        // Chegada de 1,20 m; lance superior de 1,90 m; patamar de 1,20 m.
+        // Pisadas iguais de 0,31 m: 10 no lance inferior e 6 no superior.
+        // Chegada de 1,20 m; lance superior de 1,86 m; patamar superior de 1,24 m.
         {
           id: "stairs",
           label: "Escada",
           parts: [
             {
               id: "lower-flight",
+              risers: 11,
               from: ["lower-landing.x0", "lower-landing.y0", "lower-landing.z0"],
               to: ["house-left.x0", "lower-landing.y1", 0],
               walls: ["top", "bottom"],
@@ -351,8 +353,9 @@
             },
             {
               id: "upper-flight",
+              risers: 7,
               from: ["house-left.x0 + 1.2", "dining.y1", "upper.z0"],
-              to: ["house-left.x1 - 1.2", "y0 + 1.2", "ground.z0 + (upper.z0 - ground.z0) * 11 / 18"],
+              to: ["x0 + 1.86", "y0 + 1.2", "ground.z0 + (upper.z0 - ground.z0) * 11 / 18"],
               classes: "stair-flight"
             },
             {

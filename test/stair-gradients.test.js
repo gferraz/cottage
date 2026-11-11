@@ -74,3 +74,20 @@ test('3D tread and landing at equal heights receive equal colors without changin
   assert.equal(original.color.value, 'base');
   assert.notEqual(first, second);
 });
+
+
+test('explicit risers leave the final rise to the landing in plan and metrics', () => {
+  const stair = { w: 1.86, l: 1.2, h: 7 / 6, z0: 11 / 6, z1: 3, risers: 7,
+    stairAxis: 'horizontal', stairDirection: 'forward', stairRise: 'up' };
+  const steps = geometry.stairSteps(stair);
+  assert.equal(steps.treads, 6);
+  assert.ok(Math.abs(steps.run - 0.31) < 1e-9);
+  assert.ok(Math.abs(steps.rise - 1 / 6) < 1e-9);
+  const target = painted(stair);
+  assert.ok(Math.abs(target.properties['--stair-step'].value - 0.31) < 1e-9);
+  assert.equal((target.properties.background.value.match(/color-mix/g) || []).length, 6);
+  assert.ok(!target.properties.background.value.includes(' 0.0000%)'));
+  for (const risers of [0, 1, 2.5, '7', NaN]) {
+    assert.throws(() => geometry.stairSteps({ ...stair, risers }), /espelhos/);
+  }
+});

@@ -104,9 +104,14 @@ const FloorPlan3DElements = {
         return;
       }
 
-      const stepCount = Math.max(1, Math.round(height / 0.16));
-      const stepRun = run / stepCount;
-      const stepRise = height / stepCount;
+      let steps;
+      try {
+        steps = FloorPlanGeometry.stairSteps({ ...stair, stairAxis: axis });
+      } catch (error) {
+        reportInvalid("lance de escada", stair.id);
+        return;
+      }
+      const { treads: stepCount, run: stepRun, rise: stepRise } = steps;
       const ascendsWithIncreasingAxis =
         (stair.stairDirection !== "reverse") === (stair.stairRise !== "down");
       for (let index = 0; index < stepCount; index += 1) {

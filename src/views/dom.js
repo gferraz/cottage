@@ -4,11 +4,11 @@ const FloorPlanDom = {
       ((1 - FloorPlanGeometry.stairGradientRatio(z, range)) * 100).toFixed(4)}%)`;
     let background = color(geometry.z0);
     if (geometry.h > 0) {
-      const count = Math.max(1, Math.round(geometry.h / 0.16));
+      const { treads: count, rise } = FloorPlanGeometry.stairSteps(geometry);
       const increasing = (geometry.stairDirection !== "reverse") === (geometry.stairRise !== "down");
       const stops = Array.from({ length: count }, (_, index) => {
         const step = increasing ? index + 1 : count - index;
-        return `${color(geometry.z0 + geometry.h * step / count)} ${index / count * 100}% ${(index + 1) / count * 100}%`;
+        return `${color(geometry.z0 + rise * step)} ${index / count * 100}% ${(index + 1) / count * 100}%`;
       });
       background = `linear-gradient(to ${geometry.stairAxis === "horizontal" ? "right" : "bottom"}, ${stops.join(", ")})`;
       element.style.setProperty("--stair-step", (geometry.stairAxis === "horizontal" ? geometry.w : geometry.l) / count);
