@@ -250,7 +250,7 @@
           id: "master-bath",
           label: "Banheiro Master",
           from: ["house-right.x0", "closet.y1"],
-          to: ["master.x1", "knee-bottom.y0"],
+          to: ["master.x1", "y0 + 1.7"],
           walls: ["top", "right", "bottom", "left"],
           openings: [
             { type: "door", from: "top", to: "vestibule" },
@@ -438,6 +438,8 @@
       ],
       // Mobiliário e equipamentos.
       items: [
+        // Sofá linear voltado para a frente da casa; passagem de 90 cm atrás do encosto.
+        { id: "living-sofa", type: "three-seat-sofa", label: "Sofá linear", title: "Sofá linear de 3 lugares — Estar", pos: ["living.xc - 1.05", "living.y1 - 0.9 - 0.9"], rotation: 180 },
         // Mesa transversal com 90 cm livres na cabeceira direita e 1 m até a parede frontal.
         { title: "Mesa", pos: ["dining.x1 - params.wall_thickness / 2 - 0.9 - 2.7", "dining.y0 + params.wall_thickness / 2 + 1"], size: [2.7, 1.1], classes: "table" },
         {
@@ -834,7 +836,6 @@
   guides: [
     { id: "central-right", label: "central direita", pos: ["l-axis.x0 - 0.7", -2.5], l: 20, color: "green" },
     { id: "central-left", label: "central esquerda", pos: ["l-axis.x0 + 0.7", -2.5], l: 20, color: "green" },
-    { id: "knee-bottom", label: "meia parede traseira", pos: [-4.0, "dorm.y1"], w: 20, color: "green" },
     { id: "knee-right",   label: "meia parede direita", pos: ["main-roof.x0 + params.knee_setback", -2.5], l: 20, color: "terracotta" },
     { id: "knee-left",  label: "meia parede esquerda",  pos: ["main-roof.x1 - params.knee_setback", -2.5], l: 20, color: "terracotta" },
     { id: "l-axis", label: "eixo longitudinal", pos: ["central.xc", -2.5], l: 20, color: "green" },
