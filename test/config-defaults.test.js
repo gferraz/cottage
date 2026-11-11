@@ -83,3 +83,23 @@ test('eaves defaults merge per property and local legacy widths still override d
   assert.deepEqual(result.roofs[1].eaves, { left: 1, right: 2, pitch: 30 });
   assert.equal(source.roofs[0].eaves.pitch, undefined);
 });
+
+test('house wall sides map room and part walls to plan coordinates once', () => {
+  const source = {
+    config: { room_wall_sides: 'house' },
+    floors: [{
+      rooms: [{
+        walls: ['top', 'left'],
+        openings: [{ from: 'left' }],
+        parts: [{ walls: { right: 'virtual', left: 'open' } }],
+      }],
+    }],
+  };
+  const result = model.applyDefaults(source);
+  const [room] = result.floors[0].rooms;
+  assert.deepEqual(room.walls, ['top', 'right']);
+  assert.deepEqual(room.parts[0].walls, { left: 'virtual', right: 'open' });
+  assert.deepEqual(room.openings, [{ from: 'left' }]);
+  assert.deepEqual(source.floors[0].rooms[0].walls, ['top', 'left']);
+  assert.deepEqual(model.applyDefaults(result), result);
+});

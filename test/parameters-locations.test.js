@@ -57,7 +57,7 @@ test('editor example and active file parse and all schema references exist', () 
     Object.values(value).forEach(visit);
   };
   visit(schema);
-  for (const file of ['examples/parametros-e-aberturas.json5', 'cottage-ferraz-cesar-front-gables.json5']) {
+  for (const file of ['examples/parametros-e-aberturas.json5', 'archive/cottage-ferraz-cesar-front-gables.json5']) {
     const config = parser.parse(fs.readFileSync(file, 'utf8'), { filename: file });
     assert.ok(model.fromConfig(config).floors.length);
   }

@@ -125,7 +125,7 @@ const prepare = (source) => {
 
 test('active room walls resolve stair parts and independent walls accept overhead objects', () => {
   const fs = require('node:fs');
-  const source = FloorPlanParser.parse(fs.readFileSync('cottage-ferraz-cesar-front-gables.json5', 'utf8'));
+  const source = FloorPlanParser.parse(fs.readFileSync('archive/cottage-ferraz-cesar-front-gables.json5', 'utf8'));
   source.walls.push({ id: 'under-test-wall', scope: 'ground', base: { level: 0 },
     top: { under: ['upper-flight', 'upper-landing'], offset: 0.1 },
     from: ['upper-flight.x0', 'upper-flight.y0'], to: ['upper-flight.x0', 'upper-landing.y1'],

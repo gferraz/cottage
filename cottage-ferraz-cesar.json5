@@ -33,6 +33,8 @@
 
   // [01.1] Configuração
   config: {
+    // Em walls dos cômodos e partes, left é x1 e right é x0.
+    room_wall_sides: "house",
     // Propriedades de cada elemento têm prioridade sobre os padrões.
     // walls aplica-se somente às paredes independentes.
     walls: {
@@ -122,9 +124,9 @@
     },
     { id: "dorm-top", rectangle: ["top.x0", "top.y0 + params.knee_setback", "top.x1", "top.y1"], color: "blue", visible: false },
     { id: "dorm-top-left", rectangle: ["office.x0 + params.knee_setback", "top.y0", "top.x1 - params.knee_setback", "top.y1"], color: "blue", visible: false },
-    { id: "hall-roof-base", from: ["hall.x0", "porch.y0"], to: ["hall.x1", "porch.y1"], visible: false },
+    { id: "hall-roof-base", from: ["office-main.x1", "porch.y0"], to: ["hall.x1", "porch.y1"], visible: false },
     { id: "house-right",    rectangle: ["main.x0", "main.y0", "central.x0", "central.y1"], visible: false },
-    { id: "main",    pos: [0, 2.5], size: [10.4, 10.4], visible: false },
+    { id: "main",    pos: [0, 2.5], size: [10, 10.4], visible: false },
     { id: "office-roof-base", from: ["office.x0", "office.y0"], to: ["hall.x1", "office.y1"], visible: false },
     { id: "perimeter", pos: [0, 2.5], size: [9.6, 12.6], visible: false },
     { id: "house-left",   rectangle: ["central.x1", "central.y0", "main.x1", "main.y1"], visible: false },
@@ -155,7 +157,7 @@
           openings: [
             { type: "opening", from: "right", to: "vestibule" }
           ],
-          walls: ["top", "left"]
+          walls: ["top", "right"]
         },
         {
           id: "dining",
@@ -164,13 +166,14 @@
           to: ["house-left.x1", "y0 + 3.6"],
           openings: [
             { type: "window", from: "top", to: "exterior", w: 2.4, h: 1.5 }
-          ]
+          ],
+          walls: ["bottom"]
         },
         {
           id: "front-corridor",
           label: "C-1.",
           rectangle: ["master.x1", "hall.y1", "central.x1", "living.y0"],
-          walls: ["left"],
+          walls: ["right"],
           classes: "circulation"
         },
         {
@@ -186,7 +189,7 @@
           label: "Garagem",
           pos: ["laundry.x1", "laundry.y1"],
           size: [4, 6.5],
-          walls: ["top", "right", "bottom"],
+          walls: ["top", "left", "bottom"],
           openings: [
             { type: "door", from: "top", to: "exterior", w: 3.2 },
             { type: "door", from: "bottom", to: "exterior", w: 3.2 }
@@ -196,11 +199,13 @@
         {
           id: "hall",
           label: "Hall",
-          from: ["office.x1", "main.y0"],
-          to: ["house-left.x0", "office.y1"],
+          from: ["office-extension.x1", "main.y0"],
+          to: ["house-left.x0", "y0 + 2.2"],
           openings: [
-            { type: "door", from: "top", to: "porch", w: 1 }
+            { type: "door", from: "top", to: "porch", w: 1 },
+            { type: "door", from: "left", to: "office" }
           ],
+          walls: ["left"],
           classes: "circulation"
         },
         {
@@ -213,7 +218,7 @@
             { type: "door", from: "bottom", to: "terrace" }
           ],
           classes: "wet",
-          walls: ["left"]
+          walls: ["right"]
         },
         {
           id: "laundry",
@@ -221,7 +226,7 @@
           top: "stairs",
           // Faixa técnica sob o lance 2 e o patamar 1; acesso pelo lado dos fundos.
           rectangle: ["middle-flight.x0", "middle-flight.y0", "lower-landing.x1", "lower-landing.y1 + 0.1"],
-          walls: ["left"],
+          walls: ["right"],
           classes: "service laundry wet"
         },
         {
@@ -233,7 +238,7 @@
         {
           id: "master",
           label: "Suíte Master",
-          rectangle: ["house-right.x0", "office.y1", "house-right.x1 - 0.4", "y0 + 3.6"],
+          rectangle: ["house-right.x0", "office-main.y1", "house-right.x1 - 0.4", "y0 + 3.6"],
           walls: ["top", "right", "left"],
           openings: [
             { type: "window", from: "left", to: "exterior", dy: 0.6 },
@@ -264,15 +269,26 @@
         {
           id: "office",
           label: "Escritório",
-          from: ["house-right.x0", "house-right.y0  - 2.5"],
-          to: ["house-right.x1 - 1.1", "house-right.y0 + 1.3"],
+          classes: "office",
+          color: "rgba(255, 255, 255, 0.95)",
           openings: [
-            { type: "door", from: "right", to: "hall" },
-            { type: "window", from: "top", w: 1.2},
+            { type: "window", from: "top", w: 1.2, dx: "(office-main.w - 1.2) / 2" },
             { type: "window", from: "left" }
           ],
-          classes: "office",
-          walls: ["bottom"]
+          parts: [
+            {
+              id: "office-main",
+              from: ["house-right.x0", "house-right.y0 - 2.5"],
+              to: ["house-right.x1 - 1.1", "house-right.y0 + 1.3"],
+              walls: ["bottom"]
+            },
+            {
+              id: "office-extension",
+              from: ["office-main.x1", "main.y0"],
+              to: ["master.x1", "office-main.y1"],
+              walls: []
+            }
+          ]
         },
         {
           id: "pantry",
@@ -287,7 +303,7 @@
         {
           id: "porch",
           label: "Varanda",
-          from: ["office.x1", "house-left.y0 - 2.5"],
+          from: ["office-main.x1", "house-left.y0 - 2.5"],
           to: ["house-left.x1", "house-left.y0"],
           classes: "outdoor porch"
         },
@@ -421,9 +437,8 @@
       ],
       // Mobiliário e equipamentos.
       items: [
-        // Mesa longitudinal junto à lateral esquerda da casa: 1 m livre da face interna da parede.
-        // Cabeceira frontal a 1 m da face interna da parede; a mesa e a circulação posterior avançam sobre o estar.
-        { title: "Mesa", pos: ["dining.x1 - params.wall_thickness / 2 - 1 - 1.1", "dining.y0 + params.wall_thickness / 2 + 1"], size: [1.1, 3.0], classes: "table" },
+        // Mesa transversal com 90 cm livres na cabeceira direita e 1 m até a parede frontal.
+        { title: "Mesa", pos: ["dining.x1 - params.wall_thickness / 2 - 0.9 - 2.7", "dining.y0 + params.wall_thickness / 2 + 1"], size: [2.7, 1.1], classes: "table" },
         {
           title: "Lareira",
           pos: ["living.x1 - 0.2", "living.y0 + 0.5"],
@@ -462,7 +477,7 @@
           label: "Quarto N",
           from: ["knee-right.x0", "hall.y0"],
           to: ["knee-right.x0 + 3.3", "y0 + 4.6"],
-          walls: ["right", "bottom"],
+          walls: ["left", "bottom"],
           openings: [
             { type: "door", from: "bottom", to: "upper-corridor"},
             // Par de janelas simétrico em relação ao eixo do frontão principal.
@@ -485,7 +500,7 @@
           label: "Quarto Oeste",
           from: ["knee-right.x0", "bathroom.y0 - 0.9"],
           to: ["stairs.x0", "main.y1"],
-          walls: ["top", "right"],
+          walls: ["top", "left"],
           openings: [
             { type: "door", from: "top", to: "upper-corridor" },
             // Janela no frontão dos fundos, na faixa mais alta da cobertura principal.
@@ -655,7 +670,9 @@
         points: [
           ["office.x0", "office.y1"],
           ["x0", "office.y0"],
-          ["office.x1", "y0"],
+          ["office-main.x1", "y0"],
+          ["x0", "hall.y0"],
+          ["office-extension.x1", "y0"],
           ["x0", "office.y1"],
         ]
       },
@@ -715,7 +732,7 @@
           ["main-right.x0", "office.y1"],
           ["office.x0", "y0"],
           ["x0", "office.y0"],
-          ["office.x1", "y0"],
+          ["office-main.x1", "y0"],
           ["x0", "main.y0"]
         ]
       }
@@ -797,7 +814,7 @@
       id: "main-roof",
       label: "Telhado Principal",
       z0: "upper.z0 + 1",
-      rectangle: ["office.x1 - 1.6", "hall.y0", "main.x1", "main.y1"],
+      rectangle: ["office-main.x1 - 1.6", "hall.y0", "main.x1", "main.y1"],
       orientation: "longitudinal",
       eaves: { left: 0, right: 0.5 },
       rake: [0.5, 0.5]
@@ -806,7 +823,7 @@
       id: "office-roof",
       label: "Escritório",
       z0: "upper.z0 + 1",
-      rectangle: ["office.x0", "office.y0", "office.x1", "main.y1"],
+      rectangle: ["office.x0", "office.y0", "office-main.x1", "main.y1"],
       orientation: "longitudinal",
     },
     {

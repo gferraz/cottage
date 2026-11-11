@@ -157,6 +157,8 @@ O padrão é quatro paredes sólidas. Use `walls` com `solid`, `open` ou `virtua
 "walls": { "top": "solid", "right": "open", "bottom": "virtual", "left": "solid" }
 ```
 
+Com `config.room_wall_sides: "house"`, como em `cottage-ferraz-cesar.json5`, `left` segue a esquerda da casa (`x1`, à direita na planta) e `right` segue a direita da casa (`x0`, à esquerda na planta). A opção vale para `walls` dos cômodos e de suas partes. Sem ela, `left` é `x0` e `right` é `x1`. As aberturas em `openings` usam os lados da planta.
+
 Como atalho, `walls: ["top", "bottom"]` torna somente esses lados sólidos; `walls: "virtual"` torna todos pontilhados. `virtual` é separação visual, não parede sólida. Sobreposição intencional é declarada com `"overlaps": "corridor"` ou uma lista. Ela é descontada da área útil do elemento que recebe a autorização; itens também podem descontar área de cômodos.
 
 `overlaps` autoriza a interseção e ajusta a área útil. `overlays` é separado e indica que o elemento atual deve ficar visualmente acima do elemento referenciado; somente essa propriedade participa das camadas. A regra vale para cômodos, itens e partes. Uma parte pode apontar para outra parte usando seu ID qualificado, por exemplo `"overlays": "stairs.landing"`. A aplicação calcula automaticamente a camada e acusa ciclos.

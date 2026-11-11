@@ -52,6 +52,10 @@
     "config": {
       "type": "object",
       "properties": {
+        "room_wall_sides": {
+          "const": "house",
+          "description": "Em rooms[].walls e nas paredes das partes, left é a esquerda da casa (x1 na planta) e right é a direita (x0). Sem esta opção, left é x0 e right é x1."
+        },
         "walls": {
           "type": "object",
           "properties": {

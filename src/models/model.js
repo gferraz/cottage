@@ -64,6 +64,21 @@ const FloorPlanModel = {
   applyDefaults(config) {
     config = this.resolveParameters(config);
     const defaults = config.config ?? {};
+    const { room_wall_sides: roomWallSides, ...elementDefaults } = defaults;
+    const useHouseSides = roomWallSides === "house";
+    const planSide = (side) => side === "left" ? "right" : side === "right" ? "left" : side;
+    const roomWithPlanWalls = (room) => {
+      const result = { ...room };
+      if (Array.isArray(room.walls)) {
+        result.walls = room.walls.map(planSide);
+      } else if (room.walls && typeof room.walls === "object") {
+        result.walls = Object.fromEntries(
+          Object.entries(room.walls).map(([side, state]) => [planSide(side), state]),
+        );
+      }
+      if (room.parts) result.parts = room.parts.map(roomWithPlanWalls);
+      return window.FloorPlanParser?.copyLocation(room, result) ?? result;
+    };
     const roofDefaults = Object.fromEntries(
       ["type", "pitch", "eaves", "eave", "rake", "slope", "thickness"].filter((key) => defaults.roofs?.[key] !== undefined)
         .map((key) => [key, defaults.roofs[key]]),
@@ -84,6 +99,7 @@ const FloorPlanModel = {
         defaults.floors?.ceiling_height ?? defaults.floors?.wall_max_height;
       const result = {
         ...floor,
+        ...(useHouseSides && floor.rooms ? { rooms: floor.rooms.map(roomWithPlanWalls) } : {}),
         ...(ceilingHeight !== undefined ? { ceiling_height: ceilingHeight } : {}),
         ...(floor.roofs ? { roofs: floor.roofs.map(roofWithDefaults) } : {}),
       };
@@ -92,6 +108,8 @@ const FloorPlanModel = {
     };
     const result = expand(config);
     if (config.floors) result.floors = config.floors.map(expand);
+    // Internal definitions use plan coordinates, including when a floor is reloaded.
+    if (useHouseSides) result.config = elementDefaults;
     return result;
   },
 

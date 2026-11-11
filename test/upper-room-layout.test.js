@@ -7,7 +7,7 @@ for (const name of ['config/catalog', 'models/geometry-box', 'models/geometry', 
   'models/openings', 'models/references', 'views/elements', 'main']) require(`../src/${name}.js`);
 
 function prepare() {
-  const model = FloorPlanModel.fromConfig(FloorPlanParser.parse(fs.readFileSync('cottage-ferraz-cesar-front-gables.json5', 'utf8')));
+  const model = FloorPlanModel.fromConfig(FloorPlanParser.parse(fs.readFileSync('archive/cottage-ferraz-cesar-front-gables.json5', 'utf8')));
   const plan = Object.assign(Object.create(FloorPlan.prototype), {
     model, currentConfig: model.config, errors: [], invalidRoomIds: new Set(), partReferenceStack: [],
     currentFloorHeight: 0, catalog: FloorPlanCatalog, itemTypes: FloorPlanCatalog.items, walls: new Map(), independentWalls: new Map(),
