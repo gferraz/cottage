@@ -1,7 +1,6 @@
-// Versão paramétrica cartesiana de cottage-ferraz-cesar.json5.
+// Planta paramétrica em coordenadas cartesianas.
 // X cresce da esquerda para a direita; Y cresce da frente aos fundos (baixo para cima).
 // X = 0 na lateral direita do corpo principal; a geometria à esquerda usa X negativo.
-// Fórmulas, parâmetros e IDs são preservados; o original não é substituído.
 // walls e openings: left = x0; right = x1. top/bottom continuam frente/fundos.
 // Beirais longitudinais: left/right = x0/x1; transversais: frente/fundos.
 // from/to preservam o sentido dos lances de escada; não precisam estar em ordem crescente.
@@ -17,13 +16,14 @@
   // Configuração
   config: {
     walls: { base: { level: "ground.z0" }, top: "roof", thickness: "params.wall_thickness", color: "desejo-ambar" },
-    roofs: { type: "gable", pitch: 51 },
+    roofs: { type: "gable", pitch: 51, rake: 0.5 },
     floors: { ceiling_height: "params.ground_height" }
   },
-  // Parâmetros preservados
+  // Parâmetros
   parameters: {
     wall_thickness: 0.12,
     ground_height: 3,
+    roof_base_offset: 1,
     headroom_2m_inset: 0.809785,
     headroom_3m_inset: 1.619569,
     office_headroom_2m_inset: 0.809785,
@@ -726,29 +726,26 @@
     {
       id: "main-roof",
       label: "Telhado Principal",
-      z0: "upper.z0 + 1",
+      z0: "upper.z0 + params.roof_base_offset",
       rectangle: ["main.x0", "hall.y0", "office-main.x0 + 1.6", "main.y1"],
       orientation: "longitudinal",
-      eaves: { left: 0.5, right: 0, pitch: 30 },
-      rake: [0.5, 0.5]
+      eaves: { left: 0.5, right: 0, pitch: 30 }
     },
     {
       id: "office-roof",
       label: "Escritório",
-      z0: "upper.z0 + 1",
+      z0: "upper.z0 + params.roof_base_offset",
       rectangle: ["office-main.x0", "office.y0", "office.x1", "main.y1"],
       orientation: "longitudinal",
-      rake: 0.5,
       eaves: { left: 0.5, right: 0.5, pitch: 30 }
     },
     {
       id: "transverse-roof",
       label: "Telhado Transversal",
-      from: ["front.x1", "front.y0 + 2", "upper.z0 + 1"],
+      from: ["front.x1", "front.y0 + 2", "upper.z0 + params.roof_base_offset"],
       to: ["front.x0", "rear.y1 - 1", "z0"],
       orientation: "transverse",
-      eaves: { left: 0, right: 0, pitch: 30 },
-      rake: 0.5
+      eaves: { left: 0, right: 0, pitch: 30 }
     }
   ],
   // Guias de desenho
