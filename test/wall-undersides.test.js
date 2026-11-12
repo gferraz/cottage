@@ -119,7 +119,7 @@ test('stair meshes leave the inclined underside clear instead of filling down to
   }
 });
 
-for (const name of ['../src/config/parser', '../src/models/model', '../src/models/validation',
+for (const name of ['../src/config/catalog', '../src/config/parser', '../src/config/coordinates', '../src/models/model', '../src/models/validation',
   '../src/views/roofs', '../src/models/openings', '../src/models/references', '../src/main']) require(name + '.js');
 const prepare = (source) => {
   const model = FloorPlanModel.fromConfig(source);
