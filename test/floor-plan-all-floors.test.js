@@ -2,13 +2,15 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
+globalThis.window = globalThis;
+require('../src/models/openings.js');
 const FloorPlan = vm.runInNewContext(fs.readFileSync('src/main.js', 'utf8') + '\nFloorPlan;', {
-  window: {}, FloorPlanWalls: { renderIndependentWalls(plan) { plan.independentRendered = true; } },
+  window: {}, FloorPlanOpenings: globalThis.FloorPlanOpenings, FloorPlanWalls: { renderIndependentWalls(plan) { plan.independentRendered = true; } },
 });
 function fixture(showAllFloors) {
   const config = { floors: [
-    { id: 'ground', z0: 0, rooms: [{ id: 'office' }], items: [{ id: 'bed' }], openings: [{ id: 'door' }] },
-    { id: 'upper', z0: 3, rooms: [{ id: 'bedroom' }], items: [{ id: 'desk' }], openings: [{ id: 'window' }] },
+    { id: 'ground', z0: 0, rooms: [{ id: 'office' }], items: [{ id: 'bed' }], doors: [{ id: 'door' }] },
+    { id: 'upper', z0: 3, rooms: [{ id: 'bedroom' }], items: [{ id: 'desk' }], windows: [{ id: 'window' }] },
   ] };
   const calls = [];
   const plan = Object.assign(Object.create(FloorPlan.prototype), {

@@ -735,10 +735,7 @@ const FloorPlanFacades = {
           )
           .map(([id]) => String(id)),
       );
-      const facadeOpenings = [
-        ...(plan.allOpenings.length ? plan.allOpenings : plan.openings),
-        ...(plan.allWindows.length ? plan.allWindows : plan.windows),
-      ].filter(
+      const facadeOpenings = FloorPlanOpenings.rendered(plan).filter(
         (opening) =>
           (opening.to === "exterior" ||
             outdoorRoomIds.has(String(opening.to || "").split(".")[0])) &&

@@ -408,15 +408,12 @@ const FloorPlanFacades3D = {
         .filter(([, room]) => String(room.classes || "").split(/\s+/).includes("outdoor"))
         .map(([id]) => String(id)),
     );
-    const externalOpenings = [
-      ...(plan.allOpenings || []),
-      ...(plan.allWindows || []),
-    ].filter((opening) => {
+    const externalOpenings = FloorPlanOpenings.rendered(plan).filter((opening) => {
       const target = String(opening.to || "exterior").split(".")[0];
       return target === "exterior" || outdoorIds.has(target);
     });
     const openingsByWall = new Map();
-    [...(plan.allOpenings || []), ...(plan.allWindows || [])].forEach((opening) => {
+    FloorPlanOpenings.rendered(plan).forEach((opening) => {
       if (!opening.wallId) return;
       const features = openingsByWall.get(opening.wallId) || [];
       features.push(opening);

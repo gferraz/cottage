@@ -32,6 +32,27 @@ const FloorPlanModel = {
         emit(value, "top", path, "top-under",
           "top: { under: ... } sem deslocamento está depreciado. Use top diretamente com o ID ou a lista de IDs de under.");
       }
+      if (["", "floors", "rooms", "roofs"].includes(context)) {
+        for (const key of ["openings", "doors", "windows"]) {
+          if (!Array.isArray(value[key])) continue;
+          value[key].forEach((entry, index) => {
+            if (entry.type !== undefined) {
+              const collection = { door: "doors", window: "windows", opening: "openings" }[entry.type];
+              const destination = key === "openings" ? collection ?? key : key;
+              emit(entry, "type", `${path}.${key}[${index}]`, "opening-type",
+                `${key} com type: ${JSON.stringify(entry.type)} está depreciado. ${destination === key ? "Mantenha a entrada nesta coleção" : `Mova a entrada para ${destination}`} e remova type; a coleção determina a categoria.`);
+            }
+          });
+        }
+      }
+      if (context === "config" && value.openings) {
+        for (const [type, collection] of [["door", "doors"], ["window", "windows"], ["opening", "openings"]]) {
+          if (Object.hasOwn(value.openings, type)) {
+            emit(value.openings, type, `${path}.openings`, "opening-defaults",
+              `config.openings.${type} está depreciado. Use config.${collection} diretamente com w, h e z0; os novos padrões têm prioridade por propriedade.`);
+          }
+        }
+      }
       // Only inspect structural collections, never user-defined IDs or parameter names.
       for (const key of ["config", "floors", "rooms", "parts", "walls", "roofs"]) {
         if (value[key] && typeof value[key] === "object") {
@@ -54,7 +75,7 @@ const FloorPlanModel = {
       } else {
         result = Array.isArray(value) ? value.map((child) => visit(child))
           : Object.fromEntries(Object.entries(value).map(([name, child]) => {
-            if (["openings", "windows"].includes(name) && Array.isArray(child)) {
+            if (["openings", "doors", "windows"].includes(name) && Array.isArray(child)) {
               return [name, child.map((opening) => {
                 const normalized = visit(opening);
                 if (typeof normalized.from === "string") {

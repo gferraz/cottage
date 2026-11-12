@@ -360,19 +360,12 @@ class FloorPlan {
           }
         });
         this.updateOverlaps();
-        [...(floorConfig.openings ?? []), ...this.roomOpenings(floorConfig)].forEach((opening, index) => {
+        FloorPlanOpenings.forFloor(this, floorConfig).forEach((opening, index) => {
           if (this.isVerticalOpening(opening)) return;
           try {
             this.addOpening(opening);
           } catch (error) {
-            this.errors.push({ index, opening, category: opening.type === "window" ? "window" : "opening", message: error.message });
-          }
-        });
-        (floorConfig.windows ?? []).forEach((window, index) => {
-          try {
-            this.addWindow(window);
-          } catch (error) {
-            this.errors.push({ index, opening: window, category: "window", message: error.message });
+            this.errors.push({ index, opening, category: opening.type === "door" ? "door" : opening.type === "window" ? "window" : "opening", message: error.message });
           }
         });
         keys.forEach((key) => {

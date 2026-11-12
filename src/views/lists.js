@@ -44,14 +44,16 @@ const FloorPlanLists = {
     const groups = [
       ["rooms", "Cômodos"],
       ["roofs", "Telhados"],
-      ["openings", "Passagens"],
+      ["doors", "Portas"],
+      ["openings", "Vãos"],
       ["windows", "Janelas"],
       ["natural", "Comunicações naturais"],
     ];
     const renderers = {
       rooms: (target, floor) => this.updateRoomList(plan, target, floor),
       roofs: (target, floor) => this.updateRoofList(plan, target, floor),
-      openings: (target, floor) => this.updateOpeningList(plan, target, floor),
+      doors: (target, floor) => this.updateOpeningList(plan, target, floor, "door"),
+      openings: (target, floor) => this.updateOpeningList(plan, target, floor, "opening"),
       windows: (target, floor) => this.updateWindowList(plan, target, floor),
       natural: (target, floor) => this.updateNaturalList(plan, target, floor),
     };
@@ -505,14 +507,13 @@ const FloorPlanLists = {
     target.append(scroll);
   },
 
-  updateOpeningList(plan, target = plan.openingList, floor = null) {
+  updateOpeningList(plan, target = plan.openingList, floor = null, type = "opening") {
     if (!target) return;
 
     target.replaceChildren();
-    const openings = (plan.allOpenings.length ? plan.allOpenings : plan.openings)
-      .filter((opening) => !floor || opening.floorId === floor.id);
+    const openings = FloorPlanOpenings.rendered(plan, { type, floor });
     if (openings.length === 0) {
-      target.textContent = "Nenhuma passagem carregada.";
+      target.textContent = type === "door" ? "Nenhuma porta carregada." : "Nenhum vão carregado.";
       return;
     }
 
@@ -530,7 +531,7 @@ const FloorPlanLists = {
         opening.to === "exterior"
           ? "EXTERIOR"
           : plan.roomDefinitions.get(opening.to)?.label || opening.to;
-      details.textContent = `${opening.type} — ${from} → ${to} (${plan.formatMeters(opening.w)}m)`;
+      details.textContent = `${from} → ${to} (${plan.formatMeters(opening.w)}m)`;
 
       item.append(title, details);
       target.append(item);
@@ -541,8 +542,7 @@ const FloorPlanLists = {
     if (!target) return;
 
     target.replaceChildren();
-    const windows = (plan.allWindows.length ? plan.allWindows : plan.windows)
-      .filter((window) => !floor || window.floorId === floor.id);
+    const windows = FloorPlanOpenings.rendered(plan, { type: "window", floor });
     if (windows.length === 0) {
       target.textContent = "Nenhuma janela carregada.";
       return;
@@ -696,7 +696,8 @@ const FloorPlanLists = {
           item: "Item",
           room: "Cômodo",
           presentation: "Apresentação",
-          opening: "Passagem",
+          opening: "Vão",
+          door: "Porta",
           collision: "Colisão",
           overlap: "Sobreposição",
           zone: "Zona",

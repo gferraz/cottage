@@ -1,7 +1,8 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 globalThis.window = globalThis;
-for (const module of ['models/geometry-box', 'views/roofs', 'models/walls', 'models/model', 'exports/dxf', 'models/validation']) require(`../src/${module}.js`);
+require('../src/models/openings.js');
+for (const module of ['models/openings', 'models/geometry-box', 'views/roofs', 'models/walls', 'models/model', 'exports/dxf', 'models/validation']) require(`../src/${module}.js`);
 const roofs = FloorPlanRoofs;
 const base = FloorPlanGeometryBox.fromValues({ x: 1, y: 2, w: 4, l: 2, z0: 0, h: 3 });
 const fixture = (definitions = []) => ({ allRoofs: definitions, currentConfig: { ceiling_height: 3 },

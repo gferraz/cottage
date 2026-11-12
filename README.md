@@ -55,7 +55,7 @@ config: {
 
 Use `"params.nome"` como valor, ou em expressões geométricas como `"office.x0 + params.knee_setback"`. Parâmetros podem depender de outros parâmetros (`"params.ground_height * 2"`); ciclos, nomes inexistentes e valores não numéricos geram erro. Não use referências a cômodos dentro de `parameters`.
 
-`config.walls` define padrões somente das paredes independentes; `config.roofs`, dos telhados; `config.openings`, das dimensões por tipo de abertura; e `config.floors`, dos pavimentos. O valor explícito no elemento prevalece. `ceiling_height` é o nome atual; `wall_max_height` continua aceito por compatibilidade.
+`config.walls` define padrões somente das paredes independentes; `config.roofs`, dos telhados; `config.doors`, das portas; `config.windows`, das janelas; `config.openings`, dos vãos livres; e `config.floors`, dos pavimentos. O valor explícito no elemento prevalece. `ceiling_height` é o nome atual; `wall_max_height` continua aceito por compatibilidade.
 
 O [JSON Schema](floor-plan.schema.json) fornece sugestões e validação estrutural em editores com suporte a JSON5 e JSON Schema. O arquivo ativo mantém chaves sem aspas, comentários e vírgulas finais. `.vscode/settings.json` registra o schema local, sem forçar o modo JSONC; o VS Code precisa de suporte a JSON5 com integração ao schema para oferecer validação e autocompletar nesse formato.
 
@@ -217,17 +217,33 @@ Como atalho, `walls: ["top", "bottom"]` torna somente esses lados sólidos; `wal
 
 `overlaps` autoriza a interseção e ajusta a área útil. `overlays` é separado e indica que o elemento atual deve ficar visualmente acima do elemento referenciado; somente essa propriedade participa das camadas. A regra vale para cômodos, itens e partes. Uma parte pode apontar para outra parte usando seu ID qualificado, por exemplo `"overlays": "stairs.landing"`. A aplicação calcula automaticamente a camada e acusa ciclos.
 
-## Passagens, janelas e itens
+## Portas, janelas, vãos e itens
 
-Passagens usam a parede de origem e um destino opcional:
+Use as coleções `doors`, `windows` e `openings` na raiz de plantas com piso único, nos pisos, nos cômodos e nas coberturas. Coleções omitidas equivalem a listas vazias. A coleção determina a categoria, sem precisar de `type`:
 
-```json
-{ "from": "office.left", "to": "entry", "type": "door" }
+```json5
+{
+  config: {
+    doors: { w: 0.8, h: 2.1, z0: 0 },
+    windows: { w: 0.9, h: 1.5, z0: 0.9 },
+    openings: { w: 1, h: 2.1, z0: 0 },
+  },
+  // No piso, use referências qualificadas; dentro de um cômodo, use o lado local.
+  doors: [{ from: "office.left", to: "entry" }],
+  windows: [{ from: "office.front", w: 1.5 }],
+  openings: [{ from: "office.right", to: "hall", w: 2 }],
+}
 ```
 
-`type` pode ser `door`, `opening` ou `window`. `to` omitido significa exterior. Sem `dx`/`dy` e `w`, a aplicação encontra o segmento comum, centraliza a abertura e usa os padrões: porta `0.8 m`, abertura `1.0 m`, janela `0.9 m`. O ID é gerado como `from-to-deslocamento-em-cm`. Portas e janelas são desenhadas com quatro bordas; passagens abertas mostram apenas as bordas laterais.
+`openings` sem `type` significa vão livre, inclusive na largura padrão de 1 m; para uma porta, use `doors`. Aberturas entre pavimentos continuam em `openings`, com IDs dos pisos em `from/to` e geometria própria. As coleções das coberturas seguem as restrições existentes: fechamentos verticais não são criados automaticamente; uma superfície ausente gera erro e requer uma parede explícita. Aceitar a coleção no contrato não cria suporte a recortes nas águas inclinadas do telhado.
 
-Itens são objetos concretos, aparecem em lista própria e podem usar `overlaps`. Use `title` para o texto exibido ao passar o mouse e `label` para a legenda. Tipos reutilizáveis podem ser declarados em `item-types`. Janelas também podem ser declaradas em `openings` com `type: "window"` ou na coleção `windows`; em ambos os casos ficam separadas da lista de passagens. Zonas virtuais (`zones`) servem para referências e marcações, sem entrar em áreas ou conflitos.
+`to` omitido significa exterior. Sem `dx`/`dy` e `w`, a aplicação encontra o segmento comum, centraliza a abertura e usa os padrões acima. Os campos explícitos do elemento prevalecem sobre os padrões de `config`, que prevalecem sobre o catálogo. Use `dx` para paredes horizontais e `dy` para verticais. O ID é gerado como `from-to-deslocamento-em-cm`. Portas e janelas são desenhadas com quatro bordas; vãos livres mostram apenas as bordas laterais.
+
+Por compatibilidade, `openings` com `type: "door"`, `"window"` ou `"opening"` continua interpretado pela categoria antiga e gera aviso de depreciação. Mova a entrada para a coleção correspondente e remova `type`. Em `doors` e `windows`, a coleção sempre tem prioridade sobre `type`; o schema exige que um `type` redundante corresponda à coleção. Os padrões antigos `config.openings.door/window/opening` também continuam aceitos com aviso. A prioridade é por propriedade: padrões novos → padrões antigos → catálogo.
+
+Veja o [exemplo carregável com dois pavimentos](examples/portas-janelas-vaos.json5). Os arquivos existentes não são migrados automaticamente.
+
+Itens são objetos concretos, aparecem em lista própria e podem usar `overlaps`. Use `title` para o texto exibido ao passar o mouse e `label` para a legenda. Tipos reutilizáveis podem ser declarados em `item-types`. Janelas ficam separadas da lista de passagens. Zonas virtuais (`zones`) servem para referências e marcações, sem entrar em áreas ou conflitos.
 
 ## Terreno, guias e apresentação
 
@@ -342,6 +358,6 @@ A mureta periférica do estudo é a parede independente `perimeter-plinth`, com 
 
 O quadro técnico apresenta **Avisos de depreciação**, separados dos erros. A planta continua carregando com a sintaxe antiga; cada aviso informa a substituição recomendada e, quando o arquivo é lido pelo parser JSON5, arquivo, linha, coluna e caminho da propriedade. Para configurações criadas diretamente em JavaScript, apresenta o caminho no objeto.
 
-As regras atuais são `wall_max_height` → `ceiling_height`, `eave` → `eaves.left/right` e `top: { under: ... }` sem deslocamento → `top` com ID ou lista de IDs. `top.level`, `top.under` com deslocamento e as declarações atuais de portas/janelas continuam válidos sem aviso. Os aliases `front/rear` e os atalhos de geometria também continuam válidos.
+As regras atuais são `wall_max_height` → `ceiling_height`, `eave` → `eaves.left/right` e `top: { under: ... }` sem deslocamento → `top` com ID ou lista de IDs. `top.level`, `top.under` com deslocamento continuam válidos sem aviso. O campo `type` nas coleções de aberturas e os padrões antigos `config.openings.door/window/opening` agora geram avisos com a orientação de migração. Os aliases `front/rear` e os atalhos de geometria também continuam válidos.
 
 A coleta fica centralizada em `FloorPlanModel.collectDeprecations`, antes da normalização e da aplicação de padrões. Novas regras devem indicar código estável, propriedade e orientação de migração, inspecionando apenas os contextos estruturais correspondentes. Os avisos originais são preservados nas recargas internas para não repetir ocorrências nem atribuir avisos a valores herdados dos padrões; não são incluídos no JSON exportado.

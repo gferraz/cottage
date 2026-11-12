@@ -2,6 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 globalThis.window = globalThis;
+require('../src/models/openings.js');
 require("../src/models/terrain.js");
 for (const name of ['config/catalog', 'config/coordinates', 'models/geometry-box', 'models/geometry', 'models/geometry-domain',
   'models/walls', 'config/parser', 'models/model', 'models/validation', 'views/roofs',
@@ -71,7 +72,7 @@ test('current stair arrival occupies the strip beside the stair opening', () => 
 
 test('current unused room window resolves to the exterior right wall', () => {
   const plan = prepare('cottage-ferraz-cesar.json5');
-  const definition = plan.roomDefinitions.get('unused-right').openings[0];
+  const definition = FloorPlanOpenings.collect(plan.roomDefinitions.get('unused-right'))[0];
   const opening = plan.normalizeOpening({ ...definition, from: `unused-right.${definition.from}` });
   assert.equal(opening.wallId, 'upper-right-wall');
   assert.equal(opening.to, 'exterior');

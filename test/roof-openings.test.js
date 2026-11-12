@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 globalThis.window = globalThis;
+require('../src/models/openings.js');
 require('../src/models/validation.js');
 const validation = globalThis.FloorPlanValidation;
 const roof = { id: 'roof', label: 'Escritório', type: 'gable', orientation: 'longitudinal' };
@@ -10,7 +11,7 @@ test('reports windows, doors and passages on removed roof gables', () => {
     const opening = { type, from: 'top' };
     const errors = validation.validateRoofOpenings({ roofs: [{ ...roof, openings: [opening] }] });
     assert.equal(errors.length, 1);
-    assert.equal(errors[0].opening, opening);
+    assert.deepEqual(errors[0].opening, opening);
     assert.match(errors[0].message, /Escritório/);
     assert.match(errors[0].message, /essa superfície não existe/);
     assert.match(errors[0].message, /defina uma parede/);

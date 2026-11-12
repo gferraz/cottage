@@ -94,7 +94,9 @@
           label: "Closet",
           from: ["house-right.x1", "master.y1"],
           to: ["x0 - 2.7", "y0 + 2.2"],
-          openings: [{ type: "opening", from: "left", to: "vestibule" }],
+          openings: [
+            { from: "left", to: "vestibule" }
+          ],
           walls: ["top", "right"]
         },
         {
@@ -102,7 +104,9 @@
           label: "Estar",
           from: ["house-left.x1", "porch.y1"],
           to: ["house-left.x0", "y0 + 3.6"],
-          openings: [{ type: "window", from: "top", to: "exterior", w: 2.4 }],
+          windows: [
+            { from: "top", to: "exterior", w: 2.4 }
+          ],
           walls: ["bottom"]
         },
         {
@@ -126,9 +130,9 @@
           pos: ["laundry.x0 - 4", "laundry.y1"],
           size: [4, 6.5],
           walls: ["top", "left", "bottom"],
-          openings: [
-            { type: "door", from: "top", to: "exterior", w: 3.2 },
-            { type: "door", from: "bottom", to: "exterior", w: 3.2 }
+          doors: [
+            { from: "top", to: "exterior", w: 3.2 },
+            { from: "bottom", to: "exterior", w: 3.2 }
           ],
           classes: "service garage"
         },
@@ -137,10 +141,10 @@
           label: "Hall",
           from: ["office-extension.x0", "main.y0"],
           to: ["house-left.x1", "y0 + 2.2"],
-          openings: [
-            { type: "door", from: "top", to: "porch", w: 1 },
-            { type: "door", from: "bottom", to: "front-corridor", w: 1 },
-            { type: "door", from: "right", to: "office" }
+          doors: [
+            { from: "top", to: "porch", w: 1 },
+            { from: "bottom", to: "front-corridor", w: 1 },
+            { from: "right", to: "office" }
           ],
           walls: ["bottom", "left"],
           classes: "circulation"
@@ -150,9 +154,11 @@
           label: "Cozinha",
           from: ["office.x1", "master-bath.y1"],
           to: ["house-left.x1", "y0 + 3.9"],
-          openings: [
-            { type: "window", from: "right", to: "exterior", w: 2.4 },
-            { type: "door", from: "bottom", to: "terrace" }
+          doors: [
+            { from: "bottom", to: "terrace" }
+          ],
+          windows: [
+            { from: "right", to: "exterior", w: 2.4 }
           ],
           classes: "wet",
           walls: ["right"]
@@ -171,9 +177,9 @@
           label: "Suíte Master",
           rectangle: ["house-right.x0 + 0.4", "office-main.y1", "house-right.x1", "y0 + 3.6"],
           walls: ["top", "right", "left"],
-          openings: [
-            { type: "window", from: "right", to: "exterior", dy: 0.6 },
-            { type: "window", from: "right", to: "exterior", dy: 2.1 }
+          windows: [
+            { from: "right", to: "exterior", dy: 0.6 },
+            { from: "right", to: "exterior", dy: 2.1 }
           ]
         },
         {
@@ -182,14 +188,21 @@
           from: ["house-right.x1", "closet.y1"],
           to: ["master.x0", "y0 + 1.7"],
           walls: ["top", "right", "bottom", "left"],
-          openings: [{ type: "door", from: "top", to: "vestibule" }, { type: "window", from: "right", to: "exterior" }],
+          doors: [
+            { from: "top", to: "vestibule" }
+          ],
+          windows: [
+            { from: "right", to: "exterior" }
+          ],
           classes: "wet"
         },
         {
           id: "mudroom",
           label: "Mudroom",
           rectangle: ["house-left.x0", "laundry.y1", "pantry.x0", "pantry.y1"],
-          openings: [{ type: "door", from: "left", to: "garage" }],
+          doors: [
+            { from: "left", to: "garage" }
+          ],
           classes: "service mudroom"
         },
         {
@@ -197,9 +210,9 @@
           label: "Escritório",
           classes: "office",
           color: "rgba(255, 255, 255, 0.95)",
-          openings: [
-            { type: "window", from: "top", w: 1.2, dx: "office.w - (office-main.w - 1.2) / 2 - 1.2" },
-            { type: "window", from: "right" }
+          windows: [
+            { from: "top", w: 1.2, dx: "office.w - (office-main.w - 1.2) / 2 - 1.2" },
+            { from: "right" }
           ],
           parts: [
             {
@@ -221,7 +234,9 @@
           label: "Despensa",
           rectangle: ["circulation.x0", "circulation.y1", "house-left.x1", "y0 + 1.8"],
           walls: ["top", "right", "left"],
-          openings: [{ type: "opening", from: "top", to: "circulation" }],
+          openings: [
+            { from: "top", to: "circulation" }
+          ],
           classes: "service pantry"
         },
         {
@@ -238,7 +253,9 @@
           from: ["house-left.x1", "stairs.y0"],
           to: ["x0 - 2.4", "upper-landing.y1"],
           walls: ["top", "right", "bottom", "left"],
-          openings: [{ type: "door", from: "right", to: "rear-corridor", dy: 0.1 }],
+          doors: [
+            { from: "right", to: "rear-corridor", dy: 0.1 }
+          ],
           classes: "powder wet"
         },
         {
@@ -300,7 +317,9 @@
           rectangle: ["master.x0", "closet.y0", "closet.x0", "closet.y1"],
           walls: ["right", "bottom", "left"],
           overlaps: "rear-corridor",
-          openings: [{ type: "door", from: "left", to: "dining", dy: 1.2 }]
+          doors: [
+            { from: "left", to: "dining", dy: 1.2 }
+          ]
         }
       ],
       items: [
@@ -353,9 +372,11 @@
           from: ["knee-right.x1", "hall.y0"],
           to: ["knee-right.x1 - 3.3", "y0 + 3.8"],
           walls: ["left", "bottom"],
-          openings: [
-            { type: "door", from: "bottom", to: "upper-corridor" },
-            { type: "window", from: "top", h: 1.2, z0: "upper.z0 + 1", dx: "bedroom-north.w + main-roof.xc - bedroom-north.x1 + 0.75"}
+          doors: [
+            { from: "bottom", to: "upper-corridor" }
+          ],
+          windows: [
+            { from: "top", h: 1.2, z0: "upper.z0 + 1", dx: "bedroom-north.w + main-roof.xc - bedroom-north.x1 + 0.75"}
           ]
         },
         {
@@ -364,10 +385,11 @@
           from: ["house-left.x0", "hall.y0"],
           to: ["bedroom-north.x0", "y0 + 3.6"],
           walls: ["bottom"],
-          openings: [
-            { type: "door", from: "bottom", to: "playroom", dx: "bedroom-east.w - 1" },
+          doors: [
+            { from: "bottom", to: "playroom", dx: "bedroom-east.w - 1" }
+          ],
+          windows: [
             {
-              type: "window",
               from: "top",
               to: "exterior",
               h: 1.2,
@@ -382,9 +404,11 @@
           from: ["knee-right.x1", "main.y1 - 3.8"],
           to: ["house-left.x1", "main.y1"],
           walls: ["top", "left"],
-          openings: [
-            { type: "door", from: "top", to: "upper-corridor" },
-            { type: "window", from: "bottom", to: "exterior", w: 1.2, h: 1.2, z0: "upper.z0 + 0.9", dx: 0.6 }
+          doors: [
+            { from: "top", to: "upper-corridor" }
+          ],
+          windows: [
+            { from: "bottom", to: "exterior", w: 1.2, h: 1.2, z0: "upper.z0 + 0.9", dx: 0.6 }
           ]
         },
         {
@@ -393,7 +417,9 @@
           from: ["bedroom-east.x1", "bedroom-east.y1"],
           to: ["house-left.x0", "stairs.y0"],
           walls: [],
-          openings: [{ type: "window", from: "left", dy: "transverse-roof.yc - playroom.y0 - 0.45" }]
+          windows: [
+            { from: "left", dy: "transverse-roof.yc - playroom.y0 - 0.45" }
+          ]
         },
         {
           id: "bathroom",
@@ -401,10 +427,11 @@
           from: ["house-right.x1", "transversal-rear.y0 + 1"],
           to: ["knee-right.x1", "main.y1"],
           walls: ["top"],
-          openings: [
-            { type: "door", from: "top", to: "unused-right" },
+          doors: [
+            { from: "top", to: "unused-right" }
+          ],
+          windows: [
             {
-              type: "window",
               from: "bottom",
               to: "exterior",
               w: 0.8,
@@ -419,14 +446,18 @@
           label: "Sala de oração",
           from: ["house-right.x1", "office.y0"],
           to: ["porch.x1", "porch.y1"],
-          openings: [{ type: "window", from: "top", w: 0.8, h: 0.6 }]
+          windows: [
+            { from: "top", w: 0.8, h: 0.6 }
+          ]
         },
         {
           id: "unused-right",
           label: "Sem uso",
           from: ["house-right.x1", "prayer-room.y1"],
           to: ["knee-right.x1", "bathroom.y0"],
-          openings: [{ type: "window", from: "right", to: "exterior", w: 0.8, h: 0.6 }]
+          windows: [
+            { from: "right", to: "exterior", w: 0.8, h: 0.6 }
+          ]
         },
         {
           id: "stair-arrival",
@@ -539,7 +570,6 @@
       ],
       openings: [
         {
-          type: "opening",
           from: "upper",
           to: "ground",
           rectangle: ["stairs.x0", "stairs.y0", "stairs.x1 - 1.2", "stairs.y1"]

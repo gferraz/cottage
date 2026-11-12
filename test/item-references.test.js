@@ -2,6 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 globalThis.window = globalThis;
+require('../src/models/openings.js');
 require("../src/models/terrain.js");
 for (const name of ['config/catalog', 'config/coordinates', 'models/geometry-box', 'models/geometry', 'models/geometry-domain',
   'models/walls', 'config/parser', 'models/model', 'models/validation', 'views/roofs',
@@ -35,5 +36,5 @@ test('vestibule door fits the shared living wall', () => {
   const plan = prepare();
   const room = plan.roomDefinitions.get('vestibule');
   plan.currentFloorHeight = 0;
-  plan.normalizeOpening({ ...room.openings[0], from: 'vestibule.right' });
+  plan.normalizeOpening({ ...FloorPlanOpenings.collect(room)[0], from: 'vestibule.right' });
 });

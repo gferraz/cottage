@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 globalThis.window = globalThis;
+require('../src/models/openings.js');
 require('../src/models/geometry-box.js');
 require('../src/models/geometry.js');
 require('../src/models/geometry-domain.js');

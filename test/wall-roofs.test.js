@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 globalThis.window = globalThis;
+require('../src/models/openings.js');
 require('../src/models/walls.js');
 const walls = globalThis.FloorPlanWalls;
 test('opening finds a shared wall declared only by the neighboring room', () => {

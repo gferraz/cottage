@@ -6,6 +6,8 @@ require('../src/config/parser.js');
 require('../src/models/geometry.js');
 require('../src/models/model.js');
 require('../src/models/openings.js');
+require('../src/config/coordinates.js');
+require('../src/models/terrain.js');
 const parser = globalThis.FloorPlanParser;
 const model = globalThis.FloorPlanModel;
 
@@ -31,13 +33,13 @@ test('parameter cycles, missing parameters and nonnumeric values fail without ev
 });
 
 test('domain errors retain file, line and path after defaults and local opening expansion', () => {
-  const text = '{\n  parameters: { height: 3 },\n  config: { floors: { ceiling_height: "params.height" } },\n  floors: [{ id: "ground", z0: 0, rooms: [{\n    id: "office",\n    openings: [\n      { type: "door", from: "left" }\n    ]\n  }] }]\n}';
+  const text = '{\n  parameters: { height: 3 },\n  config: { floors: { ceiling_height: "params.height" } },\n  floors: [{ id: "ground", z0: 0, rooms: [{\n    id: "office",\n    doors: [\n      { from: "left" }\n    ]\n  }] }]\n}';
   const parsed = parser.parse(text, { filename: 'house.json5' });
   const expanded = model.fromConfig(parsed).config;
   const [opening] = globalThis.FloorPlanOpenings.roomOpenings({}, expanded.floors[0]);
   assert.equal(opening.from, 'office.left');
   const location = parser.errorLocation({ opening }, expanded);
-  assert.deepEqual(location, { file: 'house.json5', line: 7, column: 7, path: 'floors[0].rooms[0].openings[0]' });
+  assert.deepEqual(location, { file: 'house.json5', line: 7, column: 7, path: 'floors[0].rooms[0].doors[0]' });
   assert.equal(parser.errorLocation({ id: 'office' }, expanded).path, 'floors[0].rooms[0]');
   assert.match(parser.formatLocation(location), /house.json5:7:7/);
   assert.equal(JSON.stringify(parsed).includes('house.json5'), false);
@@ -53,11 +55,14 @@ test('editor example and active file parse and all schema references exist', () 
   const schema = JSON.parse(fs.readFileSync('floor-plan.schema.json', 'utf8'));
   const visit = (value) => {
     if (!value || typeof value !== 'object') return;
-    if (value.$ref) assert.ok(schema.definitions[value.$ref.split('/').at(-1)]);
+    if (value.$ref) {
+      const target = value.$ref.slice(2).split('/').reduce((node, key) => node?.[key.replace(/~1/g, '/').replace(/~0/g, '~')], schema);
+      assert.ok(target, value.$ref);
+    }
     Object.values(value).forEach(visit);
   };
   visit(schema);
-  for (const file of ['examples/parametros-e-aberturas.json5', 'archive/cottage-ferraz-cesar-front-gables.json5']) {
+  for (const file of ['examples/parametros-e-aberturas.json5', 'cottage-ferraz-cesar.json5']) {
     const config = parser.parse(fs.readFileSync(file, 'utf8'), { filename: file });
     assert.ok(model.fromConfig(config).floors.length);
   }

@@ -10,7 +10,7 @@
   config: {
     walls: { thickness: "params.wall_thickness", color: "desejo-ambar" },
     floors: { ceiling_height: "params.ground_height" },
-    openings: { window: { w: 0.9, h: 1.5, z0: 0.9 } }
+    windows: { w: 0.9, h: 1.5, z0: 0.9 }
   },
   floors: [{
     id: "ground",
@@ -22,9 +22,11 @@
       from: [0, 0],
       to: ["x0 + params.room_width", "y0 + 3"],
       walls: ["top", "right", "bottom", "left"],
-      openings: [
-        { type: "window", from: "left", to: "exterior" },
-        { type: "door", from: "bottom", to: "exterior", w: 1 }
+      doors: [
+        { from: "bottom", to: "exterior", w: 1 }
+      ],
+      windows: [
+        { from: "left", to: "exterior" }
       ]
     }]
   }]

@@ -447,9 +447,7 @@ const FloorPlanReferences = {
     floorConfigs.forEach((floorConfig) => {
       [
         ...(window.FloorPlanElements?.items(plan, floorConfig) ?? floorConfig.items ?? []),
-        ...(floorConfig.openings ?? []),
-        ...plan.roomOpenings(floorConfig),
-        ...(floorConfig.windows ?? []),
+        ...FloorPlanOpenings.forFloor(plan, floorConfig),
       ].forEach((object) => {
         if (!object.id) return;
         if (FloorPlanValidation.isReservedId(object.id)) {
@@ -519,8 +517,7 @@ const FloorPlanReferences = {
           }
         });
         [
-          ...(floorConfig.openings ?? []),
-          ...plan.roomOpenings(floorConfig),
+          ...FloorPlanOpenings.forFloor(plan, floorConfig),
         ].forEach((opening, index) => {
           if (plan.isVerticalOpening(opening)) return;
           try {
@@ -529,19 +526,7 @@ const FloorPlanReferences = {
             plan.errors.push({
               index,
               opening,
-              category: opening.type === "window" ? "window" : "opening",
-              message: error.message,
-            });
-          }
-        });
-        (floorConfig.windows ?? []).forEach((window, index) => {
-          try {
-            plan.normalizeOpening({ ...window, type: "window" });
-          } catch (error) {
-            plan.errors.push({
-              index,
-              opening: window,
-              category: "window",
+              category: opening.type === "door" ? "door" : opening.type === "window" ? "window" : "opening",
               message: error.message,
             });
           }
@@ -605,25 +590,13 @@ const FloorPlanReferences = {
           // The active-floor render path records the detailed error.
         }
       });
-      [...(floorConfig.openings ?? []), ...plan.roomOpenings(floorConfig)].forEach((opening) => {
+      FloorPlanOpenings.forFloor(plan, floorConfig).forEach((opening) => {
         if (plan.isVerticalOpening(opening)) return;
         try {
           const feature = plan.normalizeOpening(opening);
           const target =
             feature.type === "window" ? plan.allWindows : plan.allOpenings;
           target.push({
-            ...feature,
-            floorId: floorConfig.id,
-            floorLabel: floorConfig.label,
-          });
-        } catch {
-          // Validation and rendering record the error with its source data.
-        }
-      });
-      (floorConfig.windows ?? []).forEach((window) => {
-        try {
-          const feature = plan.normalizeOpening({ ...window, type: "window" });
-          plan.allWindows.push({
             ...feature,
             floorId: floorConfig.id,
             floorLabel: floorConfig.label,

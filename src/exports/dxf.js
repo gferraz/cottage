@@ -190,13 +190,7 @@ const FloorPlanExport = {
           );
         }
       });
-      [
-        ...(floor.openings ?? []),
-        ...(floor.windows ?? []).map((window) => ({
-          ...window,
-          type: "window",
-        })),
-      ].forEach((opening) => {
+      FloorPlanOpenings.forFloor(plan, floor).forEach((opening) => {
         if (plan.isVerticalOpening(opening)) return;
         try {
           const feature = plan.normalizeOpening(opening);

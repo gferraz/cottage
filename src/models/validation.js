@@ -28,13 +28,10 @@ const FloorPlanValidation = {
     const roofs = config.floors
       ? [...(config.roofs ?? []), ...config.floors.flatMap((floor) => floor.roofs ?? [])]
       : config.roofs ?? [];
-    return roofs.flatMap((roof) => [
-      ...(roof.openings ?? []),
-      ...(roof.windows ?? []).map((opening) => ({ ...opening, type: "window" })),
-    ].flatMap((opening, index) => {
+    return roofs.flatMap((roof) => window.FloorPlanOpenings.collect(roof).flatMap((opening, index) => {
       const message = this.roofOpeningSurfaceError(roof, opening.from);
       return message ? [{
-        category: opening.type === "window" ? "window" : "opening",
+        category: opening.type === "door" ? "door" : opening.type === "window" ? "window" : "opening",
         id: opening.id || `${roof.id || "telhado"}-opening-${index + 1}`,
         opening,
         message,

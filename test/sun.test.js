@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 globalThis.window = globalThis;
+require('../src/models/openings.js');
 require('../src/views/3d/sun.js');
 const sun = globalThis.FloorPlan3DSun;
 const coordinates = [-25.75, -49.25];

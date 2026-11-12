@@ -1,4 +1,21 @@
 const FloorPlanTextExport = {
+  appendOpeningTables(plan, lines, features, level) {
+    for (const [type, title, empty] of [
+      ["door", "Portas", "Nenhuma porta definida"],
+      ["window", "Janelas", "Nenhuma janela definida"],
+      ["opening", "Vãos", "Nenhum vão definido"],
+    ]) {
+      lines.push("", `${level} ${title}`, "",
+        "| ID | De | Para | Parede | Posição | Largura | z0 | Altura |",
+        "|---|---|---|---|---:|---:|---:|---:|");
+      const entries = features.filter((entry) => entry.type === type);
+      if (!entries.length) lines.push(`| — | ${empty} |  |  |  |  |  |  |`);
+      entries.forEach((entry) => lines.push(
+        `| ${plan.markdownText(entry.id)} | ${plan.markdownText(entry.roomId)} | ${plan.markdownText(entry.to)} | ${entry.wall} | ${plan.formatMeters(entry.position)} | ${plan.formatMeters(entry.w)} | ${plan.formatMeters(entry.z0)} | ${plan.formatMeters(entry.h)} |`,
+      ));
+    }
+  },
+
   independentWallFloorIndex(plan, wall, floors) {
     if (wall.base === "level") {
       const basedFloor = floors.findIndex(
@@ -161,7 +178,7 @@ const FloorPlanTextExport = {
       });
     });
 
-    plan.openings.forEach((opening) => {
+    FloorPlanOpenings.rendered(plan, { active: true }).filter((entry) => entry.type !== "window").forEach((opening) => {
       const room = plan.rooms.get(opening.roomId);
       if (!room) return;
       const wall = opening.wall;
@@ -279,41 +296,7 @@ const FloorPlanTextExport = {
       "",
       `**Total:** ${plan.roomCount} cômodos · ${plan.formatMeters(plan.roomArea)} m² (área líquida, com descontos de sobreposição)`,
     );
-    lines.push(
-      "",
-      "## Passagens",
-      "",
-      "| ID | De | Para | Tipo | Parede | Posição | Largura | z0 | Altura |",
-      "|---|---|---|---|---|---:|---:|---:|---:|",
-    );
-    const openings = plan.allOpenings.length ? plan.allOpenings : plan.openings;
-    if (openings.length === 0) {
-      lines.push("| — | Nenhuma passagem definida |  |  |  |  |  |");
-    } else {
-      openings.forEach((opening) => {
-        lines.push(
-          `| ${plan.markdownText(opening.id)} | ${plan.markdownText(opening.roomId)} | ${plan.markdownText(opening.to)} | ${plan.markdownText(opening.type)} | ${opening.wall} | ${plan.formatMeters(opening.position)} | ${plan.formatMeters(opening.w)} | ${plan.formatMeters(opening.z0)} | ${plan.formatMeters(opening.h)} |`,
-        );
-      });
-    }
-
-    lines.push(
-      "",
-      "## Janelas",
-      "",
-      "| ID | De | Para | Parede | Posição | Largura | z0 | Altura |",
-      "|---|---|---|---|---:|---:|---:|---:|",
-    );
-    const windows = plan.allWindows.length ? plan.allWindows : plan.windows;
-    if (windows.length === 0) {
-      lines.push("| — | Nenhuma janela definida |  |  |  |  |");
-    } else {
-      windows.forEach((window) => {
-        lines.push(
-          `| ${plan.markdownText(window.id)} | ${plan.markdownText(window.roomId)} | ${plan.markdownText(window.to)} | ${window.wall} | ${plan.formatMeters(window.position)} | ${plan.formatMeters(window.w)} | ${plan.formatMeters(window.z0)} | ${plan.formatMeters(window.h)} |`,
-        );
-      });
-    }
+    this.appendOpeningTables(plan, lines, FloorPlanOpenings.rendered(plan), "##");
 
     lines.push("", "## Comunicações naturais", "");
     if (plan.naturalCommunications.length === 0) {
@@ -380,8 +363,9 @@ const FloorPlanTextExport = {
           reference,
           floorId: plan.currentFloorId,
         }));
-    const openings = plan.allOpenings.length ? plan.allOpenings : plan.openings;
-    const windows = plan.allWindows.length ? plan.allWindows : plan.windows;
+    const features = FloorPlanOpenings.rendered(plan);
+    const openings = features.filter((entry) => entry.type !== "window");
+    const windows = features.filter((entry) => entry.type === "window");
     const roofs = plan.allRoofs ?? [];
     const floorRows = FloorPlanModel.floorRows(
       floors,
@@ -536,39 +520,7 @@ const FloorPlanTextExport = {
 
       appendRoofSection("Telhados", floorRoofs);
 
-      lines.push(
-        "",
-        "### Passagens",
-        "",
-        "| ID | De | Para | Tipo | Parede | Posição | Largura | z0 | Altura |",
-        "|---|---|---|---|---|---:|---:|---:|---:|",
-      );
-      if (floorOpenings.length === 0) {
-        lines.push("| — | Nenhuma passagem definida |  |  |  |  |  |");
-      } else {
-        floorOpenings.forEach((opening) => {
-          lines.push(
-            `| ${plan.markdownText(opening.id)} | ${plan.markdownText(opening.roomId)} | ${plan.markdownText(opening.to)} | ${plan.markdownText(opening.type)} | ${opening.wall} | ${plan.formatMeters(opening.position)} | ${plan.formatMeters(opening.w)} | ${plan.formatMeters(opening.z0)} | ${plan.formatMeters(opening.h)} |`,
-          );
-        });
-      }
-
-      lines.push(
-        "",
-        "### Janelas",
-        "",
-        "| ID | De | Para | Parede | Posição | Largura | z0 | Altura |",
-        "|---|---|---|---|---:|---:|---:|---:|",
-      );
-      if (floorWindows.length === 0) {
-        lines.push("| — | Nenhuma janela definida |  |  |  |  |");
-      } else {
-        floorWindows.forEach((window) => {
-          lines.push(
-            `| ${plan.markdownText(window.id)} | ${plan.markdownText(window.roomId)} | ${plan.markdownText(window.to)} | ${window.wall} | ${plan.formatMeters(window.position)} | ${plan.formatMeters(window.w)} | ${plan.formatMeters(window.z0)} | ${plan.formatMeters(window.h)} |`,
-          );
-        });
-      }
+      this.appendOpeningTables(plan, lines, [...floorOpenings, ...floorWindows], "###");
 
       const floorCommunications = FloorPlanLists.findNaturalCommunications(
         plan,

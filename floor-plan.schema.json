@@ -5,7 +5,9 @@
   "type": "object",
   "properties": {
     "coordinate_system": {
-      "enum": ["cartesian"],
+      "enum": [
+        "cartesian"
+      ],
       "description": "Geometria local numérica ou paramétrica: X cresce para a direita e Y para cima na planta (fundos). X = 0 na lateral direita do corpo principal; coordenadas X à esquerda são negativas. Terreno georreferenciado e building mantêm o referencial de implantação."
     },
     "$schema": {
@@ -315,7 +317,8 @@
                   ]
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": false,
+              "deprecated": true
             },
             "window": {
               "type": "object",
@@ -357,7 +360,8 @@
                   ]
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": false,
+              "deprecated": true
             },
             "opening": {
               "type": "object",
@@ -399,7 +403,44 @@
                   ]
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": false,
+              "deprecated": true
+            },
+            "w": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            },
+            "h": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            },
+            "z0": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Número, referência geométrica ou expressão com params.nome."
+                }
+              ]
             }
           },
           "additionalProperties": false
@@ -428,6 +469,90 @@
                 {
                   "type": "string",
                   "minLength": 1
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "doors": {
+          "type": "object",
+          "properties": {
+            "w": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            },
+            "h": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            },
+            "z0": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Número, referência geométrica ou expressão com params.nome."
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "windows": {
+          "type": "object",
+          "properties": {
+            "w": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            },
+            "h": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ]
+            },
+            "z0": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Número, referência geométrica ou expressão com params.nome."
                 }
               ]
             }
@@ -482,7 +607,9 @@
       "properties": {
         "grading": {
           "type": "object",
-          "required": ["profile"],
+          "required": [
+            "profile"
+          ],
           "additionalProperties": false,
           "properties": {
             "profile": {
@@ -490,8 +617,16 @@
               "type": "array",
               "minItems": 2,
               "oneOf": [
-                { "items": { "$ref": "#/definitions/terrain-profile-x" } },
-                { "items": { "$ref": "#/definitions/terrain-profile-y" } }
+                {
+                  "items": {
+                    "$ref": "#/definitions/terrain-profile-x"
+                  }
+                },
+                {
+                  "items": {
+                    "$ref": "#/definitions/terrain-profile-y"
+                  }
+                }
               ]
             }
           }
@@ -597,14 +732,23 @@
     },
     "openings": {
       "type": "array",
+      "description": "Vãos livres, incluindo vãos entre pavimentos. type é aceito apenas por compatibilidade.",
       "items": {
         "$ref": "#/definitions/opening"
       }
     },
     "windows": {
       "type": "array",
+      "description": "Janelas; a coleção determina a categoria.",
       "items": {
-        "$ref": "#/definitions/opening"
+        "$ref": "#/definitions/window"
+      }
+    },
+    "doors": {
+      "type": "array",
+      "description": "Portas; a coleção determina a categoria.",
+      "items": {
+        "$ref": "#/definitions/door"
       }
     }
   },
@@ -612,15 +756,45 @@
   "definitions": {
     "terrain-profile-x": {
       "type": "object",
-      "required": ["x", "z"],
+      "required": [
+        "x",
+        "z"
+      ],
       "additionalProperties": false,
-      "properties": { "id": { "type": "string", "pattern": "\\S", "description": "Identificador opcional, único dentro do perfil." }, "x": { "type": "number" }, "z": { "type": "number" } }
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S",
+          "description": "Identificador opcional, único dentro do perfil."
+        },
+        "x": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      }
     },
     "terrain-profile-y": {
       "type": "object",
-      "required": ["y", "z"],
+      "required": [
+        "y",
+        "z"
+      ],
       "additionalProperties": false,
-      "properties": { "id": { "type": "string", "pattern": "\\S", "description": "Identificador opcional, único dentro do perfil." }, "y": { "type": "number" }, "z": { "type": "number" } }
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "\\S",
+          "description": "Identificador opcional, único dentro do perfil."
+        },
+        "y": {
+          "type": "number"
+        },
+        "z": {
+          "type": "number"
+        }
+      }
     },
     "geometry": {
       "type": "object",
@@ -1161,6 +1335,7 @@
         },
         "openings": {
           "type": "array",
+          "description": "Vãos livres, incluindo vãos entre pavimentos. type é aceito apenas por compatibilidade.",
           "items": {
             "$ref": "#/definitions/opening"
           }
@@ -1244,6 +1419,20 @@
           "type": "integer",
           "minimum": 2,
           "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
+        },
+        "doors": {
+          "type": "array",
+          "description": "Portas; a coleção determina a categoria.",
+          "items": {
+            "$ref": "#/definitions/door"
+          }
+        },
+        "windows": {
+          "type": "array",
+          "description": "Janelas; a coleção determina a categoria.",
+          "items": {
+            "$ref": "#/definitions/window"
+          }
         }
       },
       "required": [
@@ -1354,14 +1543,25 @@
           "properties": {
             "side": {
               "type": "string",
-              "enum": ["left", "right", "both", "none"],
+              "enum": [
+                "left",
+                "right",
+                "both",
+                "none"
+              ],
               "description": "Use none para não criar criados-mudos. Lado antes da rotação da cama. Padrão: right para twin-bed; both para queen-bed."
             },
             "w": {
               "description": "Largura e profundidade opcionais em metros. Padrão: 0.5 para queen-bed; 0.4 para twin-bed (ou o valor do catálogo).",
               "anyOf": [
-                { "type": "number", "exclusiveMinimum": 0 },
-                { "type": "string", "minLength": 1 }
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
               ]
             }
           }
@@ -1677,130 +1877,43 @@
       "type": "object",
       "properties": {
         "id": {
-          "type": "string"
+          "$ref": "#/definitions/wall-feature/properties/id"
         },
         "type": {
-          "enum": [
-            "door",
-            "window",
-            "opening"
-          ]
+          "$ref": "#/definitions/wall-feature/properties/type"
         },
         "from": {
-          "type": "string",
-          "description": "Lado local (left/right/front/rear; top/bottom também aceitos) dentro do cômodo; id.lado no pavimento; ID do piso para vão vertical."
+          "$ref": "#/definitions/wall-feature/properties/from"
         },
         "to": {
-          "type": "string",
-          "description": "ID do cômodo ou exterior; ID do piso para vão vertical."
+          "$ref": "#/definitions/wall-feature/properties/to"
         },
         "w": {
-          "anyOf": [
-            {
-              "type": "number",
-              "exclusiveMinimum": 0
-            },
-            {
-              "type": "string",
-              "minLength": 1
-            }
-          ]
+          "$ref": "#/definitions/wall-feature/properties/w"
         },
         "h": {
-          "anyOf": [
-            {
-              "type": "number",
-              "exclusiveMinimum": 0
-            },
-            {
-              "type": "string",
-              "minLength": 1
-            }
-          ]
+          "$ref": "#/definitions/wall-feature/properties/h"
         },
         "z0": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "string",
-              "minLength": 1,
-              "description": "Número, referência geométrica ou expressão com params.nome."
-            }
-          ]
+          "$ref": "#/definitions/wall-feature/properties/z0"
         },
         "dx": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "string",
-              "minLength": 1,
-              "description": "Número, referência geométrica ou expressão com params.nome."
-            }
-          ]
+          "$ref": "#/definitions/wall-feature/properties/dx"
         },
         "dy": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "string",
-              "minLength": 1,
-              "description": "Número, referência geométrica ou expressão com params.nome."
-            }
-          ]
+          "$ref": "#/definitions/wall-feature/properties/dy"
         },
         "position": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "string",
-              "minLength": 1,
-              "description": "Número, referência geométrica ou expressão com params.nome."
-            }
-          ]
+          "$ref": "#/definitions/wall-feature/properties/position"
         },
         "x": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "string",
-              "minLength": 1,
-              "description": "Número, referência geométrica ou expressão com params.nome."
-            }
-          ]
+          "$ref": "#/definitions/wall-feature/properties/x"
         },
         "y": {
-          "anyOf": [
-            {
-              "type": "number"
-            },
-            {
-              "type": "string",
-              "minLength": 1,
-              "description": "Número, referência geométrica ou expressão com params.nome."
-            }
-          ]
+          "$ref": "#/definitions/wall-feature/properties/y"
         },
         "length": {
-          "anyOf": [
-            {
-              "type": "number",
-              "exclusiveMinimum": 0
-            },
-            {
-              "type": "string",
-              "minLength": 1
-            }
-          ]
+          "$ref": "#/definitions/wall-feature/properties/length"
         },
         "pos": {
           "type": "array",
@@ -1834,6 +1947,33 @@
             ]
           },
           "minItems": 2,
+          "maxItems": 3
+        },
+        "rectangle": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "inset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "outset": {
+          "type": "array",
+          "minItems": 3,
           "maxItems": 3
         }
       },
@@ -1902,14 +2042,16 @@
         },
         "openings": {
           "type": "array",
+          "description": "Vãos livres, incluindo vãos entre pavimentos. type é aceito apenas por compatibilidade.",
           "items": {
             "$ref": "#/definitions/opening"
           }
         },
         "windows": {
           "type": "array",
+          "description": "Janelas; a coleção determina a categoria.",
           "items": {
-            "$ref": "#/definitions/opening"
+            "$ref": "#/definitions/window"
           }
         },
         "roofs": {
@@ -1928,6 +2070,13 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/geometry"
+          }
+        },
+        "doors": {
+          "type": "array",
+          "description": "Portas; a coleção determina a categoria.",
+          "items": {
+            "$ref": "#/definitions/door"
           }
         }
       },
@@ -2526,14 +2675,16 @@
         },
         "openings": {
           "type": "array",
+          "description": "Vãos livres, incluindo vãos entre pavimentos. type é aceito apenas por compatibilidade.",
           "items": {
             "$ref": "#/definitions/opening"
           }
         },
         "windows": {
           "type": "array",
+          "description": "Janelas; a coleção determina a categoria.",
           "items": {
-            "$ref": "#/definitions/opening"
+            "$ref": "#/definitions/window"
           }
         },
         "copy": {
@@ -2593,6 +2744,13 @@
           "type": "integer",
           "minimum": 2,
           "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
+        },
+        "doors": {
+          "type": "array",
+          "description": "Portas; a coleção determina a categoria.",
+          "items": {
+            "$ref": "#/definitions/door"
+          }
         }
       },
       "additionalProperties": false,
@@ -2926,6 +3084,241 @@
         "under"
       ],
       "additionalProperties": false
+    },
+    "door": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/wall-feature/properties/id"
+        },
+        "type": {
+          "const": "door",
+          "deprecated": true,
+          "description": "Redundante: a coleção determina a categoria."
+        },
+        "from": {
+          "$ref": "#/definitions/wall-feature/properties/from"
+        },
+        "to": {
+          "$ref": "#/definitions/wall-feature/properties/to"
+        },
+        "w": {
+          "$ref": "#/definitions/wall-feature/properties/w"
+        },
+        "h": {
+          "$ref": "#/definitions/wall-feature/properties/h"
+        },
+        "z0": {
+          "$ref": "#/definitions/wall-feature/properties/z0"
+        },
+        "dx": {
+          "$ref": "#/definitions/wall-feature/properties/dx"
+        },
+        "dy": {
+          "$ref": "#/definitions/wall-feature/properties/dy"
+        },
+        "position": {
+          "$ref": "#/definitions/wall-feature/properties/position"
+        },
+        "x": {
+          "$ref": "#/definitions/wall-feature/properties/x"
+        },
+        "y": {
+          "$ref": "#/definitions/wall-feature/properties/y"
+        },
+        "length": {
+          "$ref": "#/definitions/wall-feature/properties/length"
+        }
+      },
+      "required": [
+        "from"
+      ],
+      "additionalProperties": false
+    },
+    "window": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/wall-feature/properties/id"
+        },
+        "type": {
+          "const": "window",
+          "deprecated": true,
+          "description": "Redundante: a coleção determina a categoria."
+        },
+        "from": {
+          "$ref": "#/definitions/wall-feature/properties/from"
+        },
+        "to": {
+          "$ref": "#/definitions/wall-feature/properties/to"
+        },
+        "w": {
+          "$ref": "#/definitions/wall-feature/properties/w"
+        },
+        "h": {
+          "$ref": "#/definitions/wall-feature/properties/h"
+        },
+        "z0": {
+          "$ref": "#/definitions/wall-feature/properties/z0"
+        },
+        "dx": {
+          "$ref": "#/definitions/wall-feature/properties/dx"
+        },
+        "dy": {
+          "$ref": "#/definitions/wall-feature/properties/dy"
+        },
+        "position": {
+          "$ref": "#/definitions/wall-feature/properties/position"
+        },
+        "x": {
+          "$ref": "#/definitions/wall-feature/properties/x"
+        },
+        "y": {
+          "$ref": "#/definitions/wall-feature/properties/y"
+        },
+        "length": {
+          "$ref": "#/definitions/wall-feature/properties/length"
+        }
+      },
+      "required": [
+        "from"
+      ],
+      "additionalProperties": false
+    },
+    "wall-feature": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "door",
+            "window",
+            "opening"
+          ],
+          "deprecated": true
+        },
+        "from": {
+          "type": "string",
+          "description": "Lado local (left/right/front/rear; top/bottom também aceitos) dentro do cômodo; id.lado no pavimento; ID do piso para vão vertical."
+        },
+        "to": {
+          "type": "string",
+          "description": "ID do cômodo ou exterior; ID do piso para vão vertical."
+        },
+        "w": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "h": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "z0": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "dx": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "dy": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "position": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "x": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "y": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "length": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        }
+      },
+      "required": [
+        "from"
+      ]
     }
   }
 }

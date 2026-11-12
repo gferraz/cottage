@@ -133,13 +133,14 @@ const FloorPlanCoordinates = {
     if (houseWalls) delete result.config.room_wall_sides;
     if (result.viewport?.origin) result.viewport.origin[0] = this.arithmetic("-", this.negative(result.viewport.origin[0]), result.viewport.size[0]);
     const widthOf = (entry) => entry.size?.[0] ?? entry.w ?? catalog?.items?.[entry.type]?.size?.[0];
-    const opening = (entry, owner) => {
+    const openingDefaults = window.FloorPlanOpenings.verticalDefaults({ catalog: catalog ?? {}, currentConfig: result });
+    const opening = (entry, owner, category) => {
       const match = typeof entry.from === "string" && entry.from.match(/^(.*\.)(left|right|top|bottom)$/);
       const wall = match?.[2] ?? entry.from;
       const positionKey = ["dx", "position", "x"].find((key) => entry[key] !== undefined);
       if (["top", "bottom"].includes(wall) && positionKey) {
         const roomId = match ? match[1].slice(0, -1) : owner;
-        const width = entry.w ?? entry.length ?? result.config?.openings?.[entry.type ?? "door"]?.w ?? catalog?.openings?.[entry.type ?? "door"]?.w;
+        const width = entry.w ?? entry.length ?? openingDefaults[category]?.w;
         if (!roomId || width === undefined) throw new Error("A transformação da abertura precisa do cômodo e da largura");
         entry[positionKey] = this.arithmetic("-", this.arithmetic("-", `${roomId}.w`, entry[positionKey]), width);
       }
@@ -174,7 +175,7 @@ const FloorPlanCoordinates = {
       }
       for (const key of ["inset", "outset"]) if (entry[key]?.length === 5) [entry[key][1], entry[key][3]] = [entry[key][3], entry[key][1]];
       entry.parts?.forEach(geometry);
-      entry.openings?.forEach((item) => opening(item, entry.id));
+      window.FloorPlanOpenings.visit(entry, (item, type) => opening(item, entry.id, type));
     };
     const roofDefaults = result.config?.roofs ?? {};
     const roof = (entry) => {
@@ -201,8 +202,7 @@ const FloorPlanCoordinates = {
       entry.guides?.forEach(geometry);
       entry.walls?.forEach(geometry);
       entry.roofs?.forEach(roof);
-      entry.openings?.forEach((item) => opening(item));
-      entry.windows?.forEach((item) => opening(item));
+      window.FloorPlanOpenings.visit(entry, (item, type) => opening(item, undefined, type));
     };
     floor(result);
     result.floors?.forEach(floor);

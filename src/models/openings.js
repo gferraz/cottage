@@ -1,4 +1,42 @@
 const FloorPlanOpenings = {
+  collections: { openings: "opening", doors: "door", windows: "window" },
+
+  visit(owner, callback) {
+    for (const [key, category] of Object.entries(this.collections)) {
+      (owner?.[key] ?? []).forEach((entry, index) => {
+        const type = key === "openings" ? entry.type ?? category : category;
+        callback(entry, type, key, index);
+      });
+    }
+  },
+
+  collect(owner, { roomId } = {}) {
+    const entries = [];
+    this.visit(owner, (entry, type) => {
+      const from = String(entry.from ?? "").trim();
+      const localSide = { front: "top", rear: "bottom" }[from] ?? from;
+      const relative = roomId && /^(top|right|bottom|left)$/.test(localSide);
+      const result = {
+        ...entry, type,
+        from: relative ? `${roomId}.${localSide}` : from,
+        ...(roomId ? { roomId } : {}),
+      };
+      entries.push(window.FloorPlanParser?.copyLocation(entry, result) ?? result);
+    });
+    return entries;
+  },
+
+  forFloor(plan, floor) {
+    return [...this.collect(floor), ...this.roomOpenings(plan, floor)];
+  },
+
+  rendered(plan, { type, floor, active = false } = {}) {
+    const openings = !active && plan.allOpenings?.length ? plan.allOpenings : plan.openings ?? [];
+    const windows = !active && plan.allWindows?.length ? plan.allWindows : plan.windows ?? [];
+    return [...openings, ...windows].filter((entry) =>
+      (!type || entry.type === type) && (!floor || entry.floorId === floor.id));
+  },
+
   verticalDefaults(plan) {
     const defaults = {
       door: { w: 0.8, z0: 0, h: 2.1 },
@@ -7,7 +45,9 @@ const FloorPlanOpenings = {
       ...(plan.catalog.openings || {}),
     };
     for (const type of Object.keys(defaults)) {
-      const configured = plan.currentConfig?.config?.openings?.[type] ?? {};
+      const config = plan.currentConfig?.config ?? {};
+      const key = { door: "doors", window: "windows", opening: "openings" }[type];
+      const configured = { ...(config.openings?.[type] ?? {}), ...(config[key] ?? {}) };
       defaults[type] = { ...defaults[type] };
       for (const key of ["w", "h", "z0"]) {
         if (configured[key] !== undefined) defaults[type][key] = configured[key];
@@ -17,18 +57,7 @@ const FloorPlanOpenings = {
   },
 
   roomOpenings(plan, floorConfig) {
-    return (floorConfig.rooms ?? []).flatMap((room) =>
-      (room.openings ?? []).map((opening) => {
-        const from = String(opening.from ?? "").trim();
-        const relativeWall = /^(top|right|bottom|left)$/.test(from);
-        const result = {
-          ...opening,
-          from: relativeWall ? `${room.id}.${from}` : from,
-          roomId: room.id,
-        };
-        return window.FloorPlanParser?.copyLocation(opening, result) ?? result;
-      }),
-    );
+    return (floorConfig.rooms ?? []).flatMap((room) => this.collect(room, { roomId: room.id }));
   },
 
   addOpening(plan, opening) {
@@ -48,6 +77,7 @@ const FloorPlanOpenings = {
   },
 
   isVerticalOpening(plan, opening) {
+    if (opening?.type && opening.type !== "opening") return false;
     const floors = plan.currentConfig?.floors ?? [];
     const from = String(opening?.from ?? "").trim();
     const to = String(opening?.to ?? "").trim();
@@ -224,7 +254,7 @@ const FloorPlanOpenings = {
     const floors = config.floors ?? [config];
     const currentFloorId = floorConfig.id;
     floors.forEach((sourceFloor) => {
-      (sourceFloor.openings ?? []).forEach((opening) => {
+      this.collect(sourceFloor).forEach((opening) => {
         if (!plan.isVerticalOpening(opening)) return;
         const targetId = String(opening.to ?? "").trim();
         const sourceFloorId = String(opening.from ?? "").trim();
@@ -308,7 +338,7 @@ const FloorPlanOpenings = {
         definition.w,
       ]),
     );
-    const type = String(opening.type ?? "door").trim();
+    const type = String(opening.type ?? "opening").trim();
     if (!(type in defaults))
       throw new Error(`Unsupported opening type: ${type}`);
 
@@ -341,7 +371,9 @@ const FloorPlanOpenings = {
     const sharedLength =
       sharedStart === null ? wallLength : sharedEnd - sharedStart;
     const width = Number(
-      opening.w ?? opening.length ?? Math.min(defaults[type], sharedLength),
+      opening.w !== undefined || opening.length !== undefined
+        ? plan.resolve(opening.w ?? opening.length)
+        : Math.min(plan.resolve(defaults[type]), sharedLength),
     );
     if (!(width > 0))
       throw new Error("Opening width must be greater than zero");
@@ -457,7 +489,7 @@ const FloorPlanOpenings = {
     FloorPlanGeometryBox.attach(normalized, {
       label: normalized.id,
     });
-    return normalized;
+    return window.FloorPlanParser?.copyLocation(opening, normalized) ?? normalized;
   },
 
   wallSegment(plan, room, wall) {

@@ -1,6 +1,7 @@
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
 globalThis.window = globalThis;
+require('../src/models/openings.js');
 require('../src/config/coordinates.js');
 
 test('Symbolic reflection preserves local origins, asymmetric insets and roof defaults', () => {
