@@ -1,4 +1,48 @@
 const FloorPlanModel = {
+  // Symbol metadata survives internal object spreads but is omitted by JSON.stringify.
+  deprecationWarningsKey: Symbol("deprecationWarnings"),
+
+  collectDeprecations(config) {
+    const warnings = [];
+    const emit = (value, property, path, code, message) => {
+      warnings.push({
+        code, path: `${path}.${property}`, message,
+        location: window.FloorPlanParser?.location(value, property)
+          ?? window.FloorPlanParser?.location(value),
+      });
+    };
+    const visit = (value, path = "$", context = "") => {
+      if (!value || typeof value !== "object") return;
+      if (Array.isArray(value)) {
+        value.forEach((entry, index) => visit(entry, `${path}[${index}]`, context));
+        return;
+      }
+      if (["", "floors"].includes(context) && Object.hasOwn(value, "wall_max_height")) {
+        emit(value, "wall_max_height", path, "floor-wall-max-height",
+          "wall_max_height está depreciado. Use ceiling_height; quando ambos existem, ceiling_height tem prioridade.");
+      }
+      if (context === "roofs" && Object.hasOwn(value, "eave")) {
+        emit(value, "eave", path, "roof-eave",
+          "eave está depreciado. Use eaves: { left: valor, right: valor }; para arrays, use o primeiro e o segundo valores, respectivamente. eaves.left/right explícitos têm prioridade.");
+      }
+      if (["rooms", "parts", "walls"].includes(context) && value.top &&
+          typeof value.top === "object" && !Array.isArray(value.top) &&
+          Object.hasOwn(value.top, "under") &&
+          (value.top.offset === undefined || value.top.offset === 0)) {
+        emit(value, "top", path, "top-under",
+          "top: { under: ... } sem deslocamento está depreciado. Use top diretamente com o ID ou a lista de IDs de under.");
+      }
+      // Only inspect structural collections, never user-defined IDs or parameter names.
+      for (const key of ["config", "floors", "rooms", "parts", "walls", "roofs"]) {
+        if (value[key] && typeof value[key] === "object") {
+          visit(value[key], `${path}.${key}`, key);
+        }
+      }
+    };
+    visit(config);
+    return warnings;
+  },
+
   normalizeWallSides(config) {
     const side = (value) => value === "front" ? "top" : value === "rear" ? "bottom" : value;
     const visit = (value, key) => {
@@ -22,6 +66,7 @@ const FloorPlanModel = {
             return [name, visit(child, name)];
           }));
       }
+      if (value[this.deprecationWarningsKey]) result[this.deprecationWarningsKey] = value[this.deprecationWarningsKey];
       return window.FloorPlanParser?.copyLocation(value, result) ?? result;
     };
     return visit(config);
@@ -146,12 +191,14 @@ const FloorPlanModel = {
   },
 
   fromConfig(config) {
+    const warnings = config[this.deprecationWarningsKey] ?? this.collectDeprecations(config);
     config = this.normalizeWallSides(config);
     if (config.coordinate_system === "cartesian") {
       config = FloorPlanCoordinates.reflectX(config);
       delete config.coordinate_system;
     }
     config = this.applyDefaults(config);
+    if (warnings.length) config[this.deprecationWarningsKey] = warnings;
     if (config.terrain?.grading !== undefined) FloorPlanTerrainGeometry.profile(config.terrain.grading);
     const floors = config.floors ?? [config];
     const viewport = config.viewport ?? {
@@ -160,6 +207,7 @@ const FloorPlanModel = {
     };
     return {
       config,
+      warnings,
       floors,
       viewport,
       rooms: floors.flatMap((floor) =>

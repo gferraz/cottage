@@ -1656,3 +1656,8 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 }
 #terrain-summary { margin-bottom: 8px; font-weight: 650; color: #55724d; }
 code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
+
+.technical-global-warnings { border-color: #a66b16; }
+.deprecation-list-item { padding: 8px 0; color: var(--theme-text); }
+.deprecation-list-item + .deprecation-list-item { border-top: 1px solid var(--theme-border-light); }
+.deprecation-list-item p { margin: 0 0 4px; }

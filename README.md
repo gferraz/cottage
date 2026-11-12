@@ -203,7 +203,7 @@ top: ["upper-flight", "upper-landing"]
 
 A referência aceita IDs de telhados, cômodos, partes, itens ou outras referências retangulares sem rotação. Um cômodo composto usa as suas partes. Lances seguem o plano inclinado ideal entre as cotas das extremidades; patamares e outros volumes usam sua cota inferior `z0`. Nenhuma espessura estrutural é presumida. Os lances no 3D deixam o volume sob esse plano livre. Nos encontros, prevalece a face inferior mais baixa; trechos fora das projeções mantêm o limite normal. O recorte considera a espessura das paredes e aparece no 3D e nas elevações. Referências inválidas geram erro de parede. O recorte não valida automaticamente a altura útil de portas ou equipamentos.
 
-Arquivos anteriores com `top: { level: ... }` ou `top: { under: ..., offset: ... }` continuam sendo lidos por compatibilidade.
+Arquivos anteriores com `top: { under: ..., offset: ... }` continuam sendo lidos por compatibilidade. Sem deslocamento, prefira `top` diretamente com o ID ou a lista de IDs. A forma `top: { level: ... }` continua válida para cotas explícitas.
 
 O padrão é quatro paredes sólidas. Use `walls` com `solid`, `open` ou `virtual`:
 
@@ -337,3 +337,11 @@ São necessários pelo menos dois pontos numéricos, com coordenadas estritament
 Cada ponto aceita um `id` opcional, não vazio e único dentro do perfil, por exemplo `{ id: "tp-02-entrada", y: 3, z: -0.45 }`. O ID identifica o ponto para edição; ainda não funciona como referência em expressões geométricas. O arquivo `cottage-ferraz-cesar.json5` contém seis pontos longitudinais provisórios (`tp-01-rua` a `tp-06-fundos-terreno`), com patamar em −0,45 m e início da descida em Y = 12 m. A cota de estudo nos fundos do envelope térreo é −0,90 m em Y = 23,8 m. O perfil alcança −6 m em Y = 44,32 m e mantém essa cota até o restante da divisa oblíqua. As cotas intermediárias são hipóteses editáveis, não um projeto de terraplenagem.
 
 A mureta periférica do estudo é a parede independente `perimeter-plinth`, com `scope: "ground"`, `base: "terrain"` e `top: { level: "ground.z0" }`. Seu caminho fechado acompanha o contorno do térreo, incluindo varanda, terraço e garagem, sem incluir a escada frontal. A espessura usa `params.wall_thickness`. A base é recortada pelo perfil do terreno nas fachadas e no 3D, inclusive nas mudanças de inclinação; a mureta permanece visível na seleção do térreo. Trata-se do fechamento geométrico entre terreno e piso, sem dimensionamento estrutural de fundação ou contenção.
+
+### Avisos de depreciação
+
+O quadro técnico apresenta **Avisos de depreciação**, separados dos erros. A planta continua carregando com a sintaxe antiga; cada aviso informa a substituição recomendada e, quando o arquivo é lido pelo parser JSON5, arquivo, linha, coluna e caminho da propriedade. Para configurações criadas diretamente em JavaScript, apresenta o caminho no objeto.
+
+As regras atuais são `wall_max_height` → `ceiling_height`, `eave` → `eaves.left/right` e `top: { under: ... }` sem deslocamento → `top` com ID ou lista de IDs. `top.level`, `top.under` com deslocamento e as declarações atuais de portas/janelas continuam válidos sem aviso. Os aliases `front/rear` e os atalhos de geometria também continuam válidos.
+
+A coleta fica centralizada em `FloorPlanModel.collectDeprecations`, antes da normalização e da aplicação de padrões. Novas regras devem indicar código estável, propriedade e orientação de migração, inspecionando apenas os contextos estruturais correspondentes. Os avisos originais são preservados nas recargas internas para não repetir ocorrências nem atribuir avisos a valores herdados dos padrões; não são incluídos no JSON exportado.

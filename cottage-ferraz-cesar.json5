@@ -309,7 +309,7 @@
           label: "Mesa Ø 1,2 m",
           title: "Mesa redonda — Cozinha — Ø 1,2 m",
           pos: ["kitchen.xc - 0.6", "kitchen.yc - 0.6"],
-          size: [1.2, 1.2, 0.75],
+          size: [1.0, 1.0, 0.75],
           classes: "table round-table"
         },
         {

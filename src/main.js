@@ -60,6 +60,7 @@ class FloorPlan {
     this.windows = [];
     this.naturalCommunications = [];
     this.errors = [];
+    this.warnings = [];
     this.currentConfig = null;
     this.currentFloorId = null;
     this.showAllFloors = false;
@@ -754,6 +755,7 @@ class FloorPlan {
     this.windows = [];
     this.allRoofs = [];
     this.errors = [];
+    this.warnings = [];
     this.roomArea = 0;
     this.roomCount = 0;
     this.layerCutoff = null;
@@ -859,6 +861,7 @@ class FloorPlan {
     if (typeof document !== "undefined") document.title = title;
     document.querySelector("#project-overview")?.removeAttribute("hidden");
     this.clear();
+    this.warnings = this.model.warnings;
     this.prepareRoomReferences(config);
     if (!this.showAllFloors) this.validateInactiveFloorFeatures(config, floorIndex);
     this.prepareGlobalLists(config);

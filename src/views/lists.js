@@ -93,6 +93,27 @@ const FloorPlanLists = {
       root.append(section);
     });
 
+    if (plan.warnings?.length) {
+      const section = document.createElement("section");
+      section.className = "technical-global-errors technical-global-warnings";
+      const heading = document.createElement("h3");
+      heading.textContent = "Avisos de depreciação";
+      section.append(heading);
+      plan.warnings.forEach((warning) => {
+        const item = document.createElement("div");
+        item.className = "deprecation-list-item";
+        const message = document.createElement("p");
+        message.textContent = warning.message;
+        const source = document.createElement("div");
+        source.className = "error-source-location";
+        source.textContent = warning.location
+          ? FloorPlanParser.formatLocation(warning.location) : warning.path;
+        item.append(message, source);
+        section.append(item);
+      });
+      root.append(section);
+    }
+
     if (plan.errors.length) {
       const errors = document.createElement("section");
       errors.className = "technical-global-errors";
