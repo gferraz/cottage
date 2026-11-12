@@ -704,6 +704,25 @@
   // Telhados
   roofs: [
     {
+      id: "service-roof",
+      label: "Telhado da cozinha e área de serviço",
+      z0: "upper.z0",
+      rectangle: ["laundry.x0", "laundry.y0", "kitchen-roof.x0", "mudroom.y1"],
+      orientation: "longitudinal",
+      pitch: 51,
+      eaves: { left: 0.5, right: 0, pitch: 51 }
+    },
+    {
+      id: "kitchen-roof",
+      label: "Telhado da cozinha",
+      z0: "upper.z0 + params.roof_base_offset",
+      // Base simétrica à guia, sem exigir cobertura de toda a cozinha.
+      rectangle: ["2 * knee-right.x0 - kitchen.x1", "kitchen.y0", "kitchen.x1", "kitchen.y1"],
+      orientation: "longitudinal",
+      pitch: 51,
+      eaves: { left: 0.5, right: 0.5, pitch: 51 }
+    },
+    {
       id: "porch-roof",
       label: "Cobertura da varanda",
       type: "shed",
