@@ -1714,6 +1714,11 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 #terrain-summary { margin-bottom: 8px; font-weight: 650; color: #55724d; }
 code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
 
+.technical-global-warnings { border-color: #a66b16; }
+.deprecation-list-item { padding: 8px 0; color: var(--theme-text); }
+.deprecation-list-item + .deprecation-list-item { border-top: 1px solid var(--theme-border-light); }
+.deprecation-list-item p { margin: 0 0 4px; }
+
 </style>
   </head>
   <body class="page-empty">
@@ -2884,6 +2889,535 @@ const FloorPlanParser = {
 window.FloorPlanParser = FloorPlanParser;
 
 
+const FloorPlanOpenings = {
+  collections: { openings: "opening", doors: "door", windows: "window" },
+
+  visit(owner, callback) {
+    for (const [key, category] of Object.entries(this.collections)) {
+      (owner?.[key] ?? []).forEach((entry, index) => {
+        const type = key === "openings" ? entry.type ?? category : category;
+        callback(entry, type, key, index);
+      });
+    }
+  },
+
+  collect(owner, { roomId } = {}) {
+    const entries = [];
+    this.visit(owner, (entry, type) => {
+      const from = String(entry.from ?? "").trim();
+      const localSide = { front: "top", rear: "bottom" }[from] ?? from;
+      const relative = roomId && /^(top|right|bottom|left)$/.test(localSide);
+      const result = {
+        ...entry, type,
+        from: relative ? `${roomId}.${localSide}` : from,
+        ...(roomId ? { roomId } : {}),
+      };
+      entries.push(window.FloorPlanParser?.copyLocation(entry, result) ?? result);
+    });
+    return entries;
+  },
+
+  forFloor(plan, floor) {
+    return [...this.collect(floor), ...this.roomOpenings(plan, floor)];
+  },
+
+  rendered(plan, { type, floor, active = false } = {}) {
+    const openings = !active && plan.allOpenings?.length ? plan.allOpenings : plan.openings ?? [];
+    const windows = !active && plan.allWindows?.length ? plan.allWindows : plan.windows ?? [];
+    return [...openings, ...windows].filter((entry) =>
+      (!type || entry.type === type) && (!floor || entry.floorId === floor.id));
+  },
+
+  verticalDefaults(plan) {
+    const defaults = {
+      door: { w: 0.8, z0: 0, h: 2.1 },
+      opening: { w: 1.0, z0: 0, h: 2.1 },
+      window: { w: 0.9, z0: 0.9, h: 1.5 },
+      ...(plan.catalog.openings || {}),
+    };
+    for (const type of Object.keys(defaults)) {
+      const config = plan.currentConfig?.config ?? {};
+      const key = { door: "doors", window: "windows", opening: "openings" }[type];
+      const configured = { ...(config.openings?.[type] ?? {}), ...(config[key] ?? {}) };
+      defaults[type] = { ...defaults[type] };
+      for (const key of ["w", "h", "z0"]) {
+        if (configured[key] !== undefined) defaults[type][key] = configured[key];
+      }
+    }
+    return defaults;
+  },
+
+  roomOpenings(plan, floorConfig) {
+    return (floorConfig.rooms ?? []).flatMap((room) => this.collect(room, { roomId: room.id }));
+  },
+
+  addOpening(plan, opening) {
+    if (plan.isVerticalOpening(opening)) {
+      return plan.addVerticalOpening(opening);
+    }
+    const passage = plan.normalizeOpening(opening);
+    if (passage.type === "window") {
+      plan.windows.push(passage);
+      plan.renderWallFeature(passage, "plan-window");
+      return passage;
+    }
+    plan.openings.push(passage);
+
+    plan.renderWallFeature(passage, "plan-opening");
+    return passage;
+  },
+
+  isVerticalOpening(plan, opening) {
+    if (opening?.type && opening.type !== "opening") return false;
+    const floors = plan.currentConfig?.floors ?? [];
+    const from = String(opening?.from ?? "").trim();
+    const to = String(opening?.to ?? "").trim();
+    return (
+      (Array.isArray(opening?.size) ||
+        opening?.rectangle !== undefined ||
+        opening?.inset !== undefined ||
+        opening?.outset !== undefined) &&
+      floors.some((floor) => floor.id === from) &&
+      floors.some((floor) => floor.id === to)
+    );
+  },
+
+  addVerticalOpening(plan, opening, floorConfig = null) {
+    const floors = plan.currentConfig?.floors ?? [plan.currentConfig];
+    const fromId = String(opening.from ?? "").trim();
+    const toId = String(opening.to ?? "").trim();
+    const fromFloor = floors.find((floor) => floor.id === fromId);
+    const toFloor = floors.find((floor) => floor.id === toId);
+    if (!fromFloor)
+      throw new Error(`Unknown vertical opening source floor: ${fromId}`);
+    if (!toFloor)
+      throw new Error(`Unknown vertical opening target floor: ${toId}`);
+    if (fromId === toId)
+      throw new Error("Abertura vertical precisa conectar pisos diferentes");
+    const fromHeight = Number(fromFloor.z0 ?? 0);
+    const toHeight = Number(toFloor.z0 ?? 0);
+    if (
+      ![fromHeight, toHeight].every(Number.isFinite) ||
+      fromHeight === toHeight
+    ) {
+      throw new Error(
+        "Os pisos da abertura vertical precisam ter elevações diferentes",
+      );
+    }
+
+    const geometry = plan.normalizeGeometryAtFloor(opening, fromFloor);
+    const { x, y, w: width, l: length } = geometry;
+    if (
+      ![x, y, width, length].every(Number.isFinite) ||
+      width <= 0 ||
+      length <= 0
+    ) {
+      throw new Error("Abertura vertical precisa de dimensões válidas");
+    }
+
+    const passage = {
+      ...opening,
+      id: opening.id || `${fromId}-${toId}-vertical`,
+      x,
+      y,
+      w: width,
+      l: length,
+      z0: fromHeight,
+      h: 0,
+      from: fromId,
+      to: toId,
+    };
+    const element = plan.add({
+      pos: [x, y, fromHeight],
+      size: [width, length, 0],
+      classes: "floor-opening vertical-opening",
+      title: `Abertura vertical: ${passage.id}`,
+    });
+    element.dataset.from = fromId;
+    element.dataset.to = toId;
+    if ((floorConfig?.id ?? plan.currentFloorId) === fromId) {
+      plan.root.querySelectorAll("[data-spanning-stair]").forEach((stair) => {
+        plan.clipProjection(
+          stair,
+          { x: stair.x0(), y: stair.y0(), w: stair.w(), l: stair.l() },
+          passage,
+        );
+      });
+      plan.renderLowerFloorProjection(floors, fromFloor, fromHeight, passage);
+    }
+    return passage;
+  },
+
+  clipProjection(plan, element, geometry, opening) {
+    const top = Math.max(0, opening.y - geometry.y);
+    const right = Math.max(
+      0,
+      geometry.x + geometry.w - (opening.x + opening.w),
+    );
+    const bottom = Math.max(
+      0,
+      geometry.y + geometry.l - (opening.y + opening.l),
+    );
+    const left = Math.max(0, opening.x - geometry.x);
+    element.style.clipPath = `inset(calc(${top} * var(--m)) calc(${right} * var(--m)) calc(${bottom} * var(--m)) calc(${left} * var(--m)))`;
+  },
+
+  renderLowerFloorProjection(plan, floors, fromFloor, fromHeight, opening) {
+    const lowerFloors = floors
+      .filter((floor) => Number(floor.z0 ?? 0) < fromHeight)
+      .sort((first, second) => Number(second.z0 ?? 0) - Number(first.z0 ?? 0));
+    const lowerFloor = lowerFloors[0];
+    if (!lowerFloor) return;
+    const lowerFloorHeight = Number(lowerFloor.z0 ?? 0);
+
+    const compoundGeometry = (definition) => {
+      const parts = plan.normalizeParts(definition.parts);
+      const x = Math.min(...parts.map((part) => part.x));
+      const y = Math.min(...parts.map((part) => part.y));
+      const x1 = Math.max(...parts.map((part) => part.x + part.w));
+      const y1 = Math.max(...parts.map((part) => part.y + part.l));
+      const z0 = Math.min(...parts.map((part) => part.z0));
+      const z1 = Math.max(...parts.map((part) => part.z1));
+      return { x, y, w: x1 - x, l: y1 - y, z0, z1, h: z1 - z0 };
+    };
+
+    const addProjection = (definition, geometry, room = false) => {
+      const overlaps =
+        geometry.x < opening.x + opening.w &&
+        geometry.x + geometry.w > opening.x &&
+        geometry.y < opening.y + opening.l &&
+        geometry.y + geometry.l > opening.y;
+      if (!overlaps || (geometry.z1 < fromHeight && geometry.z0 < fromHeight))
+        return;
+      const projected = room
+        ? plan.addRoom({
+            ...definition,
+            derived: true,
+            container: plan.projectionLayer,
+            pos: [geometry.x, geometry.y, geometry.z0],
+            size: [geometry.w, geometry.l, geometry.h],
+            classes: `${definition.classes || ""} floor-projection`.trim(),
+          })
+        : plan.add({
+            ...definition,
+            container: plan.projectionLayer,
+            pos: [geometry.x, geometry.y, geometry.z0],
+            size: [geometry.w, geometry.l, geometry.h],
+            classes: `${definition.classes || ""} floor-projection`.trim(),
+            showLabel: false,
+          });
+      plan.clipProjection(projected, geometry, opening);
+    };
+
+    (lowerFloor.rooms ?? []).forEach((room) => {
+      const previousHeight = plan.currentFloorHeight;
+      plan.currentFloorHeight = lowerFloorHeight;
+      try {
+        const geometry = room.parts?.length
+          ? compoundGeometry(room)
+          : plan.normalizeGeometry(room);
+        addProjection(room, geometry, true);
+      } catch (error) {
+        plan.errors.push({
+          opening: room,
+          category: "projection",
+          message: error.message,
+        });
+      } finally {
+        plan.currentFloorHeight = previousHeight;
+      }
+    });
+    (window.FloorPlanElements?.items(plan, lowerFloor) ?? lowerFloor.items ?? []).forEach((item) => {
+      try {
+        const definition = plan.resolveItemType(item);
+        addProjection(definition, plan.normalizeGeometryAtFloor(definition, lowerFloor));
+      } catch (error) {
+        plan.errors.push({
+          opening: item,
+          category: "projection",
+          message: error.message,
+        });
+      }
+    });
+  },
+
+  addVisibleVerticalOpenings(plan, config, floorConfig) {
+    const floors = config.floors ?? [config];
+    const currentFloorId = floorConfig.id;
+    floors.forEach((sourceFloor) => {
+      this.collect(sourceFloor).forEach((opening) => {
+        if (!plan.isVerticalOpening(opening)) return;
+        const targetId = String(opening.to ?? "").trim();
+        const sourceFloorId = String(opening.from ?? "").trim();
+        const targetFloorId = String(opening.to ?? "").trim();
+        if (
+          currentFloorId !== sourceFloorId &&
+          currentFloorId !== targetFloorId
+        )
+          return;
+        try {
+          plan.addVerticalOpening(opening, floorConfig);
+        } catch (error) {
+          plan.errors.push({
+            opening,
+            category: "opening",
+            message: error.message,
+          });
+        }
+      });
+    });
+  },
+
+  addWindow(plan, window) {
+    return this.addOpening(plan, this.collect({ windows: [window] })[0]);
+  },
+
+  renderWallFeature(plan, feature, baseClass) {
+    const wallThickness = 0.14;
+    const element = plan.add({
+      x: feature.horizontal ? feature.x : feature.x - wallThickness / 2,
+      y: feature.horizontal ? feature.y - wallThickness / 2 : feature.y,
+      w: feature.horizontal ? feature.w : wallThickness,
+      l: feature.horizontal ? wallThickness : feature.w,
+      classes: `${baseClass} opening-${feature.type} opening-${feature.horizontal ? "horizontal" : "vertical"}`,
+      title: `${feature.type}: ${feature.id}`,
+    });
+    element.dataset.openingRoomId = feature.roomId;
+    if (feature.type === "opening") {
+      const sourceRoom = plan.rooms.get(feature.roomId);
+      const sourceBackground = sourceRoom
+        ? getComputedStyle(sourceRoom).backgroundColor
+        : "";
+      if (sourceBackground)
+        element.style.setProperty(
+          "--opening-source-background",
+          sourceBackground,
+        );
+    }
+  },
+
+  normalizeOpening(plan, opening) {
+    const match = String(opening.from ?? "")
+      .trim()
+      .match(/^(.+)\.(top|left|right|bottom)$/);
+    if (!match)
+      throw new Error(`Invalid opening wall reference: ${opening.from}`);
+
+    const [, roomId, wall] = match;
+    const room = plan.rooms.get(roomId);
+    if (!room) {
+      const config = plan.currentConfig ?? {};
+      const roofs = [...(config.roofs ?? []), ...(config.floors ?? []).flatMap((floor) => floor.roofs ?? [])];
+      const roof = roofs.find((candidate) => candidate.id === roomId);
+      const surfaceError = roof && FloorPlanValidation.roofOpeningSurfaceError(roof, wall);
+      if (surfaceError) throw new Error(surfaceError);
+      throw new Error(`Unknown opening room reference: ${roomId}`);
+    }
+    const target = String(opening.to ?? "exterior").trim() || "exterior";
+    if (target !== "exterior" && !plan.rooms?.has(target)) {
+      throw new Error(`Unknown opening target: ${target}`);
+    }
+
+    const verticalDefaults = this.verticalDefaults(plan);
+    const defaults = Object.fromEntries(
+      Object.entries(verticalDefaults).map(([key, definition]) => [
+        key,
+        definition.w,
+      ]),
+    );
+    const type = String(opening.type ?? "opening").trim();
+    if (!(type in defaults))
+      throw new Error(`Unsupported opening type: ${type}`);
+
+    const horizontal = wall === "top" || wall === "bottom";
+    const wallStart = horizontal ? room.x0() : room.y0();
+    const wallLength = horizontal ? room.w() : room.l();
+    let sharedStart = null;
+    let sharedEnd = null;
+    let targetRoom = null;
+    const sourceWall = plan.wallSegment(room, wall);
+    if (target !== "exterior") {
+      targetRoom = plan.rooms.get(target);
+      const oppositeWall = {
+        top: "bottom",
+        right: "left",
+        bottom: "top",
+        left: "right",
+      }[wall];
+      const targetWall = plan.wallSegment(targetRoom, oppositeWall);
+      if (Math.abs(sourceWall.coordinate - targetWall.coordinate) < 1e-9) {
+        sharedStart = Math.max(sourceWall.start, targetWall.start);
+        sharedEnd = Math.min(sourceWall.end, targetWall.end);
+        if (sharedEnd <= sharedStart) {
+          sharedStart = null;
+          sharedEnd = null;
+        }
+      }
+    }
+
+    const sharedLength =
+      sharedStart === null ? wallLength : sharedEnd - sharedStart;
+    const width = Number(
+      opening.w !== undefined || opening.length !== undefined
+        ? plan.resolve(opening.w ?? opening.length)
+        : Math.min(plan.resolve(defaults[type]), sharedLength),
+    );
+    if (!(width > 0))
+      throw new Error("Opening width must be greater than zero");
+    if (width > wallLength)
+      throw new Error(`Opening is wider than wall ${opening.from}`);
+    if (width > sharedLength)
+      throw new Error(
+        `Opening is wider than the shared wall segment ${opening.from}`,
+      );
+
+    const relativePosition = horizontal
+      ? (opening.dx ?? opening.position ?? opening.x)
+      : (opening.dy ?? opening.position ?? opening.y);
+    const hasPosition = relativePosition !== undefined;
+    const position = hasPosition
+      ? plan.resolve(relativePosition)
+      : sharedStart === null
+        ? (wallLength - width) / 2
+        : sharedStart - wallStart + (sharedLength - width) / 2;
+    if (!(position >= 0) || position + width > wallLength) {
+      throw new Error(`Opening position is outside wall ${opening.from}`);
+    }
+
+    if (target !== "exterior") {
+      const openingStart = wallStart + position;
+      const openingEnd = openingStart + width;
+      if (sharedStart !== null) {
+        if (openingStart < sharedStart || openingEnd > sharedEnd) {
+          throw new Error(`Room ${target} is not connected to ${opening.from}`);
+        }
+      } else {
+        const epsilon = 1e-9;
+        const targetContainsOpening = horizontal
+          ? sourceWall.coordinate >= targetRoom.y0() - epsilon &&
+            sourceWall.coordinate <= targetRoom.y1() + epsilon &&
+            openingStart >= targetRoom.x0() - epsilon &&
+            openingEnd <= targetRoom.x1() + epsilon
+          : sourceWall.coordinate >= targetRoom.x0() - epsilon &&
+            sourceWall.coordinate <= targetRoom.x1() + epsilon &&
+            openingStart >= targetRoom.y0() - epsilon &&
+            openingEnd <= targetRoom.y1() + epsilon;
+        if (!targetContainsOpening) {
+          throw new Error(
+            `Room ${target} is not connected to or containing the opening from ${opening.from}`,
+          );
+        }
+      }
+    }
+
+    const shift = hasPosition ? Math.round(position * 100) : 0;
+    const id = `${roomId}-${target}-${shift}`;
+    const openingDefaults = verticalDefaults[type] || {};
+    const floorZ0 = Number(plan.currentFloorHeight) || 0;
+    const z0 =
+      opening.z0 === undefined
+        ? floorZ0 + plan.resolve(openingDefaults.z0 ?? 0)
+        : plan.resolve(opening.z0);
+    const height = plan.resolve(opening.h ?? openingDefaults.h ?? 2.1);
+    if (![z0, height].every(Number.isFinite) || z0 < 0 || height <= 0) {
+      throw new Error(
+        "Opening z0 must be non-negative and h must be greater than zero",
+      );
+    }
+    const normalized = {
+      ...opening,
+      id,
+      from: opening.from,
+      to: target,
+      type,
+      position,
+      w: width,
+      roomId,
+      wall,
+      wallLength,
+      x: horizontal
+        ? wallStart + position
+        : wall === "left"
+          ? room.x0()
+          : room.x1(),
+      y: horizontal
+        ? wall === "top"
+          ? room.y0()
+          : room.y1()
+        : wallStart + position,
+      horizontal,
+      z0,
+      z1: z0 + height,
+      h: height,
+    };
+    const wallObject = FloorPlanWalls.resolveRoomSide(plan, roomId, wall, normalized);
+    normalized.wallId = wallObject.id;
+    normalized.wallSegment = wallObject.pathSegment ?? null;
+    const openingGeometry = {
+      x: normalized.x,
+      y: normalized.y,
+      z0: normalized.z0,
+      z1: normalized.z1,
+      w: normalized.w,
+      h: normalized.h,
+      wall: normalized.wall,
+      wallId: normalized.wallId,
+      horizontal: normalized.horizontal,
+      roomId: normalized.roomId,
+    };
+    normalized.void = { ...openingGeometry };
+    normalized.element =
+      type === "opening"
+        ? null
+        : {
+            ...openingGeometry,
+            type,
+          };
+    FloorPlanGeometryBox.attach(normalized, {
+      label: normalized.id,
+    });
+    return window.FloorPlanParser?.copyLocation(opening, normalized) ?? normalized;
+  },
+
+  wallSegment(plan, room, wall) {
+    // Keep this helper compatible with older callers that passed only
+    // (room, wall) while the public facade now passes (plan, room, wall).
+    if (wall === undefined && typeof room === "string") {
+      wall = room;
+      room = plan;
+      plan = null;
+    }
+    const geometry =
+      typeof room.x0 === "function" &&
+      typeof room.x1 === "function" &&
+      typeof room.y0 === "function" &&
+      typeof room.y1 === "function"
+        ? room
+        : typeof plan?.normalizeGeometry === "function"
+          ? plan.normalizeGeometry(room)
+          : room;
+    const x0 = typeof geometry.x0 === "function" ? geometry.x0() : geometry.x;
+    const x1 = typeof geometry.x1 === "function" ? geometry.x1() : geometry.x + geometry.w;
+    const y0 = typeof geometry.y0 === "function" ? geometry.y0() : geometry.y;
+    const y1 = typeof geometry.y1 === "function" ? geometry.y1() : geometry.y + geometry.l;
+    const horizontal = wall === "top" || wall === "bottom";
+    return {
+      coordinate: horizontal
+        ? wall === "top"
+          ? y0
+          : y1
+        : wall === "left"
+          ? x0
+          : x1,
+      start: horizontal ? x0 : y0,
+      end: horizontal ? x1 : y1,
+    };
+  },
+};
+
+window.FloorPlanOpenings = FloorPlanOpenings;
+
+
 const FloorPlanCoordinates = {
   // Small arithmetic trees keep references and parameters symbolic during an
   // axis change. No user expression is evaluated as JavaScript.
@@ -3019,13 +3553,14 @@ const FloorPlanCoordinates = {
     if (houseWalls) delete result.config.room_wall_sides;
     if (result.viewport?.origin) result.viewport.origin[0] = this.arithmetic("-", this.negative(result.viewport.origin[0]), result.viewport.size[0]);
     const widthOf = (entry) => entry.size?.[0] ?? entry.w ?? catalog?.items?.[entry.type]?.size?.[0];
-    const opening = (entry, owner) => {
+    const openingDefaults = window.FloorPlanOpenings.verticalDefaults({ catalog: catalog ?? {}, currentConfig: result });
+    const opening = (entry, owner, category) => {
       const match = typeof entry.from === "string" && entry.from.match(/^(.*\.)(left|right|top|bottom)$/);
       const wall = match?.[2] ?? entry.from;
       const positionKey = ["dx", "position", "x"].find((key) => entry[key] !== undefined);
       if (["top", "bottom"].includes(wall) && positionKey) {
         const roomId = match ? match[1].slice(0, -1) : owner;
-        const width = entry.w ?? entry.length ?? result.config?.openings?.[entry.type ?? "door"]?.w ?? catalog?.openings?.[entry.type ?? "door"]?.w;
+        const width = entry.w ?? entry.length ?? openingDefaults[category]?.w;
         if (!roomId || width === undefined) throw new Error("A transformação da abertura precisa do cômodo e da largura");
         entry[positionKey] = this.arithmetic("-", this.arithmetic("-", `${roomId}.w`, entry[positionKey]), width);
       }
@@ -3060,7 +3595,7 @@ const FloorPlanCoordinates = {
       }
       for (const key of ["inset", "outset"]) if (entry[key]?.length === 5) [entry[key][1], entry[key][3]] = [entry[key][3], entry[key][1]];
       entry.parts?.forEach(geometry);
-      entry.openings?.forEach((item) => opening(item, entry.id));
+      window.FloorPlanOpenings.visit(entry, (item, type) => opening(item, entry.id, type));
     };
     const roofDefaults = result.config?.roofs ?? {};
     const roof = (entry) => {
@@ -3087,8 +3622,7 @@ const FloorPlanCoordinates = {
       entry.guides?.forEach(geometry);
       entry.walls?.forEach(geometry);
       entry.roofs?.forEach(roof);
-      entry.openings?.forEach((item) => opening(item));
-      entry.windows?.forEach((item) => opening(item));
+      window.FloorPlanOpenings.visit(entry, (item, type) => opening(item, undefined, type));
     };
     floor(result);
     result.floors?.forEach(floor);
@@ -3101,6 +3635,71 @@ window.FloorPlanCoordinates = FloorPlanCoordinates;
 
 
 const FloorPlanModel = {
+  // Symbol metadata survives internal object spreads but is omitted by JSON.stringify.
+  deprecationWarningsKey: Symbol("deprecationWarnings"),
+
+  collectDeprecations(config) {
+    const warnings = [];
+    const emit = (value, property, path, code, message) => {
+      warnings.push({
+        code, path: `${path}.${property}`, message,
+        location: window.FloorPlanParser?.location(value, property)
+          ?? window.FloorPlanParser?.location(value),
+      });
+    };
+    const visit = (value, path = "$", context = "") => {
+      if (!value || typeof value !== "object") return;
+      if (Array.isArray(value)) {
+        value.forEach((entry, index) => visit(entry, `${path}[${index}]`, context));
+        return;
+      }
+      if (["", "floors"].includes(context) && Object.hasOwn(value, "wall_max_height")) {
+        emit(value, "wall_max_height", path, "floor-wall-max-height",
+          "wall_max_height está depreciado. Use ceiling_height; quando ambos existem, ceiling_height tem prioridade.");
+      }
+      if (context === "roofs" && Object.hasOwn(value, "eave")) {
+        emit(value, "eave", path, "roof-eave",
+          "eave está depreciado. Use eaves: { left: valor, right: valor }; para arrays, use o primeiro e o segundo valores, respectivamente. eaves.left/right explícitos têm prioridade.");
+      }
+      if (["rooms", "parts", "walls"].includes(context) && value.top &&
+          typeof value.top === "object" && !Array.isArray(value.top) &&
+          Object.hasOwn(value.top, "under") &&
+          (value.top.offset === undefined || value.top.offset === 0)) {
+        emit(value, "top", path, "top-under",
+          "top: { under: ... } sem deslocamento está depreciado. Use top diretamente com o ID ou a lista de IDs de under.");
+      }
+      if (["", "floors", "rooms", "roofs"].includes(context)) {
+        for (const key of ["openings", "doors", "windows"]) {
+          if (!Array.isArray(value[key])) continue;
+          value[key].forEach((entry, index) => {
+            if (entry.type !== undefined) {
+              const collection = { door: "doors", window: "windows", opening: "openings" }[entry.type];
+              const destination = key === "openings" ? collection ?? key : key;
+              emit(entry, "type", `${path}.${key}[${index}]`, "opening-type",
+                `${key} com type: ${JSON.stringify(entry.type)} está depreciado. ${destination === key ? "Mantenha a entrada nesta coleção" : `Mova a entrada para ${destination}`} e remova type; a coleção determina a categoria.`);
+            }
+          });
+        }
+      }
+      if (context === "config" && value.openings) {
+        for (const [type, collection] of [["door", "doors"], ["window", "windows"], ["opening", "openings"]]) {
+          if (Object.hasOwn(value.openings, type)) {
+            emit(value.openings, type, `${path}.openings`, "opening-defaults",
+              `config.openings.${type} está depreciado. Use config.${collection} diretamente com w, h e z0; os novos padrões têm prioridade por propriedade.`);
+          }
+        }
+      }
+      // Only inspect structural collections, never user-defined IDs or parameter names.
+      for (const key of ["config", "floors", "rooms", "parts", "walls", "roofs"]) {
+        if (value[key] && typeof value[key] === "object") {
+          visit(value[key], `${path}.${key}`, key);
+        }
+      }
+    };
+    visit(config);
+    return warnings;
+  },
+
   normalizeWallSides(config) {
     const side = (value) => value === "front" ? "top" : value === "rear" ? "bottom" : value;
     const visit = (value, key) => {
@@ -3112,7 +3711,7 @@ const FloorPlanModel = {
       } else {
         result = Array.isArray(value) ? value.map((child) => visit(child))
           : Object.fromEntries(Object.entries(value).map(([name, child]) => {
-            if (["openings", "windows"].includes(name) && Array.isArray(child)) {
+            if (["openings", "doors", "windows"].includes(name) && Array.isArray(child)) {
               return [name, child.map((opening) => {
                 const normalized = visit(opening);
                 if (typeof normalized.from === "string") {
@@ -3124,6 +3723,7 @@ const FloorPlanModel = {
             return [name, visit(child, name)];
           }));
       }
+      if (value[this.deprecationWarningsKey]) result[this.deprecationWarningsKey] = value[this.deprecationWarningsKey];
       return window.FloorPlanParser?.copyLocation(value, result) ?? result;
     };
     return visit(config);
@@ -3248,12 +3848,14 @@ const FloorPlanModel = {
   },
 
   fromConfig(config) {
+    const warnings = config[this.deprecationWarningsKey] ?? this.collectDeprecations(config);
     config = this.normalizeWallSides(config);
     if (config.coordinate_system === "cartesian") {
       config = FloorPlanCoordinates.reflectX(config);
       delete config.coordinate_system;
     }
     config = this.applyDefaults(config);
+    if (warnings.length) config[this.deprecationWarningsKey] = warnings;
     if (config.terrain?.grading !== undefined) FloorPlanTerrainGeometry.profile(config.terrain.grading);
     const floors = config.floors ?? [config];
     const viewport = config.viewport ?? {
@@ -3262,6 +3864,7 @@ const FloorPlanModel = {
     };
     return {
       config,
+      warnings,
       floors,
       viewport,
       rooms: floors.flatMap((floor) =>
@@ -3435,13 +4038,10 @@ const FloorPlanValidation = {
     const roofs = config.floors
       ? [...(config.roofs ?? []), ...config.floors.flatMap((floor) => floor.roofs ?? [])]
       : config.roofs ?? [];
-    return roofs.flatMap((roof) => [
-      ...(roof.openings ?? []),
-      ...(roof.windows ?? []).map((opening) => ({ ...opening, type: "window" })),
-    ].flatMap((opening, index) => {
+    return roofs.flatMap((roof) => window.FloorPlanOpenings.collect(roof).flatMap((opening, index) => {
       const message = this.roofOpeningSurfaceError(roof, opening.from);
       return message ? [{
-        category: opening.type === "window" ? "window" : "opening",
+        category: opening.type === "door" ? "door" : opening.type === "window" ? "window" : "opening",
         id: opening.id || `${roof.id || "telhado"}-opening-${index + 1}`,
         opening,
         message,
@@ -3745,13 +4345,7 @@ const FloorPlanExport = {
           );
         }
       });
-      [
-        ...(floor.openings ?? []),
-        ...(floor.windows ?? []).map((window) => ({
-          ...window,
-          type: "window",
-        })),
-      ].forEach((opening) => {
+      FloorPlanOpenings.forFloor(plan, floor).forEach((opening) => {
         if (plan.isVerticalOpening(opening)) return;
         try {
           const feature = plan.normalizeOpening(opening);
@@ -5646,10 +6240,7 @@ const FloorPlanFacades = {
           )
           .map(([id]) => String(id)),
       );
-      const facadeOpenings = [
-        ...(plan.allOpenings.length ? plan.allOpenings : plan.openings),
-        ...(plan.allWindows.length ? plan.allWindows : plan.windows),
-      ].filter(
+      const facadeOpenings = FloorPlanOpenings.rendered(plan).filter(
         (opening) =>
           (opening.to === "exterior" ||
             outdoorRoomIds.has(String(opening.to || "").split(".")[0])) &&
@@ -7145,15 +7736,12 @@ const FloorPlanFacades3D = {
         .filter(([, room]) => String(room.classes || "").split(/\s+/).includes("outdoor"))
         .map(([id]) => String(id)),
     );
-    const externalOpenings = [
-      ...(plan.allOpenings || []),
-      ...(plan.allWindows || []),
-    ].filter((opening) => {
+    const externalOpenings = FloorPlanOpenings.rendered(plan).filter((opening) => {
       const target = String(opening.to || "exterior").split(".")[0];
       return target === "exterior" || outdoorIds.has(target);
     });
     const openingsByWall = new Map();
-    [...(plan.allOpenings || []), ...(plan.allWindows || [])].forEach((opening) => {
+    FloorPlanOpenings.rendered(plan).forEach((opening) => {
       if (!opening.wallId) return;
       const features = openingsByWall.get(opening.wallId) || [];
       features.push(opening);
@@ -7878,507 +8466,6 @@ const FloorPlanRoofs = {
 };
 
 window.FloorPlanRoofs = FloorPlanRoofs;
-
-
-const FloorPlanOpenings = {
-  verticalDefaults(plan) {
-    const defaults = {
-      door: { w: 0.8, z0: 0, h: 2.1 },
-      opening: { w: 1.0, z0: 0, h: 2.1 },
-      window: { w: 0.9, z0: 0.9, h: 1.5 },
-      ...(plan.catalog.openings || {}),
-    };
-    for (const type of Object.keys(defaults)) {
-      const configured = plan.currentConfig?.config?.openings?.[type] ?? {};
-      defaults[type] = { ...defaults[type] };
-      for (const key of ["w", "h", "z0"]) {
-        if (configured[key] !== undefined) defaults[type][key] = configured[key];
-      }
-    }
-    return defaults;
-  },
-
-  roomOpenings(plan, floorConfig) {
-    return (floorConfig.rooms ?? []).flatMap((room) =>
-      (room.openings ?? []).map((opening) => {
-        const from = String(opening.from ?? "").trim();
-        const relativeWall = /^(top|right|bottom|left)$/.test(from);
-        const result = {
-          ...opening,
-          from: relativeWall ? `${room.id}.${from}` : from,
-          roomId: room.id,
-        };
-        return window.FloorPlanParser?.copyLocation(opening, result) ?? result;
-      }),
-    );
-  },
-
-  addOpening(plan, opening) {
-    if (plan.isVerticalOpening(opening)) {
-      return plan.addVerticalOpening(opening);
-    }
-    const passage = plan.normalizeOpening(opening);
-    if (passage.type === "window") {
-      plan.windows.push(passage);
-      plan.renderWallFeature(passage, "plan-window");
-      return passage;
-    }
-    plan.openings.push(passage);
-
-    plan.renderWallFeature(passage, "plan-opening");
-    return passage;
-  },
-
-  isVerticalOpening(plan, opening) {
-    const floors = plan.currentConfig?.floors ?? [];
-    const from = String(opening?.from ?? "").trim();
-    const to = String(opening?.to ?? "").trim();
-    return (
-      (Array.isArray(opening?.size) ||
-        opening?.rectangle !== undefined ||
-        opening?.inset !== undefined ||
-        opening?.outset !== undefined) &&
-      floors.some((floor) => floor.id === from) &&
-      floors.some((floor) => floor.id === to)
-    );
-  },
-
-  addVerticalOpening(plan, opening, floorConfig = null) {
-    const floors = plan.currentConfig?.floors ?? [plan.currentConfig];
-    const fromId = String(opening.from ?? "").trim();
-    const toId = String(opening.to ?? "").trim();
-    const fromFloor = floors.find((floor) => floor.id === fromId);
-    const toFloor = floors.find((floor) => floor.id === toId);
-    if (!fromFloor)
-      throw new Error(`Unknown vertical opening source floor: ${fromId}`);
-    if (!toFloor)
-      throw new Error(`Unknown vertical opening target floor: ${toId}`);
-    if (fromId === toId)
-      throw new Error("Abertura vertical precisa conectar pisos diferentes");
-    const fromHeight = Number(fromFloor.z0 ?? 0);
-    const toHeight = Number(toFloor.z0 ?? 0);
-    if (
-      ![fromHeight, toHeight].every(Number.isFinite) ||
-      fromHeight === toHeight
-    ) {
-      throw new Error(
-        "Os pisos da abertura vertical precisam ter elevações diferentes",
-      );
-    }
-
-    const geometry = plan.normalizeGeometryAtFloor(opening, fromFloor);
-    const { x, y, w: width, l: length } = geometry;
-    if (
-      ![x, y, width, length].every(Number.isFinite) ||
-      width <= 0 ||
-      length <= 0
-    ) {
-      throw new Error("Abertura vertical precisa de dimensões válidas");
-    }
-
-    const passage = {
-      ...opening,
-      id: opening.id || `${fromId}-${toId}-vertical`,
-      x,
-      y,
-      w: width,
-      l: length,
-      z0: fromHeight,
-      h: 0,
-      from: fromId,
-      to: toId,
-    };
-    const element = plan.add({
-      pos: [x, y, fromHeight],
-      size: [width, length, 0],
-      classes: "floor-opening vertical-opening",
-      title: `Abertura vertical: ${passage.id}`,
-    });
-    element.dataset.from = fromId;
-    element.dataset.to = toId;
-    if ((floorConfig?.id ?? plan.currentFloorId) === fromId) {
-      plan.root.querySelectorAll("[data-spanning-stair]").forEach((stair) => {
-        plan.clipProjection(
-          stair,
-          { x: stair.x0(), y: stair.y0(), w: stair.w(), l: stair.l() },
-          passage,
-        );
-      });
-      plan.renderLowerFloorProjection(floors, fromFloor, fromHeight, passage);
-    }
-    return passage;
-  },
-
-  clipProjection(plan, element, geometry, opening) {
-    const top = Math.max(0, opening.y - geometry.y);
-    const right = Math.max(
-      0,
-      geometry.x + geometry.w - (opening.x + opening.w),
-    );
-    const bottom = Math.max(
-      0,
-      geometry.y + geometry.l - (opening.y + opening.l),
-    );
-    const left = Math.max(0, opening.x - geometry.x);
-    element.style.clipPath = `inset(calc(${top} * var(--m)) calc(${right} * var(--m)) calc(${bottom} * var(--m)) calc(${left} * var(--m)))`;
-  },
-
-  renderLowerFloorProjection(plan, floors, fromFloor, fromHeight, opening) {
-    const lowerFloors = floors
-      .filter((floor) => Number(floor.z0 ?? 0) < fromHeight)
-      .sort((first, second) => Number(second.z0 ?? 0) - Number(first.z0 ?? 0));
-    const lowerFloor = lowerFloors[0];
-    if (!lowerFloor) return;
-    const lowerFloorHeight = Number(lowerFloor.z0 ?? 0);
-
-    const compoundGeometry = (definition) => {
-      const parts = plan.normalizeParts(definition.parts);
-      const x = Math.min(...parts.map((part) => part.x));
-      const y = Math.min(...parts.map((part) => part.y));
-      const x1 = Math.max(...parts.map((part) => part.x + part.w));
-      const y1 = Math.max(...parts.map((part) => part.y + part.l));
-      const z0 = Math.min(...parts.map((part) => part.z0));
-      const z1 = Math.max(...parts.map((part) => part.z1));
-      return { x, y, w: x1 - x, l: y1 - y, z0, z1, h: z1 - z0 };
-    };
-
-    const addProjection = (definition, geometry, room = false) => {
-      const overlaps =
-        geometry.x < opening.x + opening.w &&
-        geometry.x + geometry.w > opening.x &&
-        geometry.y < opening.y + opening.l &&
-        geometry.y + geometry.l > opening.y;
-      if (!overlaps || (geometry.z1 < fromHeight && geometry.z0 < fromHeight))
-        return;
-      const projected = room
-        ? plan.addRoom({
-            ...definition,
-            derived: true,
-            container: plan.projectionLayer,
-            pos: [geometry.x, geometry.y, geometry.z0],
-            size: [geometry.w, geometry.l, geometry.h],
-            classes: `${definition.classes || ""} floor-projection`.trim(),
-          })
-        : plan.add({
-            ...definition,
-            container: plan.projectionLayer,
-            pos: [geometry.x, geometry.y, geometry.z0],
-            size: [geometry.w, geometry.l, geometry.h],
-            classes: `${definition.classes || ""} floor-projection`.trim(),
-            showLabel: false,
-          });
-      plan.clipProjection(projected, geometry, opening);
-    };
-
-    (lowerFloor.rooms ?? []).forEach((room) => {
-      const previousHeight = plan.currentFloorHeight;
-      plan.currentFloorHeight = lowerFloorHeight;
-      try {
-        const geometry = room.parts?.length
-          ? compoundGeometry(room)
-          : plan.normalizeGeometry(room);
-        addProjection(room, geometry, true);
-      } catch (error) {
-        plan.errors.push({
-          opening: room,
-          category: "projection",
-          message: error.message,
-        });
-      } finally {
-        plan.currentFloorHeight = previousHeight;
-      }
-    });
-    (window.FloorPlanElements?.items(plan, lowerFloor) ?? lowerFloor.items ?? []).forEach((item) => {
-      try {
-        const definition = plan.resolveItemType(item);
-        addProjection(definition, plan.normalizeGeometryAtFloor(definition, lowerFloor));
-      } catch (error) {
-        plan.errors.push({
-          opening: item,
-          category: "projection",
-          message: error.message,
-        });
-      }
-    });
-  },
-
-  addVisibleVerticalOpenings(plan, config, floorConfig) {
-    const floors = config.floors ?? [config];
-    const currentFloorId = floorConfig.id;
-    floors.forEach((sourceFloor) => {
-      (sourceFloor.openings ?? []).forEach((opening) => {
-        if (!plan.isVerticalOpening(opening)) return;
-        const targetId = String(opening.to ?? "").trim();
-        const sourceFloorId = String(opening.from ?? "").trim();
-        const targetFloorId = String(opening.to ?? "").trim();
-        if (
-          currentFloorId !== sourceFloorId &&
-          currentFloorId !== targetFloorId
-        )
-          return;
-        try {
-          plan.addVerticalOpening(opening, floorConfig);
-        } catch (error) {
-          plan.errors.push({
-            opening,
-            category: "opening",
-            message: error.message,
-          });
-        }
-      });
-    });
-  },
-
-  addWindow(plan, window) {
-    const feature = plan.normalizeOpening({ ...window, type: "window" });
-    plan.windows.push(feature);
-
-    plan.renderWallFeature(feature, "plan-window");
-    return feature;
-  },
-
-  renderWallFeature(plan, feature, baseClass) {
-    const wallThickness = 0.14;
-    const element = plan.add({
-      x: feature.horizontal ? feature.x : feature.x - wallThickness / 2,
-      y: feature.horizontal ? feature.y - wallThickness / 2 : feature.y,
-      w: feature.horizontal ? feature.w : wallThickness,
-      l: feature.horizontal ? wallThickness : feature.w,
-      classes: `${baseClass} opening-${feature.type} opening-${feature.horizontal ? "horizontal" : "vertical"}`,
-      title: `${feature.type}: ${feature.id}`,
-    });
-    element.dataset.openingRoomId = feature.roomId;
-    if (feature.type === "opening") {
-      const sourceRoom = plan.rooms.get(feature.roomId);
-      const sourceBackground = sourceRoom
-        ? getComputedStyle(sourceRoom).backgroundColor
-        : "";
-      if (sourceBackground)
-        element.style.setProperty(
-          "--opening-source-background",
-          sourceBackground,
-        );
-    }
-  },
-
-  normalizeOpening(plan, opening) {
-    const match = String(opening.from ?? "")
-      .trim()
-      .match(/^(.+)\.(top|left|right|bottom)$/);
-    if (!match)
-      throw new Error(`Invalid opening wall reference: ${opening.from}`);
-
-    const [, roomId, wall] = match;
-    const room = plan.rooms.get(roomId);
-    if (!room) {
-      const config = plan.currentConfig ?? {};
-      const roofs = [...(config.roofs ?? []), ...(config.floors ?? []).flatMap((floor) => floor.roofs ?? [])];
-      const roof = roofs.find((candidate) => candidate.id === roomId);
-      const surfaceError = roof && FloorPlanValidation.roofOpeningSurfaceError(roof, wall);
-      if (surfaceError) throw new Error(surfaceError);
-      throw new Error(`Unknown opening room reference: ${roomId}`);
-    }
-    const target = String(opening.to ?? "exterior").trim() || "exterior";
-    if (target !== "exterior" && !plan.rooms?.has(target)) {
-      throw new Error(`Unknown opening target: ${target}`);
-    }
-
-    const verticalDefaults = this.verticalDefaults(plan);
-    const defaults = Object.fromEntries(
-      Object.entries(verticalDefaults).map(([key, definition]) => [
-        key,
-        definition.w,
-      ]),
-    );
-    const type = String(opening.type ?? "door").trim();
-    if (!(type in defaults))
-      throw new Error(`Unsupported opening type: ${type}`);
-
-    const horizontal = wall === "top" || wall === "bottom";
-    const wallStart = horizontal ? room.x0() : room.y0();
-    const wallLength = horizontal ? room.w() : room.l();
-    let sharedStart = null;
-    let sharedEnd = null;
-    let targetRoom = null;
-    const sourceWall = plan.wallSegment(room, wall);
-    if (target !== "exterior") {
-      targetRoom = plan.rooms.get(target);
-      const oppositeWall = {
-        top: "bottom",
-        right: "left",
-        bottom: "top",
-        left: "right",
-      }[wall];
-      const targetWall = plan.wallSegment(targetRoom, oppositeWall);
-      if (Math.abs(sourceWall.coordinate - targetWall.coordinate) < 1e-9) {
-        sharedStart = Math.max(sourceWall.start, targetWall.start);
-        sharedEnd = Math.min(sourceWall.end, targetWall.end);
-        if (sharedEnd <= sharedStart) {
-          sharedStart = null;
-          sharedEnd = null;
-        }
-      }
-    }
-
-    const sharedLength =
-      sharedStart === null ? wallLength : sharedEnd - sharedStart;
-    const width = Number(
-      opening.w ?? opening.length ?? Math.min(defaults[type], sharedLength),
-    );
-    if (!(width > 0))
-      throw new Error("Opening width must be greater than zero");
-    if (width > wallLength)
-      throw new Error(`Opening is wider than wall ${opening.from}`);
-    if (width > sharedLength)
-      throw new Error(
-        `Opening is wider than the shared wall segment ${opening.from}`,
-      );
-
-    const relativePosition = horizontal
-      ? (opening.dx ?? opening.position ?? opening.x)
-      : (opening.dy ?? opening.position ?? opening.y);
-    const hasPosition = relativePosition !== undefined;
-    const position = hasPosition
-      ? plan.resolve(relativePosition)
-      : sharedStart === null
-        ? (wallLength - width) / 2
-        : sharedStart - wallStart + (sharedLength - width) / 2;
-    if (!(position >= 0) || position + width > wallLength) {
-      throw new Error(`Opening position is outside wall ${opening.from}`);
-    }
-
-    if (target !== "exterior") {
-      const openingStart = wallStart + position;
-      const openingEnd = openingStart + width;
-      if (sharedStart !== null) {
-        if (openingStart < sharedStart || openingEnd > sharedEnd) {
-          throw new Error(`Room ${target} is not connected to ${opening.from}`);
-        }
-      } else {
-        const epsilon = 1e-9;
-        const targetContainsOpening = horizontal
-          ? sourceWall.coordinate >= targetRoom.y0() - epsilon &&
-            sourceWall.coordinate <= targetRoom.y1() + epsilon &&
-            openingStart >= targetRoom.x0() - epsilon &&
-            openingEnd <= targetRoom.x1() + epsilon
-          : sourceWall.coordinate >= targetRoom.x0() - epsilon &&
-            sourceWall.coordinate <= targetRoom.x1() + epsilon &&
-            openingStart >= targetRoom.y0() - epsilon &&
-            openingEnd <= targetRoom.y1() + epsilon;
-        if (!targetContainsOpening) {
-          throw new Error(
-            `Room ${target} is not connected to or containing the opening from ${opening.from}`,
-          );
-        }
-      }
-    }
-
-    const shift = hasPosition ? Math.round(position * 100) : 0;
-    const id = `${roomId}-${target}-${shift}`;
-    const openingDefaults = verticalDefaults[type] || {};
-    const floorZ0 = Number(plan.currentFloorHeight) || 0;
-    const z0 =
-      opening.z0 === undefined
-        ? floorZ0 + plan.resolve(openingDefaults.z0 ?? 0)
-        : plan.resolve(opening.z0);
-    const height = plan.resolve(opening.h ?? openingDefaults.h ?? 2.1);
-    if (![z0, height].every(Number.isFinite) || z0 < 0 || height <= 0) {
-      throw new Error(
-        "Opening z0 must be non-negative and h must be greater than zero",
-      );
-    }
-    const normalized = {
-      ...opening,
-      id,
-      from: opening.from,
-      to: target,
-      type,
-      position,
-      w: width,
-      roomId,
-      wall,
-      wallLength,
-      x: horizontal
-        ? wallStart + position
-        : wall === "left"
-          ? room.x0()
-          : room.x1(),
-      y: horizontal
-        ? wall === "top"
-          ? room.y0()
-          : room.y1()
-        : wallStart + position,
-      horizontal,
-      z0,
-      z1: z0 + height,
-      h: height,
-    };
-    const wallObject = FloorPlanWalls.resolveRoomSide(plan, roomId, wall, normalized);
-    normalized.wallId = wallObject.id;
-    normalized.wallSegment = wallObject.pathSegment ?? null;
-    const openingGeometry = {
-      x: normalized.x,
-      y: normalized.y,
-      z0: normalized.z0,
-      z1: normalized.z1,
-      w: normalized.w,
-      h: normalized.h,
-      wall: normalized.wall,
-      wallId: normalized.wallId,
-      horizontal: normalized.horizontal,
-      roomId: normalized.roomId,
-    };
-    normalized.void = { ...openingGeometry };
-    normalized.element =
-      type === "opening"
-        ? null
-        : {
-            ...openingGeometry,
-            type,
-          };
-    FloorPlanGeometryBox.attach(normalized, {
-      label: normalized.id,
-    });
-    return normalized;
-  },
-
-  wallSegment(plan, room, wall) {
-    // Keep this helper compatible with older callers that passed only
-    // (room, wall) while the public facade now passes (plan, room, wall).
-    if (wall === undefined && typeof room === "string") {
-      wall = room;
-      room = plan;
-      plan = null;
-    }
-    const geometry =
-      typeof room.x0 === "function" &&
-      typeof room.x1 === "function" &&
-      typeof room.y0 === "function" &&
-      typeof room.y1 === "function"
-        ? room
-        : typeof plan?.normalizeGeometry === "function"
-          ? plan.normalizeGeometry(room)
-          : room;
-    const x0 = typeof geometry.x0 === "function" ? geometry.x0() : geometry.x;
-    const x1 = typeof geometry.x1 === "function" ? geometry.x1() : geometry.x + geometry.w;
-    const y0 = typeof geometry.y0 === "function" ? geometry.y0() : geometry.y;
-    const y1 = typeof geometry.y1 === "function" ? geometry.y1() : geometry.y + geometry.l;
-    const horizontal = wall === "top" || wall === "bottom";
-    return {
-      coordinate: horizontal
-        ? wall === "top"
-          ? y0
-          : y1
-        : wall === "left"
-          ? x0
-          : x1,
-      start: horizontal ? x0 : y0,
-      end: horizontal ? x1 : y1,
-    };
-  },
-};
-
-window.FloorPlanOpenings = FloorPlanOpenings;
 
 
 const FloorPlanWalls = {
@@ -10193,9 +10280,7 @@ const FloorPlanReferences = {
     floorConfigs.forEach((floorConfig) => {
       [
         ...(window.FloorPlanElements?.items(plan, floorConfig) ?? floorConfig.items ?? []),
-        ...(floorConfig.openings ?? []),
-        ...plan.roomOpenings(floorConfig),
-        ...(floorConfig.windows ?? []),
+        ...FloorPlanOpenings.forFloor(plan, floorConfig),
       ].forEach((object) => {
         if (!object.id) return;
         if (FloorPlanValidation.isReservedId(object.id)) {
@@ -10265,8 +10350,7 @@ const FloorPlanReferences = {
           }
         });
         [
-          ...(floorConfig.openings ?? []),
-          ...plan.roomOpenings(floorConfig),
+          ...FloorPlanOpenings.forFloor(plan, floorConfig),
         ].forEach((opening, index) => {
           if (plan.isVerticalOpening(opening)) return;
           try {
@@ -10275,19 +10359,7 @@ const FloorPlanReferences = {
             plan.errors.push({
               index,
               opening,
-              category: opening.type === "window" ? "window" : "opening",
-              message: error.message,
-            });
-          }
-        });
-        (floorConfig.windows ?? []).forEach((window, index) => {
-          try {
-            plan.normalizeOpening({ ...window, type: "window" });
-          } catch (error) {
-            plan.errors.push({
-              index,
-              opening: window,
-              category: "window",
+              category: opening.type === "door" ? "door" : opening.type === "window" ? "window" : "opening",
               message: error.message,
             });
           }
@@ -10351,25 +10423,13 @@ const FloorPlanReferences = {
           // The active-floor render path records the detailed error.
         }
       });
-      [...(floorConfig.openings ?? []), ...plan.roomOpenings(floorConfig)].forEach((opening) => {
+      FloorPlanOpenings.forFloor(plan, floorConfig).forEach((opening) => {
         if (plan.isVerticalOpening(opening)) return;
         try {
           const feature = plan.normalizeOpening(opening);
           const target =
             feature.type === "window" ? plan.allWindows : plan.allOpenings;
           target.push({
-            ...feature,
-            floorId: floorConfig.id,
-            floorLabel: floorConfig.label,
-          });
-        } catch {
-          // Validation and rendering record the error with its source data.
-        }
-      });
-      (floorConfig.windows ?? []).forEach((window) => {
-        try {
-          const feature = plan.normalizeOpening({ ...window, type: "window" });
-          plan.allWindows.push({
             ...feature,
             floorId: floorConfig.id,
             floorLabel: floorConfig.label,
@@ -10847,7 +10907,7 @@ const FloorPlanLayers = {
       );
       const activeFloorId = activeFloor?.id;
       const verticalOpeningGeometries = [];
-      const verticalOpenings = (activeFloor?.openings ?? [])
+      const verticalOpenings = FloorPlanOpenings.collect(activeFloor)
         .filter((opening) => plan.isVerticalOpening(opening))
         .filter((opening) =>
           [opening.from, opening.to].includes(activeFloorId),
@@ -11039,14 +11099,16 @@ const FloorPlanLists = {
     const groups = [
       ["rooms", "Cômodos"],
       ["roofs", "Telhados"],
-      ["openings", "Passagens"],
+      ["doors", "Portas"],
+      ["openings", "Vãos"],
       ["windows", "Janelas"],
       ["natural", "Comunicações naturais"],
     ];
     const renderers = {
       rooms: (target, floor) => this.updateRoomList(plan, target, floor),
       roofs: (target, floor) => this.updateRoofList(plan, target, floor),
-      openings: (target, floor) => this.updateOpeningList(plan, target, floor),
+      doors: (target, floor) => this.updateOpeningList(plan, target, floor, "door"),
+      openings: (target, floor) => this.updateOpeningList(plan, target, floor, "opening"),
       windows: (target, floor) => this.updateWindowList(plan, target, floor),
       natural: (target, floor) => this.updateNaturalList(plan, target, floor),
     };
@@ -11087,6 +11149,27 @@ const FloorPlanLists = {
       section.append(categories);
       root.append(section);
     });
+
+    if (plan.warnings?.length) {
+      const section = document.createElement("section");
+      section.className = "technical-global-errors technical-global-warnings";
+      const heading = document.createElement("h3");
+      heading.textContent = "Avisos de depreciação";
+      section.append(heading);
+      plan.warnings.forEach((warning) => {
+        const item = document.createElement("div");
+        item.className = "deprecation-list-item";
+        const message = document.createElement("p");
+        message.textContent = warning.message;
+        const source = document.createElement("div");
+        source.className = "error-source-location";
+        source.textContent = warning.location
+          ? FloorPlanParser.formatLocation(warning.location) : warning.path;
+        item.append(message, source);
+        section.append(item);
+      });
+      root.append(section);
+    }
 
     if (plan.errors.length) {
       const errors = document.createElement("section");
@@ -11479,14 +11562,13 @@ const FloorPlanLists = {
     target.append(scroll);
   },
 
-  updateOpeningList(plan, target = plan.openingList, floor = null) {
+  updateOpeningList(plan, target = plan.openingList, floor = null, type = "opening") {
     if (!target) return;
 
     target.replaceChildren();
-    const openings = (plan.allOpenings.length ? plan.allOpenings : plan.openings)
-      .filter((opening) => !floor || opening.floorId === floor.id);
+    const openings = FloorPlanOpenings.rendered(plan, { type, floor });
     if (openings.length === 0) {
-      target.textContent = "Nenhuma passagem carregada.";
+      target.textContent = type === "door" ? "Nenhuma porta carregada." : "Nenhum vão carregado.";
       return;
     }
 
@@ -11504,7 +11586,7 @@ const FloorPlanLists = {
         opening.to === "exterior"
           ? "EXTERIOR"
           : plan.roomDefinitions.get(opening.to)?.label || opening.to;
-      details.textContent = `${opening.type} — ${from} → ${to} (${plan.formatMeters(opening.w)}m)`;
+      details.textContent = `${from} → ${to} (${plan.formatMeters(opening.w)}m)`;
 
       item.append(title, details);
       target.append(item);
@@ -11515,8 +11597,7 @@ const FloorPlanLists = {
     if (!target) return;
 
     target.replaceChildren();
-    const windows = (plan.allWindows.length ? plan.allWindows : plan.windows)
-      .filter((window) => !floor || window.floorId === floor.id);
+    const windows = FloorPlanOpenings.rendered(plan, { type: "window", floor });
     if (windows.length === 0) {
       target.textContent = "Nenhuma janela carregada.";
       return;
@@ -11670,7 +11751,8 @@ const FloorPlanLists = {
           item: "Item",
           room: "Cômodo",
           presentation: "Apresentação",
-          opening: "Passagem",
+          opening: "Vão",
+          door: "Porta",
           collision: "Colisão",
           overlap: "Sobreposição",
           zone: "Zona",
@@ -11701,6 +11783,23 @@ window.FloorPlanLists = FloorPlanLists;
 
 
 const FloorPlanTextExport = {
+  appendOpeningTables(plan, lines, features, level) {
+    for (const [type, title, empty] of [
+      ["door", "Portas", "Nenhuma porta definida"],
+      ["window", "Janelas", "Nenhuma janela definida"],
+      ["opening", "Vãos", "Nenhum vão definido"],
+    ]) {
+      lines.push("", `${level} ${title}`, "",
+        "| ID | De | Para | Parede | Posição | Largura | z0 | Altura |",
+        "|---|---|---|---|---:|---:|---:|---:|");
+      const entries = features.filter((entry) => entry.type === type);
+      if (!entries.length) lines.push(`| — | ${empty} |  |  |  |  |  |  |`);
+      entries.forEach((entry) => lines.push(
+        `| ${plan.markdownText(entry.id)} | ${plan.markdownText(entry.roomId)} | ${plan.markdownText(entry.to)} | ${entry.wall} | ${plan.formatMeters(entry.position)} | ${plan.formatMeters(entry.w)} | ${plan.formatMeters(entry.z0)} | ${plan.formatMeters(entry.h)} |`,
+      ));
+    }
+  },
+
   independentWallFloorIndex(plan, wall, floors) {
     if (wall.base === "level") {
       const basedFloor = floors.findIndex(
@@ -11863,7 +11962,7 @@ const FloorPlanTextExport = {
       });
     });
 
-    plan.openings.forEach((opening) => {
+    FloorPlanOpenings.rendered(plan, { active: true }).filter((entry) => entry.type !== "window").forEach((opening) => {
       const room = plan.rooms.get(opening.roomId);
       if (!room) return;
       const wall = opening.wall;
@@ -11981,41 +12080,7 @@ const FloorPlanTextExport = {
       "",
       `**Total:** ${plan.roomCount} cômodos · ${plan.formatMeters(plan.roomArea)} m² (área líquida, com descontos de sobreposição)`,
     );
-    lines.push(
-      "",
-      "## Passagens",
-      "",
-      "| ID | De | Para | Tipo | Parede | Posição | Largura | z0 | Altura |",
-      "|---|---|---|---|---|---:|---:|---:|---:|",
-    );
-    const openings = plan.allOpenings.length ? plan.allOpenings : plan.openings;
-    if (openings.length === 0) {
-      lines.push("| — | Nenhuma passagem definida |  |  |  |  |  |");
-    } else {
-      openings.forEach((opening) => {
-        lines.push(
-          `| ${plan.markdownText(opening.id)} | ${plan.markdownText(opening.roomId)} | ${plan.markdownText(opening.to)} | ${plan.markdownText(opening.type)} | ${opening.wall} | ${plan.formatMeters(opening.position)} | ${plan.formatMeters(opening.w)} | ${plan.formatMeters(opening.z0)} | ${plan.formatMeters(opening.h)} |`,
-        );
-      });
-    }
-
-    lines.push(
-      "",
-      "## Janelas",
-      "",
-      "| ID | De | Para | Parede | Posição | Largura | z0 | Altura |",
-      "|---|---|---|---|---:|---:|---:|---:|",
-    );
-    const windows = plan.allWindows.length ? plan.allWindows : plan.windows;
-    if (windows.length === 0) {
-      lines.push("| — | Nenhuma janela definida |  |  |  |  |");
-    } else {
-      windows.forEach((window) => {
-        lines.push(
-          `| ${plan.markdownText(window.id)} | ${plan.markdownText(window.roomId)} | ${plan.markdownText(window.to)} | ${window.wall} | ${plan.formatMeters(window.position)} | ${plan.formatMeters(window.w)} | ${plan.formatMeters(window.z0)} | ${plan.formatMeters(window.h)} |`,
-        );
-      });
-    }
+    this.appendOpeningTables(plan, lines, FloorPlanOpenings.rendered(plan), "##");
 
     lines.push("", "## Comunicações naturais", "");
     if (plan.naturalCommunications.length === 0) {
@@ -12082,8 +12147,9 @@ const FloorPlanTextExport = {
           reference,
           floorId: plan.currentFloorId,
         }));
-    const openings = plan.allOpenings.length ? plan.allOpenings : plan.openings;
-    const windows = plan.allWindows.length ? plan.allWindows : plan.windows;
+    const features = FloorPlanOpenings.rendered(plan);
+    const openings = features.filter((entry) => entry.type !== "window");
+    const windows = features.filter((entry) => entry.type === "window");
     const roofs = plan.allRoofs ?? [];
     const floorRows = FloorPlanModel.floorRows(
       floors,
@@ -12238,39 +12304,7 @@ const FloorPlanTextExport = {
 
       appendRoofSection("Telhados", floorRoofs);
 
-      lines.push(
-        "",
-        "### Passagens",
-        "",
-        "| ID | De | Para | Tipo | Parede | Posição | Largura | z0 | Altura |",
-        "|---|---|---|---|---|---:|---:|---:|---:|",
-      );
-      if (floorOpenings.length === 0) {
-        lines.push("| — | Nenhuma passagem definida |  |  |  |  |  |");
-      } else {
-        floorOpenings.forEach((opening) => {
-          lines.push(
-            `| ${plan.markdownText(opening.id)} | ${plan.markdownText(opening.roomId)} | ${plan.markdownText(opening.to)} | ${plan.markdownText(opening.type)} | ${opening.wall} | ${plan.formatMeters(opening.position)} | ${plan.formatMeters(opening.w)} | ${plan.formatMeters(opening.z0)} | ${plan.formatMeters(opening.h)} |`,
-          );
-        });
-      }
-
-      lines.push(
-        "",
-        "### Janelas",
-        "",
-        "| ID | De | Para | Parede | Posição | Largura | z0 | Altura |",
-        "|---|---|---|---|---:|---:|---:|---:|",
-      );
-      if (floorWindows.length === 0) {
-        lines.push("| — | Nenhuma janela definida |  |  |  |  |");
-      } else {
-        floorWindows.forEach((window) => {
-          lines.push(
-            `| ${plan.markdownText(window.id)} | ${plan.markdownText(window.roomId)} | ${plan.markdownText(window.to)} | ${window.wall} | ${plan.formatMeters(window.position)} | ${plan.formatMeters(window.w)} | ${plan.formatMeters(window.z0)} | ${plan.formatMeters(window.h)} |`,
-          );
-        });
-      }
+      this.appendOpeningTables(plan, lines, [...floorOpenings, ...floorWindows], "###");
 
       const floorCommunications = FloorPlanLists.findNaturalCommunications(
         plan,
@@ -13332,6 +13366,7 @@ class FloorPlan {
     this.windows = [];
     this.naturalCommunications = [];
     this.errors = [];
+    this.warnings = [];
     this.currentConfig = null;
     this.currentFloorId = null;
     this.showAllFloors = false;
@@ -13631,19 +13666,12 @@ class FloorPlan {
           }
         });
         this.updateOverlaps();
-        [...(floorConfig.openings ?? []), ...this.roomOpenings(floorConfig)].forEach((opening, index) => {
+        FloorPlanOpenings.forFloor(this, floorConfig).forEach((opening, index) => {
           if (this.isVerticalOpening(opening)) return;
           try {
             this.addOpening(opening);
           } catch (error) {
-            this.errors.push({ index, opening, category: opening.type === "window" ? "window" : "opening", message: error.message });
-          }
-        });
-        (floorConfig.windows ?? []).forEach((window, index) => {
-          try {
-            this.addWindow(window);
-          } catch (error) {
-            this.errors.push({ index, opening: window, category: "window", message: error.message });
+            this.errors.push({ index, opening, category: opening.type === "door" ? "door" : opening.type === "window" ? "window" : "opening", message: error.message });
           }
         });
         keys.forEach((key) => {
@@ -14026,6 +14054,7 @@ class FloorPlan {
     this.windows = [];
     this.allRoofs = [];
     this.errors = [];
+    this.warnings = [];
     this.roomArea = 0;
     this.roomCount = 0;
     this.layerCutoff = null;
@@ -14131,6 +14160,7 @@ class FloorPlan {
     if (typeof document !== "undefined") document.title = title;
     document.querySelector("#project-overview")?.removeAttribute("hidden");
     this.clear();
+    this.warnings = this.model.warnings;
     this.prepareRoomReferences(config);
     if (!this.showAllFloors) this.validateInactiveFloorFeatures(config, floorIndex);
     this.prepareGlobalLists(config);
