@@ -426,13 +426,13 @@
           label: "Sem uso",
           from: ["house-right.x1", "prayer-room.y1"],
           to: ["knee-right.x1", "bathroom.y0"],
-          openings: [{ type: "window", from: "top", w: 0.8, h: 0.6 }]
+          openings: [{ type: "window", from: "right", to: "exterior", w: 0.8, h: 0.6 }]
         },
         {
           id: "stair-arrival",
           label: "Circulação",
           from: ["house-left.x1", "stairs.y0"],
-          to: ["stairs.x1", "main.y1"],
+          to: ["stairs.x1 - 1.2", "main.y1"],
           walls: [],
           classes: "circulation"
         },

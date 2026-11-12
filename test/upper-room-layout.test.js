@@ -57,3 +57,22 @@ test('current west bedroom furniture fits after rotation, with no overlapping fo
     }
   }
 });
+
+test('current stair arrival occupies the strip beside the stair opening', () => {
+  const plan = prepare('cottage-ferraz-cesar.json5');
+  const upper = plan.currentConfig.floors.find((floor) => floor.id === 'upper');
+  const arrival = plan.rooms.get('stair-arrival');
+  const opening = plan.normalizeGeometryAtFloor(upper.openings[0], upper);
+  assert.deepEqual(plan.errors.filter((error) => error.id === 'stair-arrival'), []);
+  assert.ok(Math.abs(arrival.w() - 1.2) < 1e-9);
+  assert.ok(arrival.l() > 0);
+  assert.ok(Math.abs(arrival.x1() - opening.x) < 1e-9);
+});
+
+test('current unused room window resolves to the exterior right wall', () => {
+  const plan = prepare('cottage-ferraz-cesar.json5');
+  const definition = plan.roomDefinitions.get('unused-right').openings[0];
+  const opening = plan.normalizeOpening({ ...definition, from: `unused-right.${definition.from}` });
+  assert.equal(opening.wallId, 'upper-right-wall');
+  assert.equal(opening.to, 'exterior');
+});
