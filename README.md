@@ -113,6 +113,17 @@ O ID da cama continua representando apenas a cama. Os criados-mudos recebem os I
 
 Camas queen também aceitam `recamier: true`. O recamier mede 1,4 × 0,45 × 0,45 m e fica centralizado aos pés da cama, com afastamento de 0,05 m, acompanhando sua rotação e elevação. O padrão é não incluir recamier; `recamier: false` também desativa uma definição do catálogo. O ID gerado é `<id-da-cama>-recamier`.
 
+Mesas (`type: "dining-table"` ou classe `table`) incluem cadeiras automaticamente. Cada cadeira mede 0,45 × 0,45 × 0,85 m, fica voltada para a mesa e afastada 5 cm da borda. Mesas retangulares reservam 60 cm de borda por cadeira em cada um dos quatro lados (mínimo de uma por lado), com distribuição centralizada. Mesas com classe `round-table` distribuem as cadeiras pelo perímetro circular ou elíptico, com mínimo de quatro. As cadeiras acompanham a rotação e a elevação da mesa e recebem IDs `<id-da-mesa>-chair-1`, etc. Use `chairs: 0` para desativar; omita a opção para calcular automaticamente.
+
+```json5
+{
+  id: "dining-table",
+  type: "dining-table",
+  pos: [2, 3],
+  size: [1.8, 0.9, 0.75] // 8 cadeiras: 3 + 3 nas laterais e 1 + 1 nas cabeceiras
+}
+```
+
 ## Escopo de paredes independentes
 
 Use `scope` com o ID de um pavimento ou cômodo:

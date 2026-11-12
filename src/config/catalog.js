@@ -24,6 +24,12 @@ window.FloorPlanCatalog = {
     neutral: "#d8d8d8",
   },
   items: {
+    "dining-table": {
+      label: "Mesa de jantar",
+      size: [1.8, 0.9, 0.75],
+      classes: "furniture table",
+      color: "furniture",
+    },
     "washing-machine": {
       label: "Lavadora",
       size: [0.6, 0.6, 0.85],

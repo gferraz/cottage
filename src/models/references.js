@@ -251,28 +251,30 @@ const FloorPlanReferences = {
 
   registerStaticItemReferences(plan, config) {
     const resolving = new Set();
-    (config.floors ?? [config]).forEach((floor) => {
-      (window.FloorPlanElements?.items(plan, floor) ?? floor.items ?? []).forEach((item) => {
-        if (!item.id || plan.references.has(item.id)) return;
-        const geometry = () => {
-          if (resolving.has(item.id)) {
-            throw new Error(`Circular item reference: ${item.id}`);
-          }
-          resolving.add(item.id);
-          try {
-            return FloorPlanGeometryBox.fromValues(
-              plan.normalizeGeometryAtFloor(plan.resolveItemType(item), floor),
-            );
-          } finally {
-            resolving.delete(item.id);
-          }
-        };
-        plan.references.set(item.id, Object.fromEntries(
-          ["x0", "x1", "xc", "y0", "y1", "yc", "z0", "z1", "zc", "w", "l", "h", "area"]
-            .map((method) => [method, () => geometry()[method]()]),
-        ));
+    for (const expanded of [false, true]) {
+      (config.floors ?? [config]).forEach((floor) => {
+        (expanded ? (window.FloorPlanElements?.items(plan, floor) ?? floor.items ?? []) : (floor.items ?? [])).forEach((item) => {
+          if (!item.id || plan.references.has(item.id)) return;
+          const geometry = () => {
+            if (resolving.has(item.id)) {
+              throw new Error(`Circular item reference: ${item.id}`);
+            }
+            resolving.add(item.id);
+            try {
+              return FloorPlanGeometryBox.fromValues(
+                plan.normalizeGeometryAtFloor(plan.resolveItemType(item), floor),
+              );
+            } finally {
+              resolving.delete(item.id);
+            }
+          };
+          plan.references.set(item.id, Object.fromEntries(
+            ["x0", "x1", "xc", "y0", "y1", "yc", "z0", "z1", "zc", "w", "l", "h", "area"]
+              .map((method) => [method, () => geometry()[method]()]),
+          ));
+        });
       });
-    });
+    }
   },
 
   registerWallReferences(plan, config) {

@@ -18,11 +18,6 @@
   config: {
     walls: { base: { level: "ground.z0" }, top: "roof", thickness: "params.wall_thickness", color: "desejo-ambar" },
     roofs: { type: "gable", pitch: 51 },
-    openings: {
-      door: { w: 0.8, h: 2.1, z0: 0 },
-      window: { w: 0.9, h: 1.5, z0: 0.9 },
-      opening: { w: 1, h: 2.1, z0: 0 }
-    },
     floors: { ceiling_height: "params.ground_height" }
   },
   // Parâmetros preservados
@@ -137,7 +132,7 @@
           label: "Estar",
           from: ["house-left.x1", "porch.y1"],
           to: ["house-left.x0", "y0 + 3.6"],
-          openings: [{ type: "window", from: "top", to: "exterior", w: 2.4, h: 1.5 }],
+          openings: [{ type: "window", from: "top", to: "exterior", w: 2.4 }],
           walls: ["bottom"]
         },
         {
@@ -356,6 +351,7 @@
           rotation: 180
         },
         {
+          id: "dining-table",
           title: "Mesa",
           pos: ["dining.x0 + 1", "dining.y0 + 1"],
           size: [2.7, 1.1],
@@ -389,7 +385,7 @@
           walls: ["left", "bottom"],
           openings: [
             { type: "door", from: "bottom", to: "upper-corridor" },
-            { type: "window", from: "top", w: 0.9, h: 1.2, z0: "upper.z0 + 1", dx: "bedroom-north.w + main-roof.xc - bedroom-north.x1 + 0.75"}
+            { type: "window", from: "top", h: 1.2, z0: "upper.z0 + 1", dx: "bedroom-north.w + main-roof.xc - bedroom-north.x1 + 0.75"}
           ]
         },
         {
@@ -399,12 +395,11 @@
           to: ["bedroom-north.x0", "y0 + 3.6"],
           walls: ["bottom"],
           openings: [
-            { type: "door", from: "bottom", to: "playroom", w: 0.8, dx: "bedroom-east.w - 1" },
+            { type: "door", from: "bottom", to: "playroom", dx: "bedroom-east.w - 1" },
             {
               type: "window",
               from: "top",
               to: "exterior",
-              w: 0.9,
               h: 1.2,
               z0: "upper.z0 + 1",
               dx: "bedroom-east.w + main-roof.xc - bedroom-east.x1 - 1.65"
@@ -428,7 +423,7 @@
           from: ["bedroom-east.x1", "bedroom-east.y1"],
           to: ["house-left.x0", "stairs.y0"],
           walls: [],
-          openings: [{ type: "window", from: "left", w: 0.9, dy: "transverse-roof.yc - playroom.y0 - 0.45" }]
+          openings: [{ type: "window", from: "left", dy: "transverse-roof.yc - playroom.y0 - 0.45" }]
         },
         {
           id: "bathroom",
@@ -482,23 +477,13 @@
         {
           id: "headroom-main-roof-2m",
           label: "Telhado principal — altura ≥ 2 m",
-          rectangle: [
-            "main-roof.x0 + params.headroom_2m_inset",
-            "main-roof.y0",
-            "main-roof.x1 - params.headroom_2m_inset",
-            "main-roof.y1"
-          ],
+          inset: ["main-roof", "params.headroom_2m_inset", 0],
           color: "rgba(98, 139, 90, 0.35)"
         },
         {
           id: "headroom-main-roof-3m",
           label: "Telhado principal — altura ≥ 3 m",
-          rectangle: [
-            "main-roof.x0 + params.headroom_3m_inset",
-            "main-roof.y0",
-            "main-roof.x1 - params.headroom_3m_inset",
-            "main-roof.y1"
-          ],
+          inset: ["main-roof", "params.headroom_3m_inset", 0],
           color: "rgba(77, 120, 153, 0.35)"
         },
         {
@@ -526,23 +511,13 @@
         {
           id: "headroom-transverse-roof-2m",
           label: "Telhado transversal — altura ≥ 2 m",
-          rectangle: [
-            "transverse-roof.x0",
-            "transverse-roof.y0 + params.headroom_2m_inset",
-            "transverse-roof.x1",
-            "transverse-roof.y1 - params.headroom_2m_inset"
-          ],
+          inset: ["transverse-roof", 0, "params.headroom_2m_inset"],
           color: "rgba(98, 139, 90, 0.35)"
         },
         {
           id: "headroom-transverse-roof-3m",
           label: "Telhado transversal — altura ≥ 3 m",
-          rectangle: [
-            "transverse-roof.x0",
-            "transverse-roof.y0 + params.headroom_3m_inset",
-            "transverse-roof.x1",
-            "transverse-roof.y1 - params.headroom_3m_inset"
-          ],
+          inset: ["transverse-roof", 0, "params.headroom_3m_inset"],
           color: "rgba(77, 120, 153, 0.35)"
         }
       ],
@@ -550,7 +525,7 @@
         {
           id: "bed-east",
           type: "twin-bed",
-          nightstand: { w: 0.4, side: "left" },
+          nightstand: { side: "left" },
           pos: [
             "bedroom-east.x0 + params.bed_knee_wall_clearance + 0.47",
             "bedroom-east.y0 + (bedroom-east.l - 1.94) / 3 - 0.47"
@@ -560,7 +535,6 @@
         {
           id: "bed-east-2",
           type: "twin-bed",
-          nightstand: { w: 0.4 },
           pos: [
             "bedroom-east.x0 + params.bed_knee_wall_clearance + 0.47",
             "bedroom-east.y0 + 2 * (bedroom-east.l - 1.94) / 3 + 0.97 - 0.47"
@@ -570,21 +544,18 @@
         {
           id: "bed-north-1",
           type: "queen-bed",
-          nightstand: { w: 0.5, side: "both" },
           pos: ["bedroom-north.x1 - params.bed_knee_wall_clearance - 1.8", "bedroom-north.yc - 1"],
           rotation: 90
         },
         {
           id: "bed-west-1",
           type: "twin-bed",
-          nightstand: { w: 0.4, side: "right" },
           pos: ["bedroom-west.x1 - params.bed_knee_wall_clearance - 1.44", "bedroom-west.y0 + 0.24"],
           rotation: 90
         },
         {
           id: "bed-west-2",
           type: "twin-bed",
-          nightstand: { w: 0.4, side: "right" },
           pos: ["bedroom-west.x1 - params.bed_knee_wall_clearance - 1.44", "bedroom-west.y1 - 1.68"],
           rotation: 90
         },

@@ -1338,6 +1338,11 @@
     "item": {
       "type": "object",
       "properties": {
+        "chairs": {
+          "type": "integer",
+          "const": 0,
+          "description": "Omita para calcular cadeiras automaticamente pela forma e dimensões da mesa. Use 0 para desativar."
+        },
         "recamier": {
           "type": "boolean",
           "description": "Somente queen-bed: adiciona um recamier de 1.4 × 0.45 × 0.45 m, centralizado aos pés da cama, com afastamento de 0.05 m. Padrão: false."

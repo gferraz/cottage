@@ -1046,6 +1046,11 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .fireplace { background: #555; border: 2px solid #222; }
 .table { border: 2px solid #7a5b3a; background: #caa878; z-index: 5; }
 .round-table { border-radius: 50%; }
+.plan-item.chair {
+  border: 1px solid #7a5b3a;
+  border-bottom: 4px solid #7a5b3a;
+  border-radius: 3px;
+}
 .car { border: 2px solid #666; border-radius: 14px; background: #bbb; z-index: 5; }
 .plan-item.nightstand {
   border: 1px solid #6e5241;
@@ -2238,6 +2243,11 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .fireplace { background: #555; border: 2px solid #222; }
 .table { border: 2px solid #7a5b3a; background: #caa878; z-index: 5; }
 .round-table { border-radius: 50%; }
+.plan-item.chair {
+  border: 1px solid #7a5b3a;
+  border-bottom: 4px solid #7a5b3a;
+  border-radius: 3px;
+}
 .car { border: 2px solid #666; border-radius: 14px; background: #bbb; z-index: 5; }
 .plan-item.nightstand {
   border: 1px solid #6e5241;
@@ -6316,7 +6326,7 @@ const FloorPlan3DElements = {
       const classes = String(item.classes || "").split(/\s+/);
       if (classes.includes("railing")) return;
       const roundTable = item.type === "round-table" || classes.includes("round-table");
-      const kind = roundTable ? "table" : ["queen-bed", "twin-bed", "car", "table", "washing-machine", "three-seat-sofa", "armchair", "fireplace"]
+      const kind = roundTable ? "table" : ["queen-bed", "twin-bed", "car", "table", "chair", "washing-machine", "three-seat-sofa", "armchair", "fireplace"]
         .find((name) => item.type === name || classes.includes(name));
       const defaults = { car: 1.45, table: 0.75, fireplace: 1.8 };
       const x = Number(item.x), y = Number(item.y), w = Number(item.w), l = Number(item.l);
@@ -6366,6 +6376,10 @@ const FloorPlan3DElements = {
         box(1, 1, 0.45, 0, 0, 0.225);
         box(0.96, 0.96, 0.4, 0, 0, 0.65, light);
         box(0.8, 0.2, 0.15, 0, -0.33, 0.925, light);
+      } else if (kind === "chair") {
+        box(1, 1, 0.1, 0, 0, 0.5);
+        box(1, 0.12, 0.45, 0, 0.44, 0.775);
+        for (const cx of [-0.4, 0.4]) for (const cy of [-0.4, 0.4]) box(0.1, 0.1, 0.45, cx, cy, 0.225);
       } else if (kind === "car") {
         box(0.9, 1, 0.48, 0, 0, 0.36);
         box(0.76, 0.48, 0.4, 0, -0.03, 0.8, glass);
@@ -9423,6 +9437,7 @@ window.FloorPlanWalls = FloorPlanWalls;
 
 const FloorPlanElements = {
   bedAccessoryGap: 0.05,
+  chairSource: Symbol("chair-source"),
   nightstandSource: Symbol("nightstand-source"),
   recamierSource: Symbol("recamier-source"),
 
@@ -9435,7 +9450,7 @@ const FloorPlanElements = {
       const side = nightstand?.side ?? definition?.nightstand?.side ?? (classes.includes("twin-bed") ? "right" : "both");
       const sides = nightstand === undefined || side === "none" ? [] : side === "both" ? ["left", "right"] : [side];
       const recamier = item.recamier ?? definition?.recamier;
-      return [item, ...(recamier === true ? [{
+      return [item, ...this.chairItems(plan, floor, item, classes), ...(recamier === true ? [{
         ...(item.id ? { id: `${item.id}-recamier` } : {}),
         [this.recamierSource]: { bed: item, floor },
       }] : []), ...sides.map((side) => ({
@@ -9443,6 +9458,79 @@ const FloorPlanElements = {
         [this.nightstandSource]: { bed: item, side, floor },
       }))];
     });
+  },
+
+  chairItems(plan, floor, table, classes) {
+    if (!classes.includes("table")) return [];
+    let geometry;
+    try {
+      const definition = this.resolveItemType(plan, table);
+      if (definition.chairs === 0) return [];
+      geometry = plan.normalizeGeometryAtFloor(definition, floor);
+    } catch {
+      // Invalid or unresolved parent geometry is reported by the normal item path.
+      return [];
+    }
+    const { w, l } = geometry;
+    const seats = [];
+    const clearance = 0.05 + 0.45 / 2;
+    if (classes.includes("round-table")) {
+      // Sample the ellipse by arc length, including circular tables.
+      const points = Array.from({ length: 721 }, (_, index) => {
+        const angle = index * Math.PI / 360;
+        return { x: w / 2 * Math.cos(angle), y: l / 2 * Math.sin(angle), angle };
+      });
+      let perimeter = 0;
+      points.forEach((point, index) => {
+        if (index) perimeter += Math.hypot(point.x - points[index - 1].x, point.y - points[index - 1].y);
+        point.distance = perimeter;
+      });
+      const count = Math.max(4, Math.floor((perimeter + 1e-6) / 0.6));
+      let segment = 1;
+      for (let index = 0; index < count; index++) {
+        const distance = index * perimeter / count;
+        while (points[segment].distance < distance) segment++;
+        const a = points[segment - 1], b = points[segment];
+        const angle = a.angle + (b.angle - a.angle) * (distance - a.distance) / (b.distance - a.distance);
+        const nx = Math.cos(angle) / w, ny = Math.sin(angle) / l;
+        const norm = Math.hypot(nx, ny);
+        seats.push({ x: w / 2 * Math.cos(angle) + clearance * nx / norm,
+          y: l / 2 * Math.sin(angle) + clearance * ny / norm,
+          rotation: Math.atan2(-nx, ny) * 180 / Math.PI });
+      }
+    } else {
+      const along = (length, add) => {
+        const count = Math.max(1, Math.floor((length + 1e-9) / 0.6));
+        for (let index = 0; index < count; index++) add((index + 0.5) * length / count - length / 2);
+      };
+      along(w, (x) => seats.push({ x, y: -l / 2 - clearance, rotation: 180 },
+        { x, y: l / 2 + clearance, rotation: 0 }));
+      along(l, (y) => seats.push({ x: -w / 2 - clearance, y, rotation: 90 },
+        { x: w / 2 + clearance, y, rotation: 270 }));
+    }
+    return seats.map((seat, index) => ({
+      ...(table.id ? { id: `${table.id}-chair-${index + 1}` } : {}),
+      [this.chairSource]: { table, floor, seat },
+    }));
+  },
+
+  resolveChair(plan, { table, floor, seat }, id) {
+    const definition = this.resolveItemType(plan, table);
+    const geometry = plan.normalizeGeometryAtFloor(definition, floor);
+    const angle = geometry.rotation * Math.PI / 180;
+    return {
+      [FloorPlanGeometry.itemDefinition]: true,
+      ...(id ? { id } : {}),
+      label: "Cadeira",
+      classes: "furniture chair",
+      color: "furniture",
+      pos: [geometry.x + geometry.w / 2 + seat.x * Math.cos(angle) - seat.y * Math.sin(angle) - 0.225,
+        geometry.y + geometry.l / 2 + seat.x * Math.sin(angle) + seat.y * Math.cos(angle) - 0.225, geometry.z0],
+      size: [0.45, 0.45, 0.85],
+      rotation: (geometry.rotation + seat.rotation + 360) % 360,
+      overlaps: definition.overlaps,
+      overlays: definition.overlays,
+    };
   },
 
   resolveNightstand(plan, { bed, side, floor }, id) {
@@ -9521,13 +9609,14 @@ const FloorPlanElements = {
   },
 
   resolveItemDefinition(plan, item) {
+    if (item[this.chairSource]) return this.resolveChair(plan, item[this.chairSource], item.id);
     if (item[this.recamierSource]) {
       return this.resolveRecamier(plan, item[this.recamierSource], item.id);
     }
     if (item[this.nightstandSource]) {
       return this.resolveNightstand(plan, item[this.nightstandSource], item.id);
     }
-    if (!item.type && item.nightstand === undefined && item.recamier === undefined)
+    if (!item.type && item.nightstand === undefined && item.recamier === undefined && item.chairs === undefined)
       return { ...item, [FloorPlanGeometry.itemDefinition]: true };
     const definition = item.type ? plan.itemTypes?.[item.type] : {};
     if (!definition) throw new Error(`Unknown item type: ${item.type}`);
@@ -9540,6 +9629,9 @@ const FloorPlanElements = {
       label: item.label ?? definition.label,
       title: item.title ?? definition.title ?? definition.label,
     };
+    if (result.chairs !== undefined && result.chairs !== 0) {
+      throw new Error("Chairs aceita apenas 0 para desativar as cadeiras; omita para calcular automaticamente");
+    }
     if (result.recamier !== undefined) {
       if (typeof result.recamier !== "boolean") throw new Error("Recamier precisa ser true ou false");
       if (!String(result.classes || "").split(/\s+/).includes("queen-bed")) {
@@ -9886,28 +9978,30 @@ const FloorPlanReferences = {
 
   registerStaticItemReferences(plan, config) {
     const resolving = new Set();
-    (config.floors ?? [config]).forEach((floor) => {
-      (window.FloorPlanElements?.items(plan, floor) ?? floor.items ?? []).forEach((item) => {
-        if (!item.id || plan.references.has(item.id)) return;
-        const geometry = () => {
-          if (resolving.has(item.id)) {
-            throw new Error(`Circular item reference: ${item.id}`);
-          }
-          resolving.add(item.id);
-          try {
-            return FloorPlanGeometryBox.fromValues(
-              plan.normalizeGeometryAtFloor(plan.resolveItemType(item), floor),
-            );
-          } finally {
-            resolving.delete(item.id);
-          }
-        };
-        plan.references.set(item.id, Object.fromEntries(
-          ["x0", "x1", "xc", "y0", "y1", "yc", "z0", "z1", "zc", "w", "l", "h", "area"]
-            .map((method) => [method, () => geometry()[method]()]),
-        ));
+    for (const expanded of [false, true]) {
+      (config.floors ?? [config]).forEach((floor) => {
+        (expanded ? (window.FloorPlanElements?.items(plan, floor) ?? floor.items ?? []) : (floor.items ?? [])).forEach((item) => {
+          if (!item.id || plan.references.has(item.id)) return;
+          const geometry = () => {
+            if (resolving.has(item.id)) {
+              throw new Error(`Circular item reference: ${item.id}`);
+            }
+            resolving.add(item.id);
+            try {
+              return FloorPlanGeometryBox.fromValues(
+                plan.normalizeGeometryAtFloor(plan.resolveItemType(item), floor),
+              );
+            } finally {
+              resolving.delete(item.id);
+            }
+          };
+          plan.references.set(item.id, Object.fromEntries(
+            ["x0", "x1", "xc", "y0", "y1", "yc", "z0", "z1", "zc", "w", "l", "h", "area"]
+              .map((method) => [method, () => geometry()[method]()]),
+          ));
+        });
       });
-    });
+    }
   },
 
   registerWallReferences(plan, config) {
@@ -14299,6 +14393,12 @@ window.FloorPlanCatalog = {
     neutral: "#d8d8d8",
   },
   items: {
+    "dining-table": {
+      label: "Mesa de jantar",
+      size: [1.8, 0.9, 0.75],
+      classes: "furniture table",
+      color: "furniture",
+    },
     "washing-machine": {
       label: "Lavadora",
       size: [0.6, 0.6, 0.85],

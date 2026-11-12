@@ -17,7 +17,7 @@ const FloorPlan3DElements = {
       const classes = String(item.classes || "").split(/\s+/);
       if (classes.includes("railing")) return;
       const roundTable = item.type === "round-table" || classes.includes("round-table");
-      const kind = roundTable ? "table" : ["queen-bed", "twin-bed", "car", "table", "washing-machine", "three-seat-sofa", "armchair", "fireplace"]
+      const kind = roundTable ? "table" : ["queen-bed", "twin-bed", "car", "table", "chair", "washing-machine", "three-seat-sofa", "armchair", "fireplace"]
         .find((name) => item.type === name || classes.includes(name));
       const defaults = { car: 1.45, table: 0.75, fireplace: 1.8 };
       const x = Number(item.x), y = Number(item.y), w = Number(item.w), l = Number(item.l);
@@ -67,6 +67,10 @@ const FloorPlan3DElements = {
         box(1, 1, 0.45, 0, 0, 0.225);
         box(0.96, 0.96, 0.4, 0, 0, 0.65, light);
         box(0.8, 0.2, 0.15, 0, -0.33, 0.925, light);
+      } else if (kind === "chair") {
+        box(1, 1, 0.1, 0, 0, 0.5);
+        box(1, 0.12, 0.45, 0, 0.44, 0.775);
+        for (const cx of [-0.4, 0.4]) for (const cy of [-0.4, 0.4]) box(0.1, 0.1, 0.45, cx, cy, 0.225);
       } else if (kind === "car") {
         box(0.9, 1, 0.48, 0, 0, 0.36);
         box(0.76, 0.48, 0.4, 0, -0.03, 0.8, glass);

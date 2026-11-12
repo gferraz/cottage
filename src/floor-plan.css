@@ -989,6 +989,11 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .fireplace { background: #555; border: 2px solid #222; }
 .table { border: 2px solid #7a5b3a; background: #caa878; z-index: 5; }
 .round-table { border-radius: 50%; }
+.plan-item.chair {
+  border: 1px solid #7a5b3a;
+  border-bottom: 4px solid #7a5b3a;
+  border-radius: 3px;
+}
 .car { border: 2px solid #666; border-radius: 14px; background: #bbb; z-index: 5; }
 .plan-item.nightstand {
   border: 1px solid #6e5241;
