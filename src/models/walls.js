@@ -116,6 +116,7 @@ const FloorPlanWalls = {
           ...(plan.currentConfig?.floors ? { floors: floors.map((floor) => ({ ...floor, roofs: [] })) } : {}),
         });
         return limits.map((limit) => ({ ...limit, id, peakZ: limit.peakZ - offset,
+          bounds: limit.bounds.map(([a, b, c, d]) => [a, b, c, d - Math.hypot(a, b) * padding]),
           slopes: limit.slopes.map(([a, b, c, d]) => [a, b, c, d + c * offset]) }));
       }
       const owner = plan.partOwners?.get(id);

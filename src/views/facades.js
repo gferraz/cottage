@@ -980,7 +980,15 @@ const FloorPlanFacades = {
       });
 
       const projectedIndependentWalls = [];
-      plan.independentWalls?.forEach((wall) => {
+      // An open near side can expose the opposite wall, as in the garage.
+      // Include those real walls and let the normal depth masks hide covered areas.
+      const oppositeWalls = [...(plan.walls?.values() ?? [])]
+        .filter((wall) => wall.sourceSides?.every((source) => source.side !== facadeWall))
+        .map((wall) => ({ ...wall,
+          path: { points: [wall.from.slice(0, 2), wall.to.slice(0, 2)] },
+          baseZ: wall.z0, topZ: wall.z1, top: wall.roofOnly ? "roof" : undefined,
+        }));
+      [...(plan.independentWalls?.values() ?? []), ...oppositeWalls].forEach((wall) => {
         const points = wall.path?.points ?? [];
         points.slice(0, -1).forEach(([x0, y0], segmentIndex) => {
           const [x1, y1] = points[segmentIndex + 1];
@@ -994,7 +1002,9 @@ const FloorPlanFacades = {
           const inFacadeDepth = facadeEdge === "min"
             ? depth <= edge + facadeDepth
             : depth >= edge - facadeDepth;
-          if (!inFacadeDepth) return;
+          // Recessed upper walls can remain visible above nearer rooms.
+          // Only an explicit depth should omit them; visibility masks handle occlusion.
+          if (facade.depth !== undefined && !inFacadeDepth) return;
           const start = side ? Math.min(y0, y1) : Math.min(x0, x1);
           const end = side ? Math.max(y0, y1) : Math.max(x0, x1);
           const startPoint = side

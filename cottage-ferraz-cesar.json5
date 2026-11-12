@@ -127,6 +127,7 @@
         {
           id: "garage",
           label: "Garagem",
+          top: "garage-roof",
           pos: ["laundry.x0 - 4", "laundry.y1"],
           size: [4, 6.5],
           walls: ["top", "left", "bottom"],
@@ -736,6 +737,16 @@
   ],
   // Telhados
   roofs: [
+    {
+      id: "garage-roof",
+      label: "Telhado da garagem",
+      base: "garage",
+      z0: "ground.z0 + params.ground_height",
+      orientation: "longitudinal",
+      pitch: 51,
+      eaves: { left: 0.5, right: 0.5 },
+      rake: 0.5
+    },
     {
       id: "service-roof",
       label: "Telhado da cozinha e área de serviço",

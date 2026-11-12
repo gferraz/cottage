@@ -203,6 +203,22 @@ test('direct object IDs and ID lists work for room and independent tops', () => 
   assert.equal(walls.undersideLimits(plan, 'roof').length, 0);
 });
 
+test('a named roof caps the full thickness of a wall at its lateral edge', () => {
+  const plan = prepare({ ceiling_height: 3,
+    roofs: [{ id: 'garage-roof', type: 'gable', orientation: 'longitudinal', pitch: 45,
+      z0: 3, rectangle: [0, 0, 4, 6.5] }],
+    rooms: [{ id: 'garage', pos: [0, 0], size: [4, 6.5], top: 'garage-roof', walls: ['right'] }],
+  });
+  const wall = plan.walls.get('garage-right');
+  const faces = walls.boxFaces(...wall.pos, ...wall.pos.map((value, index) => value + wall.size[index]));
+  const solids = walls.wallSolids(faces, [], false, wall.undersideLimits);
+  assert.ok(solids.length > 0);
+  for (const point of solids.flat(2)) {
+    assert.ok(point[2] <= 3 + Math.min(point[0], 4 - point[0]) + 1e-8,
+      `wall protrudes above roof at ${point}`);
+  }
+});
+
 test('rooms resolve independent wall bounds before walls are normalized', () => {
   const source = {
     floors: [{ id: 'ground', z0: 0, ceiling_height: 3, rooms: [
