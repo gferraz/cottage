@@ -16,7 +16,7 @@
   // Configuração
   config: {
     walls: { base: { level: "ground.z0" }, top: "roof", thickness: "params.wall_thickness", color: "desejo-ambar" },
-    roofs: { type: "gable", pitch: 51, rake: 0.5 },
+    roofs: { type: "gable", pitch: 51, rake: 0.5, eaves: { pitch: 30 } },
     floors: { ceiling_height: "params.ground_height" }
   },
   // Parâmetros
@@ -27,6 +27,7 @@
     headroom_2m_inset: 0.809785,
     headroom_3m_inset: 1.619569,
     bed_knee_wall_clearance: 0.3,
+    corridor_half_width: 0.7,
     knee_setback: 0.8
   },
   // Terreno cadastral
@@ -68,39 +69,10 @@
   building: { anchor: "terrain.front-start", position: { x: 4, y: 3 } },
   // Zonas de referência
   zones: [
-    { id: "attic", inset: ["main", 3, 0], color: "red", visible: false },
     { id: "rear", rectangle: ["main.x0", "main.y0 + main.l / 2", "main.x1", "main.y1"], visible: false },
-    { id: "central", from: ["main.xc + 0.7", "main.y0"], to: ["x0 - 1.4", "main.y1"], visible: false },
-    { id: "comfort-zone", inset: ["main", 1.8, 0], color: "blue", visible: false },
-    {
-      id: "dorm",
-      rectangle: ["dorm-rear.x0", "dorm-front.y0", "dorm-front.x1", "dorm-rear.y1"],
-      color: "blue",
-      visible: false
-    },
-    {
-      id: "dorm-rear",
-      rectangle: ["rear.x0", "rear.y0", "rear.x1", "rear.y1 - params.knee_setback"],
-      color: "blue",
-      visible: false
-    },
-    {
-      id: "dorm-front",
-      rectangle: ["front.x0", "front.y0 + params.knee_setback", "front.x1", "front.y1"],
-      color: "blue",
-      visible: false
-    },
-    {
-      id: "dorm-front-left",
-      rectangle: ["front.x0 + params.knee_setback", "front.y0", "office.x1 - params.knee_setback", "front.y1"],
-      color: "blue",
-      visible: false
-    },
-    { id: "hall-roof-base", from: ["office-main.x0", "porch.y0"], to: ["hall.x0", "porch.y1"], visible: false },
+    { id: "central", from: ["main.xc + params.corridor_half_width", "main.y0"], to: ["x0 - 2 * params.corridor_half_width", "main.y1"], visible: false },
     { id: "house-right", rectangle: ["central.x1", "main.y0", "main.x1", "central.y1"], visible: false },
     { id: "main", pos: [-10, 2.5], size: [10, 9.6], visible: false },
-    { id: "office-roof-base", from: ["office.x1", "office.y0"], to: ["hall.x0", "office.y1"], visible: false },
-    { id: "perimeter", pos: [-9.6, 2.5], size: [9.6, 12.6], visible: false },
     { id: "house-left", rectangle: ["main.x0", "central.y0", "central.x0", "main.y1"], visible: false },
     { id: "front", rectangle: ["main.x0", "main.y0", "main.x1", "y0 + main.l / 2"], visible: false }
   ],
@@ -345,7 +317,7 @@
           type: "three-seat-sofa",
           label: "Sofá linear",
           title: "Sofá linear de 3 lugares — Estar",
-          pos: ["living.xc - 1.05", "living.y1 - 0.9 - 0.9"],
+          pos: ["living.xc - 1.05", "living.y1 - 1.8"],
           rotation: 180
         },
         {
@@ -720,7 +692,7 @@
       z0: "upper.z0 + params.roof_base_offset",
       rectangle: ["main.x0", "hall.y0", "office-main.x0 + 1.6", "main.y1"],
       orientation: "longitudinal",
-      eaves: { left: 0.5, right: 0, pitch: 30 }
+      eaves: { left: 0.5, right: 0 }
     },
     {
       id: "office-roof",
@@ -728,7 +700,7 @@
       z0: "upper.z0 + params.roof_base_offset",
       rectangle: ["office-main.x0", "office.y0", "office.x1", "main.y1"],
       orientation: "longitudinal",
-      eaves: { left: 0.5, right: 0.5, pitch: 30 }
+      eaves: { left: 0.5, right: 0.5 }
     },
     {
       id: "transverse-roof",
@@ -736,13 +708,13 @@
       from: ["front.x1", "front.y0 + 2", "upper.z0 + params.roof_base_offset"],
       to: ["front.x0", "rear.y1 - 1", "z0"],
       orientation: "transverse",
-      eaves: { left: 0, right: 0, pitch: 30 }
+      eaves: { left: 0, right: 0 }
     }
   ],
   // Guias de desenho
   guides: [
-    { id: "central-right", label: "central direita", pos: ["l-axis.x1 + 0.7", -2.5], l: 20, color: "green" },
-    { id: "central-left", label: "central esquerda", pos: ["l-axis.x1 - 0.7", -2.5], l: 20, color: "green" },
+    { id: "central-right", label: "central direita", pos: ["l-axis.x1 + params.corridor_half_width", -2.5], l: 20, color: "green" },
+    { id: "central-left", label: "central esquerda", pos: ["l-axis.x1 - params.corridor_half_width", -2.5], l: 20, color: "green" },
     {
       id: "knee-right",
       label: "meia parede direita",
