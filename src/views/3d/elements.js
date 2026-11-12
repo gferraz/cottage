@@ -16,7 +16,8 @@ const FloorPlan3DElements = {
     (plan.allItems ?? []).forEach((item) => {
       const classes = String(item.classes || "").split(/\s+/);
       if (classes.includes("railing")) return;
-      const kind = ["queen-bed", "twin-bed", "car", "table", "washing-machine", "three-seat-sofa", "armchair", "fireplace"]
+      const roundTable = item.type === "round-table" || classes.includes("round-table");
+      const kind = roundTable ? "table" : ["queen-bed", "twin-bed", "car", "table", "washing-machine", "three-seat-sofa", "armchair", "fireplace"]
         .find((name) => item.type === name || classes.includes(name));
       const defaults = { car: 1.45, table: 0.75, fireplace: 1.8 };
       const x = Number(item.x), y = Number(item.y), w = Number(item.w), l = Number(item.l);
@@ -71,7 +72,7 @@ const FloorPlan3DElements = {
         box(0.76, 0.48, 0.4, 0, -0.03, 0.8, glass);
         for (const cx of [-0.45, 0.45]) for (const cy of [-0.32, 0.32]) box(0.1, 0.16, 0.26, cx, cy, 0.13, dark);
       } else if (kind === "table") {
-        if (classes.includes("round-table")) {
+        if (roundTable) {
           const top = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, h * 0.1, 48), material);
           top.rotation.x = Math.PI / 2;
           top.scale.set(w, 1, l);
@@ -83,7 +84,7 @@ const FloorPlan3DElements = {
         } else {
           box(1, 1, 0.1, 0, 0, 0.95);
         }
-        for (const cx of (classes.includes("round-table") ? [-0.28, 0.28] : [-0.42, 0.42])) for (const cy of (classes.includes("round-table") ? [-0.28, 0.28] : [-0.4, 0.4])) box(0.08, 0.08, 0.9, cx, cy, 0.45);
+        for (const cx of (roundTable ? [-0.28, 0.28] : [-0.42, 0.42])) for (const cy of (roundTable ? [-0.28, 0.28] : [-0.4, 0.4])) box(0.08, 0.08, 0.9, cx, cy, 0.45);
       } else if (kind === "three-seat-sofa" || kind === "armchair") {
         box(1, 1, 0.45, 0, 0, 0.225);
         box(1, 0.16, 0.55, 0, -0.42, 0.725);
