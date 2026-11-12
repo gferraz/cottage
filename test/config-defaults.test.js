@@ -103,3 +103,23 @@ test('house wall sides map room and part walls to plan coordinates once', () => 
   assert.deepEqual(source.floors[0].rooms[0].walls, ['top', 'left']);
   assert.deepEqual(model.applyDefaults(result), result);
 });
+
+test('front and rear aliases preserve legacy walls and openings in both coordinate systems', () => {
+  require('../src/config/coordinates.js');
+  const legacy = {
+    rooms: [{ id: 'room', pos: [0, 0], size: [5, 4],
+      walls: ['top', 'bottom', 'left'],
+      parts: [{ walls: { top: 'solid', bottom: 'open' } }],
+      openings: [{ from: 'top', dx: 0.5, w: 1 }, { from: 'room.bottom', w: 1 }],
+    }],
+    openings: [{ from: 'room.top', dx: 1, w: 1 }],
+    windows: [{ from: 'room.bottom', w: 1 }],
+  };
+  const aliases = JSON.parse(JSON.stringify(legacy).replaceAll('top', 'front').replaceAll('bottom', 'rear'));
+  const original = structuredClone(aliases);
+  for (const coordinate_system of [undefined, 'cartesian']) {
+    assert.deepEqual(model.fromConfig({ ...aliases, coordinate_system }),
+      model.fromConfig({ ...legacy, coordinate_system }));
+  }
+  assert.deepEqual(aliases, original);
+});

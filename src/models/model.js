@@ -1,4 +1,32 @@
 const FloorPlanModel = {
+  normalizeWallSides(config) {
+    const side = (value) => value === "front" ? "top" : value === "rear" ? "bottom" : value;
+    const visit = (value, key) => {
+      if (!value || typeof value !== "object") return value;
+      let result;
+      if (key === "walls") {
+        result = Array.isArray(value) ? value.map(side)
+          : Object.fromEntries(Object.entries(value).map(([name, child]) => [side(name), visit(child)]));
+      } else {
+        result = Array.isArray(value) ? value.map((child) => visit(child))
+          : Object.fromEntries(Object.entries(value).map(([name, child]) => {
+            if (["openings", "windows"].includes(name) && Array.isArray(child)) {
+              return [name, child.map((opening) => {
+                const normalized = visit(opening);
+                if (typeof normalized.from === "string") {
+                  normalized.from = normalized.from.replace(/(^|\.)(front|rear)$/, (_, prefix, wall) => prefix + side(wall));
+                }
+                return normalized;
+              })];
+            }
+            return [name, visit(child, name)];
+          }));
+      }
+      return window.FloorPlanParser?.copyLocation(value, result) ?? result;
+    };
+    return visit(config);
+  },
+
   resolveParameters(config) {
     if (!config.parameters) return config;
     const values = new Map();
@@ -62,7 +90,7 @@ const FloorPlanModel = {
   },
 
   applyDefaults(config) {
-    config = this.resolveParameters(config);
+    config = this.resolveParameters(this.normalizeWallSides(config));
     const defaults = config.config ?? {};
     const { room_wall_sides: roomWallSides, ...elementDefaults } = defaults;
     const useHouseSides = roomWallSides === "house";
@@ -118,6 +146,7 @@ const FloorPlanModel = {
   },
 
   fromConfig(config) {
+    config = this.normalizeWallSides(config);
     if (config.coordinate_system === "cartesian") {
       config = FloorPlanCoordinates.reflectX(config);
       delete config.coordinate_system;
