@@ -305,6 +305,21 @@ const FloorPlanRoofs = {
       const matchingFloor = floors.find((floor) => floor.id === roof.floorId);
       if (matchingFloor) return matchingFloor;
     }
+    // An explicit base elevation identifies the supporting floor before the
+    // footprint heuristic, which otherwise favors larger lower floors.
+    const elevation = roof.z0 ?? roof.from?.[2] ?? roof.pos?.[2];
+    if (elevation !== undefined) {
+      try {
+        const baseZ = plan.resolve(elevation);
+        const supportingFloors = floors
+          .map((floor) => ({ floor, z: plan.resolve(floor.z0 ?? 0) }))
+          .filter(({ z }) => Number.isFinite(z) && z <= baseZ + 0.001)
+          .sort((a, b) => b.z - a.z);
+        if (supportingFloors.length && Number.isFinite(baseZ)) return supportingFloors[0].floor;
+      } catch {
+        // Unresolved elevations can still use the base or footprint fallback.
+      }
+    }
     if (typeof baseDefinition === "string") {
       const room = plan.roomDefinitions?.get(baseDefinition);
       const owner = floors.find((floor) => (floor.rooms ?? []).includes(room));

@@ -281,39 +281,6 @@ const FloorPlanTextExport = {
     );
     lines.push(
       "",
-      "## Itens",
-      "",
-      "| # | Nome | x | y | Largura | Altura | Área | Classes | Sobrepõe |",
-      "|---:|---|---:|---:|---:|---:|---:|---|---|",
-    );
-    const items = plan.allItems.length ? plan.allItems : plan.itemElements;
-    if (items.length === 0) {
-      lines.push("| — | Nenhum item definido |  |  |  |  |  |  |");
-    } else {
-      items.forEach((item, index) => {
-        const classes =
-          item.classes ||
-          [...(item.classList || [])]
-            .filter(
-              (className) =>
-                !["plan-item", "plan-generated"].includes(className),
-            )
-            .join(", ") ||
-          "—";
-        const overlaps =
-          item.overlaps || item.allowedOverlaps?.join(", ") || "—";
-        const x = item.x0 ? item.x0() : item.x;
-        const y = item.y0 ? item.y0() : item.y;
-        const w = item.w instanceof Function ? item.w() : item.w;
-        const l = item.l instanceof Function ? item.l() : item.l;
-        const area = item.area instanceof Function ? item.area() : w * l;
-        lines.push(
-          `| ${index + 1} | ${plan.markdownText(item.label || item.dataset?.label || item.title || "Item")}${item.floorLabel ? ` (${plan.markdownText(item.floorLabel)})` : ""} | ${plan.formatMeters(x)} | ${plan.formatMeters(y)} | ${plan.formatMeters(w)} | ${plan.formatMeters(l)} | ${plan.formatMeters(area)} | ${plan.markdownText(classes)} | ${plan.markdownText(overlaps)} |`,
-        );
-      });
-    }
-    lines.push(
-      "",
       "## Passagens",
       "",
       "| ID | De | Para | Tipo | Parede | Posição | Largura | z0 | Altura |",
@@ -413,7 +380,6 @@ const FloorPlanTextExport = {
           reference,
           floorId: plan.currentFloorId,
         }));
-    const items = plan.allItems.length ? plan.allItems : plan.itemElements;
     const openings = plan.allOpenings.length ? plan.allOpenings : plan.openings;
     const windows = plan.allWindows.length ? plan.allWindows : plan.windows;
     const roofs = plan.allRoofs ?? [];
@@ -508,9 +474,6 @@ const FloorPlanTextExport = {
       const floorRooms = rooms.filter(
         (entry) => (entry.floorId ?? null) === floorId,
       );
-      const floorItems = items.filter(
-        (item) => (item.floorId ?? null) === floorId,
-      );
       const floorOpenings = openings.filter(
         (opening) => (opening.floorId ?? null) === floorId,
       );
@@ -570,39 +533,6 @@ const FloorPlanTextExport = {
       }
 
       appendIndependentWalls(floorWalls);
-
-      lines.push(
-        "",
-        "### Itens",
-        "",
-        "| # | Nome | x | y | Largura | Comprimento | Rotação (°) | Área | Classes | Sobrepõe |",
-        "|---:|---|---:|---:|---:|---:|---:|---:|---|---|",
-      );
-      if (floorItems.length === 0) {
-        lines.push("| — | Nenhum item definido |  |  |  |  |  |  |  |  |");
-      } else {
-        floorItems.forEach((item, index) => {
-          const classes =
-            item.classes ||
-            [...(item.classList || [])]
-              .filter(
-                (className) =>
-                  !["plan-item", "plan-generated"].includes(className),
-              )
-              .join(", ") ||
-            "—";
-          const overlaps =
-            item.overlaps || item.allowedOverlaps?.join(", ") || "—";
-          const x = item.x0 ? item.x0() : item.x;
-          const y = item.y0 ? item.y0() : item.y;
-          const w = item.w instanceof Function ? item.w() : item.w;
-          const l = item.l instanceof Function ? item.l() : item.l;
-          const area = item.area instanceof Function ? item.area() : w * l;
-          lines.push(
-            `| ${index + 1} | ${plan.markdownText(item.label || item.dataset?.label || item.title || "Item")} | ${plan.formatMeters(x)} | ${plan.formatMeters(y)} | ${plan.formatMeters(w)} | ${plan.formatMeters(l)} | ${plan.formatMeters(item.rotation ?? 0)} | ${plan.formatMeters(area)} | ${plan.markdownText(classes)} | ${plan.markdownText(overlaps)} |`,
-          );
-        });
-      }
 
       appendRoofSection("Telhados", floorRoofs);
 

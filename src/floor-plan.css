@@ -593,6 +593,10 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   background: var(--theme-background, #fff);
 }
 
+.technical-category-roofs {
+  grid-column: 1 / -1;
+}
+
 .technical-category > h4 {
   margin: 0 0 8px;
   font-size: 13px;

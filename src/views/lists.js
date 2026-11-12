@@ -43,7 +43,6 @@ const FloorPlanLists = {
     );
     const groups = [
       ["rooms", "Cômodos"],
-      ["items", "Itens"],
       ["roofs", "Telhados"],
       ["openings", "Passagens"],
       ["windows", "Janelas"],
@@ -51,7 +50,6 @@ const FloorPlanLists = {
     ];
     const renderers = {
       rooms: (target, floor) => this.updateRoomList(plan, target, floor),
-      items: (target, floor) => this.updateItemList(plan, target, floor),
       roofs: (target, floor) => this.updateRoofList(plan, target, floor),
       openings: (target, floor) => this.updateOpeningList(plan, target, floor),
       windows: (target, floor) => this.updateWindowList(plan, target, floor),
