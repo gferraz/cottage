@@ -357,7 +357,7 @@
         },
         {
           title: "Mesa",
-          pos: ["house-left.x0 + params.wall_thickness / 2 + 1", "dining.y0 + 1"],
+          pos: ["dining.x0 + 1", "dining.y0 + 1"],
           size: [2.7, 1.1],
           classes: "table"
         },
