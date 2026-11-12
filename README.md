@@ -211,7 +211,7 @@ O padrão é quatro paredes sólidas. Use `walls` com `solid`, `open` ou `virtua
 "walls": { "top": "solid", "right": "open", "bottom": "virtual", "left": "solid" }
 ```
 
-Com `config.room_wall_sides: "house"`, como em `cottage-ferraz-cesar.json5`, `left` segue a esquerda da casa (`x1`, à esquerda na planta com a frente embaixo) e `right` segue a direita da casa (`x0`, à direita nessa vista). A opção vale para `walls` dos cômodos e de suas partes. Sem ela, `left` é `x0` e `right` é `x1`. As aberturas em `openings` mantêm os eixos geométricos anteriores ao giro: `left = x0` e `right = x1`. O giro da vista não altera coordenadas ou referências. IDs como `house-left`, `central-left`, `knee-left`, `main-left` e `upper-left-wall` seguem os lados da casa; seus pares `right` seguem o lado oposto.
+Com `config.room_wall_sides: "house"`, como em `cottage-ferraz-cesar.json5`, `left` segue a esquerda da casa (`x1`, à esquerda na planta com a frente embaixo) e `right` segue a direita da casa (`x0`, à direita nessa vista). A opção vale para `walls` dos cômodos e de suas partes. Sem ela, `left` é `x0` e `right` é `x1`. As aberturas em `doors`, `windows` e `openings` mantêm os eixos geométricos anteriores ao giro: `left = x0` e `right = x1`. O giro da vista não altera coordenadas ou referências. IDs como `house-left`, `central-left`, `knee-left`, `main-left` e `upper-left-wall` seguem os lados da casa; seus pares `right` seguem o lado oposto.
 
 Como atalho, `walls: ["top", "bottom"]` torna somente esses lados sólidos; `walls: "virtual"` torna todos pontilhados. `virtual` é separação visual, não parede sólida. Sobreposição intencional é declarada com `"overlaps": "corridor"` ou uma lista. Ela é descontada da área útil do elemento que recebe a autorização; itens também podem descontar área de cômodos.
 
@@ -241,9 +241,9 @@ Use as coleções `doors`, `windows` e `openings` na raiz de plantas com piso ú
 
 Por compatibilidade, `openings` com `type: "door"`, `"window"` ou `"opening"` continua interpretado pela categoria antiga e gera aviso de depreciação. Mova a entrada para a coleção correspondente e remova `type`. Em `doors` e `windows`, a coleção sempre tem prioridade sobre `type`; o schema exige que um `type` redundante corresponda à coleção. Os padrões antigos `config.openings.door/window/opening` também continuam aceitos com aviso. A prioridade é por propriedade: padrões novos → padrões antigos → catálogo.
 
-Veja o [exemplo carregável com dois pavimentos](examples/portas-janelas-vaos.json5). Os arquivos existentes não são migrados automaticamente.
+Veja o [exemplo carregável com dois pavimentos](examples/portas-janelas-vaos.json5). A planta principal, os exemplos e os fixtures de uso corrente foram migrados. Estudos históricos em `archive/` mantêm a sintaxe original para preservar o registro e exercitar a compatibilidade; carregar um arquivo não altera sua fonte automaticamente.
 
-Itens são objetos concretos, aparecem em lista própria e podem usar `overlaps`. Use `title` para o texto exibido ao passar o mouse e `label` para a legenda. Tipos reutilizáveis podem ser declarados em `item-types`. Janelas ficam separadas da lista de passagens. Zonas virtuais (`zones`) servem para referências e marcações, sem entrar em áreas ou conflitos.
+Itens são objetos concretos, aparecem em lista própria e podem usar `overlaps`. Use `title` para o texto exibido ao passar o mouse e `label` para a legenda. Tipos reutilizáveis podem ser declarados em `item-types`. Portas, janelas e vãos aparecem em listas e tabelas separadas. Zonas virtuais (`zones`) servem para referências e marcações, sem entrar em áreas ou conflitos.
 
 ## Terreno, guias e apresentação
 
@@ -285,7 +285,7 @@ Use `visible: false` em uma zona, item ou outro elemento visual para ocultá-lo 
 
 ## Legendas, validação e exportação
 
-A interface mostra cômodos com dimensões e áreas bruta/útil, resumo por piso e terreno, itens, passagens, janelas, comunicações naturais e todos os erros de cálculo ou apresentação. O botão **Baixar HTML gerado** cria um arquivo portátil com CSS embutido; **Baixar layout em Markdown** inclui tabelas, itens, passagens, janelas, erros e ASCII art. A impressão oculta os controles e ajusta a escala para papel.
+A interface mostra cômodos com dimensões e áreas bruta/útil, resumo por piso e terreno, itens, portas, janelas, vãos, comunicações naturais e todos os erros de cálculo ou apresentação. O botão **Baixar HTML gerado** cria um arquivo portátil com CSS embutido; **Baixar layout em Markdown** inclui tabelas, itens, portas, janelas, vãos, erros e ASCII art. A impressão oculta os controles e ajusta a escala para papel.
 
 O botão **Todas as camadas** alterna o limite visual das camadas. Ao selecionar uma camada, elementos acima dela são ocultados temporariamente; cálculos, listas e exportações continuam considerando a planta completa. O botão **Visão: Multi-pisos** mostra, sobre o piso selecionado, as partes descobertas dos pisos inferiores com baixa opacidade.
 
@@ -361,3 +361,7 @@ O quadro técnico apresenta **Avisos de depreciação**, separados dos erros. A 
 As regras atuais são `wall_max_height` → `ceiling_height`, `eave` → `eaves.left/right` e `top: { under: ... }` sem deslocamento → `top` com ID ou lista de IDs. `top.level`, `top.under` com deslocamento continuam válidos sem aviso. O campo `type` nas coleções de aberturas e os padrões antigos `config.openings.door/window/opening` agora geram avisos com a orientação de migração. Os aliases `front/rear` e os atalhos de geometria também continuam válidos.
 
 A coleta fica centralizada em `FloorPlanModel.collectDeprecations`, antes da normalização e da aplicação de padrões. Novas regras devem indicar código estável, propriedade e orientação de migração, inspecionando apenas os contextos estruturais correspondentes. Os avisos originais são preservados nas recargas internas para não repetir ocorrências nem atribuir avisos a valores herdados dos padrões; não são incluídos no JSON exportado.
+
+A leitura das coleções fica em `FloorPlanOpenings.visit/collect`: a mesma classificação é usada pela reflexão de coordenadas e pela validação. `forFloor` reúne declarações do piso e dos cômodos, qualificando referências locais e preservando as localizações do parser. `normalizeOpening` aplica os padrões por categoria e produz a geometria comum de recorte, mantendo `type` como categoria interna. `rendered` fornece as geometrias normalizadas a listas, fachadas, 3D e exportações. Vãos entre pisos continuam no fluxo próprio de aberturas verticais.
+
+A migração foi comparada com a geometria anterior da planta principal e dos três exemplos: posições, dimensões, cotas, paredes associadas e diagnósticos foram preservados. Os testes de equivalência também comparam a declaração atual com a forma legada em todos os pavimentos. As exportações HTML e Markdown apresentam Portas, Janelas e Vãos; o DXF mantém as layers DOORS, WINDOWS e OPENINGS.

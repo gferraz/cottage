@@ -278,11 +278,7 @@ const FloorPlanOpenings = {
   },
 
   addWindow(plan, window) {
-    const feature = plan.normalizeOpening({ ...window, type: "window" });
-    plan.windows.push(feature);
-
-    plan.renderWallFeature(feature, "plan-window");
-    return feature;
+    return this.addOpening(plan, this.collect({ windows: [window] })[0]);
   },
 
   renderWallFeature(plan, feature, baseClass) {

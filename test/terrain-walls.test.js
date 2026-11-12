@@ -1,7 +1,6 @@
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 globalThis.window = globalThis;
-require('../src/models/openings.js');
 require("../src/models/terrain.js");
 require("../src/models/walls.js");
 const walls = FloorPlanWalls;

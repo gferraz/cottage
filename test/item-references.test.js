@@ -2,7 +2,6 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 globalThis.window = globalThis;
-require('../src/models/openings.js');
 require("../src/models/terrain.js");
 for (const name of ['config/catalog', 'config/coordinates', 'models/geometry-box', 'models/geometry', 'models/geometry-domain',
   'models/walls', 'config/parser', 'models/model', 'models/validation', 'views/roofs',
