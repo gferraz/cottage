@@ -26,8 +26,6 @@
     roof_base_offset: 1,
     headroom_2m_inset: 0.809785,
     headroom_3m_inset: 1.619569,
-    office_headroom_2m_inset: 0.809785,
-    office_headroom_3m_inset: 1.619569,
     bed_knee_wall_clearance: 0.3,
     knee_setback: 0.8
   },
@@ -490,9 +488,9 @@
           id: "headroom-office-roof-2m",
           label: "Telhado do escritório — altura ≥ 2 m",
           rectangle: [
-            "office-roof.x0 + params.office_headroom_2m_inset",
+            "office-roof.x0 + params.headroom_2m_inset",
             "office-roof.y0",
-            "office-roof.x1 - params.office_headroom_2m_inset",
+            "office-roof.x1 - params.headroom_2m_inset",
             "office-roof.y1"
           ],
           color: "rgba(98, 139, 90, 0.35)"
@@ -501,9 +499,9 @@
           id: "headroom-office-roof-3m",
           label: "Telhado do escritório — altura ≥ 3 m",
           rectangle: [
-            "office-roof.x0 + params.office_headroom_3m_inset",
+            "office-roof.x0 + params.headroom_3m_inset",
             "office-roof.y0",
-            "office-roof.x1 - params.office_headroom_3m_inset",
+            "office-roof.x1 - params.headroom_3m_inset",
             "office-roof.y1"
           ],
           color: "rgba(77, 120, 153, 0.35)"
@@ -585,7 +583,6 @@
       scope: "ground",
       base: "terrain",
       top: { level: "ground.z0" },
-      thickness: "params.wall_thickness",
       // Mureta de fechamento entre terreno e piso; contorno do térreo.
       // Inclui varanda, terraço e garagem; a escada frontal fica externa.
       path: {
@@ -656,7 +653,6 @@
       id: "upper-office-walls",
       scope: "upper",
       base: { level: "upper.z0" },
-      top: "roof",
       path: {
         points: [
           ["main-right.x1", "office.y1"],
@@ -671,7 +667,6 @@
       id: "upper-front-wall",
       scope: "upper",
       base: { level: "upper.z0" },
-      top: "roof",
       path: {
         points: [["knee-right.x1", "hall.y0"], ["hall.x0", "y0"], ["x0", "house-left.y0"], ["house-left.x0", "y0"]]
       }
@@ -680,7 +675,6 @@
       id: "upper-right-wall",
       scope: "upper",
       base: { level: "upper.z0" },
-      top: "roof",
       path: { points: [["house-right.x1", "office.y1"], ["x0", "main.y1"]] }
     },
     {
@@ -688,14 +682,12 @@
       scope: "upper",
       color: "blue",
       base: { level: "upper.z0" },
-      top: "roof",
       path: { points: [["knee-right.x1", "main.y0"], ["x0", "y0 + 4.6"]] }
     },
     {
       id: "upper-rear-wall",
       scope: "upper",
       base: { level: "upper.z0" },
-      top: "roof",
       from: ["main.x1", "main.y1"],
       to: ["main.x0", "y0"]
     },
@@ -703,7 +695,6 @@
       id: "upper-left-wall",
       scope: "upper",
       base: { level: "upper.z0" },
-      top: "roof",
       from: ["house-left.x0", "house-left.y0"],
       to: ["x0", "main.y1"]
     }
