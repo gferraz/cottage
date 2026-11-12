@@ -369,8 +369,8 @@
         {
           id: "bedroom-north",
           label: "Quarto N",
-          from: ["knee-right.x1", "hall.y0"],
-          to: ["knee-right.x1 - 3.3", "y0 + 3.8"],
+          from: ["knee-front-right.x1", "hall.y0"],
+          to: ["knee-front-right.x1 - 3.3", "y0 + 3.8"],
           walls: ["left", "bottom"],
           doors: [
             { from: "bottom", to: "upper-corridor" }
@@ -401,7 +401,7 @@
         {
           id: "bedroom-west",
           label: "Quarto Oeste",
-          from: ["knee-right.x1", "main.y1 - 3.8"],
+          from: ["knee-front-right.x1", "main.y1 - 3.8"],
           to: ["house-left.x1", "main.y1"],
           walls: ["top", "left"],
           doors: [
@@ -425,7 +425,7 @@
           id: "bathroom",
           label: "Banheiro",
           from: ["house-right.x1", "transversal-rear.y0 + 1"],
-          to: ["knee-right.x1", "main.y1"],
+          to: ["knee-front-right.x1", "main.y1"],
           walls: ["top"],
           doors: [
             { from: "top", to: "unused-right" }
@@ -454,7 +454,7 @@
           id: "unused-right",
           label: "Sem uso",
           from: ["house-right.x1", "prayer-room.y1"],
-          to: ["knee-right.x1", "bathroom.y0"],
+          to: ["knee-front-right.x1", "bathroom.y0"],
           windows: [
             { from: "right", to: "exterior", w: 0.8, h: 0.6 }
           ]
@@ -476,6 +476,31 @@
       ],
       zones: [
         {
+          id: "headroom-kitchen-roof-2m",
+          label: "Telhado da cozinha — altura ≥ 2 m",
+          inset: ["kitchen-roof", "params.headroom_2m_inset", 0],
+          color: "rgba(98, 139, 90, 0.35)"
+        },
+        {
+          id: "headroom-kitchen-roof-3m",
+          label: "Telhado da cozinha — altura ≥ 3 m",
+          inset: ["kitchen-roof", "params.headroom_3m_inset", 0],
+          color: "rgba(40, 80, 230, 0.45)"
+        },
+        // A base deste telhado coincide com o piso: recuos de 2/tan(51°) e 3/tan(51°).
+        {
+          id: "headroom-service-roof-2m",
+          label: "Telhado da cozinha e área de serviço — altura ≥ 2 m",
+          inset: ["service-roof", "params.headroom_2m_inset * 2", 0],
+          color: "rgba(98, 139, 90, 0.35)"
+        },
+        {
+          id: "headroom-service-roof-3m",
+          label: "Telhado da cozinha e área de serviço — altura ≥ 3 m",
+          inset: ["service-roof", "params.headroom_2m_inset * 3", 0],
+          color: "rgba(40, 80, 230, 0.45)"
+        },
+        {
           id: "headroom-main-roof-2m",
           label: "Telhado principal — altura ≥ 2 m",
           inset: ["main-roof", "params.headroom_2m_inset", 0],
@@ -485,7 +510,7 @@
           id: "headroom-main-roof-3m",
           label: "Telhado principal — altura ≥ 3 m",
           inset: ["main-roof", "params.headroom_3m_inset", 0],
-          color: "rgba(77, 120, 153, 0.35)"
+          color: "rgba(40, 80, 230, 0.45)"
         },
         {
           id: "headroom-office-roof-2m",
@@ -498,17 +523,7 @@
           ],
           color: "rgba(98, 139, 90, 0.35)"
         },
-        {
-          id: "headroom-office-roof-3m",
-          label: "Telhado do escritório — altura ≥ 3 m",
-          rectangle: [
-            "office-roof.x0 + params.headroom_3m_inset",
-            "office-roof.y0",
-            "office-roof.x1 - params.headroom_3m_inset",
-            "office-roof.y1"
-          ],
-          color: "rgba(77, 120, 153, 0.35)"
-        },
+        // Escritório: altura máxima de 2,976 m; não há zona ≥ 3 m neste telhado.
         {
           id: "headroom-transverse-roof-2m",
           label: "Telhado transversal — altura ≥ 2 m",
@@ -519,7 +534,7 @@
           id: "headroom-transverse-roof-3m",
           label: "Telhado transversal — altura ≥ 3 m",
           inset: ["transverse-roof", 0, "params.headroom_3m_inset"],
-          color: "rgba(77, 120, 153, 0.35)"
+          color: "rgba(40, 80, 230, 0.45)"
         }
       ],
       items: [
@@ -628,7 +643,8 @@
       id: "knee-wall-rear",
       scope: "upper",
       color: "blue",
-      path: { points: [["knee-right.x1", "w-axis.y0 + 0.7"], ["x0", "house-right.y1"]] },
+      from: ["knee-rear-right.x0", "house-right.y1 - 2.6"],
+      to:   ["x0", "house-right.y1"],
       base: { level: "upper.z0" }
     },
     {
@@ -670,7 +686,7 @@
       scope: "upper",
       base: { level: "upper.z0" },
       path: {
-        points: [["knee-right.x1", "hall.y0"], ["hall.x0", "y0"], ["x0", "house-left.y0"], ["house-left.x0", "y0"]]
+        points: [["knee-front-right.x1", "hall.y0"], ["hall.x0", "y0"], ["x0", "house-left.y0"], ["house-left.x0", "y0"]]
       }
     },
     {
@@ -684,7 +700,7 @@
       scope: "upper",
       color: "blue",
       base: { level: "upper.z0" },
-      path: { points: [["knee-right.x1", "main.y0"], ["x0", "y0 + 4.6"]] }
+      path: { points: [["knee-front-right.x1", "main.y0"], ["x0", "y0 + 4.6"]] }
     },
     {
       id: "upper-rear-wall",
@@ -717,7 +733,7 @@
       label: "Telhado da cozinha",
       z0: "upper.z0 + params.roof_base_offset",
       // Base simétrica à guia, sem exigir cobertura de toda a cozinha.
-      rectangle: ["2 * knee-right.x0 - kitchen.x1", "kitchen.y0", "kitchen.x1", "kitchen.y1"],
+      rectangle: ["2 * knee-front-right.x0 - kitchen.x1", "transversal-rear.y0", "kitchen.x1", "kitchen.y1"],
       orientation: "longitudinal",
       pitch: 51,
       eaves: { left: 0.5, right: 0.5, pitch: 51 }
@@ -747,7 +763,7 @@
       id: "office-roof",
       label: "Escritório",
       z0: "upper.z0 + params.roof_base_offset",
-      rectangle: ["office-main.x0", "office.y0", "office.x1", "main.y1"],
+      rectangle: ["office-main.x0", "office.y0", "office.x1", "y0 + 6"],
       orientation: "longitudinal",
       eaves: { left: 0.5, right: 0.5 }
     },
@@ -762,26 +778,33 @@
   ],
   // Guias de desenho
   guides: [
-    { id: "central-right", label: "central direita", pos: ["l-axis.x1 + params.corridor_half_width", -2.5], l: 20, color: "green" },
-    { id: "central-left", label: "central esquerda", pos: ["l-axis.x1 - params.corridor_half_width", -2.5], l: 20, color: "green" },
+    { id: "central-right", label: "central direita", pos: ["l-axis.x1 + params.corridor_half_width", -3.5], l: 20, color: "green" },
+    { id: "central-left", label: "central esquerda", pos: ["l-axis.x1 - params.corridor_half_width", -3.5], l: 20, color: "green" },
     {
-      id: "knee-right",
-      label: "meia parede direita",
-      pos: ["main-roof.x1 - params.knee_setback", -2.5],
+      id: "knee-front-right",
+      label: "meia parede direita frontal",
+      pos: ["main-roof.x1 - params.knee_setback", -3.5],
+      l: 20,
+      color: "terracotta"
+    },
+    {
+      id: "knee-rear-right",
+      label: "meia parede direita traseira",
+      pos: ["main-roof.x1 - 1.6", -3.5],
       l: 20,
       color: "terracotta"
     },
     {
       id: "knee-left",
       label: "meia parede esquerda",
-      pos: ["main-roof.x0 + params.knee_setback", -2.5],
+      pos: ["main-roof.x0 + params.knee_setback", -3.5],
       l: 20,
       color: "terracotta"
     },
-    { id: "l-axis", label: "eixo longitudinal", pos: ["central.xc", -2.5], l: 20, color: "green" },
+    { id: "l-axis", label: "eixo longitudinal", pos: ["central.xc", -3.5], l: 20, color: "green" },
     { id: "main-rear", label: "parede traseira", pos: [-16, "main.y1"], w: 20, color: "green" },
-    { id: "main-right", label: "parede direita", pos: ["house-right.x1", -2.5], l: 20, color: "green" },
-    { id: "main-left", label: "parede esquerda", pos: ["house-left.x0", -2.5], l: 20, color: "green" },
+    { id: "main-right", label: "parede direita", pos: ["house-right.x1", -3.5], l: 20, color: "green" },
+    { id: "main-left", label: "parede esquerda", pos: ["house-left.x0", -3.5], l: 20, color: "green" },
     { id: "main-front", label: "parede frontal", pos: [-16, "main.y0"], w: 20, color: "green" },
     { id: "transversal-front", label: "transversal frontal", pos: [-16, "w-axis.y0 - 0.7"], w: 20, color: "green" },
     { id: "transversal-rear", label: "transversal traseira", pos: [-16, "w-axis.y0 + 0.7"], w: 20, color: "green" },
