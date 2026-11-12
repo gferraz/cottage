@@ -33,6 +33,12 @@ Para regenerar essa cópia a partir do original (sobrescrevendo somente a versã
 node bin/migrate-cartesian.cjs
 ```
 
+Nas fórmulas de **itens**, referências a cômodos usam automaticamente os limites internos em planta: `x0`, `x1`, `y0`, `y1`, centros, largura, comprimento e área consideram as faces das paredes. Por exemplo, `"bedroom-east.x0 + 0.4"` indica 40 cm livres a partir da face interna, sem somar metade da espessura. O cálculo considera paredes sólidas do cômodo, compartilhadas com vizinhos e independentes coincidentes com seus limites no mesmo piso; paredes virtuais não descontam espaço. Em limites parcialmente cobertos, o afastamento retangular usa a maior espessura coincidente naquele lado.
+
+Essa convenção vale também para `copy`, `inset` e `outset` dos itens. As definições dos próprios cômodos, paredes, zonas, guias e telhados mantêm suas referências originais. Referenciar uma zona ou guia a partir de um item também mantém os valores originais, mesmo que sua definição use um cômodo. Referências a outros itens usam a geometria já calculada deles. Coordenadas Z e espessuras de telhados não mudam nesta etapa; não há sintaxe `raw`.
+
+Ao adaptar arquivos antigos, remova das fórmulas dos itens as compensações manuais de meia espessura **somente nas referências a cômodos**. Zonas e guias não passam a ter espessura. A planta ativa já foi migrada; arquivos em `archive/` preservam fórmulas históricas e podem precisar desse ajuste ao serem reabertos.
+
 Medidas reutilizáveis ficam em `parameters`:
 
 ```json5

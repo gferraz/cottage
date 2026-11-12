@@ -88,16 +88,28 @@ const FloorPlanElements = {
   },
 
   resolveItemType(plan, item) {
+    const previous = plan.itemReferenceContext;
+    plan.itemReferenceContext = true;
+    try {
+      return this.resolveItemDefinition(plan, item);
+    } finally {
+      plan.itemReferenceContext = previous;
+    }
+  },
+
+  resolveItemDefinition(plan, item) {
     if (item[this.recamierSource]) {
       return this.resolveRecamier(plan, item[this.recamierSource], item.id);
     }
     if (item[this.nightstandSource]) {
       return this.resolveNightstand(plan, item[this.nightstandSource], item.id);
     }
-    if (!item.type && item.nightstand === undefined && item.recamier === undefined) return item;
+    if (!item.type && item.nightstand === undefined && item.recamier === undefined)
+      return { ...item, [FloorPlanGeometry.itemDefinition]: true };
     const definition = item.type ? plan.itemTypes?.[item.type] : {};
     if (!definition) throw new Error(`Unknown item type: ${item.type}`);
     const result = {
+      [FloorPlanGeometry.itemDefinition]: true,
       ...definition,
       ...item,
       size: item.size ?? definition.size,
@@ -132,7 +144,7 @@ const FloorPlanElements = {
       if (!Number.isFinite(width) || width <= 0) {
         throw new Error("Nightstand.w precisa ser positivo");
       }
-      result.nightstand = { ...settings, w };
+      result.nightstand = { ...settings, w: width };
     }
     return result;
   },

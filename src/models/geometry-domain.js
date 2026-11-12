@@ -64,6 +64,19 @@ const FloorPlanGeometryDomain = {
   },
 
   normalizeGeometry(plan, data) {
+    const previous = plan.itemReferenceContext;
+    const previousCache = plan.itemRoomBoundsCache;
+    plan.itemRoomBoundsCache = new Map();
+    plan.itemReferenceContext = Boolean(data?.[FloorPlanGeometry.itemDefinition]);
+    try {
+      return this.normalizeGeometryDefinition(plan, data);
+    } finally {
+      plan.itemReferenceContext = previous;
+      plan.itemRoomBoundsCache = previousCache;
+    }
+  },
+
+  normalizeGeometryDefinition(plan, data) {
     if (data?.type && data.size === undefined && plan.itemTypes?.[data.type]) {
       const itemType = plan.itemTypes[data.type];
       data = {
@@ -89,7 +102,8 @@ const FloorPlanGeometryDomain = {
         throw new Error("Copy não pode ser combinado com outra definição geométrica");
       }
       const id = data.copy.trim();
-      const reference = plan.partReferenceStack?.at(-1)?.get(id) ?? plan.references.get(id);
+      const reference = FloorPlanGeometry.referenceFor(plan, id,
+        plan.partReferenceStack?.at(-1)?.get(id) ?? plan.references.get(id));
       if (!reference) throw new Error(`Unknown geometric reference: ${id}`);
       const x = reference.x0(), y = reference.y0(), w = reference.w(), l = reference.l();
       const z0 = reference.z0 ? reference.z0() : plan.currentFloorHeight;
@@ -228,7 +242,7 @@ const FloorPlanGeometryDomain = {
       }
 
       const [referenceId, leftValue, topValue, rightValue = leftValue, bottomValue = topValue] = data.inset;
-      const reference = plan.references.get(String(referenceId));
+      const reference = FloorPlanGeometry.referenceFor(plan, String(referenceId), plan.references.get(String(referenceId)));
       if (!reference)
         throw new Error(`Unknown geometric reference: ${referenceId}`);
 
@@ -281,7 +295,7 @@ const FloorPlanGeometryDomain = {
       }
 
       const [referenceId, leftValue, topValue, rightValue = leftValue, bottomValue = topValue] = data.outset;
-      const reference = plan.references.get(String(referenceId));
+      const reference = FloorPlanGeometry.referenceFor(plan, String(referenceId), plan.references.get(String(referenceId)));
       if (!reference)
         throw new Error(`Unknown geometric reference: ${referenceId}`);
 

@@ -1,4 +1,43 @@
 const FloorPlanGeometry = {
+  itemDefinition: Symbol("item-definition"),
+
+  // Reference definitions must resolve in their own context, never in the
+  // context of the item that happens to be reading them.
+  referenceFor(plan, id, reference) {
+    if (!reference) return reference;
+    const itemContext = plan.itemReferenceContext;
+    return new Proxy(reference, {
+      get(target, key) {
+        const previousContext = plan.itemReferenceContext;
+        plan.itemReferenceContext = false;
+        let value;
+        try {
+          value = Reflect.get(target, key, target);
+        } finally {
+          plan.itemReferenceContext = previousContext;
+        }
+        if (typeof value !== "function") return value;
+        return (...args) => {
+          const previous = plan.itemReferenceContext;
+          plan.itemReferenceContext = false;
+          try {
+            if (itemContext && plan.roomDefinitions?.has(id) &&
+                ["x0", "x1", "xc", "y0", "y1", "yc", "w", "l", "area"].includes(key)) {
+              let bounds = plan.itemRoomBoundsCache?.get(id);
+              if (!bounds) {
+                bounds = FloorPlanWalls.itemRoomBounds(plan, id);
+                plan.itemRoomBoundsCache?.set(id, bounds);
+              }
+              return bounds[key]();
+            }
+            return value.apply(target, args);
+          } finally {
+            plan.itemReferenceContext = previous;
+          }
+        };
+      },
+    });
+  },
   stairSteps(stair) {
     const risers = stair.risers ?? Math.max(1, Math.round(stair.h / 0.16));
     if (!Number.isInteger(risers) || risers < 2 && stair.risers !== undefined) {
@@ -99,7 +138,8 @@ const FloorPlanGeometry = {
     );
     if (partMatch) {
       const [, roomId, partId, method, operator, amount] = partMatch;
-      const room = this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId);
+      const room = FloorPlanGeometry.referenceFor(this, roomId,
+        this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId));
       if (!room) {
         throw new Error(
           `Unknown room reference: ${roomId} in geometric expression "${reference}"`,
@@ -118,7 +158,8 @@ const FloorPlanGeometry = {
     if (!match) throw new Error(`Invalid geometric reference: ${value}`);
 
     const [, roomId, method, operator, amount] = match;
-    const room = this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId);
+    const room = FloorPlanGeometry.referenceFor(this, roomId,
+      this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId));
     if (!room) {
       throw new Error(
         `Unknown room reference: ${roomId} in geometric expression "${reference}"`,

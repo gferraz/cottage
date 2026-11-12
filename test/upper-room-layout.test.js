@@ -3,12 +3,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 globalThis.window = globalThis;
 require("../src/models/terrain.js");
-for (const name of ['config/catalog', 'models/geometry-box', 'models/geometry', 'models/geometry-domain',
+for (const name of ['config/catalog', 'config/coordinates', 'models/geometry-box', 'models/geometry', 'models/geometry-domain',
   'models/walls', 'config/parser', 'models/model', 'models/validation', 'views/roofs',
   'models/openings', 'models/references', 'views/elements', 'main']) require(`../src/${name}.js`);
 
-function prepare() {
-  const model = FloorPlanModel.fromConfig(FloorPlanParser.parse(fs.readFileSync('archive/cottage-ferraz-cesar-front-gables.json5', 'utf8')));
+function prepare(file = 'archive/cottage-ferraz-cesar-front-gables.json5') {
+  const model = FloorPlanModel.fromConfig(FloorPlanParser.parse(fs.readFileSync(file, 'utf8')));
   const plan = Object.assign(Object.create(FloorPlan.prototype), {
     model, currentConfig: model.config, errors: [], invalidRoomIds: new Set(), partReferenceStack: [],
     currentFloorHeight: 0, catalog: FloorPlanCatalog, itemTypes: FloorPlanCatalog.items, walls: new Map(), independentWalls: new Map(),
@@ -36,8 +36,8 @@ test('west bedroom and bathroom rear windows resolve to an exterior wall below t
   }
 });
 
-test('west bedroom furniture fits after rotation, with no overlapping footprints', () => {
-  const plan = prepare();
+test('current west bedroom furniture fits after rotation, with no overlapping footprints', () => {
+  const plan = prepare('cottage-ferraz-cesar.json5');
   const upper = plan.currentConfig.floors.find((floor) => floor.id === 'upper');
   const room = plan.rooms.get('bedroom-west');
   const boxes = upper.items.filter((item) => /^(bed|wardrobe)-west-/.test(item.id)).map((item) => {
@@ -46,7 +46,7 @@ test('west bedroom furniture fits after rotation, with no overlapping footprints
     const w = sideways ? g.l : g.w, l = sideways ? g.w : g.l;
     return { id: item.id, x: g.x + (g.w - w) / 2, y: g.y + (g.l - l) / 2, w, l };
   });
-  assert.equal(boxes.length, 4);
+  assert.equal(boxes.length, 2);
   for (const box of boxes) {
     assert.ok(box.x >= room.x0() && box.x + box.w <= room.x1());
     assert.ok(box.y >= room.y0() && box.y + box.l <= room.y1());

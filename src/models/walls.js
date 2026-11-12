@@ -1,4 +1,85 @@
 const FloorPlanWalls = {
+  itemRoomBounds(plan, roomId) {
+    const room = plan.getRoomGeometry(roomId);
+    const floor = plan.roomFloorConfigs.get(roomId);
+    const limits = { x0: room.x0(), x1: room.x1(), y0: room.y0(), y1: room.y1() };
+    const inset = { x0: 0, x1: 0, y0: 0, y1: 0 };
+    const epsilon = 1e-8;
+    const addSegment = (from, to, thickness) => {
+      const vertical = Math.abs(from[0] - to[0]) < epsilon;
+      const horizontal = Math.abs(from[1] - to[1]) < epsilon;
+      if (!vertical && !horizontal) return;
+      const axis = vertical ? 0 : 1;
+      const along = 1 - axis;
+      const low = axis === 0 ? "x0" : "y0";
+      const high = axis === 0 ? "x1" : "y1";
+      const alongLow = along === 0 ? limits.x0 : limits.y0;
+      const alongHigh = along === 0 ? limits.x1 : limits.y1;
+      if (Math.min(Math.max(from[along], to[along]), alongHigh) -
+          Math.max(Math.min(from[along], to[along]), alongLow) <= epsilon) return;
+      for (const key of [low, high]) {
+        if (Math.abs(from[axis] - limits[key]) < epsilon)
+          inset[key] = Math.max(inset[key], thickness / 2);
+      }
+    };
+    // Include shared walls owned by neighbouring rooms, but never virtual walls.
+    plan.roomDefinitions.forEach((definition, id) => {
+      if (plan.roomFloorConfigs.get(id) !== floor || plan.invalidRoomIds.has(id)) return;
+      const geometry = plan.getRoomGeometry(id);
+      const states = plan.normalizeWalls(definition.walls);
+      const thickness = Number(plan.catalog.walls?.thickness ?? 0.12);
+      const x0 = geometry.x0(), x1 = geometry.x1(), y0 = geometry.y0(), y1 = geometry.y1();
+      const sides = {
+        left: [[x0, y0], [x0, y1]], right: [[x1, y0], [x1, y1]],
+        top: [[x0, y0], [x1, y0]], bottom: [[x0, y1], [x1, y1]],
+      };
+      for (const [side, points] of Object.entries(sides))
+        if (states[side] === "solid") addSegment(...points, thickness);
+    });
+    // Resolve independent footprints directly, so references work even before
+    // walls are rendered or while a wall is using an item as its height limit.
+    const config = plan.currentConfig;
+    for (const source of config.walls ?? []) {
+      const definition = { ...(config.config?.walls ?? {}), ...source };
+      if (definition.scope && definition.scope !== floor?.id &&
+          plan.roomFloorConfigs.get(definition.scope) !== floor) continue;
+      const wall = plan.independentWalls?.get(source.id);
+      if (wall && (wall.z1 <= Number(floor?.z0 ?? 0) + epsilon ||
+          wall.z0 >= Number(floor?.z0 ?? 0) + Number(floor?.ceiling_height ?? 3))) continue;
+      if (!wall) {
+        // During preparation, a wall's height can depend on this very item.
+        // Only evaluate independent floor/numeric levels at this point.
+        const floorLevel = (value) => {
+          if (value === undefined) return null;
+          const ids = String(value).match(/[A-Za-z_][\w-]*(?=\.)/g) ?? [];
+          if (ids.some((id) => !(config.floors ?? [config]).some((entry) => entry.id === id))) return null;
+          return plan.resolve(value);
+        };
+        const top = floorLevel(definition.top?.level);
+        const base = floorLevel(definition.base?.level);
+        if (top !== null && top <= Number(floor?.z0 ?? 0) + epsilon) continue;
+        if (base !== null && base >= Number(floor?.z0 ?? 0) + Number(floor?.ceiling_height ?? 3)) continue;
+      }
+      const points = definition.from !== undefined ? [definition.from, definition.to] : definition.path?.points;
+      if (!points) continue;
+      let origin = null;
+      const resolved = points.map((point) => {
+        const result = point.map((value) => plan.resolve(value, origin));
+        origin = { x0: result[0], y0: result[1] };
+        return result;
+      });
+      const thickness = Number(definition.thickness ?? plan.catalog.walls?.thickness ?? 0.12);
+      resolved.slice(0, -1).forEach((point, index) => addSegment(point, resolved[index + 1], thickness));
+    }
+    const x = limits.x0 + inset.x0, y = limits.y0 + inset.y0;
+    const w = limits.x1 - inset.x1 - x, l = limits.y1 - inset.y1 - y;
+    if (w <= 0 || l <= 0) throw new Error(`Espessura das paredes elimina a área interna de ${roomId}`);
+    const bounds = FloorPlanGeometryBox.fromValues({ x, y, w, l });
+    bounds.area = () => room.geometryParts.reduce((total, part) => total +
+      Math.max(0, Math.min(x + w, part.x + part.w) - Math.max(x, part.x)) *
+      Math.max(0, Math.min(y + l, part.y + part.l) - Math.max(y, part.y)), 0);
+    return bounds;
+  },
   stairUndersidePlane(stair, offset = 0) {
     const alongX = stair.stairAxis === "horizontal";
     const increasing = (stair.stairDirection !== "reverse") === (stair.stairRise !== "down");

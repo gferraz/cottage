@@ -33,6 +33,7 @@
     headroom_3m_inset: 1.619569,
     office_headroom_2m_inset: 0.809785,
     office_headroom_3m_inset: 1.619569,
+    bed_knee_wall_clearance: 0.3,
     knee_setback: 0.8
   },
   // Terreno cadastral
@@ -356,7 +357,7 @@
         },
         {
           title: "Mesa",
-          pos: ["house-left.x0 + params.wall_thickness / 2 + 1", "dining.y0 + params.wall_thickness / 2 + 1"],
+          pos: ["house-left.x0 + params.wall_thickness / 2 + 1", "dining.y0 + 1"],
           size: [2.7, 1.1],
           classes: "table"
         },
@@ -368,7 +369,7 @@
           id: "master-bed",
           type: "queen-bed",
           recamier: true,
-          pos: ["master.xc - 0.8", "master.y0 + params.wall_thickness / 2 + 0.1"]
+          pos: ["master.xc - 0.8", "master.y0 + 0.1"]
         },
         { type: "railing", pos: ["hall.xc + 0.9", "porch.y0"], size: ["-hall.xc + porch.x1 - 0.9", 0.08, 1.1] },
         { type: "railing", pos: ["porch.x0", "porch.y0"], size: ["-porch.x0 + hall.xc - 0.9", 0.08, 1.1] },
@@ -551,8 +552,8 @@
           type: "twin-bed",
           nightstand: { w: 0.4, side: "left" },
           pos: [
-            "bedroom-east.x0 + params.wall_thickness / 2 + 0.47",
-            "bedroom-east.y0 + params.wall_thickness / 2 + (bedroom-east.l - params.wall_thickness - 1.94) / 3 - 0.47"
+            "bedroom-east.x0 + params.bed_knee_wall_clearance + 0.47",
+            "bedroom-east.y0 + (bedroom-east.l - 1.94) / 3 - 0.47"
           ],
           rotation: 270
         },
@@ -561,8 +562,8 @@
           type: "twin-bed",
           nightstand: { w: 0.4 },
           pos: [
-            "bedroom-east.x0 + params.wall_thickness / 2 + 0.47",
-            "bedroom-east.y0 + params.wall_thickness / 2 + 2 * (bedroom-east.l - params.wall_thickness - 1.94) / 3 + 0.97 - 0.47"
+            "bedroom-east.x0 + params.bed_knee_wall_clearance + 0.47",
+            "bedroom-east.y0 + 2 * (bedroom-east.l - 1.94) / 3 + 0.97 - 0.47"
           ],
           rotation: 270
         },
@@ -570,29 +571,29 @@
           id: "bed-north-1",
           type: "queen-bed",
           nightstand: { w: 0.5, side: "both" },
-          pos: ["bedroom-north.x1 - params.wall_thickness / 2 - 1.8", "bedroom-north.yc - 1"],
+          pos: ["bedroom-north.x1 - params.bed_knee_wall_clearance - 1.8", "bedroom-north.yc - 1"],
           rotation: 90
         },
         {
           id: "bed-west-1",
           type: "twin-bed",
           nightstand: { w: 0.4, side: "right" },
-          pos: ["bedroom-west.x1 - params.wall_thickness / 2 - 1.44", "bedroom-west.y0 + 0.3"],
+          pos: ["bedroom-west.x1 - params.bed_knee_wall_clearance - 1.44", "bedroom-west.y0 + 0.24"],
           rotation: 90
         },
         {
           id: "bed-west-2",
           type: "twin-bed",
           nightstand: { w: 0.4, side: "right" },
-          pos: ["bedroom-west.x1 - params.wall_thickness / 2 - 1.44", "bedroom-west.y1 - 1.74"],
+          pos: ["bedroom-west.x1 - params.bed_knee_wall_clearance - 1.44", "bedroom-west.y1 - 1.68"],
           rotation: 90
         },
         {
           id: "stair-arrival-railing",
           type: "railing",
           label: "Guarda-corpo do desembarque",
-          pos: ["stairs.x0 + params.wall_thickness / 2", "stairs.y0 - 0.08"],
-          size: ["-stairs.x0 + upper-flight.x0 - params.wall_thickness / 2", 0.08, 1.1]
+          pos: ["stairs.x0", "stairs.y0 - 0.08"],
+          size: ["-stairs.x0 + upper-flight.x0", 0.08, 1.1]
         }
       ],
       openings: [
