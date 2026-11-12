@@ -75,30 +75,30 @@
   // Zonas de referência
   zones: [
     { id: "attic", inset: ["main", 3, 0], color: "red", visible: false },
-    { id: "bottom", rectangle: ["main.x0", "main.y0 + main.l / 2", "main.x1", "main.y1"], visible: false },
+    { id: "rear", rectangle: ["main.x0", "main.y0 + main.l / 2", "main.x1", "main.y1"], visible: false },
     { id: "central", from: ["main.xc + 0.7", "main.y0"], to: ["x0 - 1.4", "main.y1"], visible: false },
     { id: "comfort-zone", inset: ["main", 1.8, 0], color: "blue", visible: false },
     {
       id: "dorm",
-      rectangle: ["dorm-bottom.x0", "dorm-top.y0", "dorm-top.x1", "dorm-bottom.y1"],
+      rectangle: ["dorm-rear.x0", "dorm-front.y0", "dorm-front.x1", "dorm-rear.y1"],
       color: "blue",
       visible: false
     },
     {
-      id: "dorm-bottom",
-      rectangle: ["bottom.x0", "bottom.y0", "bottom.x1", "bottom.y1 - params.knee_setback"],
+      id: "dorm-rear",
+      rectangle: ["rear.x0", "rear.y0", "rear.x1", "rear.y1 - params.knee_setback"],
       color: "blue",
       visible: false
     },
     {
-      id: "dorm-top",
-      rectangle: ["top.x0", "top.y0 + params.knee_setback", "top.x1", "top.y1"],
+      id: "dorm-front",
+      rectangle: ["front.x0", "front.y0 + params.knee_setback", "front.x1", "front.y1"],
       color: "blue",
       visible: false
     },
     {
-      id: "dorm-top-left",
-      rectangle: ["top.x0 + params.knee_setback", "top.y0", "office.x1 - params.knee_setback", "top.y1"],
+      id: "dorm-front-left",
+      rectangle: ["front.x0 + params.knee_setback", "front.y0", "office.x1 - params.knee_setback", "front.y1"],
       color: "blue",
       visible: false
     },
@@ -108,7 +108,7 @@
     { id: "office-roof-base", from: ["office.x1", "office.y0"], to: ["hall.x0", "office.y1"], visible: false },
     { id: "perimeter", pos: [-9.6, 2.5], size: [9.6, 12.6], visible: false },
     { id: "house-left", rectangle: ["main.x0", "central.y0", "central.x0", "main.y1"], visible: false },
-    { id: "top", rectangle: ["main.x0", "main.y0", "main.x1", "y0 + main.l / 2"], visible: false }
+    { id: "front", rectangle: ["main.x0", "main.y0", "main.x1", "y0 + main.l / 2"], visible: false }
   ],
   // Pavimentos e cômodos
   floors: [
@@ -772,8 +772,8 @@
     {
       id: "transverse-roof",
       label: "Telhado Transversal",
-      from: ["top.x1", "top.y0 + 2", "upper.z0 + 1"],
-      to: ["top.x0", "bottom.y1 - 1", "z0"],
+      from: ["front.x1", "front.y0 + 2", "upper.z0 + 1"],
+      to: ["front.x0", "rear.y1 - 1", "z0"],
       orientation: "transverse",
       eaves: { left: 0, right: 0, pitch: 30 },
       rake: 0.5
@@ -798,10 +798,10 @@
       color: "terracotta"
     },
     { id: "l-axis", label: "eixo longitudinal", pos: ["central.xc", -2.5], l: 20, color: "green" },
-    { id: "main-bottom", label: "parede traseira", pos: [-16, "main.y1"], w: 20, color: "green" },
+    { id: "main-rear", label: "parede traseira", pos: [-16, "main.y1"], w: 20, color: "green" },
     { id: "main-right", label: "parede direita", pos: ["house-right.x1", -2.5], l: 20, color: "green" },
     { id: "main-left", label: "parede esquerda", pos: ["house-left.x0", -2.5], l: 20, color: "green" },
-    { id: "main-top", label: "parede frontal", pos: [-16, "main.y0"], w: 20, color: "green" },
+    { id: "main-front", label: "parede frontal", pos: [-16, "main.y0"], w: 20, color: "green" },
     { id: "transversal-front", label: "transversal frontal", pos: [-16, "w-axis.y0 - 0.7"], w: 20, color: "green" },
     { id: "transversal-rear", label: "transversal traseira", pos: [-16, "w-axis.y0 + 0.7"], w: 20, color: "green" },
     { id: "w-axis", label: "eixo transversal", pos: [-16, "main.yc + 0.5"], w: 20, color: "green" }
