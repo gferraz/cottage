@@ -24,7 +24,7 @@
     wall_thickness: 0.12,
     ground_height: 3,
     roof_base_offset: 1,
-    headroom_2m_inset: 0.809785,
+    headroom_2_1m_inset: 0.890762437,
     headroom_3m_inset: 1.619569,
     bed_knee_wall_clearance: 0.3,
     corridor_half_width: 0.7,
@@ -476,9 +476,9 @@
       ],
       zones: [
         {
-          id: "headroom-kitchen-roof-2m",
-          label: "Telhado da cozinha — altura ≥ 2 m",
-          inset: ["kitchen-roof", "params.headroom_2m_inset", 0],
+          id: "headroom-kitchen-roof-2-1m",
+          label: "Telhado da cozinha — altura ≥ 2,1 m",
+          inset: ["kitchen-roof", "params.headroom_2_1m_inset", 0],
           color: "rgba(98, 139, 90, 0.35)"
         },
         {
@@ -487,23 +487,23 @@
           inset: ["kitchen-roof", "params.headroom_3m_inset", 0],
           color: "rgba(40, 80, 230, 0.45)"
         },
-        // A base deste telhado coincide com o piso: recuos de 2/tan(51°) e 3/tan(51°).
+        // A base deste telhado coincide com o piso: recuos de 2,1/tan(51°) e 3/tan(51°).
         {
-          id: "headroom-service-roof-2m",
-          label: "Telhado da cozinha e área de serviço — altura ≥ 2 m",
-          inset: ["service-roof", "params.headroom_2m_inset * 2", 0],
+          id: "headroom-service-roof-2-1m",
+          label: "Telhado da cozinha e área de serviço — altura ≥ 2,1 m",
+          inset: ["service-roof", "params.headroom_2_1m_inset + params.headroom_3m_inset / 2", 0],
           color: "rgba(98, 139, 90, 0.35)"
         },
         {
           id: "headroom-service-roof-3m",
           label: "Telhado da cozinha e área de serviço — altura ≥ 3 m",
-          inset: ["service-roof", "params.headroom_2m_inset * 3", 0],
+          inset: ["service-roof", "params.headroom_3m_inset * 1.5", 0],
           color: "rgba(40, 80, 230, 0.45)"
         },
         {
-          id: "headroom-main-roof-2m",
-          label: "Telhado principal — altura ≥ 2 m",
-          inset: ["main-roof", "params.headroom_2m_inset", 0],
+          id: "headroom-main-roof-2-1m",
+          label: "Telhado principal — altura ≥ 2,1 m",
+          inset: ["main-roof", "params.headroom_2_1m_inset", 0],
           color: "rgba(98, 139, 90, 0.35)"
         },
         {
@@ -513,21 +513,21 @@
           color: "rgba(40, 80, 230, 0.45)"
         },
         {
-          id: "headroom-office-roof-2m",
-          label: "Telhado do escritório — altura ≥ 2 m",
+          id: "headroom-office-roof-2-1m",
+          label: "Telhado do escritório — altura ≥ 2,1 m",
           rectangle: [
-            "office-roof.x0 + params.headroom_2m_inset",
+            "office-roof.x0 + params.headroom_2_1m_inset",
             "office-roof.y0",
-            "office-roof.x1 - params.headroom_2m_inset",
+            "office-roof.x1 - params.headroom_2_1m_inset",
             "office-roof.y1"
           ],
           color: "rgba(98, 139, 90, 0.35)"
         },
         // Escritório: altura máxima de 2,976 m; não há zona ≥ 3 m neste telhado.
         {
-          id: "headroom-transverse-roof-2m",
-          label: "Telhado transversal — altura ≥ 2 m",
-          inset: ["transverse-roof", 0, "params.headroom_2m_inset"],
+          id: "headroom-transverse-roof-2-1m",
+          label: "Telhado transversal — altura ≥ 2,1 m",
+          inset: ["transverse-roof", 0, "params.headroom_2_1m_inset"],
           color: "rgba(98, 139, 90, 0.35)"
         },
         {
@@ -701,6 +701,23 @@
       color: "blue",
       base: { level: "upper.z0" },
       path: { points: [["knee-front-right.x1", "main.y0"], ["x0", "y0 + 4.6"]] }
+    },
+    {
+      id: "knee-wall-kitchen-right",
+      scope: "upper",
+      color: "blue",
+      base: { level: "upper.z0" },
+      top: "roof",
+      path: {
+        points: [
+          ["kitchen.x1", "kitchen.y0"],
+          ["kitchen.x1", "kitchen.y1"],
+          ["kitchen.x0", "kitchen.y1"],
+          ["kitchen.x0", "pantry.y1"],
+          ["mudroom.x0 + 0.8", "pantry.y1"],
+          ["mudroom.x0 + 0.8", "stairs.y1"]
+        ]
+      }
     },
     {
       id: "upper-rear-wall",
