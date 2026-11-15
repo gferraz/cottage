@@ -379,7 +379,10 @@
           label: "Quarto dos fundos",
           from: ["garage.x0", "garage.y0", "upper.z0"],
           to: ["garage.x1", "garage.y1"],
-          top: "roof"
+          top: "roof",
+          doors: [
+            { from: "right", to: "unused-rear", dy: "unused-rear.yc - bedroom-rear.y0 - 0.4" }
+          ]
         },
         {
           id: "bedroom-north",
@@ -701,6 +704,17 @@
       id: "garage-roof",
       label: "Telhado da garagem",
       from: ["garage.x0", "garage.y0"],
+      to: ["garage.x1", "garage.y1"],
+      z0: "upper.z0",
+      orientation: "transverse",
+      pitch: 51,
+      eaves: { left: 0.5, right: 0.5 },
+      rake: 0.5
+    },
+    {
+      id: "service-roof",
+      label: "Telhado da cozinha e área de serviço",
+      from: ["garage.x1", "garage.y0"],
       to: ["kitchen.x1", "garage.y1"],
       z0: "upper.z0 + params.roof_base_offset",
       orientation: "transverse",
@@ -708,25 +722,6 @@
       eaves: { left: 0.5, right: 0.5 },
       rake: 0.5
     },
-    // {
-    //   id: "service-roof",
-    //   label: "Telhado da cozinha e área de serviço",
-    //   z0: "upper.z0",
-    //   rectangle: ["laundry.x0", "laundry.y0", "kitchen-roof.x0", "mudroom.y1"],
-    //   orientation: "longitudinal",
-    //   pitch: 51,
-    //   eaves: { left: 0.5, right: 0, pitch: 51 }
-    // },
-    // {
-    //   id: "kitchen-roof",
-    //   label: "Telhado da cozinha",
-    //   z0: "upper.z0 + params.roof_base_offset",
-    //   // Base simétrica à guia, sem exigir cobertura de toda a cozinha.
-    //   rectangle: ["2 * knee-front-right.x0 - kitchen.x1", "transversal-rear.y0", "kitchen.x1", "kitchen.y1"],
-    //   orientation: "longitudinal",
-    //   pitch: 51,
-    //   eaves: { left: 0.5, right: 0.5, pitch: 51 }
-    // },
     {
       id: "porch-roof",
       label: "Cobertura da varanda",
@@ -764,7 +759,7 @@
     {
       id: "office-roof",
       label: "Escritório",
-      z0: "upper.z0 + params.roof_base_offset",
+      z0: "upper.z0",
       rectangle: ["office-main.x0", "office.y0", "office.x1", "kitchen.y1"],
       orientation: "longitudinal",
       eaves: { left: 0.5, right: 0.5 }
