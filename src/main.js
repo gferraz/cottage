@@ -875,6 +875,7 @@ class FloorPlan {
       ? [...(config.roofs ?? []), ...config.floors.flatMap((floor) => floor.roofs ?? [])]
       : this.visibleRoofs(config, floorConfig);
     this.renderRoofs(visibleRoofs);
+    FloorPlanHeadroom.render(this);
     if (this.roofSwitch) {
       const hasRoofs = visibleRoofs.length > 0;
       this.roofSwitch.hidden = !hasRoofs;

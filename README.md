@@ -365,3 +365,21 @@ A coleta fica centralizada em `FloorPlanModel.collectDeprecations`, antes da nor
 A leitura das coleções fica em `FloorPlanOpenings.visit/collect`: a mesma classificação é usada pela reflexão de coordenadas e pela validação. `forFloor` reúne declarações do piso e dos cômodos, qualificando referências locais e preservando as localizações do parser. `normalizeOpening` aplica os padrões por categoria e produz a geometria comum de recorte, mantendo `type` como categoria interna. `rendered` fornece as geometrias normalizadas a listas, fachadas, 3D e exportações. Vãos entre pisos continuam no fluxo próprio de aberturas verticais.
 
 A migração foi comparada com a geometria anterior da planta principal e dos três exemplos: posições, dimensões, cotas, paredes associadas e diagnósticos foram preservados. Os testes de equivalência também comparam a declaração atual com a forma legada em todos os pavimentos. As exportações HTML e Markdown apresentam Portas, Janelas e Vãos; o DXF mantém as layers DOORS, WINDOWS e OPENINGS.
+
+### Faixas automáticas de altura livre
+
+As faixas são geradas automaticamente, inclusive em arquivos antigos, com regiões ≥ 1,30 m,
+≥ 2,10 m e ≥ 3 m individualmente em seus cômodos. As áreas em m² aparecem
+na lista de cômodos do pavimento selecionado. Não é necessário declarar
+`zones` nem recuos por telhado para essas faixas. A propriedade também pode
+ser definida em um cômodo ou pavimento: use `comfort_zones: false` para
+desativar suas faixas individualmente.
+
+O cálculo recorta as superfícies nas mesmas interseções usadas na cobertura
+3D, incluindo águas, beirais e a opção `clip_intersections`. Uma cobertura
+inferior preservada sob outra continua limitando a altura livre. A referência
+é a face inferior dos telhados, cuja espessura cresce para cima; a altura é
+medida a partir de `z0` do cômodo. Áreas fora da cobertura não são contadas.
+As faixas são cumulativas e descontam as sobreposições declaradas, como a
+área útil dos cômodos. Este cálculo considera coberturas, sem inferir forros,
+lajes ou obstáculos internos.

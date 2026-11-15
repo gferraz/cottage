@@ -24,9 +24,6 @@
     wall_thickness: 0.12,
     ground_height: 3,
     roof_base_offset: 1,
-    headroom_1_3m_inset: 0.24293535,
-    headroom_2_1m_inset: 0.890762437,
-    headroom_3m_inset: 1.619569,
     bed_knee_wall_clearance: 0.3,
     corridor_half_width: 0.7,
     knee_setback: 0.8
@@ -83,14 +80,6 @@
       id: "ground",
       label: "Térreo",
       z0: 0,
-      zones: [
-        {
-          id: "headroom-porch-roof-1-3m",
-          label: "Cobertura da varanda — altura ≥ 1,30 m",
-          inset: ["porch-roof", 0, 0],
-          color: "rgba(235, 190, 45, 0.18)"
-        }
-      ],
       rooms: [
         {
           id: "circulation",
@@ -251,6 +240,7 @@
         },
         {
           id: "porch",
+          comfort_zones: true,
           label: "Varanda",
           from: ["office-main.x0", "house-left.y0 - 2.5"],
           to: ["house-left.x0", "house-left.y0"],
@@ -373,9 +363,17 @@
     },
     {
       id: "upper",
+      comfort_zones: true,
       label: "Dormitórios",
       z0: "params.ground_height",
       rooms: [
+        {
+          id: "bedroom-rear",
+          label: "Quarto dos fundos",
+          from: ["garage.x0", "garage.y0", "upper.z0"],
+          to: ["garage.x1", "garage.y1"],
+          top: "roof"
+        },
         {
           id: "bedroom-north",
           label: "Quarto N",
@@ -482,108 +480,6 @@
           label: "Corredorr",
           from: ["unused-right.x0", "bedroom-north.y1"],
           to: ["playroom.x1", "bedroom-west.y0"]
-        }
-      ],
-      zones: [
-        // Faixa amarela desenhada antes das faixas verde e azul.
-        // Bases dos telhados 1 m acima do piso superior.
-        {
-          id: "headroom-garage-roof-1-3m",
-          label: "Telhado da garagem — altura ≥ 1,30 m",
-          inset: ["garage-roof", 0, "params.headroom_1_3m_inset"],
-          color: "rgba(235, 190, 45, 0.18)"
-        },
-        {
-          id: "headroom-main-roof-1-3m",
-          label: "Telhado principal — altura ≥ 1,30 m",
-          inset: ["main-roof", "params.headroom_1_3m_inset", 0],
-          color: "rgba(235, 190, 45, 0.18)"
-        },
-        {
-          id: "headroom-office-roof-1-3m",
-          label: "Telhado do escritório — altura ≥ 1,30 m",
-          inset: ["office-roof", "params.headroom_1_3m_inset", 0],
-          color: "rgba(235, 190, 45, 0.18)"
-        },
-        {
-          id: "headroom-transverse-roof-1-3m",
-          label: "Telhado transversal — altura ≥ 1,30 m",
-          inset: ["transverse-roof", 0, "params.headroom_1_3m_inset"],
-          color: "rgba(235, 190, 45, 0.18)"
-        },
-        // Garagem: recuos no eixo Y para a orientação transversal.
-        {
-          id: "headroom-garage-roof-2-1m",
-          label: "Telhado da garagem — altura ≥ 2,1 m",
-          inset: ["garage-roof", 0, "params.headroom_2_1m_inset"],
-          color: "rgba(98, 139, 90, 0.35)"
-        },
-        {
-          id: "headroom-garage-roof-3m",
-          label: "Telhado da garagem — altura ≥ 3 m",
-          inset: ["garage-roof", 0, "params.headroom_3m_inset"],
-          color: "rgba(40, 80, 230, 0.45)"
-        },
-        {
-          id: "headroom-kitchen-roof-2-1m",
-          label: "Telhado da cozinha — altura ≥ 2,1 m",
-          inset: ["kitchen-roof", "params.headroom_2_1m_inset", 0],
-          color: "rgba(98, 139, 90, 0.35)"
-        },
-        {
-          id: "headroom-kitchen-roof-3m",
-          label: "Telhado da cozinha — altura ≥ 3 m",
-          inset: ["kitchen-roof", "params.headroom_3m_inset", 0],
-          color: "rgba(40, 80, 230, 0.45)"
-        },
-        // A base deste telhado coincide com o piso: recuos de 2,1/tan(51°) e 3/tan(51°).
-        {
-          id: "headroom-service-roof-2-1m",
-          label: "Telhado da cozinha e área de serviço — altura ≥ 2,1 m",
-          inset: ["service-roof", "params.headroom_2_1m_inset + params.headroom_3m_inset / 2", 0],
-          color: "rgba(98, 139, 90, 0.35)"
-        },
-        {
-          id: "headroom-service-roof-3m",
-          label: "Telhado da cozinha e área de serviço — altura ≥ 3 m",
-          inset: ["service-roof", "params.headroom_3m_inset * 1.5", 0],
-          color: "rgba(40, 80, 230, 0.45)"
-        },
-        {
-          id: "headroom-main-roof-2-1m",
-          label: "Telhado principal — altura ≥ 2,1 m",
-          inset: ["main-roof", "params.headroom_2_1m_inset", 0],
-          color: "rgba(98, 139, 90, 0.35)"
-        },
-        {
-          id: "headroom-main-roof-3m",
-          label: "Telhado principal — altura ≥ 3 m",
-          inset: ["main-roof", "params.headroom_3m_inset", 0],
-          color: "rgba(40, 80, 230, 0.45)"
-        },
-        {
-          id: "headroom-office-roof-2-1m",
-          label: "Telhado do escritório — altura ≥ 2,1 m",
-          rectangle: [
-            "office-roof.x0 + params.headroom_2_1m_inset",
-            "office-roof.y0",
-            "office-roof.x1 - params.headroom_2_1m_inset",
-            "office-roof.y1"
-          ],
-          color: "rgba(98, 139, 90, 0.35)"
-        },
-        // Escritório: altura máxima de 2,976 m; não há zona ≥ 3 m neste telhado.
-        {
-          id: "headroom-transverse-roof-2-1m",
-          label: "Telhado transversal — altura ≥ 2,1 m",
-          inset: ["transverse-roof", 0, "params.headroom_2_1m_inset"],
-          color: "rgba(98, 139, 90, 0.35)"
-        },
-        {
-          id: "headroom-transverse-roof-3m",
-          label: "Telhado transversal — altura ≥ 3 m",
-          inset: ["transverse-roof", 0, "params.headroom_3m_inset"],
-          color: "rgba(40, 80, 230, 0.45)"
         }
       ],
       items: [

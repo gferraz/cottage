@@ -300,6 +300,13 @@ const FloorPlanLists = {
       const height = document.createElement("span");
       height.textContent = plan.formatFixed(room.l());
 
+      if (activeRoom?.comfortAreas) {
+        const comfort = document.createElement("small");
+        comfort.className = "comfort-areas";
+        comfort.textContent = activeRoom.comfortAreas.map(({ height, area }) =>
+          `≥ ${plan.formatMeters(height)} m: ${plan.formatMeters(area)} m²`).join(" · ");
+        label.append(comfort);
+      }
       item.append(label, width, height, grossArea, netArea);
       target.append(item);
     });
