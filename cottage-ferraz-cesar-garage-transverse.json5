@@ -368,6 +368,13 @@
       z0: "params.ground_height",
       rooms: [
         {
+          id: "unused-rear",
+          label: "Sem uso — fundos",
+          from: ["kitchen.x1", "main.y1", "upper.z0"],
+          to: ["mudroom.x0", "kitchen.y1"],
+          top: "roof"
+        },
+        {
           id: "bedroom-rear",
           label: "Quarto dos fundos",
           from: ["garage.x0", "garage.y0", "upper.z0"],

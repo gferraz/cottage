@@ -99,6 +99,7 @@ const FloorPlanHeadroom = {
       svg.setAttribute("aria-label", `Altura livre — ${room.dataset.label}`);
       svg.setAttribute("viewBox", `${room.x0()} ${room.y0()} ${room.w()} ${room.l()}`);
       svg.setAttribute("preserveAspectRatio", "none");
+      svg.setAttribute("overflow", "hidden");
       const covered = this.calculate(room.geometryParts, surfaces, room.z0(), deductions, [0])[0];
       const bands = [covered, ...room.comfortAreas];
       bands.forEach(({ height, polygons, area }, index) => {
