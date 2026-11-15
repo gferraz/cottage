@@ -92,13 +92,13 @@ test('lazy forward item references keep item semantics without shrinking a refer
   assert.equal(plan.itemReferenceContext, undefined);
 });
 
-test('current Cartesian cottage keeps all five headboards at the configured inner clearance', () => {
+test('current Cartesian cottage keeps all three headboards at the configured inner clearance', () => {
   const config = FloorPlanParser.parse(fs.readFileSync('cottage-ferraz-cesar.json5', 'utf8'));
   config.parameters.bed_knee_wall_clearance = 0.4;
   const plan = prepare(config);
   const floor = plan.currentConfig.floors.find((f) => f.id === 'upper');
   const beds = floor.items.filter((i) => i.id?.startsWith('bed-'));
-  assert.equal(beds.length, 5);
+  assert.equal(beds.length, 3);
   for (const bed of beds) {
     const g = plan.normalizeGeometryAtFloor(plan.resolveItemType(bed), floor);
     const roomId = `bedroom-${bed.id.includes('east') ? 'east' : bed.id.includes('north') ? 'north' : 'west'}`;

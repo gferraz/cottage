@@ -254,9 +254,9 @@ test('wall cycles report a useful error without overflowing the stack', () => {
 test('current cottage bedroom resolves the rear knee wall reference', () => {
   const fs = require('node:fs');
   const source = FloorPlanParser.parse(fs.readFileSync('cottage-ferraz-cesar.json5', 'utf8'));
-  source.floors.flatMap((floor) => floor.rooms ?? []).find((room) => room.id === 'bedroom-west')
+  source.floors.flatMap((floor) => floor.rooms ?? []).find((room) => room.id === 'bedroom-north')
     .from[1] = 'knee-wall-rear.y0 - 1';
   const plan = prepare(source);
-  assert.deepEqual(plan.errors.filter((error) => error.id === 'bedroom-west'), []);
-  assert.ok(Math.abs(plan.getRoomGeometry('bedroom-west').y0() - Math.min(plan.resolve('knee-wall-rear.y0') - 1, plan.resolve('main.y1'))) < 1e-9);
+  assert.deepEqual(plan.errors.filter((error) => error.id === 'bedroom-north'), []);
+  assert.ok(Math.abs(plan.getRoomGeometry('bedroom-north').y0() - Math.min(plan.resolve('knee-wall-rear.y0') - 1, plan.resolve('main.y1'))) < 1e-9);
 });

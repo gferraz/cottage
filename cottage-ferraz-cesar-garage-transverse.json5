@@ -419,19 +419,6 @@
           ]
         },
         {
-          id: "bedroom-west",
-          label: "Quarto Oeste",
-          from: ["knee-front-right.x1", "main.y1 - 3.8"],
-          to: ["house-left.x1", "main.y1"],
-          walls: ["top", "left"],
-          doors: [
-            { from: "top", to: "upper-corridor" }
-          ],
-          windows: [
-            { from: "bottom", to: "exterior", w: 1.2, h: 1.2, z0: "upper.z0 + 0.9", dx: 0.6 }
-          ]
-        },
-        {
           id: "playroom",
           label: "Sala de Estar",
           from: ["bedroom-east.x1", "bedroom-east.y1"],
@@ -439,26 +426,6 @@
           walls: [],
           windows: [
             { from: "left", dy: "transverse-roof.yc - playroom.y0 - 0.45" }
-          ]
-        },
-        {
-          id: "bathroom",
-          label: "Banheiro",
-          from: ["house-right.x1", "transversal-rear.y0 + 1"],
-          to: ["knee-front-right.x1", "main.y1"],
-          walls: ["top"],
-          doors: [
-            { from: "top", to: "unused-right" }
-          ],
-          windows: [
-            {
-              from: "bottom",
-              to: "exterior",
-              w: 0.8,
-              h: 0.6,
-              z0: "upper.z0 + 1.5",
-              dx: "bathroom.w - 1.5"
-            }
           ]
         },
         {
@@ -474,7 +441,7 @@
           id: "unused-right",
           label: "Sem uso",
           from: ["house-right.x1", "prayer-room.y1"],
-          to: ["knee-front-right.x1", "bathroom.y0"],
+          to: ["knee-front-right.x1", "transversal-rear.y0 + 1"],
           windows: [
             { from: "right", to: "exterior", w: 0.8, h: 0.6 }
           ]
@@ -491,7 +458,7 @@
           id: "upper-corridor",
           label: "Corredorr",
           from: ["unused-right.x0", "bedroom-north.y1"],
-          to: ["playroom.x1", "bedroom-west.y0"]
+          to: ["playroom.x1", "main.y1 - 3.8"]
         }
       ],
       items: [
@@ -518,18 +485,6 @@
           id: "bed-north-1",
           type: "queen-bed",
           pos: ["bedroom-north.x1 - params.bed_knee_wall_clearance - 1.8", "bedroom-north.yc - 1"],
-          rotation: 90
-        },
-        {
-          id: "bed-west-1",
-          type: "twin-bed",
-          pos: ["bedroom-west.x1 - params.bed_knee_wall_clearance - 1.44", "bedroom-west.y0 + 0.24"],
-          rotation: 90
-        },
-        {
-          id: "bed-west-2",
-          type: "twin-bed",
-          pos: ["bedroom-west.x1 - params.bed_knee_wall_clearance - 1.44", "bedroom-west.y1 - 1.68"],
           rotation: 90
         },
         {

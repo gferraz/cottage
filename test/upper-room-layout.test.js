@@ -36,26 +36,13 @@ test('west bedroom and bathroom rear windows resolve to an exterior wall below t
   }
 });
 
-test('current west bedroom furniture fits after rotation, with no overlapping footprints', () => {
+test('removed upper rooms leave no furniture or unresolved references', () => {
   const plan = prepare('cottage-ferraz-cesar.json5');
   const upper = plan.currentConfig.floors.find((floor) => floor.id === 'upper');
-  const room = plan.rooms.get('bedroom-west');
-  const boxes = upper.items.filter((item) => /^(bed|wardrobe)-west-/.test(item.id)).map((item) => {
-    const g = plan.normalizeGeometryAtFloor(plan.resolveItemType(item), upper);
-    const sideways = g.rotation === 90 || g.rotation === 270;
-    const w = sideways ? g.l : g.w, l = sideways ? g.w : g.l;
-    return { id: item.id, x: g.x + (g.w - w) / 2, y: g.y + (g.l - l) / 2, w, l };
-  });
-  assert.equal(boxes.length, 2);
-  for (const box of boxes) {
-    assert.ok(box.x >= room.x0() && box.x + box.w <= room.x1());
-    assert.ok(box.y >= room.y0() && box.y + box.l <= room.y1());
-    for (const other of boxes) {
-      if (box === other) continue;
-      assert.ok(box.x + box.w <= other.x || other.x + other.w <= box.x ||
-        box.y + box.l <= other.y || other.y + other.l <= box.y, `${box.id} overlaps ${other.id}`);
-    }
-  }
+  assert.equal(plan.rooms.has('bedroom-west'), false);
+  assert.equal(plan.rooms.has('bathroom'), false);
+  assert.equal(upper.items.some((item) => /^(bed|wardrobe)-west-/.test(item.id)), false);
+  assert.deepEqual(plan.errors, []);
 });
 
 test('current stair arrival occupies the strip beside the stair opening', () => {
