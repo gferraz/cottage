@@ -79,5 +79,8 @@ test("project plinth closes the ground outline at floor level and follows the cu
   assert.equal(-FloorPlanTerrainGeometry.elevationAt(site, from[0] + offset.x, from[1] + offset.y), 0.45);
   assert.equal(-FloorPlanTerrainGeometry.elevationAt(site, to[0] + offset.x, to[1] + offset.y), 0.45);
   const rearY = Math.max(...wall.path.points.map((point) => point[1])) + offset.y;
-  assert.ok(Math.abs(FloorPlanTerrainGeometry.elevationAt(site, offset.x, rearY) + 0.9) < 1e-8);
+  // The garage setback moves the rear outline forward along the existing slope.
+  assert.ok(rearY > 12 && rearY < 23.8);
+  const rearElevation = -0.45 + (rearY - 12) / (23.8 - 12) * (-0.9 + 0.45);
+  assert.ok(Math.abs(FloorPlanTerrainGeometry.elevationAt(site, offset.x, rearY) - rearElevation) < 1e-8);
 });
