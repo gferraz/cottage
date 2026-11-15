@@ -717,7 +717,8 @@
       id: "office-roof",
       label: "Escritório",
       z0: "upper.z0",
-      rectangle: ["office-main.x0", "office.y0", "office.x1", "kitchen.y1"],
+      from: ["office-main.x0", "office.y0"],
+      to: ["office.x1", "y0 + 5.5"],
       orientation: "longitudinal",
       eaves: { left: 0.5, right: 0.5 }
     },
