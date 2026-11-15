@@ -754,6 +754,29 @@
       "items": {
         "$ref": "#/definitions/door"
       }
+    },
+    "slabs": {
+      "type": "array",
+      "description": "Lajes na base do piso. Quando ausente, gera uma laje de 0,15 m acompanhando os cômodos, exceto escadas.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "thickness": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        },
+        "additionalProperties": false
+      }
     }
   },
   "additionalProperties": false,
@@ -2089,6 +2112,29 @@
           "description": "Portas; a coleção determina a categoria.",
           "items": {
             "$ref": "#/definitions/door"
+          }
+        },
+        "slabs": {
+          "type": "array",
+          "description": "Lajes na base do piso. Quando ausente, gera uma laje de 0,15 m acompanhando os cômodos, exceto escadas.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "thickness": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            },
+            "additionalProperties": false
           }
         }
       },

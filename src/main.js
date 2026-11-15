@@ -858,6 +858,9 @@ class FloorPlan {
     this.prepareRoomReferences(config);
     if (!this.showAllFloors) this.validateInactiveFloorFeatures(config, floorIndex);
     this.prepareGlobalLists(config);
+    this.hiddenSlabs ??= new Set();
+    this.allSlabs = FloorPlanSlabs.collect(this);
+    FloorPlanSlabs.updateList(this);
     try {
       this.renderTerrain(config.terrain);
     } catch (error) {

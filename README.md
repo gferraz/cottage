@@ -383,3 +383,8 @@ medida a partir de `z0` do cômodo. Áreas fora da cobertura não são contadas.
 As faixas são cumulativas e descontam as sobreposições declaradas, como a
 área útil dos cômodos. Este cálculo considera coberturas, sem inferir forros,
 lajes ou obstáculos internos.
+
+### Lajes (`slabs`)
+
+Cada piso pode declarar `slabs: [{ id: "slab-ground", label: "Laje — Térreo", thickness: 0.15 }]`.
+A laje acompanha a união dos ambientes do piso, preservando recortes e excluindo ambientes compostos exclusivamente por lances ou patamares de escada. O topo fica em `floor.z0`, com a espessura desenvolvida para baixo. Sem `slabs`, é criada uma laje de 15 cm; `slabs: []` omite a laje. A lista na barra esquerda, junto às seleções de pisos e camadas, permite alternar cada laje independentemente e conserva a seleção ao trocar de piso durante a sessão. Esses controles afetam a perspectiva 3D.

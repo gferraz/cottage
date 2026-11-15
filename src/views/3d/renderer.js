@@ -446,6 +446,7 @@ const FloorPlanFacades3D = {
     };
     if (!plan.showOnlyRoofs) {
       FloorPlan3DSite.render(context);
+      FloorPlanSlabs.render(context);
       FloorPlan3DWalls.render(context);
       FloorPlan3DElements.render(context);
       FloorPlan3DElements.renderItems(context);

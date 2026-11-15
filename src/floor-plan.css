@@ -1686,3 +1686,16 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
 .comfort-legend .comfort-high { background: rgba(255, 255, 255, 0.35); border: 1px solid #ccc; }
 
 .comfort-legend .comfort-below { background: rgba(210, 110, 25, 0.24); }
+
+.slab-selector {
+  min-width: 0;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 0;
+  font-size: 12px;
+}
+.slab-selector legend { padding: 0; margin-bottom: 4px; font-weight: 650; }
+.slab-option { display: flex; align-items: start; gap: 6px; margin: 8px 0; cursor: pointer; }
+.slab-option input { flex-shrink: 0; margin: 2px 0 0; accent-color: var(--theme-accent); }
+.slab-option span { min-width: 0; overflow-wrap: anywhere; }
+.slab-option small { display: block; margin-top: 4px; font-size: 10px; color: var(--theme-muted, #666); }

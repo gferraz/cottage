@@ -78,6 +78,7 @@
   floors: [
     {
       id: "ground",
+      slabs: [{ id: "slab-ground", label: "Laje — Térreo", thickness: 0.15 }],
       label: "Térreo",
       z0: 0,
       rooms: [
@@ -363,6 +364,7 @@
     },
     {
       id: "upper",
+      slabs: [{ id: "slab-upper", label: "Laje — Dormitórios", thickness: 0.15 }],
       comfort_zones: true,
       label: "Dormitórios",
       z0: "params.ground_height",
