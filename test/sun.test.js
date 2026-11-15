@@ -5,7 +5,7 @@ require('../src/views/3d/sun.js');
 const sun = globalThis.FloorPlan3DSun;
 const coordinates = [-25.75, -49.25];
 
-test('solar defaults preserve the previous configured position for every season', () => {
+test('solar defaults use noon for every season', () => {
   const dates = {
     'summer-solstice': '2026-12-21',
     equinox: '2026-03-20',
@@ -15,7 +15,7 @@ test('solar defaults preserve the previous configured position for every season'
     assert.deepEqual(
       sun.position({ coordinates, solar: { season } }),
       sun.position({ coordinates, solar: {
-        season, dates, date: '2026-03-20', time: '15:00', utc_offset: -3,
+        season, dates, date: '2026-03-20', time: '12:00', utc_offset: -3,
       } }),
     );
   }

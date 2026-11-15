@@ -21,7 +21,7 @@ class FloorPlan {
     this.solarTimePrevious = solarTimePrevious;
     this.solarTimeNext = solarTimeNext;
     this.solarSeason = solarSeasonSelect?.value || "equinox";
-    this.solarTime = solarTimeDisplay?.value || solarTimeDisplay?.textContent || "15:00";
+    this.solarTime = solarTimeDisplay?.value || solarTimeDisplay?.textContent || "12:00";
     this.viewportSummary = viewportSummary;
     this.titleElement = titleElement;
     this.floorOptions = floorOptions;
@@ -784,7 +784,7 @@ class FloorPlan {
       this.showOnlyRoofs = false;
       this.facade3dCamera = { azimuthStep: 0, elevation: 30, zoom: 1 };
       this.solarSeason = config.solar?.season ?? "equinox";
-      this.solarTime = config.solar?.time ?? "15:00";
+      this.solarTime = config.solar?.time ?? "12:00";
     }
     if (this.solarSeasonSelect) {
       const availableSeason = [...this.solarSeasonSelect.options].some(

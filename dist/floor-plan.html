@@ -2710,7 +2710,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
           <span>Hora do sol</span>
           <div class="solar-time-control" role="group" aria-label="Ajustar hora do sol">
             <button type="button" id="solar-time-previous" aria-label="Hora anterior">←</button>
-            <output id="solar-time" aria-live="polite">15:00</output>
+            <output id="solar-time" aria-live="polite">12:00</output>
             <button type="button" id="solar-time-next" aria-label="Próxima hora">→</button>
           </div>
         </div>
@@ -7321,7 +7321,7 @@ const FloorPlan3DSun = {
     if (!Array.isArray(coordinates) || coordinates.length < 2) return null;
     const latitude = this.parseAngle(coordinates[0]);
     const longitude = this.parseAngle(coordinates[1]);
-    const [hours, minutes] = String(solar.time ?? "15:00")
+    const [hours, minutes] = String(solar.time ?? "12:00")
       .split(":")
       .map(Number);
     const season = solar.season ?? "equinox";
@@ -7423,7 +7423,7 @@ const FloorPlan3DSun = {
         Math.sin(elevation),
       ],
       season,
-      time: solar.time ?? "15:00",
+      time: solar.time ?? "12:00",
       date,
     };
   },
@@ -7847,7 +7847,7 @@ const FloorPlanFacades3D = {
       solar: {
         ...plan.currentConfig.solar,
         season: plan.solarSeason ?? plan.currentConfig.solar?.season ?? "equinox",
-        time: plan.solarTime ?? plan.currentConfig.solar?.time ?? "15:00",
+        time: plan.solarTime ?? plan.currentConfig.solar?.time ?? "12:00",
       },
     };
     const solarPosition = FloorPlan3DSun.position(
@@ -13598,7 +13598,7 @@ class FloorPlan {
     this.solarTimePrevious = solarTimePrevious;
     this.solarTimeNext = solarTimeNext;
     this.solarSeason = solarSeasonSelect?.value || "equinox";
-    this.solarTime = solarTimeDisplay?.value || solarTimeDisplay?.textContent || "15:00";
+    this.solarTime = solarTimeDisplay?.value || solarTimeDisplay?.textContent || "12:00";
     this.viewportSummary = viewportSummary;
     this.titleElement = titleElement;
     this.floorOptions = floorOptions;
@@ -14361,7 +14361,7 @@ class FloorPlan {
       this.showOnlyRoofs = false;
       this.facade3dCamera = { azimuthStep: 0, elevation: 30, zoom: 1 };
       this.solarSeason = config.solar?.season ?? "equinox";
-      this.solarTime = config.solar?.time ?? "15:00";
+      this.solarTime = config.solar?.time ?? "12:00";
     }
     if (this.solarSeasonSelect) {
       const availableSeason = [...this.solarSeasonSelect.options].some(

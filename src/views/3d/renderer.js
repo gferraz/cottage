@@ -383,7 +383,7 @@ const FloorPlanFacades3D = {
       solar: {
         ...plan.currentConfig.solar,
         season: plan.solarSeason ?? plan.currentConfig.solar?.season ?? "equinox",
-        time: plan.solarTime ?? plan.currentConfig.solar?.time ?? "15:00",
+        time: plan.solarTime ?? plan.currentConfig.solar?.time ?? "12:00",
       },
     };
     const solarPosition = FloorPlan3DSun.position(

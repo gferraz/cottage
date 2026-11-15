@@ -20,7 +20,7 @@ const FloorPlan3DSun = {
     if (!Array.isArray(coordinates) || coordinates.length < 2) return null;
     const latitude = this.parseAngle(coordinates[0]);
     const longitude = this.parseAngle(coordinates[1]);
-    const [hours, minutes] = String(solar.time ?? "15:00")
+    const [hours, minutes] = String(solar.time ?? "12:00")
       .split(":")
       .map(Number);
     const season = solar.season ?? "equinox";
@@ -122,7 +122,7 @@ const FloorPlan3DSun = {
         Math.sin(elevation),
       ],
       season,
-      time: solar.time ?? "15:00",
+      time: solar.time ?? "12:00",
       date,
     };
   },
