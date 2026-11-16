@@ -398,6 +398,7 @@ class FloorPlan {
       parts.forEach((part) => {
         const element = this.add({
           id: wall.id,
+          title: `Parede: ${wall.id}`,
           color: wall.color,
           pos: part.pos,
           size: part.size,

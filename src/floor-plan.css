@@ -775,7 +775,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   opacity: 1 !important;
   background: var(--theme-wall-fill);
   border: 1px solid var(--theme-wall);
-  pointer-events: none;
+  pointer-events: auto;
 }
 .plan-wall.plan-wall-virtual {
   background: transparent;

@@ -832,7 +832,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   opacity: 1 !important;
   background: var(--theme-wall-fill);
   border: 1px solid var(--theme-wall);
-  pointer-events: none;
+  pointer-events: auto;
 }
 .plan-wall.plan-wall-virtual {
   background: transparent;
@@ -9462,6 +9462,7 @@ const FloorPlanWalls = {
         if (length <= 1e-9) return;
         const element = plan.add({
           id: `${wall.id}-segment-${index + 1}`,
+          title: `Muro: ${wall.id}`,
           label: "",
           color: wall.color,
           pos: [
@@ -14013,6 +14014,7 @@ class FloorPlan {
       parts.forEach((part) => {
         const element = this.add({
           id: wall.id,
+          title: `Parede: ${wall.id}`,
           color: wall.color,
           pos: part.pos,
           size: part.size,

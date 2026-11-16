@@ -729,6 +729,7 @@ const FloorPlanWalls = {
         if (length <= 1e-9) return;
         const element = plan.add({
           id: `${wall.id}-segment-${index + 1}`,
+          title: `Muro: ${wall.id}`,
           label: "",
           color: wall.color,
           pos: [
