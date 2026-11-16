@@ -18,6 +18,14 @@ node --test test/
 
 The tests cover only the pure, DOM-free geometry and validation logic; no jsdom or package manager is used. Manually test every visual change in a current browser, checking room placement, labels, grid scaling, overflow, and legibility. Validate that the document still loads without console errors and that changes to dimensions do not create unintended overlaps.
 
+## Atualização do distribuível
+
+Sempre que alterar código da aplicação (HTML, CSS ou JavaScript), execute `bin/build` ao concluir e inclua `dist/floor-plan.html` na entrega.
+
+Alterações somente nos arquivos JSON/JSON5 de definição da planta não exigem regenerar o `dist`.
+
+Antes de finalizar, confirme que o build terminou sem erros e que o distribuível contém as alterações.
+
 ## Commit & Pull Request Guidelines
 
 No repository Git history is available, so no established commit convention can be inferred. Use short imperative commit subjects, for example `Adjust garage proportions` or `Clarify floor plan legend`. Pull requests should explain the visual or structural change, identify the affected file, include screenshots for layout changes, and describe the browser/viewport used for verification.

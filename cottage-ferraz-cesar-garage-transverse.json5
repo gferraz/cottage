@@ -129,7 +129,7 @@
           top: "garage-roof",
           pos: ["laundry.x0 - 4", "stairs.y0"],
           size: [4, 6.5],
-          walls: ["front", "left", "rear"],
+          walls: ["front", "right", "rear", "left"],
           doors: [
             { from: "top", to: "exterior", w: 3.2 },
             { from: "bottom", to: "exterior", w: 3.2 }
@@ -142,11 +142,11 @@
           from: ["office-extension.x0", "main.y0"],
           to: ["house-left.x1", "y0 + 2.2"],
           doors: [
-            { from: "top", to: "porch", w: 1 },
-            { from: "bottom", to: "front-corridor", w: 1 },
+            { from: "front", to: "porch", w: 1 },
+            { from: "rear", to: "front-corridor", w: 1 },
             { from: "right", to: "office" }
           ],
-          walls: ["bottom", "left"],
+          walls: ["rear", "left"],
           classes: "circulation"
         },
         {
@@ -449,8 +449,8 @@
         {
           id: "upper-corridor",
           label: "Corredor",
-          from: ["unused-right.x0", "bedroom-north.y1"],
-          to: ["playroom.x1", "main.y1 - 3.8"]
+          from: ["unused-right.x0", "main.y1"],
+          to: ["playroom.x1", "bedroom-north.y1"]
         }
       ],
       items: [
@@ -546,7 +546,6 @@
     {
       id: "knee-wall-rear",
       scope: "upper",
-      color: "blue",
       from: ["knee-rear-right.x0", "house-right.y1 - 2.6"],
       to:   ["x0", "house-right.y1"],
       base: { level: "upper.z0" }
@@ -677,10 +676,9 @@
     {
       id: "upper-rear-wall",
       scope: "upper",
-      color: "blue",
       base: { level: "upper.z0" },
-      from: ["main.x1", "main.y1"],
-      to: ["main.x0", "y0"]
+      from: ["house-left.x1", "main.y1"],
+      to: ["main.x1", "y0"]
     },
     {
       id: "upper-left-wall",

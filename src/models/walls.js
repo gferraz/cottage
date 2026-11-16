@@ -681,6 +681,35 @@ const FloorPlanWalls = {
     return wall;
   },
 
+  spanningPlanParts(wall, floorZ, roofs) {
+    if (wall.z0 >= floorZ - 1e-9 || wall.z1 <= floorZ + 1e-9) return [];
+    const [x, y] = wall.pos;
+    const [w, l] = wall.size;
+    const solids = this.wallSolids(
+      this.boxFaces(x, y, floorZ, x + w, y + l, wall.z1),
+      roofs, wall.roofOnly, wall.undersideLimits,
+    );
+    const axis = wall.axis === "x" ? 0 : 1;
+    const intervals = solids.filter((solid) => solid.flat().some((point) => point[2] > floorZ + 1e-9))
+      .map((solid) => {
+        const values = solid.flat().map((point) => point[axis]);
+        return [Math.min(...values), Math.max(...values)];
+      }).sort((a, b) => a[0] - b[0]);
+    const merged = [];
+    intervals.forEach(([start, end]) => {
+      const last = merged.at(-1);
+      if (last && start <= last[1] + 1e-9) last[1] = Math.max(last[1], end);
+      else merged.push([start, end]);
+    });
+    return merged.map(([start, end]) => {
+      const pos = [x, y, floorZ];
+      const size = [w, l, wall.z1 - floorZ];
+      pos[axis] = start;
+      size[axis] = end - start;
+      return { pos, size };
+    });
+  },
+
   renderIndependentWalls(plan) {
     plan.wallElements = [];
     plan.independentWalls.forEach((wall) => {

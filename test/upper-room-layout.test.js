@@ -123,3 +123,20 @@ test('plan view excludes the green plinth below the floor without changing its 3
   assert.equal(plinthParts.length, 10);
   assert.ok(plinthParts.every((wall) => wall.color === 'mate-amargo'));
 });
+
+test('garage walls continue into the upper plan while walls ending at its level stay hidden', () => {
+  for (const file of ['cottage-ferraz-cesar.json5', 'cottage-ferraz-cesar-garage-transverse.json5']) {
+    const plan = prepare(file);
+    const roofs = FloorPlanWalls.roofLimits(plan, plan.currentConfig);
+    const upper = plan.currentConfig.floors.find((floor) => floor.id === 'upper');
+    const garage = [...plan.walls.values()].filter((wall) => wall.sourceRoomIds.includes('garage'));
+    assert.equal(garage.length, 3);
+    for (const wall of garage) {
+      const parts = FloorPlanWalls.spanningPlanParts(wall, upper.z0, roofs);
+      assert.ok(parts.length > 0, wall.id);
+      assert.ok(parts.every((part) => part.pos[2] === upper.z0));
+      assert.deepEqual(FloorPlanWalls.spanningPlanParts({ ...wall, z1: upper.z0 }, upper.z0, roofs), []);
+      assert.deepEqual(FloorPlanWalls.spanningPlanParts(wall, -1, roofs), []);
+    }
+  }
+});
