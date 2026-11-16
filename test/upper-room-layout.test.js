@@ -89,7 +89,7 @@ test('transverse study colors only upper wall lengths without a ground wall belo
   const definition = FloorPlanOpenings.collect(plan.roomDefinitions.get('bedroom-north'))
     .find((opening) => opening.type === 'door');
   const opening = plan.normalizeOpening({ ...definition, from: `bedroom-north.${definition.from}` });
-  assert.equal(opening.wallId, 'bedroom-north-bottom');
+  assert.equal(opening.wallId, 'bedroom-north-rear');
 });
 
 test('garage walls inherit the default color while the terrain plinth stays green', () => {

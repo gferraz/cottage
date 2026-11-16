@@ -1,7 +1,7 @@
 // Planta paramétrica em coordenadas cartesianas.
 // X cresce da esquerda para a direita; Y cresce da frente aos fundos (baixo para cima).
 // X = 0 na lateral direita do corpo principal; a geometria à esquerda usa X negativo.
-// walls e openings: left = x0; right = x1. top/bottom continuam frente/fundos.
+// walls e openings: left = x0; right = x1. front = frente; rear = fundos.
 // Beirais longitudinais: left/right = x0/x1; transversais: frente/fundos.
 // from/to preservam o sentido dos lances de escada; não precisam estar em ordem crescente.
 // Terreno cadastral e building permanecem no referencial de implantação.
@@ -103,7 +103,7 @@
           openings: [
             { from: "left", to: "vestibule" }
           ],
-          walls: ["top", "right"]
+          walls: ["front", "right"]
         },
         {
           id: "living",
@@ -111,9 +111,9 @@
           from: ["house-left.x1", "porch.y1"],
           to: ["house-left.x0", "y0 + 3.6"],
           windows: [
-            { from: "top", to: "exterior", w: 2.4 }
+            { from: "front", to: "exterior", w: 2.4 }
           ],
-          walls: ["bottom"]
+          walls: ["rear"]
         },
         {
           id: "front-corridor",
@@ -138,8 +138,8 @@
           size: [4, 6.5],
           walls: ["front", "right", "rear", "left"],
           doors: [
-            { from: "top", to: "exterior", w: 3.2 },
-            { from: "bottom", to: "exterior", w: 3.2 }
+            { from: "front", to: "exterior", w: 3.2 },
+            { from: "rear", to: "exterior", w: 3.2 }
           ],
           classes: "service garage"
         },
@@ -162,7 +162,7 @@
           from: ["office.x1", "master-bath.y1"],
           to: ["house-left.x1", "y0 + 3.9"],
           doors: [
-            { from: "bottom", to: "terrace" }
+            { from: "rear", to: "terrace" }
           ],
           windows: [
             { from: "right", to: "exterior", w: 2.4 }
@@ -175,7 +175,7 @@
           label: "Lavanderia",
           top: "stairs",
           rectangle: ["house-left.x0", "lower-flight.y0 + 0.4", "lower-flight.x1 - 2.5", "y0 + 2"],
-          walls: ["top"],
+          walls: ["front"],
           classes: "service laundry wet"
         },
         { id: "dining", label: "Jantar", from: ["master.x0", "living.y1"], to: ["house-left.x0", "y0 + 3.6"] },
@@ -183,7 +183,7 @@
           id: "master",
           label: "Suíte Master",
           rectangle: ["house-right.x0 + 0.4", "office-main.y1", "house-right.x1", "y0 + 3.6"],
-          walls: ["top", "right", "left"],
+          walls: ["front", "right", "left"],
           windows: [
             { from: "right", to: "exterior", dy: 0.6 },
             { from: "right", to: "exterior", dy: 2.1 }
@@ -194,9 +194,9 @@
           label: "Banheiro Master",
           from: ["house-right.x1", "closet.y1"],
           to: ["master.x0", "y0 + 1.7"],
-          walls: ["top", "right", "bottom", "left"],
+          walls: ["front", "right", "rear", "left"],
           doors: [
-            { from: "top", to: "vestibule" }
+            { from: "front", to: "vestibule" }
           ],
           windows: [
             { from: "right", to: "exterior" }
@@ -218,7 +218,7 @@
           classes: "office",
           color: "rgba(255, 255, 255, 0.95)",
           windows: [
-            { from: "top", w: 1.2, dx: "office.w - (office-main.w - 1.2) / 2 - 1.2" },
+            { from: "front", w: 1.2, dx: "office.w - (office-main.w - 1.2) / 2 - 1.2" },
             { from: "right" }
           ],
           parts: [
@@ -226,7 +226,7 @@
               id: "office-main",
               from: ["house-right.x1", "house-right.y0 - 2.5"],
               to: ["house-right.x0 + 1.1", "house-right.y0 + 1.3"],
-              walls: ["bottom"]
+              walls: ["rear"]
             },
             {
               id: "office-extension",
@@ -240,9 +240,9 @@
           id: "pantry",
           label: "Despensa",
           rectangle: ["circulation.x0", "circulation.y1", "house-left.x1", "y0 + 1.8"],
-          walls: ["top", "right", "left"],
+          walls: ["front", "right", "left"],
           openings: [
-            { from: "top", to: "circulation" }
+            { from: "front", to: "circulation" }
           ],
           classes: "service pantry"
         },
@@ -260,7 +260,7 @@
           top: "stairs",
           from: ["house-left.x1", "stairs.y0"],
           to: ["x0 - 2.4", "upper-landing.y1"],
-          walls: ["top", "right", "bottom", "left"],
+          walls: ["front", "right", "rear", "left"],
           doors: [
             { from: "right", to: "rear-corridor", dy: 0.1 }
           ],
@@ -282,14 +282,14 @@
               risers: 11,
               from: ["lower-landing.x1", "lower-landing.y0", "lower-landing.z0"],
               to: ["house-left.x1", "lower-landing.y1", 0],
-              walls: ["top", "bottom"],
+              walls: ["front", "rear"],
               classes: "stair-flight"
             },
             {
               id: "lower-landing",
               from: ["house-left.x0", "upper-landing.y1", "upper-landing.z0"],
               to: ["x0 + 1.2", "y0 + upper-flight.l", "z0"],
-              walls: ["bottom"],
+              walls: ["rear"],
               classes: "stair-landing",
               color: "terracotta"
             },
@@ -323,7 +323,7 @@
           id: "vestibule",
           label: "Vest.",
           rectangle: ["master.x0", "closet.y0", "closet.x0", "closet.y1"],
-          walls: ["right", "bottom", "left"],
+          walls: ["right", "rear", "left"],
           overlaps: "rear-corridor",
           doors: [
             { from: "left", to: "dining", dy: 1.2 }
@@ -400,10 +400,10 @@
           to: ["knee-front-right.x1 - 3.3", "y0 + 3.8"],
           walls: [],
           doors: [
-            { from: "bottom", to: "upper-corridor" }
+            { from: "rear", to: "upper-corridor" }
           ],
           windows: [
-            { from: "top", h: 1.2, z0: "upper.z0 + 1", dx: "bedroom-north.w + main-roof.xc - bedroom-north.x1 + 0.75"}
+            { from: "front", h: 1.2, z0: "upper.z0 + 1", dx: "bedroom-north.w + main-roof.xc - bedroom-north.x1 + 0.75"}
           ]
         },
         {
@@ -411,13 +411,13 @@
           label: "Quarto E",
           from: ["house-left.x0", "hall.y0"],
           to: ["bedroom-north.x0", "y0 + 3.6"],
-          walls: ["bottom"],
+          walls: ["rear"],
           doors: [
-            { from: "bottom", to: "playroom", dx: "bedroom-east.w - 1" }
+            { from: "rear", to: "playroom", dx: "bedroom-east.w - 1" }
           ],
           windows: [
             {
-              from: "top",
+              from: "front",
               to: "exterior",
               h: 1.2,
               z0: "upper.z0 + 1",
@@ -516,7 +516,7 @@
       color: "blue",
       base: { level: "upper.z0" },
       top: "roof",
-      from: ["garage.x0", "garage.y0 + params.knee_setback"],
+      from: ["garage.x0", "main.y1"],
       to: ["garage.x1", "y0"]
     },
     {
@@ -528,46 +528,6 @@
       top: "roof",
       from: ["garage.x0", "kitchen.y1"],
       to: ["garage.x1", "y0"]
-    },
-    {
-      id: "knee-contour-03",
-      // Ambiente em contato: Quarto E (bedroom-east).
-      scope: "upper",
-      color: "blue",
-      base: { level: "upper.z0" },
-      top: { level: "upper.z0 + params.knee_height" },
-      from: [-9.75706479, 2.5],
-      to: [-9.75706479, 4.04293521]
-    },
-    {
-      id: "knee-contour-04",
-      // Ambiente em contato: Sem uso (unused-right).
-      scope: "upper",
-      color: "blue",
-      base: { level: "upper.z0" },
-      top: { level: "upper.z0 + params.knee_height" },
-      from: [-1.052719243, 3.8],
-      to: [-1.052719243, 4.04293521]
-    },
-    {
-      id: "knee-contour-05",
-      // Ambiente em contato: Sem uso (unused-right).
-      scope: "upper",
-      color: "blue",
-      base: { level: "upper.z0" },
-      top: { level: "upper.z0 + params.knee_height" },
-      from: [0, 4.04293521],
-      to: [-1.052719243, 4.04293521]
-    },
-    {
-      id: "knee-contour-06",
-      // Ambiente em contato: Quarto E (bedroom-east).
-      scope: "upper",
-      color: "blue",
-      base: { level: "upper.z0" },
-      top: { level: "upper.z0 + params.knee_height" },
-      from: [-9.75706479, 4.04293521],
-      to: [-10, 4.04293521]
     },
     {
       id: "knee-contour-07",
@@ -680,7 +640,7 @@
       to: ["x0", "bedroom-north.y1"]
     },
     {
-      id: "bedroom-north-bottom",
+      id: "bedroom-north-rear",
       scope: "bedroom-north",
       color: "blue",
       base: { level: "upper.z0" },
