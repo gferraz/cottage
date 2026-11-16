@@ -116,6 +116,16 @@ const FloorPlanHeadroom = {
           : `${room.dataset.label}: altura ≥ ${plan.formatMeters(height)} m — ${plan.formatMeters(area)} m²`;
         path.append(title);
         svg.append(path);
+        const largest = band.reduce((best, polygon) =>
+          this.area(polygon) > this.area(best) ? polygon : best, []);
+        if (largest.length && height < 3) {
+          const label = document.createElementNS(svg.namespaceURI, "text");
+          label.setAttribute("class", "headroom-height-label");
+          label.setAttribute("x", largest.reduce((sum, point) => sum + point[0], 0) / largest.length);
+          label.setAttribute("y", largest.reduce((sum, point) => sum + point[1], 0) / largest.length);
+          label.textContent = `${height.toLocaleString("pt-BR")}+`;
+          svg.append(label);
+        }
       });
       room.append(svg);
     }

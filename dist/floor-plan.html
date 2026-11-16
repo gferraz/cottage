@@ -1750,6 +1750,16 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
   position: relative;
   z-index: 1;
 }
+.headroom-height-label {
+  font-size: 0.14px;
+  font-weight: normal;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: var(--theme-text);
+  stroke: var(--theme-surface, #fff);
+  stroke-width: 0.025px;
+  paint-order: stroke;
+}
 .comfort-areas { display: block; font-size: 0.75rem; font-weight: normal; }
 .comfort-legend { font-size: 0.8rem; color: var(--theme-muted); }
 .comfort-legend span { display: inline-block; margin-right: 1em; }
@@ -8748,6 +8758,16 @@ const FloorPlanHeadroom = {
           : `${room.dataset.label}: altura ≥ ${plan.formatMeters(height)} m — ${plan.formatMeters(area)} m²`;
         path.append(title);
         svg.append(path);
+        const largest = band.reduce((best, polygon) =>
+          this.area(polygon) > this.area(best) ? polygon : best, []);
+        if (largest.length && height < 3) {
+          const label = document.createElementNS(svg.namespaceURI, "text");
+          label.setAttribute("class", "headroom-height-label");
+          label.setAttribute("x", largest.reduce((sum, point) => sum + point[0], 0) / largest.length);
+          label.setAttribute("y", largest.reduce((sum, point) => sum + point[1], 0) / largest.length);
+          label.textContent = `${height.toLocaleString("pt-BR")}+`;
+          svg.append(label);
+        }
       });
       room.append(svg);
     }

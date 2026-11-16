@@ -1693,6 +1693,16 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
   position: relative;
   z-index: 1;
 }
+.headroom-height-label {
+  font-size: 0.14px;
+  font-weight: normal;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: var(--theme-text);
+  stroke: var(--theme-surface, #fff);
+  stroke-width: 0.025px;
+  paint-order: stroke;
+}
 .comfort-areas { display: block; font-size: 0.75rem; font-weight: normal; }
 .comfort-legend { font-size: 0.8rem; color: var(--theme-muted); }
 .comfort-legend span { display: inline-block; margin-right: 1em; }
