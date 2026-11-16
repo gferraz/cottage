@@ -112,8 +112,7 @@
           to: ["house-left.x0", "y0 + 3.6"],
           windows: [
             { from: "front", to: "exterior", w: 2.4 }
-          ],
-          walls: ["rear"]
+          ]
         },
         {
           id: "front-corridor",
@@ -342,10 +341,10 @@
         {
           id: "living-sofa",
           type: "three-seat-sofa",
-          label: "Sofá linear",
+          label: "Sofá",
           title: "Sofá linear de 3 lugares — Estar",
-          pos: ["living.xc - 1.05", "living.y1 - 1.8"],
-          rotation: 180
+          pos: ["living.x1 - 1.6", "living.y1 - 1.8"],
+          rotation: 90
         },
         {
           id: "dining-table",
@@ -354,7 +353,7 @@
           size: [2.7, 1.1],
           classes: "table"
         },
-        { title: "Lareira", pos: ["living.x0 - 0.1", "living.yc - 0.9"], size: [0.5, 1.4], classes: "fireplace" },
+        { title: "Lareira", pos: ["living.x0 - 0.1", "living.y1 - 1"], size: [0.5, 1.4], classes: "fireplace" },
         { title: "Carro", pos: ["garage.x1 - 2.8", "garage.y0 + 1"], size: [1.8, 4], classes: "car" },
         { type: "washing-machine", pos: ["laundry.x0 + 0.2", "laundry.y0 + 0.1"], rotation: 180 },
         { type: "washing-machine", pos: ["laundry.x0 + 0.8", "laundry.y0 + 0.1"], rotation: 180 },
