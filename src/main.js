@@ -394,6 +394,7 @@ class FloorPlan {
       if (!wall.sourceRoomIds.some((roomId) => roomIds.has(roomId))) return;
       const element = this.add({
         id: wall.id,
+        color: wall.color,
         pos: wall.pos,
         size: wall.size,
         classes: `plan-wall${wall.state === "virtual" ? " plan-wall-virtual" : ""}`,

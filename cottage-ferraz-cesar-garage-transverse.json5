@@ -70,7 +70,7 @@
     { id: "rear", rectangle: ["main.x0", "main.y0 + main.l / 2", "main.x1", "main.y1"], visible: false },
     { id: "central", from: ["main.xc + params.corridor_half_width", "main.y0"], to: ["x0 - 2 * params.corridor_half_width", "main.y1"], visible: false },
     { id: "house-right", rectangle: ["central.x1", "main.y0", "main.x1", "central.y1"], visible: false },
-    { id: "main", pos: [-10, 2.5], size: [10, 9.6], visible: false },
+    { id: "main", pos: [-10, 2.5], size: [10, 8.8], visible: false },
     { id: "house-left", rectangle: ["main.x0", "central.y0", "central.x0", "main.y1"], visible: false },
     { id: "front", rectangle: ["main.x0", "main.y0", "main.x1", "y0 + main.l / 2"], visible: false }
   ],
@@ -129,7 +129,7 @@
           top: "garage-roof",
           pos: ["laundry.x0 - 4", "stairs.y0"],
           size: [4, 6.5],
-          walls: ["top", "left", "bottom"],
+          walls: ["front", "left", "rear"],
           doors: [
             { from: "top", to: "exterior", w: 3.2 },
             { from: "bottom", to: "exterior", w: 3.2 }
@@ -391,7 +391,7 @@
           label: "Quarto N",
           from: ["knee-front-right.x1", "hall.y0"],
           to: ["knee-front-right.x1 - 3.3", "y0 + 3.8"],
-          walls: ["left", "bottom"],
+          walls: [],
           doors: [
             { from: "bottom", to: "upper-corridor" }
           ],
@@ -425,26 +425,18 @@
           to: ["house-left.x0", "stairs.y0"],
           walls: [],
           windows: [
-            { from: "left", dy: "transverse-roof.yc - playroom.y0 - 0.45" }
-          ]
-        },
-        {
-          id: "prayer-room",
-          label: "Sala de oração",
-          from: ["house-right.x1", "office.y0"],
-          to: ["porch.x1", "porch.y1"],
-          windows: [
-            { from: "top", w: 0.8, h: 0.6 }
+            { from: "left", dy: "main-transverse-roof.yc - playroom.y0 - 0.45" }
           ]
         },
         {
           id: "unused-right",
           label: "Sem uso",
-          from: ["house-right.x1", "prayer-room.y1"],
-          to: ["knee-front-right.x1", "transversal-rear.y0 + 1"],
+          from: ["house-right.x1", "office.y1"],
+          to: ["knee-front-right.x1", "main.y1"],
           windows: [
             { from: "right", to: "exterior", w: 0.8, h: 0.6 }
-          ]
+          ],
+          walls: ["front"]
         },
         {
           id: "stair-arrival",
@@ -456,7 +448,7 @@
         },
         {
           id: "upper-corridor",
-          label: "Corredorr",
+          label: "Corredor",
           from: ["unused-right.x0", "bedroom-north.y1"],
           to: ["playroom.x1", "main.y1 - 3.8"]
         }
@@ -579,6 +571,48 @@
       from: ["house-left.x0", "living.y0"],
       to: ["x0", "mudroom.y1"]
     },
+    // Azul: trechos do pavimento Dormitórios sem parede coincidente no térreo.
+    {
+      id: "upper-front-wall-offset",
+      scope: "upper",
+      color: "blue",
+      base: { level: "upper.z0" },
+      from: ["knee-front-right.x1", "hall.y0"],
+      to: ["office-main.x0", "hall.y0"]
+    },
+    {
+      id: "bedroom-north-right",
+      scope: "bedroom-north",
+      base: { level: "upper.z0" },
+      top: { level: "upper.z0 + params.ground_height" },
+      from: ["bedroom-north.x0", "bedroom-north.y0"],
+      to: ["x0", "hall.y1"]
+    },
+    {
+      id: "bedroom-north-right-offset",
+      scope: "bedroom-north",
+      color: "blue",
+      base: { level: "upper.z0" },
+      top: { level: "upper.z0 + params.ground_height" },
+      from: ["bedroom-north.x0", "hall.y1"],
+      to: ["x0", "bedroom-north.y1"]
+    },
+    {
+      id: "bedroom-north-bottom",
+      scope: "bedroom-north",
+      color: "blue",
+      base: { level: "upper.z0" },
+      top: { level: "upper.z0 + params.ground_height" },
+      from: ["bedroom-north.x0", "bedroom-north.y1"],
+      to: ["bedroom-north.x1", "y0"]
+    },
+    {
+      id: "upper-service-left-wall",
+      scope: "upper",
+      base: { level: "upper.z0" },
+      from: ["mudroom.x0", "kitchen.y1"],
+      to: ["x0", "stairs.y1"]
+    },
     {
       id: "upper-office-walls",
       scope: "upper",
@@ -598,7 +632,7 @@
       scope: "upper",
       base: { level: "upper.z0" },
       path: {
-        points: [["knee-front-right.x1", "hall.y0"], ["hall.x0", "y0"], ["x0", "house-left.y0"], ["house-left.x0", "y0"]]
+        points: [["office-main.x0", "hall.y0"], ["hall.x0", "y0"], ["x0", "house-left.y0"], ["house-left.x0", "y0"]]
       }
     },
     {
@@ -630,19 +664,20 @@
     {
       id: "knee-wall-service-right",
       scope: "upper",
+      color: "blue",
       base: { level: "upper.z0" },
       top: "roof",
       path: {
         points: [
           ["kitchen.x0", "kitchen.y1"],
-          ["mudroom.x0", "kitchen.y1"],
-          ["mudroom.x0", "stairs.y1"]
+          ["mudroom.x0", "kitchen.y1"]
         ]
       }
     },
     {
       id: "upper-rear-wall",
       scope: "upper",
+      color: "blue",
       base: { level: "upper.z0" },
       from: ["main.x1", "main.y1"],
       to: ["main.x0", "y0"]
@@ -669,8 +704,8 @@
       rake: 0.5
     },
     {
-      id: "service-roof",
-      label: "Telhado da cozinha e área de serviço",
+      id: "rear-transverse-roof",
+      label: "Telhado dos fundos",
       from: ["garage.x1", "garage.y0"],
       to: ["kitchen.x1", "garage.y1"],
       z0: "upper.z0 + params.roof_base_offset",
@@ -723,9 +758,9 @@
       eaves: { left: 0.5, right: 0.5 }
     },
     {
-      id: "transverse-roof",
+      id: "main-transverse-roof",
       label: "Telhado Transversal",
-      from: ["front.x1", "front.y0 + 2", "upper.z0 + params.roof_base_offset"],
+      from: ["front.x1", "office.y1", "upper.z0 + params.roof_base_offset"],
       to: ["front.x0", "rear.y1 - 1", "z0"],
       orientation: "transverse",
       eaves: { left: 0, right: 0 }
