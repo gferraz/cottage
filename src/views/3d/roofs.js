@@ -1,5 +1,5 @@
 const FloorPlan3DRoofs = {
-  render({ plan, THREE, scene, roofMaterial, roofLineMaterial }) {
+  render({ plan, THREE, scene, roofMaterial, roofEdgeMaterial, roofLineMaterial }) {
     FloorPlanRoofs.intersectingSurfaces(plan).forEach(({ roof, polygons }) => {
       if (!polygons.length) return;
       const value = roof.thickness ?? 0.12;
@@ -7,15 +7,19 @@ const FloorPlan3DRoofs = {
       const thickness = Number.isFinite(resolved) && resolved >= 0 ? resolved : 0.12;
       const { faces, edges } = FloorPlanRoofs.solidSurface(polygons, thickness);
       const vertices = [];
-      faces.forEach((polygon) => {
+      const geometry = new THREE.BufferGeometry();
+      faces.forEach((polygon, faceIndex) => {
+        const start = vertices.length / 3;
         for (let i = 1; i < polygon.length - 1; i += 1) {
           vertices.push(...polygon[0], ...polygon[i], ...polygon[i + 1]);
         }
+        // solidSurface orders top, underside, then the vertical edge faces.
+        const materialIndex = faceIndex >= polygons.length * 2 ? 1 : 0;
+        geometry.addGroup(start, vertices.length / 3 - start, materialIndex);
       });
-      const geometry = new THREE.BufferGeometry();
       geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
       geometry.computeVertexNormals();
-      const mesh = new THREE.Mesh(geometry, roofMaterial);
+      const mesh = new THREE.Mesh(geometry, [roofMaterial, roofEdgeMaterial]);
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       mesh.userData.domainId = roof.id || "";

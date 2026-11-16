@@ -362,6 +362,10 @@ const FloorPlanFacades3D = {
       opacity: 0.55,
       side: THREE.DoubleSide,
     });
+    const roofEdgeMaterial = new THREE.MeshLambertMaterial({
+      color: plan.themeFillColor("casca-de-pinus"),
+      side: THREE.DoubleSide,
+    });
     const roofLineMaterial = new THREE.LineBasicMaterial({ color: "#8c432d" });
     const windowMaterial = new THREE.MeshLambertMaterial({
       color: "#b9d5e5",
@@ -437,6 +441,7 @@ const FloorPlanFacades3D = {
       wallMaterial,
       wallLineMaterial,
       roofMaterial,
+      roofEdgeMaterial,
       roofLineMaterial,
       windowMaterial,
       doorMaterial,

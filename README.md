@@ -322,6 +322,12 @@ planta continua sendo escolhido pelo botão “Carregar JSON”.
 
 No 3D, as superfícies dos telhados têm espessura vertical padrão de 0,12 m, com topo, face inferior e bordas fechadas. Use `thickness` no telhado (ou em `config.roofs`) para ajustar em metros; `0` mantém uma superfície sem volume. A espessura cresce acima da superfície de referência, preservando o contato das paredes. A planta, as elevações e as cotas de referência continuam representando a superfície original.
 
+Nos dois estudos `cottage-ferraz-cesar*.json5`, a reserva preliminar do conjunto é de 0,30 m perpendicular às águas principais, incluindo estrutura com isolamento entre peças, canal ventilado livre de aproximadamente 0,05 m e acabamentos. Os parâmetros `roof_thickness_51` (0,477 m) e `roof_thickness_20` (0,320 m) convertem essa reserva para a espessura vertical do renderizador: `0,30 / cos(inclinação)`, arredondada para cima. Beirais com inclinação de 30° conservam a espessura vertical do corpo de 51°, ficando com aproximadamente 0,413 m perpendiculares à água; o modelo não individualiza as camadas ou a espessura do beiral.
+
+Nesses estudos, a superfície de referência é tomada como acabamento interno. A reserva cresce acima dela, sem reduzir a altura livre calculada; as fachadas e cotas continuam usando essa referência. O volume representa uma reserva geométrica, sem dimensionar as peças estruturais ou modelar entradas de ar nos beirais e saídas superiores. A continuidade da ventilação e seus desvios nos encontros entre telhados devem ser detalhados no projeto construtivo.
+
+As faces laterais da espessura no 3D usam a cor Casca de Pinus (SW 2807, aproximação digital `#6e5241` do catálogo), com material opaco; as águas e a face inferior mantêm o material original.
+
 ### Inclinação dos beirais
 
 Use `eaves: { left: 0.5, right: 0.5, pitch: 30 }` no telhado ou em `config.roofs` para reunir os avanços horizontais (metros) e o ângulo dos beirais (graus). Exemplo: `{ type: "gable", base: "main", orientation: "longitudinal", pitch: 51, eaves: { left: 0.8, right: 0.8, pitch: 30 } }`.

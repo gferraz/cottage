@@ -16,12 +16,18 @@
   // Configuração
   config: {
     walls: { base: { level: "ground.z0" }, top: "roof", thickness: "params.wall_thickness", color: "desejo-ambar" },
-    roofs: { type: "gable", pitch: 51, rake: 0.5, eaves: { pitch: 30 } },
+    roofs: { type: "gable", pitch: 51, thickness: "params.roof_thickness_51", rake: 0.5, eaves: { pitch: 30 } },
     floors: { ceiling_height: "params.ground_height" }
   },
   // Parâmetros
   parameters: {
     wall_thickness: 0.12,
+    // Reserva preliminar de 30 cm perpendicular à água: estrutura com isolamento
+    // entre peças, canal ventilado livre de aproximadamente 5 cm e acabamentos.
+    // thickness é vertical: 0,30 / cos(inclinação), arredondado para cima.
+    // A superfície de referência representa o acabamento interno; volume acima dela.
+    roof_thickness_51: 0.477,
+    roof_thickness_20: 0.320,
     ground_height: 3,
     roof_base_offset: 1,
     bed_knee_wall_clearance: 0.3,
@@ -682,6 +688,7 @@
       orientation: "transverse",
       slope: "top",
       pitch: 20,
+      thickness: "params.roof_thickness_20",
       z0: "ground.z0 + 2.7",
       eaves: { left: 0.45, right: 0, pitch: 20 },
       rake: [0.25, 0]
