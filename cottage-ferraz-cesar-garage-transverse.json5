@@ -587,13 +587,6 @@
       }
     },
     {
-      id: "knee-wall-rear",
-      scope: "upper",
-      from: ["knee-rear-right.x0", "house-right.y1 - 2.6"],
-      to:   ["x0", "house-right.y1"],
-      base: { level: "upper.z0" }
-    },
-    {
       id: "rear-wall",
       scope: "ground",
       top: { level: "upper.z0" },
@@ -715,13 +708,13 @@
         ]
       }
     },
-    {
-      id: "upper-rear-wall",
-      scope: "upper",
-      base: { level: "upper.z0" },
-      from: ["house-left.x1", "main.y1"],
-      to: ["main.x1", "y0"]
-    },
+    // {
+    //   id: "upper-rear-wall",
+    //   scope: "upper",
+    //   base: { level: "upper.z0" },
+    //   from: ["house-left.x1", "main.y1"],
+    //   to: ["main.x1", "y0"]
+    // },
     {
       id: "upper-left-wall",
       scope: "upper",
