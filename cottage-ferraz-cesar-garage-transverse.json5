@@ -476,7 +476,7 @@
         {
           id: "bed-north-1",
           type: "queen-bed",
-          pos: ["bedroom-north.x1 - params.bed_knee_wall_clearance - 1.8", "bedroom-north.yc - 1"],
+          pos: ["bedroom-north.x1 - 1.8", "bedroom-north.yc - 1"],
           rotation: 90
         },
         {
@@ -643,9 +643,8 @@
     {
       id: "knee-wall-front-right",
       scope: "upper",
-      color: "blue",
       base: { level: "upper.z0" },
-      path: { points: [["knee-front-right.x1", "main.y0"], ["x0", "y0 + 4.6"]] }
+      path: { points: [["knee-front-right.x1", "main.y0"], ["x0", "y0 + 3.8"]] }
     },
     {
       id: "knee-wall-kitchen-right",
