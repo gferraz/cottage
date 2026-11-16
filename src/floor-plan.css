@@ -910,12 +910,12 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 }
 .outdoor { background: var(--theme-outdoor); }
 .service { background: var(--theme-service); }
-.circulation, .stair-landing { background: var(--theme-circulation); }
+.circulation, .stair-landing, .stair-flight { background: var(--theme-circulation); }
 .stair-flight[data-stair-rise="up"],
 .stair-flight[data-stair-rise="down"] {
-  --stair-opaque: rgba(180, 145, 88, 0.62);
-  --stair-clearance: rgba(205, 177, 125, 0.16);
-  --stair-transparent: rgba(245, 238, 222, 0.08);
+  --stair-opaque: var(--theme-circulation);
+  --stair-clearance: color-mix(in srgb, var(--theme-circulation) 26%, transparent);
+  --stair-transparent: color-mix(in srgb, var(--theme-circulation) 8%, transparent);
   background: linear-gradient(
     to bottom,
     var(--stair-opaque) 0%,

@@ -29,6 +29,7 @@
   --theme-roof-fill: rgba(177, 82, 46, 0.18);
   --theme-roof-line: rgba(112, 55, 35, 0.9);
   --theme-roof-gradient-dark: #a84f31;
+  --theme-stair-gradient-dark: #b4afa3;
   --theme-roof-gradient-light: #f1c0a0;
   --theme-opening: #e8c99c;
   --theme-opening-line: #6b4b2a;
@@ -967,12 +968,12 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 }
 .outdoor { background: var(--theme-outdoor); }
 .service { background: var(--theme-service); }
-.circulation, .stair-landing { background: var(--theme-circulation); }
+.circulation, .stair-landing, .stair-flight { background: var(--theme-circulation); }
 .stair-flight[data-stair-rise="up"],
 .stair-flight[data-stair-rise="down"] {
-  --stair-opaque: rgba(180, 145, 88, 0.62);
-  --stair-clearance: rgba(205, 177, 125, 0.16);
-  --stair-transparent: rgba(245, 238, 222, 0.08);
+  --stair-opaque: var(--theme-circulation);
+  --stair-clearance: color-mix(in srgb, var(--theme-circulation) 26%, transparent);
+  --stair-transparent: color-mix(in srgb, var(--theme-circulation) 8%, transparent);
   background: linear-gradient(
     to bottom,
     var(--stair-opaque) 0%,
@@ -1813,6 +1814,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
   --theme-roof-fill: rgba(177, 82, 46, 0.18);
   --theme-roof-line: rgba(112, 55, 35, 0.9);
   --theme-roof-gradient-dark: #a84f31;
+  --theme-stair-gradient-dark: #b4afa3;
   --theme-roof-gradient-light: #f1c0a0;
   --theme-button: #f2f2f2;
   --theme-button-hover: #e6e6e6;
@@ -2217,12 +2219,12 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .room-overlap[data-wall-left="solid"], .room-overlap[data-wall-left="virtual"], .room-overlap .room-part[data-wall-left="solid"], .room-overlap .room-part[data-wall-left="virtual"] { border-left-color: var(--theme-overlap-line); }
 .outdoor { background: var(--theme-outdoor); }
 .service { background: var(--theme-service); }
-.circulation, .stair-landing { background: var(--theme-circulation); }
+.circulation, .stair-landing, .stair-flight { background: var(--theme-circulation); }
 .stair-flight[data-stair-rise="up"],
 .stair-flight[data-stair-rise="down"] {
-  --stair-opaque: rgba(180, 145, 88, 0.62);
-  --stair-clearance: rgba(205, 177, 125, 0.16);
-  --stair-transparent: rgba(245, 238, 222, 0.08);
+  --stair-opaque: var(--theme-circulation);
+  --stair-clearance: color-mix(in srgb, var(--theme-circulation) 26%, transparent);
+  --stair-transparent: color-mix(in srgb, var(--theme-circulation) 8%, transparent);
   background: linear-gradient(
     to bottom,
     var(--stair-opaque) 0%,
@@ -7070,7 +7072,7 @@ const FloorPlan3DElements = {
     const styles = getComputedStyle(plan.root);
     const opaque = (value) => value.replace(/^rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)$/, "rgb($1,$2,$3)");
     const low = new THREE.Color(opaque(styles.getPropertyValue("--theme-circulation").trim()));
-    const high = new THREE.Color(opaque(styles.getPropertyValue("--theme-roof-gradient-dark").trim()));
+    const high = new THREE.Color(opaque(styles.getPropertyValue("--theme-stair-gradient-dark").trim()));
     const ratio = 1 - FloorPlanGeometry.stairGradientRatio(z, stair.stairGradient);
     const material = baseMaterial.clone();
     // Match the sRGB interpolation used by color-mix in the plan view.
@@ -13176,7 +13178,7 @@ const FloorPlanDom = {
   },
 
   applyStairGradient(element, geometry, range) {
-    const color = (z) => `color-mix(in srgb, var(--theme-circulation), var(--theme-roof-gradient-dark) ${
+    const color = (z) => `color-mix(in srgb, var(--theme-circulation), var(--theme-stair-gradient-dark) ${
       ((1 - FloorPlanGeometry.stairGradientRatio(z, range)) * 100).toFixed(4)}%)`;
     let background = color(geometry.z0);
     if (geometry.h > 0) {

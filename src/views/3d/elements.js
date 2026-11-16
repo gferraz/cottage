@@ -4,7 +4,7 @@ const FloorPlan3DElements = {
     const styles = getComputedStyle(plan.root);
     const opaque = (value) => value.replace(/^rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)$/, "rgb($1,$2,$3)");
     const low = new THREE.Color(opaque(styles.getPropertyValue("--theme-circulation").trim()));
-    const high = new THREE.Color(opaque(styles.getPropertyValue("--theme-roof-gradient-dark").trim()));
+    const high = new THREE.Color(opaque(styles.getPropertyValue("--theme-stair-gradient-dark").trim()));
     const ratio = 1 - FloorPlanGeometry.stairGradientRatio(z, stair.stairGradient);
     const material = baseMaterial.clone();
     // Match the sRGB interpolation used by color-mix in the plan view.

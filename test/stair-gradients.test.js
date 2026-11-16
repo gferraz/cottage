@@ -39,7 +39,7 @@ test('plan colors continue across flights and match the connecting landing', () 
   assert.ok(lower.includes('66.6667%)'));
   assert.ok(middle.includes('33.3333%)'));
   assert.ok(upper.includes('0.0000%)'));
-  assert.equal(landing.properties.background.value, 'color-mix(in srgb, var(--theme-circulation), var(--theme-roof-gradient-dark) 66.6667%)');
+  assert.equal(landing.properties.background.value, 'color-mix(in srgb, var(--theme-circulation), var(--theme-stair-gradient-dark) 66.6667%)');
   assert.equal(landing.properties.background.priority, 'important');
   assert.equal(landing.dataset.stairGradient, 'height');
 });
@@ -48,8 +48,8 @@ test('plan tread colors follow rise and direction for horizontal and vertical fl
   const part = { w: 1.4, l: 1.4, z0: 1, z1: 2, h: 1, stairAxis: 'horizontal', stairDirection: 'reverse', stairRise: 'up' };
   const reverse = painted(part).properties.background.value;
   const forward = painted({ ...part, stairRise: 'down' }).properties.background.value;
-  assert.ok(reverse.startsWith('linear-gradient(to right, color-mix(in srgb, var(--theme-circulation), var(--theme-roof-gradient-dark) 33.3333%)'));
-  assert.ok(forward.startsWith('linear-gradient(to right, color-mix(in srgb, var(--theme-circulation), var(--theme-roof-gradient-dark) 61.1111%)'));
+  assert.ok(reverse.startsWith('linear-gradient(to right, color-mix(in srgb, var(--theme-circulation), var(--theme-stair-gradient-dark) 33.3333%)'));
+  assert.ok(forward.startsWith('linear-gradient(to right, color-mix(in srgb, var(--theme-circulation), var(--theme-stair-gradient-dark) 61.1111%)'));
   assert.ok(painted({ ...part, stairAxis: 'vertical' }).properties.background.value.startsWith('linear-gradient(to bottom'));
 });
 
@@ -64,13 +64,13 @@ test('3D tread and landing at equal heights receive equal colors without changin
   const material = () => ({ color: new Color('base'), clone: material });
   const elements = vm.runInNewContext(fs.readFileSync('src/views/3d/elements.js', 'utf8') + '\nFloorPlan3DElements;', {
     FloorPlanGeometry: geometry,
-    getComputedStyle: () => ({ getPropertyValue: key => key === '--theme-circulation' ? 'rgba(245, 238, 222, 0.95)' : '#a84f31' }),
+    getComputedStyle: () => ({ getPropertyValue: key => key === '--theme-circulation' ? 'rgba(245, 238, 222, 0.95)' : '#b4afa3' }),
   });
   const original = material();
   const first = elements.heightMaterial({ root: {} }, { Color }, original, { stairGradient: range }, 1);
   const second = elements.heightMaterial({ root: {} }, { Color }, original, { stairGradient: range }, 1);
   assert.equal(first.color.value, second.color.value);
-  assert.ok(first.color.value.startsWith('rgb(245, 238, 222):#a84f31:'));
+  assert.ok(first.color.value.startsWith('rgb(245, 238, 222):#b4afa3:'));
   assert.equal(original.color.value, 'base');
   assert.notEqual(first, second);
 });

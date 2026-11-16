@@ -42,7 +42,7 @@ const FloorPlanDom = {
   },
 
   applyStairGradient(element, geometry, range) {
-    const color = (z) => `color-mix(in srgb, var(--theme-circulation), var(--theme-roof-gradient-dark) ${
+    const color = (z) => `color-mix(in srgb, var(--theme-circulation), var(--theme-stair-gradient-dark) ${
       ((1 - FloorPlanGeometry.stairGradientRatio(z, range)) * 100).toFixed(4)}%)`;
     let background = color(geometry.z0);
     if (geometry.h > 0) {

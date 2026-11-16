@@ -133,7 +133,7 @@
         {
           id: "garage",
           label: "Garagem",
-          top: "garage-roof",
+          top: "rear-transverse-roof",
           pos: ["laundry.x0 - 4", "stairs.y0"],
           size: [4, 6.5],
           walls: ["front", "right", "rear", "left"],
@@ -397,7 +397,7 @@
           id: "bedroom-north",
           label: "Quarto N",
           from: ["knee-front-right.x1", "hall.y0"],
-          to: ["knee-front-right.x1 - 3.3", "y0 + 3.8"],
+          to: ["knee-front-right.x1 - 3.3", "y0 + 3.6"],
           walls: [],
           doors: [
             { from: "rear", to: "upper-corridor" }
@@ -725,23 +725,23 @@
   ],
   // Telhados
   roofs: [
-    {
-      id: "garage-roof",
-      label: "Telhado da garagem",
-      from: ["garage.x0", "garage.y0"],
-      to: ["garage.x1", "garage.y1"],
-      z0: "upper.z0",
-      orientation: "transverse",
-      pitch: 51,
-      eaves: { left: 0.5, right: 0.5 },
-      rake: 0.5
-    },
+    // {
+    //   id: "garage-roof",
+    //   label: "Telhado da garagem",
+    //   from: ["garage.x0", "garage.y0"],
+    //   to: ["garage.x1", "garage.y1"],
+    //   z0: "upper.z0",
+    //   orientation: "transverse",
+    //   pitch: 51,
+    //   eaves: { left: 0.5, right: 0.5 },
+    //   rake: 0.5
+    // },
     {
       id: "rear-transverse-roof",
       label: "Telhado dos fundos",
-      from: ["garage.x1", "garage.y0"],
+      from: ["garage.x0", "garage.y0"],
       to: ["kitchen.x1", "garage.y1"],
-      z0: "upper.z0 + params.roof_base_offset",
+      z0: "upper.z0 + params.roof_base_offset - 1",
       orientation: "transverse",
       pitch: 51,
       eaves: { left: 0.5, right: 0.5 },

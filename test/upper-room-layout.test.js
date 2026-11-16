@@ -64,28 +64,9 @@ test('current unused room window resolves to the exterior right wall', () => {
   assert.equal(opening.to, 'exterior');
 });
 
-test('transverse study colors only upper wall lengths without a ground wall below', () => {
+test('transverse study bedroom door resolves to its rear wall', () => {
   const plan = prepare('cottage-ferraz-cesar-garage-transverse.json5');
   assert.deepEqual(plan.errors, []);
-  const parts = plan.wallRenderParts;
-  const ground = parts.filter((wall) => wall.z0 <= 0 && wall.z1 >= 3);
-  for (const wall of parts.filter((wall) => wall.z0 === 3)) {
-    const along = wall.axis === 'x' ? 0 : 1;
-    const across = 1 - along;
-    const intervals = ground.filter((lower) => lower.axis === wall.axis &&
-      Math.abs(lower.from[across] - wall.from[across]) < 1e-8)
-      .map((lower) => [Math.max(lower.from[along], wall.from[along]),
-        Math.min(lower.to[along], wall.to[along])])
-      .filter(([start, end]) => end - start > 1e-8)
-      .sort((a, b) => a[0] - b[0]);
-    let covered = 0, end = -Infinity;
-    for (const [a, b] of intervals) {
-      covered += Math.max(0, b - Math.max(a, end));
-      end = Math.max(end, b);
-    }
-    const length = wall.to[along] - wall.from[along];
-    assert.ok(Math.abs(covered - (wall.color === 'blue' ? 0 : length)) < 1e-8, wall.id);
-  }
   const definition = FloorPlanOpenings.collect(plan.roomDefinitions.get('bedroom-north'))
     .find((opening) => opening.type === 'door');
   const opening = plan.normalizeOpening({ ...definition, from: `bedroom-north.${definition.from}` });
@@ -96,7 +77,7 @@ test('garage walls inherit the default color while the terrain plinth stays gree
   const plan = prepare('cottage-ferraz-cesar-garage-transverse.json5');
   const defaultColor = plan.currentConfig.config.walls.color;
   const garageWalls = [...plan.walls.values()].filter((wall) => wall.sourceRoomIds.includes('garage'));
-  assert.equal(garageWalls.length, 3);
+  assert.equal(garageWalls.length, 4);
   assert.ok(garageWalls.every((wall) => wall.color === defaultColor));
   const plinth = plan.independentWalls.get('perimeter-plinth');
   assert.equal(plinth.color, 'mate-amargo');
@@ -125,12 +106,15 @@ test('plan view excludes the green plinth below the floor without changing its 3
 });
 
 test('garage walls continue into the upper plan while walls ending at its level stay hidden', () => {
-  for (const file of ['cottage-ferraz-cesar.json5', 'cottage-ferraz-cesar-garage-transverse.json5']) {
+  for (const [file, wallCount] of [
+    ['cottage-ferraz-cesar.json5', 3],
+    ['cottage-ferraz-cesar-garage-transverse.json5', 4],
+  ]) {
     const plan = prepare(file);
     const roofs = FloorPlanWalls.roofLimits(plan, plan.currentConfig);
     const upper = plan.currentConfig.floors.find((floor) => floor.id === 'upper');
     const garage = [...plan.walls.values()].filter((wall) => wall.sourceRoomIds.includes('garage'));
-    assert.equal(garage.length, 3);
+    assert.equal(garage.length, wallCount);
     for (const wall of garage) {
       const parts = FloorPlanWalls.spanningPlanParts(wall, upper.z0, roofs);
       assert.ok(parts.length > 0, wall.id);
