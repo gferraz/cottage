@@ -1,4 +1,46 @@
 const FloorPlanDom = {
+  configureWallTooltip(plan) {
+    let tooltip;
+    let activeWall;
+    let title;
+    const hide = () => {
+      if (activeWall) activeWall.title = title;
+      activeWall = null;
+      if (tooltip) tooltip.hidden = true;
+    };
+    plan.root.addEventListener("pointermove", (event) => {
+      // Room fills and labels can sit above independent knee walls.
+      // Inspect the stack under the cursor so those walls remain identifiable.
+      const wall = document.elementsFromPoint(event.clientX, event.clientY)
+        .find((element) => element.matches(".plan-wall") && plan.root.contains(element));
+      if (!wall || plan.pointerPan || event.pointerType === "touch") {
+        hide();
+        return;
+      }
+      if (wall !== activeWall) {
+        hide();
+        title = wall.title;
+        if (!title) return;
+        if (!tooltip) {
+          tooltip = document.createElement("div");
+          tooltip.className = "wall-tooltip";
+          tooltip.setAttribute("role", "tooltip");
+          document.body.append(tooltip);
+        }
+        activeWall = wall;
+        // Restore the native title on exit; avoid two tooltips during hover.
+        wall.removeAttribute("title");
+        tooltip.textContent = title;
+        tooltip.hidden = false;
+      }
+      tooltip.style.left = `${Math.max(4, Math.min(event.clientX + 12, window.innerWidth - tooltip.offsetWidth - 4))}px`;
+      tooltip.style.top = `${Math.max(4, Math.min(event.clientY + 16, window.innerHeight - tooltip.offsetHeight - 4))}px`;
+    });
+    plan.root.addEventListener("pointerleave", hide);
+    window.addEventListener("scroll", hide, true);
+    window.addEventListener("resize", hide);
+  },
+
   applyStairGradient(element, geometry, range) {
     const color = (z) => `color-mix(in srgb, var(--theme-circulation), var(--theme-roof-gradient-dark) ${
       ((1 - FloorPlanGeometry.stairGradientRatio(z, range)) * 100).toFixed(4)}%)`;

@@ -106,6 +106,7 @@ class FloorPlan {
     root.addEventListener("pointerup", (event) => this.endViewportPan(event));
     root.addEventListener("pointercancel", (event) => this.endViewportPan(event));
     root.addEventListener("lostpointercapture", () => { this.pointerPan = null; });
+    FloorPlanDom.configureWallTooltip(this);
     if (typeof ResizeObserver !== "undefined") {
       this.viewportResizeObserver = new ResizeObserver(() => this.resizeViewport());
       this.viewportResizeObserver.observe(root.parentElement || root);

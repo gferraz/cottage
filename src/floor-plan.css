@@ -781,6 +781,22 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   background: transparent;
   border: 1px dashed var(--theme-wall-virtual);
 }
+.wall-tooltip {
+  position: fixed;
+  z-index: 1000;
+  max-width: calc(100vw - 8px);
+  padding: 5px 8px;
+  border: 1px solid var(--theme-border-light);
+  border-radius: 4px;
+  background: var(--theme-button);
+  color: var(--theme-text);
+  font: 12px ui-monospace, monospace;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+@media print {
+  .wall-tooltip { display: none; }
+}
 .plan-item.railing {
   z-index: 18;
   opacity: 1;
