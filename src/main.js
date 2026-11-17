@@ -882,6 +882,7 @@ class FloorPlan {
     }
     this.renderPlanFloors(config, floorConfig);
     FloorPlanStairHeadroomView.render(this);
+    FloorPlanStairAccessView.render(this);
     this.updateLayerVisibility();
     this.renderMultiFloorUnderlay(floorConfig);
     try {

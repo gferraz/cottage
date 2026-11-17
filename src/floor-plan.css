@@ -814,6 +814,24 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 }
 
 
+.plan-item.stair-access-zone {
+  z-index: 6;
+  opacity: 1;
+  background: repeating-linear-gradient(135deg, rgba(90, 120, 160, 0.16) 0 2px, transparent 2px 8px);
+  border: 1px dashed rgba(65, 95, 135, 0.9);
+}
+.site .stair-access-zone::after { rotate: 180deg; }
+.stair-access-zone::after {
+  content: "Acesso";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #415f87;
+  font-size: 9px;
+  text-shadow: 0 0 3px white, 0 0 3px white;
+}
+
 .plan-item.stair-headroom-zone {
   z-index: 6;
   opacity: 1;

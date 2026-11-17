@@ -22,4 +22,6 @@ src("models/derived-zones");
 src("models/overlap-analysis");
 src("models/stair-headroom");
 src("views/stair-headroom");
+src("models/stair-access");
+src("views/stair-access");
 src("models/project");

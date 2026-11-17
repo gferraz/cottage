@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Planta térrea — separada por módulos</title>
     <link rel="stylesheet" href="src/config/theme.css" />
-  <link rel="stylesheet" href="src/floor-plan.css?v=stair-headroom-1" />
+  <link rel="stylesheet" href="src/floor-plan.css?v=stair-access-2" />
   </head>
   <body class="page-empty">
 <template id="portable-export-css"><style>
@@ -341,6 +341,24 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   pointer-events: none;
 }
 
+
+.plan-item.stair-access-zone {
+  z-index: 6;
+  opacity: 1;
+  background: repeating-linear-gradient(135deg, rgba(90, 120, 160, 0.16) 0 2px, transparent 2px 8px);
+  border: 1px dashed rgba(65, 95, 135, 0.9);
+}
+.site .stair-access-zone::after { rotate: 180deg; }
+.stair-access-zone::after {
+  content: "Acesso";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #415f87;
+  font-size: 9px;
+  text-shadow: 0 0 3px white, 0 0 3px white;
+}
 
 .plan-item.stair-headroom-zone {
   z-index: 6;
@@ -1076,7 +1094,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
     <script src="src/models/references.js?v=project-view-1" defer></script>
     <script src="src/models/communications.js?v=communications-1" defer></script>
     <script src="src/models/overlap-analysis.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/layers.js?v=stair-headroom-1" defer></script>
+    <script src="src/models/layers.js?v=stair-access-2" defer></script>
     <script src="src/views/lists.js?v=communications-1" defer></script>
     <script src="src/exports/text.js?v=communications-1" defer></script>
     <script src="src/models/geometry-domain.js?v=geometry-analysis-20261117" defer></script>
@@ -1086,8 +1104,10 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
     <script src="src/models/derived-zones.js?v=derived-zones-1" defer></script>
     <script src="src/models/stair-headroom.js?v=stair-headroom-1" defer></script>
     <script src="src/views/stair-headroom.js?v=stair-headroom-1" defer></script>
-    <script src="src/models/project.js?v=stair-headroom-1" defer></script>
-    <script src="src/main.js?v=stair-headroom-1" defer></script>
+    <script src="src/models/stair-access.js?v=stair-access-2" defer></script>
+    <script src="src/views/stair-access.js?v=stair-access-2" defer></script>
+    <script src="src/models/project.js?v=stair-access-2" defer></script>
+    <script src="src/main.js?v=stair-access-2" defer></script>
     <script src="src/config/catalog.js?v=geometry-analysis-20261117" defer></script>
     <script src="src/config/app.js?v=geometry-analysis-20261117" defer></script>
   </body>

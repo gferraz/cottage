@@ -26,7 +26,8 @@ const FloorPlanProject = {
       .flatMap((room) => plan.getRoomGeometry(room.id).normalizedParts);
     plan.stairConnectivity = FloorPlanStairConnectivity.analyze(stairParts, model.floors);
     plan.stairSourceLayers = FloorPlanStairHeadroom.sourceLayers(plan);
-    plan.derivedZones = [];
+    plan.derivedZones = FloorPlanStairAccess.generate(plan.stairConnectivity,
+      { depth: config.stair_access_depth ?? 1.2 });
     plan.stairHeadroomResults = FloorPlanStairHeadroom.analyze(stairParts, model.floors,
       FloorPlanRoofGeometry.intersectingSurfaces(plan));
     plan.preparedProject = {

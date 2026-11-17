@@ -84,6 +84,7 @@ const FloorPlanLayers = {
         );
       });
     window.FloorPlanStairHeadroomView?.updateVisibility(plan);
+    window.FloorPlanStairAccessView?.updateVisibility(plan);
     if (plan.layerOptions) {
       const visible = Boolean(plan.currentConfig && plan.maxLayer > 0);
       const container = plan.layerOptions.closest(".layer-selector");

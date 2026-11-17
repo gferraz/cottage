@@ -111,7 +111,8 @@ test("both cottage studies prepare all domain data and floor validation without 
     assert.equal(plan.stairConnectivity.edges.length, 3);
     assert.equal(plan.stairConnectivity.nodes.filter((node) => node.ownerId === "stairs")
       .flatMap((node) => node.ends).filter((end) => end.floorIds.length).length, 2);
-    assert.deepEqual(plan.derivedZones, []);
+    assert.equal(plan.derivedZones.filter((zone) => zone.ownerId === "stairs").length, 2);
+    assert.ok(plan.derivedZones.every((zone) => zone.available === null));
     const underStairs = plan.stairHeadroomResults.filter((result) => result.ownerId === "stairs");
     assert.deepEqual(underStairs.map((result) => result.floorId), ["ground"]);
     assert.ok(underStairs[0].covered.area > 0);
