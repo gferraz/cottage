@@ -4343,17 +4343,17 @@ const FloorPlanLegend = {
 const FloorPlanExport = {
   roofMetrics(plan, roof) {
     if (roof.type === "shed") {
-      try { return FloorPlanRoofs.shedGeometry(plan, roof); } catch { return null; }
+      try { return FloorPlanRoofGeometry.shedGeometry(plan, roof); } catch { return null; }
     }
     let base;
     try {
-      base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+      base = FloorPlanRoofGeometry.resolveBase(plan, roof.base ?? roof);
     } catch {
       return null;
     }
     const pitch = Number(roof.pitch);
-    const [eave0, eave1] = FloorPlanRoofs.eavePair(roof);
-    const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
+    const [eave0, eave1] = FloorPlanRoofGeometry.eavePair(roof);
+    const [rake0, rake1] = FloorPlanRoofGeometry.overhangPair(roof.rake);
     if (
       !base ||
       !Number.isFinite(pitch) ||
@@ -4362,22 +4362,16 @@ const FloorPlanExport = {
       [eave0, eave1, rake0, rake1].some((value) => value < 0)
     )
       return null;
-    const longitudinal = roof.orientation === "longitudinal";
-    const roofWidth = base.w() + (longitudinal ? eave0 + eave1 : rake0 + rake1);
-    const roofLength = base.l() + (longitudinal ? rake0 + rake1 : eave0 + eave1);
-    const x0 = base.x0() - (longitudinal ? eave0 : rake0);
-    const x1 = base.x1() + (longitudinal ? eave1 : rake1);
-    const y0 = base.y0() - (longitudinal ? rake0 : eave0);
-    const y1 = base.y1() + (longitudinal ? rake1 : eave1);
-    const baseElevation =
-      roof.z0 !== undefined ? plan.resolve(roof.z0) : base.z1 ? base.z1() : 0;
-    const baseSpan = longitudinal ? base.w() : base.l();
-    const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
-    const ridgeLength = longitudinal ? roofLength : roofWidth;
+    // Historical export policy: use the declared base top, not the ceiling
+    // inferred by renderers. Area without eaves.pitch also retains its formula.
+    const baseElevation = roof.z0 !== undefined ? plan.resolve(roof.z0) : base.z1 ? base.z1() : 0;
+    const geometry = FloorPlanRoofGeometry.gableGeometry(plan, roof, { base, z0: baseElevation });
+    const { longitudinal, roofWidth, roofLength, x0, x1, y0, y1,
+      baseSpan, rise, ridgeLength, ridgeX0, ridgeY0, ridgeX1, ridgeY1 } = geometry;
     const slopeA = longitudinal ? eave0 : rake0;
     const slopeB = longitudinal ? eave1 : rake1;
     const surfaceArea = roof.eaves?.pitch !== undefined
-      ? FloorPlanRoofs.surfaceArea(roof, baseSpan, ridgeLength)
+      ? FloorPlanRoofGeometry.surfaceArea(roof, baseSpan, ridgeLength)
       :
       (Math.hypot(baseSpan / 2 + slopeA, rise) +
         Math.hypot(baseSpan / 2 + slopeB, rise)) *
@@ -4398,10 +4392,7 @@ const FloorPlanExport = {
       rise,
       ridgeLength,
       surfaceArea,
-      ridgeX0: longitudinal ? (base.x0() + base.x1()) / 2 : x0,
-      ridgeY0: longitudinal ? y0 : (base.y0() + base.y1()) / 2,
-      ridgeX1: longitudinal ? (base.x0() + base.x1()) / 2 : x1,
-      ridgeY1: longitudinal ? y1 : (base.y0() + base.y1()) / 2,
+      ridgeX0, ridgeY0, ridgeX1, ridgeY1,
     };
   },
 
@@ -4610,8 +4601,8 @@ const FloorPlanExport = {
         if (!metrics) return;
         const { x0, x1, y0, y1, ridgeX0, ridgeY0, ridgeX1, ridgeY1 } = metrics;
         if (roof.eaves?.pitch !== undefined) {
-          const surfaces = FloorPlanRoofs.intersectingSurfaces(plan, [roof]);
-          const edges = FloorPlanRoofs.surfaceEdges(surfaces.flatMap(entry => entry.polygons));
+          const surfaces = FloorPlanRoofGeometry.intersectingSurfaces(plan, [roof]);
+          const edges = FloorPlanRoofGeometry.surfaceEdges(surfaces.flatMap(entry => entry.polygons));
           for (let i = 0; i < edges.length; i += 2) {
             const a = edges[i], b = edges[i + 1];
             line("ROOFS", a[0], a[1], b[0], b[1], a[2], b[2]);
@@ -5985,35 +5976,11 @@ const FloorPlanFacades = {
         if (!base || !["longitudinal", "transverse"].includes(roof.orientation)) {
           return null;
         }
-        const longitudinal = roof.orientation === "longitudinal";
-        const [eave0, eave1] = FloorPlanRoofs.eavePair(roof);
-        const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
-        const pitch = Number(roof.pitch);
-        const baseSpan = longitudinal ? base.w() : base.l();
-        const baseZ1 = FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor);
-        const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
-        const z0 =
-          roof.z0 !== undefined
-            ? plan.resolve(roof.z0)
-            : baseZ1;
+        const baseZ1 = FloorPlanRoofGeometry.baseCeilingZ(plan, base, 0, floor);
         return {
-          longitudinal,
-          x0: base.x0() - (longitudinal ? eave0 : rake0),
-          x1: base.x1() + (longitudinal ? eave1 : rake1),
-          y0: base.y0() - (longitudinal ? rake0 : eave0),
-          y1: base.y1() + (longitudinal ? rake1 : eave1),
-          baseX0: base.x0(),
-          baseX1: base.x1(),
-          baseY0: base.y0(),
-          baseY1: base.y1(),
-          eave0,
-          eave1,
-          pitch,
-          z0,
+          ...FloorPlanRoofGeometry.gableGeometry(plan, roof, { base, floor,
+            z0: roof.z0 !== undefined ? plan.resolve(roof.z0) : baseZ1 }),
           baseZ1,
-          rise,
-          baseSpan,
-          pitchTangent: Math.tan((pitch * Math.PI) / 180),
         };
       };
       const roofs = plan.allRoofs ?? [];
@@ -7394,12 +7361,12 @@ const FloorPlan3DElements = {
 
 const FloorPlan3DRoofs = {
   render({ plan, THREE, scene, roofMaterial, roofEdgeMaterial, roofLineMaterial }) {
-    FloorPlanRoofs.intersectingSurfaces(plan).forEach(({ roof, polygons }) => {
+    FloorPlanRoofGeometry.intersectingSurfaces(plan).forEach(({ roof, polygons }) => {
       if (!polygons.length) return;
       const value = roof.thickness ?? 0.12;
       const resolved = Number(plan.resolve(value));
       const thickness = Number.isFinite(resolved) && resolved >= 0 ? resolved : 0.12;
-      const { faces, edges } = FloorPlanRoofs.solidSurface(polygons, thickness);
+      const { faces, edges } = FloorPlanRoofGeometry.solidSurface(polygons, thickness);
       const vertices = [];
       const geometry = new THREE.BufferGeometry();
       faces.forEach((polygon, faceIndex) => {
@@ -7823,44 +7790,15 @@ const FloorPlanFacades3D = {
       }
       if (roof.type !== "gable") return;
       try {
-        const baseDefinition = roof.base ?? roof;
-        const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
-        const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
-        const longitudinal = roof.orientation === "longitudinal";
-        const [overhang0, overhang1] = FloorPlanRoofs.overhangPair(
-          longitudinal ? FloorPlanRoofs.eavePair(roof) : roof.rake,
-        );
-        const baseX0 = Number(base.x0());
-        const baseX1 = Number(base.x1());
-        const baseY0 = Number(base.y0());
-        const baseY1 = Number(base.y1());
-        const baseSpan = longitudinal
-          ? baseX1 - baseX0
-          : baseY1 - baseY0;
-        const pitch = Number(roof.pitch);
-        const z0 = roof.z0 === undefined
-          ? FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor)
-          : plan.resolve(roof.z0);
-        const pitchTangent = Math.tan((pitch * Math.PI) / 180);
-        const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
-        const x0 = baseX0 - overhang0;
-        const x1 = baseX1 + overhang1;
-        const [depthOverhang0, depthOverhang1] = FloorPlanRoofs.overhangPair(
-          longitudinal ? roof.rake : FloorPlanRoofs.eavePair(roof),
-        );
-        const y0 = baseY0 - depthOverhang0;
-        const y1 = baseY1 + depthOverhang1;
-        const [slopeOverhang0, slopeOverhang1] = FloorPlanRoofs.eavePair(roof);
+        const { x0, x1, y0, y1, z0, rise, pitchTangent, minZ, peakZ } =
+          FloorPlanRoofGeometry.gableGeometry(plan, roof);
         if (finite(x0, x1, y0, y1, z0, rise, pitchTangent)) {
           drawingBounds.x0 = Math.min(drawingBounds.x0, x0);
           drawingBounds.x1 = Math.max(drawingBounds.x1, x1);
           drawingBounds.y0 = Math.min(drawingBounds.y0, y0);
           drawingBounds.y1 = Math.max(drawingBounds.y1, y1);
-          drawingBounds.z0 = Math.min(
-            drawingBounds.z0,
-            z0 - Math.max(slopeOverhang0, slopeOverhang1) * pitchTangent,
-          );
-          drawingBounds.z1 = Math.max(drawingBounds.z1, z0 + rise);
+          drawingBounds.z0 = Math.min(drawingBounds.z0, minZ);
+          drawingBounds.z1 = Math.max(drawingBounds.z1, peakZ);
         }
       } catch {
         // Invalid roof geometry is reported by the regular roof validator.
@@ -8094,7 +8032,61 @@ const FloorPlanFacades3D = {
 window.FloorPlanFacades3D = FloorPlanFacades3D;
 
 
-const FloorPlanRoofs = {
+// Shared roof construction and intersections; no DOM or rendering dependencies.
+const FloorPlanRoofGeometry = {
+  // Construct the nominal gable once. Consumers retain their existing
+  // validation policy and choose full eaves or the wall-contact footprint.
+  gableGeometry(plan, roof, { includeEaves = true, base, floor, z0 } = {}) {
+    if (!base) {
+      floor ??= this.floorForRoof(plan, roof, roof.base ?? roof);
+      base = this.resolveBase(plan, roof.base ?? roof, floor);
+    }
+    const longitudinal = roof.orientation === "longitudinal";
+    const pitch = Number(roof.pitch);
+    const eave = this.eavePair(roof), rake = this.overhangPair(roof.rake);
+    const [e0, e1] = includeEaves ? eave : [0, 0];
+    const [r0, r1] = rake;
+    const baseX0 = base.x0(), baseX1 = base.x1();
+    const baseY0 = base.y0(), baseY1 = base.y1();
+    const x0 = baseX0 - (longitudinal ? e0 : r0), x1 = baseX1 + (longitudinal ? e1 : r1);
+    const y0 = baseY0 - (longitudinal ? r0 : e0), y1 = baseY1 + (longitudinal ? r1 : e1);
+    const start = longitudinal ? baseX0 : baseY0, end = longitudinal ? baseX1 : baseY1;
+    z0 ??= roof.z0 === undefined ? this.baseCeilingZ(plan, base, 0, floor) : plan.resolve(roof.z0);
+    const tangent = Math.tan(pitch * Math.PI / 180);
+    const ridge = (start + end) / 2;
+    const baseSpan = end - start;
+    const rise = baseSpan * tangent / 2;
+    const slopes = longitudinal
+      ? [[-tangent, 0, 1, start * tangent - z0], [tangent, 0, 1, -end * tangent - z0]]
+      : [[0, -tangent, 1, start * tangent - z0], [0, tangent, 1, -end * tangent - z0]];
+    const at = (x, y) => [x, y, z0 + rise - Math.abs((longitudinal ? x : y) - ridge) * tangent];
+    const polygons = longitudinal ? [
+      [at(x0, y0), at(ridge, y0), at(ridge, y1), at(x0, y1)],
+      [at(ridge, y0), at(x1, y0), at(x1, y1), at(ridge, y1)],
+    ] : [
+      [at(x0, y0), at(x1, y0), at(x1, ridge), at(x0, ridge)],
+      [at(x0, ridge), at(x1, ridge), at(x1, y1), at(x0, y1)],
+    ];
+    return {
+      base, longitudinal, pitch, eave, rake, eave0: eave[0], eave1: eave[1],
+      baseX0, baseX1, baseY0, baseY1, baseSpan, z0, rise, pitchTangent: tangent,
+      x0, x1, y0, y1, roofWidth: x1 - x0, roofLength: y1 - y0,
+      ridgeLength: longitudinal ? y1 - y0 : x1 - x0,
+      ridgeX0: longitudinal ? ridge : x0, ridgeX1: longitudinal ? ridge : x1,
+      ridgeY0: longitudinal ? y0 : ridge, ridgeY1: longitudinal ? y1 : ridge,
+      minZ: z0 - Math.max(e0, e1) * tangent, peakZ: z0 + rise,
+      bounds: [[-1, 0, 0, x0], [1, 0, 0, -x1], [0, -1, 0, y0], [0, 1, 0, -y1]],
+      // Rake extensions are drawn but do not remove roofs beneath them.
+      intersectionBounds: [
+        [-1, 0, 0, longitudinal ? x0 : baseX0],
+        [1, 0, 0, -(longitudinal ? x1 : baseX1)],
+        [0, -1, 0, longitudinal ? baseY0 : y0],
+        [0, 1, 0, -(longitudinal ? baseY1 : y1)],
+      ],
+      slopes, polygons,
+    };
+  },
+
   eavePair(roof) {
     const legacy = this.overhangPair(roof.eave);
     return [Number(roof.eaves?.left ?? legacy[0]), Number(roof.eaves?.right ?? legacy[1])];
@@ -8108,8 +8100,6 @@ const FloorPlanRoofs = {
     return pitch;
   },
 
-  // Split at the support lines before changing the overhang slope. Each
-  // resulting patch has its own clipping volume, including at roof crossings.
   eavePatches(plan, definition) {
     const { roof } = definition;
     if (roof.eaves?.pitch === undefined) return [definition];
@@ -8160,14 +8150,6 @@ const FloorPlanRoofs = {
       + (eaves[0] + eaves[1]) / Math.cos(this.eavePitch(roof) * Math.PI / 180));
   },
 
-  axisLabel(plan, roof, length) {
-    if (roof.type !== "shed") return `${plan.roofOrientationLabel(roof.orientation)} · ${plan.formatMeters(length)} m`;
-    const slope = roof.slope ?? (roof.orientation === "longitudinal" ? "right" : "bottom");
-    const direction = { top: "frente", bottom: "fundos", left: "esquerda", right: "direita" }[slope];
-    return `Caimento: ${direction} · borda alta: ${plan.formatMeters(length)} m`;
-  },
-
-  // z0 é a cota da borda baixa na base, antes do avanço dos beirais.
   shedGeometry(plan, roof, includeEaves = true) {
     if (!["longitudinal", "transverse"].includes(roof.orientation)) {
       throw new Error('Telhado shed precisa de orientação "longitudinal" ou "transverse"');
@@ -8239,40 +8221,11 @@ const FloorPlanRoofs = {
       }
       if (roof.type !== "gable" || !["longitudinal", "transverse"].includes(roof.orientation)) return [];
       try {
-        const floor = this.floorForRoof(plan, roof, roof.base ?? roof);
-        const base = this.resolveBase(plan, roof.base ?? roof, floor);
-        const longitudinal = roof.orientation === "longitudinal";
-        const [e0, e1] = this.eavePair(roof);
-        const [r0, r1] = this.overhangPair(roof.rake);
-        const x0 = base.x0() - (longitudinal ? e0 : r0), x1 = base.x1() + (longitudinal ? e1 : r1);
-        const y0 = base.y0() - (longitudinal ? r0 : e0), y1 = base.y1() + (longitudinal ? r1 : e1);
-        const start = longitudinal ? base.x0() : base.y0();
-        const end = longitudinal ? base.x1() : base.y1();
-        const tangent = Math.tan(Number(roof.pitch) * Math.PI / 180);
-        const z = roof.z0 === undefined ? this.baseCeilingZ(plan, base, 0, floor) : plan.resolve(roof.z0);
-        if (![x0, x1, y0, y1, tangent, z].every(Number.isFinite) || tangent < 0 || x1 <= x0 || y1 <= y0) return [];
-        const ridge = (start + end) / 2;
-        const rise = (end - start) * tangent / 2;
-        const slopes = longitudinal
-          ? [[-tangent, 0, 1, start * tangent - z], [tangent, 0, 1, -end * tangent - z]]
-          : [[0, -tangent, 1, start * tangent - z], [0, tangent, 1, -end * tangent - z]];
-        const at = (x, y) => [x, y, z + rise - Math.abs((longitudinal ? x : y) - ridge) * tangent];
-        const polygons = longitudinal ? [
-          [at(x0, y0), at(ridge, y0), at(ridge, y1), at(x0, y1)],
-          [at(ridge, y0), at(x1, y0), at(x1, y1), at(ridge, y1)],
-        ] : [
-          [at(x0, y0), at(x1, y0), at(x1, ridge), at(x0, ridge)],
-          [at(x0, ridge), at(x1, ridge), at(x1, y1), at(x0, y1)],
-        ];
-        // Rake extensions are drawn, but do not remove roofs beneath them.
-        // Eave bounds and the roof's slopes still participate in clipping.
-        const bounds = [
-          [-1, 0, 0, longitudinal ? x0 : base.x0()],
-          [1, 0, 0, -(longitudinal ? x1 : base.x1())],
-          [0, -1, 0, longitudinal ? base.y0() : y0],
-          [0, 1, 0, -(longitudinal ? base.y1() : y1)],
-        ];
-        return [{ roof, polygons, planes: [...bounds, ...slopes] }];
+        const geometry = this.gableGeometry(plan, roof);
+        const { x0, x1, y0, y1, pitchTangent, z0, polygons, intersectionBounds, slopes } = geometry;
+        if (![x0, x1, y0, y1, pitchTangent, z0].every(Number.isFinite)
+          || pitchTangent < 0 || x1 <= x0 || y1 <= y0) return [];
+        return [{ roof, polygons, planes: [...intersectionBounds, ...slopes] }];
       } catch {
         return [];
       }
@@ -8310,7 +8263,6 @@ const FloorPlanRoofs = {
     return definitions.map(({ roof }) => ({ roof, polygons: clipped.filter(entry => entry.roof === roof).flatMap(entry => entry.polygons) }));
   },
 
-  // Thickness is vertical: the existing surface remains the wall contact plane.
   solidSurface(polygons, thickness) {
     const top = (point) => [point[0], point[1], point[2] + thickness];
     const faces = polygons.map((polygon) => polygon.map(top));
@@ -8456,7 +8408,7 @@ const FloorPlanRoofs = {
     const candidates = zoneDefinitions
       .map((definition) => {
         try {
-          return FloorPlanRoofs.asGeometryBox(
+          return this.asGeometryBox(
             plan.normalizeGeometryAtFloor(definition, owningFloor),
           );
         } catch {
@@ -8493,7 +8445,7 @@ const FloorPlanRoofs = {
     if (typeof baseDefinition === "string") {
       const base = plan.references.get(baseDefinition);
       if (!base) throw new Error(`Unknown roof base reference: ${baseDefinition}`);
-      return FloorPlanRoofs.asGeometryBox(base);
+      return this.asGeometryBox(base);
     }
     if (!baseDefinition || typeof baseDefinition !== "object") {
       throw new Error("A roof base must be an object or a reference ID");
@@ -8501,12 +8453,84 @@ const FloorPlanRoofs = {
     const base = floorConfig
       ? plan.normalizeGeometryAtFloor(baseDefinition, floorConfig)
       : plan.normalizeGeometry(baseDefinition);
-    return FloorPlanRoofs.asGeometryBox(base);
+    return this.asGeometryBox(base);
   },
 
   overhangPair(value) {
     const values = Array.isArray(value) ? value : [value ?? 0, value ?? 0];
     return [Number(values[0] ?? 0), Number(values[1] ?? 0)];
+  },
+};
+
+window.FloorPlanRoofGeometry = FloorPlanRoofGeometry;
+
+
+const FloorPlanRoofs = {
+  eavePair(roof) {
+    return FloorPlanRoofGeometry.eavePair(roof);
+  },
+
+  eavePitch(roof) {
+    return FloorPlanRoofGeometry.eavePitch(roof);
+  },
+
+  // Split at the support lines before changing the overhang slope. Each
+  // resulting patch has its own clipping volume, including at roof crossings.
+  eavePatches(plan, definition) {
+    return FloorPlanRoofGeometry.eavePatches(plan, definition);
+  },
+
+  surfaceArea(roof, baseSpan, ridgeLength) {
+    return FloorPlanRoofGeometry.surfaceArea(roof, baseSpan, ridgeLength);
+  },
+
+  axisLabel(plan, roof, length) {
+    if (roof.type !== "shed") return `${plan.roofOrientationLabel(roof.orientation)} · ${plan.formatMeters(length)} m`;
+    const slope = roof.slope ?? (roof.orientation === "longitudinal" ? "right" : "bottom");
+    const direction = { top: "frente", bottom: "fundos", left: "esquerda", right: "direita" }[slope];
+    return `Caimento: ${direction} · borda alta: ${plan.formatMeters(length)} m`;
+  },
+
+  // z0 é a cota da borda baixa na base, antes do avanço dos beirais.
+  shedGeometry(plan, roof, includeEaves = true) {
+    return FloorPlanRoofGeometry.shedGeometry(plan, roof, includeEaves);
+  },
+
+  clipPolygon(points, plane) {
+    return FloorPlanRoofGeometry.clipPolygon(points, plane);
+  },
+
+  intersectingSurfaces(plan, roofs = plan.allRoofs ?? []) {
+    return FloorPlanRoofGeometry.intersectingSurfaces(plan, roofs);
+  },
+
+  // Thickness is vertical: the existing surface remains the wall contact plane.
+  solidSurface(polygons, thickness) {
+    return FloorPlanRoofGeometry.solidSurface(polygons, thickness);
+  },
+
+  surfaceEdges(polygons, boundaryOnly = false) {
+    return FloorPlanRoofGeometry.surfaceEdges(polygons, boundaryOnly);
+  },
+
+  asGeometryBox(base, label = "roof base") {
+    return FloorPlanRoofGeometry.asGeometryBox(base, label);
+  },
+
+  floorForRoof(plan, roof, baseDefinition) {
+    return FloorPlanRoofGeometry.floorForRoof(plan, roof, baseDefinition);
+  },
+
+  baseCeilingZ(plan, base, fallback = 0, floorConfig) {
+    return FloorPlanRoofGeometry.baseCeilingZ(plan, base, fallback, floorConfig);
+  },
+
+  resolveBase(plan, baseDefinition, floorConfig) {
+    return FloorPlanRoofGeometry.resolveBase(plan, baseDefinition, floorConfig);
+  },
+
+  overhangPair(value) {
+    return FloorPlanRoofGeometry.overhangPair(value);
   },
 
   formatOverhang(plan, value) {
@@ -8557,29 +8581,15 @@ const FloorPlanRoofs = {
         ) {
           throw new Error("A roof eave and rake must be non-negative numbers");
         }
-        const longitudinal = roof.orientation === "longitudinal";
-        const x0 = base.x0() - (longitudinal ? eave0 : rake0);
-        const x1 = base.x1() + (longitudinal ? eave1 : rake1);
-        const y0 = base.y0() - (longitudinal ? rake0 : eave0);
-        const y1 = base.y1() + (longitudinal ? rake1 : eave1);
         const z0 = shed ? shed.z0 :
           roof.z0 !== undefined
             ? plan.resolve(roof.z0)
             : FloorPlanRoofs.baseCeilingZ(plan, base);
         if (!Number.isFinite(z0))
           throw new Error("A cota z0 do telhado precisa ser numérica");
-        const radians = (pitch * Math.PI) / 180;
-        const baseSpan = longitudinal ? base.w() : base.l();
-        const baseX0 = base.x0();
-        const baseX1 = base.x1();
-        const baseY0 = base.y0();
-        const baseY1 = base.y1();
-        const ridgeX = shed ? shed.ridgeX0 : longitudinal ? (baseX0 + baseX1) / 2 : x0;
-        const ridgeY = shed ? shed.ridgeY0 : longitudinal ? y0 : (baseY0 + baseY1) / 2;
-        const ridgeEndX = shed ? shed.ridgeX1 : longitudinal ? ridgeX : x1;
-        const ridgeEndY = shed ? shed.ridgeY1 : longitudinal ? y1 : ridgeY;
-        const ridgeLength = Math.hypot(ridgeEndX - ridgeX, ridgeEndY - ridgeY);
-        const rise = shed ? shed.rise : (baseSpan / 2) * Math.tan(radians);
+        const geometry = shed ?? FloorPlanRoofGeometry.gableGeometry(plan, roof, { base, z0 });
+        const { longitudinal, x0, x1, y0, y1, rise, ridgeLength } = geometry;
+        const { ridgeX0: ridgeX, ridgeY0: ridgeY, ridgeX1: ridgeEndX, ridgeY1: ridgeEndY } = geometry;
         roof.bounds = () =>
           FloorPlanGeometryBox.fromValues({
             x: x0,
@@ -8761,19 +8771,19 @@ const FloorPlanHeadroom = {
     // grows above this reference surface, as in solidSurface(). Retained lower
     // roofs (clip_intersections: false / rake extensions) also limit clearance.
     const overhead = surfaces.flatMap(entry => entry.polygons)
-      .map(polygon => FloorPlanRoofs.clipPolygon(polygon, [0, 0, -1, floorZ + 1e-8]))
+      .map(polygon => FloorPlanRoofGeometry.clipPolygon(polygon, [0, 0, -1, floorZ + 1e-8]))
       .filter(polygon => this.area(polygon) > 1e-10);
     const footprints = this.union(parts.map(part => this.rectangle(part)));
     return thresholds.map(height => {
-      const high = overhead.map(polygon => FloorPlanRoofs.clipPolygon(polygon, [0, 0, -1, floorZ + height]));
-      const low = overhead.map(polygon => FloorPlanRoofs.clipPolygon(polygon, [0, 0, 1, -floorZ - height]))
+      const high = overhead.map(polygon => FloorPlanRoofGeometry.clipPolygon(polygon, [0, 0, -1, floorZ + height]));
+      const low = overhead.map(polygon => FloorPlanRoofGeometry.clipPolygon(polygon, [0, 0, 1, -floorZ - height]))
         .filter(polygon => polygon.some(point => point[2] < floorZ + height - 1e-8));
       const candidates = high.flatMap(polygon => footprints.flatMap(footprint => {
         let pieces = [polygon];
         for (let i = 0; i < footprint.length; i += 1) {
           const p = footprint[i], q = footprint[(i + 1) % footprint.length];
           const a = q[1] - p[1], b = p[0] - q[0];
-          pieces = pieces.map(piece => FloorPlanRoofs.clipPolygon(piece, [a, b, 0, -a*p[0]-b*p[1]]));
+          pieces = pieces.map(piece => FloorPlanRoofGeometry.clipPolygon(piece, [a, b, 0, -a*p[0]-b*p[1]]));
         }
         return pieces.filter(piece => this.area(piece) > 1e-10);
       }));
@@ -8785,7 +8795,7 @@ const FloorPlanHeadroom = {
   },
 
   render(plan) {
-    const surfaces = FloorPlanRoofs.intersectingSurfaces(plan);
+    const surfaces = FloorPlanRoofGeometry.intersectingSurfaces(plan);
     const enabled = room => this.enabled(plan, room.dataset.id);
     const legend = document.querySelector("#comfort-legend");
     if (legend) legend.hidden = !plan.roomElements.some(enabled);
@@ -9280,32 +9290,16 @@ const FloorPlanWalls = {
     return roofs.flatMap((roof) => {
       if (roof.type === "shed") {
         try {
-          const { peakZ, bounds, slopes } = FloorPlanRoofs.shedGeometry(plan, roof, false);
+          const { peakZ, bounds, slopes } = FloorPlanRoofGeometry.shedGeometry(plan, roof, false);
           return [{ peakZ, bounds, slopes }];
         } catch { return []; }
       }
       if (roof.type !== "gable" || !["longitudinal", "transverse"].includes(roof.orientation)) return [];
       try {
-        const floor = FloorPlanRoofs.floorForRoof(plan, roof, roof.base ?? roof);
-        const base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof, floor);
-        const longitudinal = roof.orientation === "longitudinal";
-        const [r0, r1] = FloorPlanRoofs.overhangPair(roof.rake);
-        const x0 = base.x0() - (longitudinal ? 0 : r0);
-        const x1 = base.x1() + (longitudinal ? 0 : r1);
-        const y0 = base.y0() - (longitudinal ? r0 : 0);
-        const y1 = base.y1() + (longitudinal ? r1 : 0);
-        const start = longitudinal ? base.x0() : base.y0();
-        const end = longitudinal ? base.x1() : base.y1();
-        const tangent = Math.tan(Number(roof.pitch) * Math.PI / 180);
-        const z = roof.z0 === undefined ? FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor) : plan.resolve(roof.z0);
-        if (![x0, x1, y0, y1, tangent, z].every(Number.isFinite) || tangent < 0) return [];
-        return [{
-          peakZ: z + (end - start) * tangent / 2,
-          bounds: [[-1, 0, 0, x0], [1, 0, 0, -x1], [0, -1, 0, y0], [0, 1, 0, -y1]],
-          slopes: longitudinal
-            ? [[-tangent, 0, 1, tangent * start - z], [tangent, 0, 1, -tangent * end - z]]
-            : [[0, -tangent, 1, tangent * start - z], [0, tangent, 1, -tangent * end - z]],
-        }];
+        const { peakZ, bounds, slopes, x0, x1, y0, y1, pitchTangent, z0 } =
+          FloorPlanRoofGeometry.gableGeometry(plan, roof, { includeEaves: false });
+        if (![x0, x1, y0, y1, pitchTangent, z0].every(Number.isFinite) || pitchTangent < 0) return [];
+        return [{ peakZ, bounds, slopes }];
       } catch {
         return [];
       }
@@ -10549,8 +10543,8 @@ const FloorPlanReferences = {
         if (plan.references.has(roof.id)) return;
         try {
           const baseDefinition = roof.base ?? roof;
-          const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
-          const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
+          const floor = FloorPlanRoofGeometry.floorForRoof(plan, roof, baseDefinition);
+          const base = FloorPlanRoofGeometry.resolveBase(plan, baseDefinition, floor);
           plan.references.set(roof.id, base);
         } catch (error) {
           unresolved.push(roof);
@@ -10755,7 +10749,7 @@ const FloorPlanReferences = {
     const globalRoofs = config.floors ? (config.roofs ?? []) : [];
     globalRoofs.forEach((roof) => {
       const baseDefinition = roof.base ?? roof;
-      const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
+      const floor = FloorPlanRoofGeometry.floorForRoof(plan, roof, baseDefinition);
       plan.allRoofs.push({
         ...roof,
         floorId: floor?.id ?? null,

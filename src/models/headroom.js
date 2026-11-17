@@ -30,19 +30,19 @@ const FloorPlanHeadroom = {
     // grows above this reference surface, as in solidSurface(). Retained lower
     // roofs (clip_intersections: false / rake extensions) also limit clearance.
     const overhead = surfaces.flatMap(entry => entry.polygons)
-      .map(polygon => FloorPlanRoofs.clipPolygon(polygon, [0, 0, -1, floorZ + 1e-8]))
+      .map(polygon => FloorPlanRoofGeometry.clipPolygon(polygon, [0, 0, -1, floorZ + 1e-8]))
       .filter(polygon => this.area(polygon) > 1e-10);
     const footprints = this.union(parts.map(part => this.rectangle(part)));
     return thresholds.map(height => {
-      const high = overhead.map(polygon => FloorPlanRoofs.clipPolygon(polygon, [0, 0, -1, floorZ + height]));
-      const low = overhead.map(polygon => FloorPlanRoofs.clipPolygon(polygon, [0, 0, 1, -floorZ - height]))
+      const high = overhead.map(polygon => FloorPlanRoofGeometry.clipPolygon(polygon, [0, 0, -1, floorZ + height]));
+      const low = overhead.map(polygon => FloorPlanRoofGeometry.clipPolygon(polygon, [0, 0, 1, -floorZ - height]))
         .filter(polygon => polygon.some(point => point[2] < floorZ + height - 1e-8));
       const candidates = high.flatMap(polygon => footprints.flatMap(footprint => {
         let pieces = [polygon];
         for (let i = 0; i < footprint.length; i += 1) {
           const p = footprint[i], q = footprint[(i + 1) % footprint.length];
           const a = q[1] - p[1], b = p[0] - q[0];
-          pieces = pieces.map(piece => FloorPlanRoofs.clipPolygon(piece, [a, b, 0, -a*p[0]-b*p[1]]));
+          pieces = pieces.map(piece => FloorPlanRoofGeometry.clipPolygon(piece, [a, b, 0, -a*p[0]-b*p[1]]));
         }
         return pieces.filter(piece => this.area(piece) > 1e-10);
       }));
@@ -54,7 +54,7 @@ const FloorPlanHeadroom = {
   },
 
   render(plan) {
-    const surfaces = FloorPlanRoofs.intersectingSurfaces(plan);
+    const surfaces = FloorPlanRoofGeometry.intersectingSurfaces(plan);
     const enabled = room => this.enabled(plan, room.dataset.id);
     const legend = document.querySelector("#comfort-legend");
     if (legend) legend.hidden = !plan.roomElements.some(enabled);

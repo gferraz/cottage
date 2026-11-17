@@ -353,8 +353,8 @@ const FloorPlanReferences = {
         if (plan.references.has(roof.id)) return;
         try {
           const baseDefinition = roof.base ?? roof;
-          const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
-          const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
+          const floor = FloorPlanRoofGeometry.floorForRoof(plan, roof, baseDefinition);
+          const base = FloorPlanRoofGeometry.resolveBase(plan, baseDefinition, floor);
           plan.references.set(roof.id, base);
         } catch (error) {
           unresolved.push(roof);
@@ -559,7 +559,7 @@ const FloorPlanReferences = {
     const globalRoofs = config.floors ? (config.roofs ?? []) : [];
     globalRoofs.forEach((roof) => {
       const baseDefinition = roof.base ?? roof;
-      const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
+      const floor = FloorPlanRoofGeometry.floorForRoof(plan, roof, baseDefinition);
       plan.allRoofs.push({
         ...roof,
         floorId: floor?.id ?? null,

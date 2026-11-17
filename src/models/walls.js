@@ -439,32 +439,16 @@ const FloorPlanWalls = {
     return roofs.flatMap((roof) => {
       if (roof.type === "shed") {
         try {
-          const { peakZ, bounds, slopes } = FloorPlanRoofs.shedGeometry(plan, roof, false);
+          const { peakZ, bounds, slopes } = FloorPlanRoofGeometry.shedGeometry(plan, roof, false);
           return [{ peakZ, bounds, slopes }];
         } catch { return []; }
       }
       if (roof.type !== "gable" || !["longitudinal", "transverse"].includes(roof.orientation)) return [];
       try {
-        const floor = FloorPlanRoofs.floorForRoof(plan, roof, roof.base ?? roof);
-        const base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof, floor);
-        const longitudinal = roof.orientation === "longitudinal";
-        const [r0, r1] = FloorPlanRoofs.overhangPair(roof.rake);
-        const x0 = base.x0() - (longitudinal ? 0 : r0);
-        const x1 = base.x1() + (longitudinal ? 0 : r1);
-        const y0 = base.y0() - (longitudinal ? r0 : 0);
-        const y1 = base.y1() + (longitudinal ? r1 : 0);
-        const start = longitudinal ? base.x0() : base.y0();
-        const end = longitudinal ? base.x1() : base.y1();
-        const tangent = Math.tan(Number(roof.pitch) * Math.PI / 180);
-        const z = roof.z0 === undefined ? FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor) : plan.resolve(roof.z0);
-        if (![x0, x1, y0, y1, tangent, z].every(Number.isFinite) || tangent < 0) return [];
-        return [{
-          peakZ: z + (end - start) * tangent / 2,
-          bounds: [[-1, 0, 0, x0], [1, 0, 0, -x1], [0, -1, 0, y0], [0, 1, 0, -y1]],
-          slopes: longitudinal
-            ? [[-tangent, 0, 1, tangent * start - z], [tangent, 0, 1, -tangent * end - z]]
-            : [[0, -tangent, 1, tangent * start - z], [0, tangent, 1, -tangent * end - z]],
-        }];
+        const { peakZ, bounds, slopes, x0, x1, y0, y1, pitchTangent, z0 } =
+          FloorPlanRoofGeometry.gableGeometry(plan, roof, { includeEaves: false });
+        if (![x0, x1, y0, y1, pitchTangent, z0].every(Number.isFinite) || pitchTangent < 0) return [];
+        return [{ peakZ, bounds, slopes }];
       } catch {
         return [];
       }

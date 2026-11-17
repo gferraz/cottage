@@ -82,3 +82,23 @@ O módulo não acessa DOM, estado da planta ou renderizadores. Mantém a conven�
 Validação: 227 testes aprovados, incluindo quatro novos testes diretos de união sem dupla contagem, recorte com interpolação de Z, independência do sentido do cortador e fechamento/volume de sólido recortado. Build executado e módulo embutido verificado em `dist/floor-plan.html`. Planta ativa carregada na versão modular e no distribuível, com zero erros do projeto; conferidos pavimento superior e todos os pisos com telhados. Console sem erros JavaScript; observado aviso de compatibilidade do Three.js sobre `PCFSoftShadowMap`, fora do escopo desta extração. Inspeção visual no navegador integrado, viewport aproximado de 663 × 886 pixels, sem comparação automatizada de imagens.
 
 Próxima entrega: consolidar a construção geométrica das coberturas para seus diferentes consumidores, sem modificar suas convenções físicas.
+
+### Construção geométrica das coberturas consolidada
+
+`src/models/roof-geometry.js` passa a conter resolução de bases/pavimentos, construção de coberturas de uma e duas águas, interseções, ajustes de inclinação dos beirais, sólido com espessura e arestas. O módulo não depende de DOM, Three.js ou `FloorPlanRoofs`. As funções públicas existentes em `src/views/roofs.js` permanecem como delegadoras.
+
+`gableGeometry()` centraliza projeção nominal, cumeeira, elevações e planos das águas. Paredes, superfícies intersectadas, planta, fachadas, limites da cena 3D e métricas de exportação reutilizam essa construção. A validação de entrada continua nos consumidores existentes; o construtor não substitui a validação do projeto.
+
+Regras preservadas explicitamente:
+
+- `includeEaves: false` remove o avanço lateral das águas para contato das paredes, mantendo extensões de empena.
+- `intersectionBounds` limita o recorte de outras coberturas ao corpo sem extensões de empena; os polígonos desenhados continuam incluindo essas extensões.
+- Planos e limites nominais precedem a aplicação de `eaves.pitch`. Para consultar a superfície efetiva, usar os polígonos produzidos por `intersectingSurfaces()`, não os limites nominais do construtor.
+- A exportação conserva sua cota herdada do topo declarado da base e a fórmula histórica de área quando `eaves.pitch` está ausente. A inferência de teto dos renderizadores não foi imposta à exportação. Eventuais correções dessas políticas serão mudanças funcionais separadas.
+- Espessura vertical e face inferior de contato permanecem inalteradas.
+
+Validação: 232 testes aprovados, incluindo cinco novos testes em `test/roof-geometry.test.js`, sem carregar o renderer de telhados. Os testes cobrem orientações, planos de contato, beirais assimétricos, segmentos da cumeeira, cotas herdadas e independência do DOM. Comparação antes/depois dos projetos principal e da garagem transversal confirmou preservação de superfícies intersectadas, limites de paredes e métricas de exportação com tolerância de 1e-9. As capturas numéricas usadas nessa comparação são temporárias, não fixtures versionadas.
+
+Build executado e conteúdo do módulo confirmado no distribuível. Inspeção visual da versão modular e portátil no navegador integrado em viewport de 1280 × 720 pixels: carregamento com zero erros do projeto, seleção do pavimento superior e de todos os pisos, telhados, altura livre, perspectiva e elevações. Nenhum erro JavaScript registrado no console durante essas verificações.
+
+Próxima entrega: centralizar as partes e os limites dos objetos normalizados, preservando suas cotas e reduzindo reconstruções nos renderizadores.

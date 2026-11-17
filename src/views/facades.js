@@ -293,35 +293,11 @@ const FloorPlanFacades = {
         if (!base || !["longitudinal", "transverse"].includes(roof.orientation)) {
           return null;
         }
-        const longitudinal = roof.orientation === "longitudinal";
-        const [eave0, eave1] = FloorPlanRoofs.eavePair(roof);
-        const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
-        const pitch = Number(roof.pitch);
-        const baseSpan = longitudinal ? base.w() : base.l();
-        const baseZ1 = FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor);
-        const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
-        const z0 =
-          roof.z0 !== undefined
-            ? plan.resolve(roof.z0)
-            : baseZ1;
+        const baseZ1 = FloorPlanRoofGeometry.baseCeilingZ(plan, base, 0, floor);
         return {
-          longitudinal,
-          x0: base.x0() - (longitudinal ? eave0 : rake0),
-          x1: base.x1() + (longitudinal ? eave1 : rake1),
-          y0: base.y0() - (longitudinal ? rake0 : eave0),
-          y1: base.y1() + (longitudinal ? rake1 : eave1),
-          baseX0: base.x0(),
-          baseX1: base.x1(),
-          baseY0: base.y0(),
-          baseY1: base.y1(),
-          eave0,
-          eave1,
-          pitch,
-          z0,
+          ...FloorPlanRoofGeometry.gableGeometry(plan, roof, { base, floor,
+            z0: roof.z0 !== undefined ? plan.resolve(roof.z0) : baseZ1 }),
           baseZ1,
-          rise,
-          baseSpan,
-          pitchTangent: Math.tan((pitch * Math.PI) / 180),
         };
       };
       const roofs = plan.allRoofs ?? [];

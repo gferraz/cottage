@@ -227,44 +227,15 @@ const FloorPlanFacades3D = {
       }
       if (roof.type !== "gable") return;
       try {
-        const baseDefinition = roof.base ?? roof;
-        const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
-        const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
-        const longitudinal = roof.orientation === "longitudinal";
-        const [overhang0, overhang1] = FloorPlanRoofs.overhangPair(
-          longitudinal ? FloorPlanRoofs.eavePair(roof) : roof.rake,
-        );
-        const baseX0 = Number(base.x0());
-        const baseX1 = Number(base.x1());
-        const baseY0 = Number(base.y0());
-        const baseY1 = Number(base.y1());
-        const baseSpan = longitudinal
-          ? baseX1 - baseX0
-          : baseY1 - baseY0;
-        const pitch = Number(roof.pitch);
-        const z0 = roof.z0 === undefined
-          ? FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor)
-          : plan.resolve(roof.z0);
-        const pitchTangent = Math.tan((pitch * Math.PI) / 180);
-        const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
-        const x0 = baseX0 - overhang0;
-        const x1 = baseX1 + overhang1;
-        const [depthOverhang0, depthOverhang1] = FloorPlanRoofs.overhangPair(
-          longitudinal ? roof.rake : FloorPlanRoofs.eavePair(roof),
-        );
-        const y0 = baseY0 - depthOverhang0;
-        const y1 = baseY1 + depthOverhang1;
-        const [slopeOverhang0, slopeOverhang1] = FloorPlanRoofs.eavePair(roof);
+        const { x0, x1, y0, y1, z0, rise, pitchTangent, minZ, peakZ } =
+          FloorPlanRoofGeometry.gableGeometry(plan, roof);
         if (finite(x0, x1, y0, y1, z0, rise, pitchTangent)) {
           drawingBounds.x0 = Math.min(drawingBounds.x0, x0);
           drawingBounds.x1 = Math.max(drawingBounds.x1, x1);
           drawingBounds.y0 = Math.min(drawingBounds.y0, y0);
           drawingBounds.y1 = Math.max(drawingBounds.y1, y1);
-          drawingBounds.z0 = Math.min(
-            drawingBounds.z0,
-            z0 - Math.max(slopeOverhang0, slopeOverhang1) * pitchTangent,
-          );
-          drawingBounds.z1 = Math.max(drawingBounds.z1, z0 + rise);
+          drawingBounds.z0 = Math.min(drawingBounds.z0, minZ);
+          drawingBounds.z1 = Math.max(drawingBounds.z1, peakZ);
         }
       } catch {
         // Invalid roof geometry is reported by the regular roof validator.
