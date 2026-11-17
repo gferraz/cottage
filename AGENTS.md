@@ -20,7 +20,7 @@ The tests cover only the pure, DOM-free geometry and validation logic; no jsdom 
 
 ## Atualização do distribuível
 
-Sempre que alterar código da aplicação (HTML, CSS ou JavaScript), execute `bin/build` ao concluir e inclua `dist/floor-plan.html` na entrega.
+Sempre que alterar código da aplicação (HTML, CSS ou JavaScript), execute `bin/build` ao concluir e inclua `dist/index.html` na entrega.
 
 Alterações somente nos arquivos JSON/JSON5 de definição da planta não exigem regenerar o `dist`.
 

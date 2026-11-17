@@ -1,7 +1,7 @@
 // Planta paramétrica em coordenadas cartesianas.
 // X cresce da esquerda para a direita; Y cresce da frente aos fundos (baixo para cima).
 // X = 0 na lateral direita do corpo principal; a geometria à esquerda usa X negativo.
-// walls e openings: left = x0; right = x1. top/bottom continuam frente/fundos.
+// walls e openings: left = x0; right = x1. front = frente; rear = fundos.
 // Beirais longitudinais: left/right = x0/x1; transversais: frente/fundos.
 // from/to preservam o sentido dos lances de escada; não precisam estar em ordem crescente.
 // Terreno cadastral e building permanecem no referencial de implantação.
@@ -32,7 +32,8 @@
     roof_base_offset: 1,
     bed_knee_wall_clearance: 0.3,
     corridor_half_width: 0.7,
-    knee_setback: 0.8
+    knee_setback: 1,
+    knee_height: 1.3
   },
   // Terreno cadastral
   terrain: {
@@ -102,7 +103,7 @@
           openings: [
             { from: "left", to: "vestibule" }
           ],
-          walls: ["top", "right"]
+          walls: ["front", "right"]
         },
         {
           id: "living",
@@ -110,9 +111,8 @@
           from: ["house-left.x1", "porch.y1"],
           to: ["house-left.x0", "y0 + 3.6"],
           windows: [
-            { from: "top", to: "exterior", w: 2.4 }
-          ],
-          walls: ["bottom"]
+            { from: "front", to: "exterior", w: 2.4 }
+          ]
         },
         {
           id: "front-corridor",
@@ -132,13 +132,13 @@
         {
           id: "garage",
           label: "Garagem",
-          top: "garage-roof",
+          top: "rear-transverse-roof",
           pos: ["laundry.x0 - 4", "stairs.y0"],
           size: [4, 6.5],
           walls: ["front", "right", "rear", "left"],
           doors: [
-            { from: "top", to: "exterior", w: 3.2 },
-            { from: "bottom", to: "exterior", w: 3.2 }
+            { from: "front", to: "exterior", w: 3.2 },
+            { from: "rear", to: "exterior", w: 3.2 }
           ],
           classes: "service garage"
         },
@@ -161,7 +161,7 @@
           from: ["office.x1", "master-bath.y1"],
           to: ["house-left.x1", "y0 + 3.9"],
           doors: [
-            { from: "bottom", to: "terrace" }
+            { from: "rear", to: "terrace" }
           ],
           windows: [
             { from: "right", to: "exterior", w: 2.4 }
@@ -174,7 +174,7 @@
           label: "Lavanderia",
           top: "stairs",
           rectangle: ["house-left.x0", "lower-flight.y0 + 0.4", "lower-flight.x1 - 2.5", "y0 + 2"],
-          walls: ["top"],
+          walls: ["front"],
           classes: "service laundry wet"
         },
         { id: "dining", label: "Jantar", from: ["master.x0", "living.y1"], to: ["house-left.x0", "y0 + 3.6"] },
@@ -182,7 +182,7 @@
           id: "master",
           label: "Suíte Master",
           rectangle: ["house-right.x0 + 0.4", "office-main.y1", "house-right.x1", "y0 + 3.6"],
-          walls: ["top", "right", "left"],
+          walls: ["front", "right", "left"],
           windows: [
             { from: "right", to: "exterior", dy: 0.6 },
             { from: "right", to: "exterior", dy: 2.1 }
@@ -193,9 +193,9 @@
           label: "Banheiro Master",
           from: ["house-right.x1", "closet.y1"],
           to: ["master.x0", "y0 + 1.7"],
-          walls: ["top", "right", "bottom", "left"],
+          walls: ["front", "right", "rear", "left"],
           doors: [
-            { from: "top", to: "vestibule" }
+            { from: "front", to: "vestibule" }
           ],
           windows: [
             { from: "right", to: "exterior" }
@@ -217,7 +217,7 @@
           classes: "office",
           color: "rgba(255, 255, 255, 0.95)",
           windows: [
-            { from: "top", w: 1.2, dx: "office.w - (office-main.w - 1.2) / 2 - 1.2" },
+            { from: "front", w: 1.2, dx: "office.w - (office-main.w - 1.2) / 2 - 1.2" },
             { from: "right" }
           ],
           parts: [
@@ -225,7 +225,7 @@
               id: "office-main",
               from: ["house-right.x1", "house-right.y0 - 2.5"],
               to: ["house-right.x0 + 1.1", "house-right.y0 + 1.3"],
-              walls: ["bottom"]
+              walls: ["rear"]
             },
             {
               id: "office-extension",
@@ -239,9 +239,9 @@
           id: "pantry",
           label: "Despensa",
           rectangle: ["circulation.x0", "circulation.y1", "house-left.x1", "y0 + 1.8"],
-          walls: ["top", "right", "left"],
+          walls: ["front", "right", "left"],
           openings: [
-            { from: "top", to: "circulation" }
+            { from: "front", to: "circulation" }
           ],
           classes: "service pantry"
         },
@@ -259,7 +259,7 @@
           top: "stairs",
           from: ["house-left.x1", "stairs.y0"],
           to: ["x0 - 2.4", "upper-landing.y1"],
-          walls: ["top", "right", "bottom", "left"],
+          walls: ["front", "right", "rear", "left"],
           doors: [
             { from: "right", to: "rear-corridor", dy: 0.1 }
           ],
@@ -281,14 +281,14 @@
               risers: 11,
               from: ["lower-landing.x1", "lower-landing.y0", "lower-landing.z0"],
               to: ["house-left.x1", "lower-landing.y1", 0],
-              walls: ["top", "bottom"],
+              walls: ["front", "rear"],
               classes: "stair-flight"
             },
             {
               id: "lower-landing",
               from: ["house-left.x0", "upper-landing.y1", "upper-landing.z0"],
               to: ["x0 + 1.2", "y0 + upper-flight.l", "z0"],
-              walls: ["bottom"],
+              walls: ["rear"],
               classes: "stair-landing",
               color: "terracotta"
             },
@@ -322,7 +322,7 @@
           id: "vestibule",
           label: "Vest.",
           rectangle: ["master.x0", "closet.y0", "closet.x0", "closet.y1"],
-          walls: ["right", "bottom", "left"],
+          walls: ["right", "rear", "left"],
           overlaps: "rear-corridor",
           doors: [
             { from: "left", to: "dining", dy: 1.2 }
@@ -341,10 +341,10 @@
         {
           id: "living-sofa",
           type: "three-seat-sofa",
-          label: "Sofá linear",
+          label: "Sofá",
           title: "Sofá linear de 3 lugares — Estar",
-          pos: ["living.xc - 1.05", "living.y1 - 1.8"],
-          rotation: 180
+          pos: ["living.x1 - 1.6", "living.y1 - 1.8"],
+          rotation: 90
         },
         {
           id: "dining-table",
@@ -353,7 +353,7 @@
           size: [2.7, 1.1],
           classes: "table"
         },
-        { title: "Lareira", pos: ["living.x0 - 0.1", "living.yc - 0.9"], size: [0.5, 1.4], classes: "fireplace" },
+        { title: "Lareira", pos: ["living.x0 - 0.1", "living.y1 - 1"], size: [0.5, 1.4], classes: "fireplace" },
         { title: "Carro", pos: ["garage.x1 - 2.8", "garage.y0 + 1"], size: [1.8, 4], classes: "car" },
         { type: "washing-machine", pos: ["laundry.x0 + 0.2", "laundry.y0 + 0.1"], rotation: 180 },
         { type: "washing-machine", pos: ["laundry.x0 + 0.8", "laundry.y0 + 0.1"], rotation: 180 },
@@ -384,9 +384,9 @@
         },
         {
           id: "bedroom-rear",
-          label: "Quarto dos fundos",
-          from: ["garage.x0", "garage.y0", "upper.z0"],
-          to: ["garage.x1", "garage.y1"],
+          label: "Quarto Sul",
+          from: ["garage.x0", "garage-knee-wall-front.y0", "upper.z0"],
+          to: ["garage.x1", "garage-knee-wall-rear.y0"],
           top: "roof",
           doors: [
             { from: "right", to: "unused-rear", dy: "unused-rear.yc - bedroom-rear.y0 - 0.4" }
@@ -396,13 +396,13 @@
           id: "bedroom-north",
           label: "Quarto N",
           from: ["knee-front-right.x1", "hall.y0"],
-          to: ["knee-front-right.x1 - 3.3", "y0 + 3.8"],
+          to: ["knee-front-right.x1 - 3.3", "y0 + 3.6"],
           walls: [],
           doors: [
-            { from: "bottom", to: "upper-corridor" }
+            { from: "rear", to: "upper-corridor" }
           ],
           windows: [
-            { from: "top", h: 1.2, z0: "upper.z0 + 1", dx: "bedroom-north.w + main-roof.xc - bedroom-north.x1 + 0.75"}
+            { from: "front", h: 1.2, z0: "upper.z0 + 1", dx: "bedroom-north.w + main-roof.xc - bedroom-north.x1 + 0.75"}
           ]
         },
         {
@@ -410,13 +410,13 @@
           label: "Quarto E",
           from: ["house-left.x0", "hall.y0"],
           to: ["bedroom-north.x0", "y0 + 3.6"],
-          walls: ["bottom"],
+          walls: ["rear"],
           doors: [
-            { from: "bottom", to: "playroom", dx: "bedroom-east.w - 1" }
+            { from: "rear", to: "playroom", dx: "bedroom-east.w - 1" }
           ],
           windows: [
             {
-              from: "top",
+              from: "front",
               to: "exterior",
               h: 1.2,
               z0: "upper.z0 + 1",
@@ -447,7 +447,7 @@
         {
           id: "stair-arrival",
           label: "Circulação",
-          from: ["house-left.x1", "stairs.y0"],
+          from: ["upper-corridor.x0", "stairs.y0"],
           to: ["stairs.x1 - 1.2", "main.y1"],
           walls: [],
           classes: "circulation"
@@ -504,6 +504,42 @@
   ],
   // Paredes independentes
   walls: [
+    // Joelhos no limite da altura livre de 1,30 m do segundo piso.
+    // Coordenadas calculadas pela face inferior dos telhados desta variante,
+    // incluindo suas interseções e recortadas ao contorno dos ambientes.
+    // Fechamentos já atendidos pelas paredes existentes não são duplicados.
+    {
+      id: "garage-knee-wall-front",
+      // Ambiente em contato: Quarto dos fundos (bedroom-rear).
+      scope: "upper",
+      color: "blue",
+      base: { level: "upper.z0" },
+      top: "roof",
+      from: ["garage.x0", "main.y1"],
+      to: ["garage.x1", "y0"]
+    },
+    {
+      id: "garage-knee-wall-rear",
+      // Ambiente em contato: Quarto dos fundos (bedroom-rear).
+      scope: "upper",
+      color: "blue",
+      base: { level: "upper.z0" },
+      top: "roof",
+      from: ["garage.x0", "kitchen.y1"],
+      to: ["garage.x1", "y0"]
+    },
+    {
+      id: "knee-contour-07",
+      // Ambiente em contato: Sem uso (unused-right).
+      scope: "upper",
+      color: "blue",
+      base: { level: "upper.z0" },
+      top: "roof",
+      // Vale entre as duas coberturas transversais: altura livre de ~1,37 m.
+      // Fecha até o encontro com a água longitudinal, além do recorte de 1,30 m.
+      from: ["house-right.x1", "(main-transverse-roof.y1 + rear-transverse-roof.y0) / 2"],
+      to: ["main-roof.x1 - (main-transverse-roof.y1 - rear-transverse-roof.y0) / 2", "y0"]
+    },
     {
       id: "perimeter-plinth",
       color: "mate-amargo",
@@ -548,13 +584,6 @@
           ["x0", "office.y1"]
         ]
       }
-    },
-    {
-      id: "knee-wall-rear",
-      scope: "upper",
-      from: ["knee-rear-right.x0", "house-right.y1 - 2.6"],
-      to:   ["x0", "house-right.y1"],
-      base: { level: "upper.z0" }
     },
     {
       id: "rear-wall",
@@ -603,7 +632,7 @@
       to: ["x0", "bedroom-north.y1"]
     },
     {
-      id: "bedroom-north-bottom",
+      id: "bedroom-north-rear",
       scope: "bedroom-north",
       color: "blue",
       base: { level: "upper.z0" },
@@ -678,13 +707,13 @@
         ]
       }
     },
-    {
-      id: "upper-rear-wall",
-      scope: "upper",
-      base: { level: "upper.z0" },
-      from: ["house-left.x1", "main.y1"],
-      to: ["main.x1", "y0"]
-    },
+    // {
+    //   id: "upper-rear-wall",
+    //   scope: "upper",
+    //   base: { level: "upper.z0" },
+    //   from: ["house-left.x1", "main.y1"],
+    //   to: ["main.x1", "y0"]
+    // },
     {
       id: "upper-left-wall",
       scope: "upper",
@@ -695,23 +724,23 @@
   ],
   // Telhados
   roofs: [
-    {
-      id: "garage-roof",
-      label: "Telhado da garagem",
-      from: ["garage.x0", "garage.y0"],
-      to: ["garage.x1", "garage.y1"],
-      z0: "upper.z0",
-      orientation: "transverse",
-      pitch: 51,
-      eaves: { left: 0.5, right: 0.5 },
-      rake: 0.5
-    },
+    // {
+    //   id: "garage-roof",
+    //   label: "Telhado da garagem",
+    //   from: ["garage.x0", "garage.y0"],
+    //   to: ["garage.x1", "garage.y1"],
+    //   z0: "upper.z0",
+    //   orientation: "transverse",
+    //   pitch: 51,
+    //   eaves: { left: 0.5, right: 0.5 },
+    //   rake: 0.5
+    // },
     {
       id: "rear-transverse-roof",
       label: "Telhado dos fundos",
-      from: ["garage.x1", "garage.y0"],
+      from: ["garage.x0", "garage.y0"],
       to: ["kitchen.x1", "garage.y1"],
-      z0: "upper.z0 + params.roof_base_offset",
+      z0: "upper.z0 + params.roof_base_offset - 1",
       orientation: "transverse",
       pitch: 51,
       eaves: { left: 0.5, right: 0.5 },

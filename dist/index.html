@@ -29,6 +29,7 @@
   --theme-roof-fill: rgba(177, 82, 46, 0.18);
   --theme-roof-line: rgba(112, 55, 35, 0.9);
   --theme-roof-gradient-dark: #a84f31;
+  --theme-stair-gradient-dark: #b4afa3;
   --theme-roof-gradient-light: #f1c0a0;
   --theme-opening: #e8c99c;
   --theme-opening-line: #6b4b2a;
@@ -838,6 +839,22 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   background: transparent;
   border: 1px dashed var(--theme-wall-virtual);
 }
+.wall-tooltip {
+  position: fixed;
+  z-index: 1000;
+  max-width: calc(100vw - 8px);
+  padding: 5px 8px;
+  border: 1px solid var(--theme-border-light);
+  border-radius: 4px;
+  background: var(--theme-button);
+  color: var(--theme-text);
+  font: 12px ui-monospace, monospace;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+@media print {
+  .wall-tooltip { display: none; }
+}
 .plan-item.railing {
   z-index: 18;
   opacity: 1;
@@ -854,6 +871,37 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   pointer-events: none;
 }
 
+
+.plan-item.stair-access-zone {
+  z-index: 6;
+  opacity: 1;
+  background: repeating-linear-gradient(135deg, rgba(90, 120, 160, 0.16) 0 2px, transparent 2px 8px);
+  border: 1px dashed rgba(65, 95, 135, 0.9);
+}
+.site .stair-access-zone::after { rotate: 180deg; }
+.stair-access-zone::after {
+  content: "Acesso";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #415f87;
+  font-size: 9px;
+  text-shadow: 0 0 3px white, 0 0 3px white;
+}
+
+.plan-item.stair-headroom-zone {
+  z-index: 6;
+  opacity: 1;
+  pointer-events: none;
+  border: none;
+  background: transparent;
+}
+.stair-headroom-zone > svg {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
 
 .plan-item.plan-opening {
   z-index: 15;
@@ -951,12 +999,12 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 }
 .outdoor { background: var(--theme-outdoor); }
 .service { background: var(--theme-service); }
-.circulation, .stair-landing { background: var(--theme-circulation); }
+.circulation, .stair-landing, .stair-flight { background: var(--theme-circulation); }
 .stair-flight[data-stair-rise="up"],
 .stair-flight[data-stair-rise="down"] {
-  --stair-opaque: rgba(180, 145, 88, 0.62);
-  --stair-clearance: rgba(205, 177, 125, 0.16);
-  --stair-transparent: rgba(245, 238, 222, 0.08);
+  --stair-opaque: var(--theme-circulation);
+  --stair-clearance: color-mix(in srgb, var(--theme-circulation) 26%, transparent);
+  --stair-transparent: color-mix(in srgb, var(--theme-circulation) 8%, transparent);
   background: linear-gradient(
     to bottom,
     var(--stair-opaque) 0%,
@@ -1734,6 +1782,16 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
   position: relative;
   z-index: 1;
 }
+.headroom-height-label {
+  font-size: 0.14px;
+  font-weight: normal;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: var(--theme-text);
+  stroke: var(--theme-surface, #fff);
+  stroke-width: 0.025px;
+  paint-order: stroke;
+}
 .comfort-areas { display: block; font-size: 0.75rem; font-weight: normal; }
 .comfort-legend { font-size: 0.8rem; color: var(--theme-muted); }
 .comfort-legend span { display: inline-block; margin-right: 1em; }
@@ -1787,6 +1845,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
   --theme-roof-fill: rgba(177, 82, 46, 0.18);
   --theme-roof-line: rgba(112, 55, 35, 0.9);
   --theme-roof-gradient-dark: #a84f31;
+  --theme-stair-gradient-dark: #b4afa3;
   --theme-roof-gradient-light: #f1c0a0;
   --theme-button: #f2f2f2;
   --theme-button-hover: #e6e6e6;
@@ -2093,6 +2152,47 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 }
 
 
+.plan-item.stair-access-zone {
+  z-index: 6;
+  opacity: 1;
+  background: repeating-linear-gradient(135deg, rgba(90, 120, 160, 0.16) 0 2px, transparent 2px 8px);
+  border: 1px dashed rgba(65, 95, 135, 0.9);
+}
+.site .stair-access-zone::after { rotate: 180deg; }
+.stair-access-zone::after {
+  content: "Acesso";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #415f87;
+  font-size: 9px;
+  text-shadow: 0 0 3px white, 0 0 3px white;
+}
+
+.plan-item.stair-headroom-zone {
+  z-index: 6;
+  opacity: 1;
+  pointer-events: none;
+  border: none;
+  background: transparent;
+}
+.headroom-height-label {
+  font-size: 0.14px;
+  font-weight: normal;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: var(--theme-text);
+  stroke: var(--theme-surface, #fff);
+  stroke-width: 0.025px;
+  paint-order: stroke;
+}
+.stair-headroom-zone > svg {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 .plan-item.plan-opening {
   z-index: 15;
   opacity: 1 !important;
@@ -2191,12 +2291,12 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .room-overlap[data-wall-left="solid"], .room-overlap[data-wall-left="virtual"], .room-overlap .room-part[data-wall-left="solid"], .room-overlap .room-part[data-wall-left="virtual"] { border-left-color: var(--theme-overlap-line); }
 .outdoor { background: var(--theme-outdoor); }
 .service { background: var(--theme-service); }
-.circulation, .stair-landing { background: var(--theme-circulation); }
+.circulation, .stair-landing, .stair-flight { background: var(--theme-circulation); }
 .stair-flight[data-stair-rise="up"],
 .stair-flight[data-stair-rise="down"] {
-  --stair-opaque: rgba(180, 145, 88, 0.62);
-  --stair-clearance: rgba(205, 177, 125, 0.16);
-  --stair-transparent: rgba(245, 238, 222, 0.08);
+  --stair-opaque: var(--theme-circulation);
+  --stair-clearance: color-mix(in srgb, var(--theme-circulation) 26%, transparent);
+  --stair-transparent: color-mix(in srgb, var(--theme-circulation) 8%, transparent);
   background: linear-gradient(
     to bottom,
     var(--stair-opaque) 0%,
@@ -3682,6 +3782,177 @@ const FloorPlanCoordinates = {
 window.FloorPlanCoordinates = FloorPlanCoordinates;
 
 
+// DOM-free operations on convex polygons, convex solids and axis-aligned rectangles.
+// Preserve operation-specific tolerances; area and volume thresholds differ.
+const FloorPlanGeometryOperations = {
+  clipPolygon(points, plane) {
+    if (!points.length) return [];
+    const distances = points.map((point) => plane.slice(0, 3).reduce((sum, value, i) => sum + value * point[i], plane[3]));
+    if (distances.every((value) => value <= 1e-8)) return points;
+    if (distances.every((value) => value >= -1e-8)) return [];
+    const result = [];
+    points.forEach((point, i) => {
+      const next = points[(i + 1) % points.length];
+      const a = distances[i], b = distances[(i + 1) % points.length];
+      if (a <= 1e-8) result.push(point);
+      if ((a < -1e-8 && b > 1e-8) || (a > 1e-8 && b < -1e-8)) {
+        result.push(point.map((value, axis) => value + (next[axis] - value) * a / (a - b)));
+      }
+    });
+    return result.length >= 3 ? result : [];
+  },
+
+  clipSolid(faces, plane) {
+    const distance = (point) => plane.slice(0, 3).reduce((sum, n, i) => sum + n * point[i], plane[3]);
+    const distances = faces.flat().map(distance);
+    if (distances.every((value) => value <= 1e-9)) return faces;
+    if (distances.every((value) => value >= -1e-9)) return [];
+    const cuts = [];
+    const result = faces.map((face) => {
+      const polygon = [];
+      face.forEach((point, i) => {
+        const next = face[(i + 1) % face.length];
+        const a = distance(point);
+        const b = distance(next);
+        if (a <= 1e-9) polygon.push(point);
+        if ((a < -1e-9 && b > 1e-9) || (a > 1e-9 && b < -1e-9)) {
+          const cut = point.map((value, axis) => value + (next[axis] - value) * a / (a - b));
+          polygon.push(cut);
+          cuts.push(cut);
+        } else if (Math.abs(a) <= 1e-9) cuts.push(point);
+      });
+      return polygon;
+    }).filter((face) => face.length >= 3);
+    const unique = cuts.filter((point, i) => cuts.findIndex((other) =>
+      point.every((value, axis) => Math.abs(value - other[axis]) < 1e-8)) === i);
+    if (unique.length >= 3) {
+      const center = unique[0].map((_, axis) => unique.reduce((sum, point) => sum + point[axis], 0) / unique.length);
+      const normal = plane.slice(0, 3);
+      const magnitude = Math.hypot(...normal);
+      const n = normal.map((value) => value / magnitude);
+      const seed = Math.abs(n[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+      const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+      const u = cross(n, seed);
+      const v = cross(n, u);
+      const angle = (point) => {
+        const delta = point.map((value, axis) => value - center[axis]);
+        return Math.atan2(delta.reduce((sum, value, axis) => sum + value * v[axis], 0), delta.reduce((sum, value, axis) => sum + value * u[axis], 0));
+      };
+      unique.sort((a, b) => angle(a) - angle(b));
+      result.push(unique);
+    }
+    const volume = result.reduce((sum, face) => {
+      const a = face[0];
+      for (let i = 1; i < face.length - 1; i += 1) {
+        const b = face[i], c = face[i + 1];
+        sum += a[0] * (b[1] * c[2] - b[2] * c[1]) + a[1] * (b[2] * c[0] - b[0] * c[2]) + a[2] * (b[0] * c[1] - b[1] * c[0]);
+      }
+      return sum;
+    }, 0);
+    return Math.abs(volume) > 1e-10 ? result : [];
+  },
+
+  boxFaces(x0, y0, z0, x1, y1, z1) {
+    const a = [x0, y0, z0], b = [x1, y0, z0], c = [x1, y1, z0], d = [x0, y1, z0];
+    const e = [x0, y0, z1], f = [x1, y0, z1], g = [x1, y1, z1], h = [x0, y1, z1];
+    return [[a, d, c, b], [e, f, g, h], [a, b, f, e], [b, c, g, f], [c, d, h, g], [d, a, e, h]];
+  },
+
+  area(polygon) {
+    return Math.abs(polygon.reduce((sum, [x, y], i) => {
+      const next = polygon[(i + 1) % polygon.length];
+      return sum + x * next[1] - next[0] * y;
+    }, 0)) / 2;
+  },
+
+  rectangle({ x, y, w, l }) {
+    return [[x, y, 0], [x + w, y, 0], [x + w, y + l, 0], [x, y + l, 0]];
+  },
+
+  subtract(polygon, cutter) {
+    if (!cutter.length || this.area(cutter) < 1e-10) return [polygon];
+    const signed = cutter.reduce((sum, p, i) => {
+      const q = cutter[(i + 1) % cutter.length];
+      return sum + p[0] * q[1] - q[0] * p[1];
+    }, 0);
+    let inside = polygon;
+    const outside = [];
+    for (let i = 0; i < cutter.length && inside.length; i += 1) {
+      const p = cutter[i], q = cutter[(i + 1) % cutter.length];
+      const sign = signed > 0 ? 1 : -1;
+      const a = sign * (q[1] - p[1]), b = sign * (p[0] - q[0]);
+      const plane = [a, b, 0, -a * p[0] - b * p[1]];
+      const next = this.clipPolygon(inside, plane);
+      const remainder = this.clipPolygon(inside, plane.map(v => -v));
+      if (remainder.length && this.area(remainder) > 1e-10 && remainder !== next) outside.push(remainder);
+      inside = next;
+    }
+    return outside;
+  },
+
+  union(polygons) {
+    const result = [];
+    for (const polygon of polygons) {
+      let pieces = [polygon];
+      for (const previous of result) pieces = pieces.flatMap(piece => this.subtract(piece, previous));
+      result.push(...pieces.filter(piece => this.area(piece) > 1e-10));
+    }
+    return result;
+  },
+
+  partitionRectangles(rectangles) {
+    const xs = [...new Set(rectangles.flatMap(({ x, w }) => [x, x + w]))].sort((a, b) => a - b);
+    const ys = [...new Set(rectangles.flatMap(({ y, l }) => [y, y + l]))].sort((a, b) => a - b);
+    const parts = [];
+    for (let x = 0; x < xs.length - 1; x += 1) {
+      for (let y = 0; y < ys.length - 1; y += 1) {
+        if (rectangles.some((r) => r.x <= xs[x] && r.x + r.w >= xs[x + 1]
+          && r.y <= ys[y] && r.y + r.l >= ys[y + 1])) {
+          parts.push({ x: xs[x], y: ys[y], w: xs[x + 1] - xs[x], l: ys[y + 1] - ys[y] });
+        }
+      }
+    }
+    return parts;
+  },
+};
+
+window.FloorPlanGeometryOperations = FloorPlanGeometryOperations;
+
+
+// Declarative XY deductions, independent of element visibility and rendering.
+const FloorPlanRoomArea = {
+  deductionsFor(room, rooms, items, { sameFloor = false } = {}) {
+    const targets = new Set([room.id]);
+    room.parts.forEach((part) => {
+      if (part.id) targets.add(`${room.id}.${part.id}`);
+    });
+    const eligible = (other) => !sameFloor || other.floorId === room.floorId;
+    const matches = (values) => (values ?? []).some((id) => targets.has(id));
+    return [
+      ...rooms.filter((other) => other !== room && eligible(other)).flatMap((other) =>
+        other.parts.filter((part) => matches(part.overlapTargets ?? other.overlapTargets))),
+      ...items.filter((item) => eligible(item) && matches(item.overlapTargets)),
+    ];
+  },
+
+  netArea(room, deductions) {
+    const intersections = room.parts.flatMap((part) => deductions.flatMap((other) => {
+      const x = Math.max(part.x, other.x), y = Math.max(part.y, other.y);
+      const x1 = Math.min(part.x + part.w, other.x + other.w);
+      const y1 = Math.min(part.y + part.l, other.y + other.l);
+      return x1 > x && y1 > y ? [{ x, y, w: x1 - x, l: y1 - y }] : [];
+    }));
+    // Preserve the existing summed gross area, even for overlapping parts.
+    const gross = room.parts.reduce((sum, part) => sum + part.w * part.l, 0);
+    const deducted = FloorPlanGeometryOperations.partitionRectangles(intersections)
+      .reduce((sum, part) => sum + part.w * part.l, 0);
+    return gross - deducted;
+  },
+};
+
+window.FloorPlanRoomArea = FloorPlanRoomArea;
+
+
 const FloorPlanModel = {
   // Symbol metadata survives internal object spreads but is omitted by JSON.stringify.
   deprecationWarningsKey: Symbol("deprecationWarnings"),
@@ -3926,76 +4197,28 @@ const FloorPlanModel = {
   },
 
   calculateUnionArea(rectangles) {
-    if (rectangles.length === 0) return 0;
-
-    const xs = [...new Set(rectangles.flatMap(({ x, w }) => [x, x + w]))].sort(
-      (a, b) => a - b,
-    );
-    const ys = [...new Set(rectangles.flatMap(({ y, l }) => [y, y + l]))].sort(
-      (a, b) => a - b,
-    );
-    let area = 0;
-
-    for (let xIndex = 0; xIndex < xs.length - 1; xIndex += 1) {
-      for (let yIndex = 0; yIndex < ys.length - 1; yIndex += 1) {
-        const x0 = xs[xIndex];
-        const x1 = xs[xIndex + 1];
-        const y0 = ys[yIndex];
-        const y1 = ys[yIndex + 1];
-        const covered = rectangles.some(
-          (rectangle) =>
-            rectangle.x <= x0 &&
-            rectangle.x + rectangle.w >= x1 &&
-            rectangle.y <= y0 &&
-            rectangle.y + rectangle.l >= y1,
-        );
-        if (covered) area += (x1 - x0) * (y1 - y0);
-      }
-    }
-
-    return area;
+    return FloorPlanGeometryOperations.partitionRectangles(rectangles)
+      .reduce((area, part) => area + part.w * part.l, 0);
   },
 
   calculateNetRoomArea(room, rooms, items) {
-    const targetIds = new Set([room.dataset.id]);
-    room.geometryParts.forEach((part) => {
-      if (part.id) targetIds.add(`${room.dataset.id}.${part.id}`);
+    // Compatibility adapter for existing element/reference callers. The pure
+    // rule retains the legacy caller-selected scope for net area.
+    const describe = (value) => ({
+      id: value.dataset.id,
+      floorId: value.dataset.floorId,
+      parts: value.geometryParts,
+      overlapTargets: value.allowedOverlaps,
     });
-    const coveredBy = rooms
-      .filter((other) => other !== room)
-      .flatMap((other) =>
-        other.geometryParts.filter((part) =>
-          (part.overlapTargets ?? other.allowedOverlaps ?? []).some((target) =>
-            targetIds.has(target),
-          ),
-        ),
-      );
-    const itemOverlaps = items
-      .filter((item) =>
-        (item.allowedOverlaps ?? []).some((target) => targetIds.has(target)),
-      )
-      .map((item) => ({
-        x: item.x0(),
-        y: item.y0(),
-        w: item.w(),
-        l: item.l(),
-      }));
-    const deductions = [];
-    room.geometryParts.forEach((part) => {
-      [...coveredBy, ...itemOverlaps].forEach((other) => {
-        const x0 = Math.max(part.x, other.x);
-        const y0 = Math.max(part.y, other.y);
-        const x1 = Math.min(part.x + part.w, other.x + other.w);
-        const y1 = Math.min(part.y + part.l, other.y + other.l);
-        if (x1 > x0 && y1 > y0)
-          deductions.push({ x: x0, y: y0, w: x1 - x0, l: y1 - y0 });
-      });
-    });
-    const grossArea = room.geometryParts.reduce(
-      (total, part) => total + part.w * part.l,
-      0,
-    );
-    return grossArea - FloorPlanModel.calculateUnionArea(deductions);
+    const target = describe(room);
+    const roomData = rooms.map((other) => other === room ? target : describe(other));
+    const itemData = items.map((item) => ({
+      x: item.x0(), y: item.y0(), w: item.w(), l: item.l(),
+      floorId: item.dataset?.floorId,
+      overlapTargets: item.allowedOverlaps,
+    }));
+    return FloorPlanRoomArea.netArea(target,
+      FloorPlanRoomArea.deductionsFor(target, roomData, itemData));
   },
 
   floorRows(floors, roomDefinitions, roomReferences) {
@@ -4204,17 +4427,17 @@ const FloorPlanLegend = {
 const FloorPlanExport = {
   roofMetrics(plan, roof) {
     if (roof.type === "shed") {
-      try { return FloorPlanRoofs.shedGeometry(plan, roof); } catch { return null; }
+      try { return FloorPlanRoofGeometry.shedGeometry(plan, roof); } catch { return null; }
     }
     let base;
     try {
-      base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+      base = FloorPlanRoofGeometry.resolveBase(plan, roof.base ?? roof);
     } catch {
       return null;
     }
     const pitch = Number(roof.pitch);
-    const [eave0, eave1] = FloorPlanRoofs.eavePair(roof);
-    const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
+    const [eave0, eave1] = FloorPlanRoofGeometry.eavePair(roof);
+    const [rake0, rake1] = FloorPlanRoofGeometry.overhangPair(roof.rake);
     if (
       !base ||
       !Number.isFinite(pitch) ||
@@ -4223,22 +4446,16 @@ const FloorPlanExport = {
       [eave0, eave1, rake0, rake1].some((value) => value < 0)
     )
       return null;
-    const longitudinal = roof.orientation === "longitudinal";
-    const roofWidth = base.w() + (longitudinal ? eave0 + eave1 : rake0 + rake1);
-    const roofLength = base.l() + (longitudinal ? rake0 + rake1 : eave0 + eave1);
-    const x0 = base.x0() - (longitudinal ? eave0 : rake0);
-    const x1 = base.x1() + (longitudinal ? eave1 : rake1);
-    const y0 = base.y0() - (longitudinal ? rake0 : eave0);
-    const y1 = base.y1() + (longitudinal ? rake1 : eave1);
-    const baseElevation =
-      roof.z0 !== undefined ? plan.resolve(roof.z0) : base.z1 ? base.z1() : 0;
-    const baseSpan = longitudinal ? base.w() : base.l();
-    const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
-    const ridgeLength = longitudinal ? roofLength : roofWidth;
+    // Historical export policy: use the declared base top, not the ceiling
+    // inferred by renderers. Area without eaves.pitch also retains its formula.
+    const baseElevation = roof.z0 !== undefined ? plan.resolve(roof.z0) : base.z1 ? base.z1() : 0;
+    const geometry = FloorPlanRoofGeometry.gableGeometry(plan, roof, { base, z0: baseElevation });
+    const { longitudinal, roofWidth, roofLength, x0, x1, y0, y1,
+      baseSpan, rise, ridgeLength, ridgeX0, ridgeY0, ridgeX1, ridgeY1 } = geometry;
     const slopeA = longitudinal ? eave0 : rake0;
     const slopeB = longitudinal ? eave1 : rake1;
     const surfaceArea = roof.eaves?.pitch !== undefined
-      ? FloorPlanRoofs.surfaceArea(roof, baseSpan, ridgeLength)
+      ? FloorPlanRoofGeometry.surfaceArea(roof, baseSpan, ridgeLength)
       :
       (Math.hypot(baseSpan / 2 + slopeA, rise) +
         Math.hypot(baseSpan / 2 + slopeB, rise)) *
@@ -4259,10 +4476,7 @@ const FloorPlanExport = {
       rise,
       ridgeLength,
       surfaceArea,
-      ridgeX0: longitudinal ? (base.x0() + base.x1()) / 2 : x0,
-      ridgeY0: longitudinal ? y0 : (base.y0() + base.y1()) / 2,
-      ridgeX1: longitudinal ? (base.x0() + base.x1()) / 2 : x1,
-      ridgeY1: longitudinal ? y1 : (base.y0() + base.y1()) / 2,
+      ridgeX0, ridgeY0, ridgeX1, ridgeY1,
     };
   },
 
@@ -4471,8 +4685,8 @@ const FloorPlanExport = {
         if (!metrics) return;
         const { x0, x1, y0, y1, ridgeX0, ridgeY0, ridgeX1, ridgeY1 } = metrics;
         if (roof.eaves?.pitch !== undefined) {
-          const surfaces = FloorPlanRoofs.intersectingSurfaces(plan, [roof]);
-          const edges = FloorPlanRoofs.surfaceEdges(surfaces.flatMap(entry => entry.polygons));
+          const surfaces = FloorPlanRoofGeometry.intersectingSurfaces(plan, [roof]);
+          const edges = FloorPlanRoofGeometry.surfaceEdges(surfaces.flatMap(entry => entry.polygons));
           for (let i = 0; i < edges.length; i += 2) {
             const a = edges[i], b = edges[i + 1];
             line("ROOFS", a[0], a[1], b[0], b[1], a[2], b[2]);
@@ -4589,39 +4803,81 @@ window.FloorPlanExport = FloorPlanExport;
 const FloorPlanGeometry = {
   itemDefinition: Symbol("item-definition"),
 
+  context(plan) {
+    return plan.resolutionContext ?? Object.freeze({
+      floorZ: plan.currentFloorHeight,
+      floorId: plan.currentFloorId ?? null,
+      itemReferences: Boolean(plan.itemReferenceContext),
+      roomBoundsCache: plan.itemRoomBoundsCache,
+      partScopes: plan.partReferenceStack ?? [],
+    });
+  },
+
+  // A synchronous resolution facade shares model maps, but never changes the
+  // caller's floor, reference policy or local scopes. Legacy method names stay
+  // readable while consumers migrate to the explicit context contract.
+  inContext(plan, overrides) {
+    const context = Object.freeze({ ...this.context(plan), ...overrides });
+    return Object.create(plan.resolutionOwner ?? plan, {
+      resolutionContext: { value: context },
+      resolutionOwner: { value: plan.resolutionOwner ?? plan },
+      currentFloorHeight: { value: context.floorZ },
+      currentFloorId: { value: context.floorId },
+      itemReferenceContext: { value: context.itemReferences },
+      itemRoomBoundsCache: { value: context.roomBoundsCache },
+      partReferenceStack: { value: context.partScopes },
+    });
+  },
+
+  // Existing lazy references close over the original plan. Bridge that legacy
+  // boundary with one context pointer, rather than mutating individual fields.
+  // Do not use this synchronous bridge for presentation or asynchronous work.
+  withReferenceContext(plan, context, calculate) {
+    const owner = plan.resolutionOwner ?? plan;
+    if (owner.resolutionContext === context) return calculate();
+    const descriptor = Object.getOwnPropertyDescriptor(owner, "resolutionContext");
+    if (descriptor?.writable) {
+      owner.resolutionContext = context;
+      try {
+        return calculate();
+      } finally {
+        owner.resolutionContext = descriptor.value;
+      }
+    }
+    Object.defineProperty(owner, "resolutionContext", { value: context, writable: true, configurable: true });
+    try {
+      return calculate();
+    } finally {
+      if (descriptor) Object.defineProperty(owner, "resolutionContext", descriptor);
+      else delete owner.resolutionContext;
+    }
+  },
+
   // Reference definitions must resolve in their own context, never in the
   // context of the item that happens to be reading them.
   referenceFor(plan, id, reference) {
     if (!reference) return reference;
-    const itemContext = plan.itemReferenceContext;
+    const context = this.context(plan);
+    const nominalContext = context.itemReferences
+      ? Object.freeze({ ...context, itemReferences: false }) : context;
     return new Proxy(reference, {
       get(target, key) {
-        const previousContext = plan.itemReferenceContext;
-        plan.itemReferenceContext = false;
-        let value;
-        try {
-          value = Reflect.get(target, key, target);
-        } finally {
-          plan.itemReferenceContext = previousContext;
-        }
+        const value = FloorPlanGeometry.withReferenceContext(plan,
+          nominalContext, () => Reflect.get(target, key, target));
         if (typeof value !== "function") return value;
         return (...args) => {
-          const previous = plan.itemReferenceContext;
-          plan.itemReferenceContext = false;
-          try {
-            if (itemContext && plan.roomDefinitions?.has(id) &&
-                ["x0", "x1", "xc", "y0", "y1", "yc", "w", "l", "area"].includes(key)) {
-              let bounds = plan.itemRoomBoundsCache?.get(id);
-              if (!bounds) {
-                bounds = FloorPlanWalls.itemRoomBounds(plan, id);
-                plan.itemRoomBoundsCache?.set(id, bounds);
-              }
-              return bounds[key]();
+          if (context.itemReferences && plan.roomDefinitions?.has(id) &&
+              ["x0", "x1", "xc", "y0", "y1", "yc", "w", "l", "area"].includes(key)) {
+            let bounds = context.roomBoundsCache?.get(id);
+            if (!bounds) {
+              const nominalPlan = FloorPlanGeometry.inContext(plan, { itemReferences: false });
+              bounds = FloorPlanWalls.itemRoomBounds(nominalPlan, id);
+              context.roomBoundsCache?.set(id, bounds);
             }
-            return value.apply(target, args);
-          } finally {
-            plan.itemReferenceContext = previous;
+            return bounds[key]();
           }
+          return FloorPlanGeometry.withReferenceContext(plan,
+            nominalContext, () => value.apply(target, args));
         };
       },
     });
@@ -4727,7 +4983,7 @@ const FloorPlanGeometry = {
     if (partMatch) {
       const [, roomId, partId, method, operator, amount] = partMatch;
       const room = FloorPlanGeometry.referenceFor(this, roomId,
-        this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId));
+        FloorPlanGeometry.context(this).partScopes.at(-1)?.get(roomId) || this.references.get(roomId));
       if (!room) {
         throw new Error(
           `Unknown room reference: ${roomId} in geometric expression "${reference}"`,
@@ -4747,7 +5003,7 @@ const FloorPlanGeometry = {
 
     const [, roomId, method, operator, amount] = match;
     const room = FloorPlanGeometry.referenceFor(this, roomId,
-      this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId));
+      FloorPlanGeometry.context(this).partScopes.at(-1)?.get(roomId) || this.references.get(roomId));
     if (!room) {
       throw new Error(
         `Unknown room reference: ${roomId} in geometric expression "${reference}"`,
@@ -4769,6 +5025,42 @@ window.FloorPlanGeometry = FloorPlanGeometry;
  * available for objects that are actually one rectangle.
  */
 const FloorPlanGeometryBox = {
+  // Nominal envelope only: rotation is retained on the parts, not applied here.
+  envelope(parts) {
+    if (!parts.length) throw new Error("O envelope precisa de pelo menos uma parte");
+    const x = Math.min(...parts.map((part) => part.x));
+    const y = Math.min(...parts.map((part) => part.y));
+    const z0 = Math.min(...parts.map((part) => part.z0));
+    const z1 = Math.max(...parts.map((part) => part.z1));
+    return {
+      x, y, z0, z1,
+      w: Math.max(...parts.map((part) => part.x + part.w)) - x,
+      l: Math.max(...parts.map((part) => part.y + part.l)) - y,
+      h: z1 - z0,
+    };
+  },
+
+  // Lazy input supports forward/circular-reference detection in the resolver.
+  fromGeometry(geometry, options = {}) {
+    const values = typeof geometry === "function" ? geometry : () => geometry;
+    const reference = {
+      x0: () => values().x,
+      x1: () => values().x + values().w,
+      xc: () => values().x + values().w / 2,
+      y0: () => values().y,
+      y1: () => values().y + values().l,
+      yc: () => values().y + values().l / 2,
+      z0: () => values().z0,
+      z1: () => values().z1,
+      zc: () => (values().z0 + values().z1) / 2,
+      w: () => values().w,
+      l: () => values().l,
+      h: () => values().h,
+      area: () => values().w * values().l,
+    };
+    return this.attach(reference, options);
+  },
+
   attach(target, { compound = false, label = "object" } = {}) {
     const value = (name, fallback) => {
       if (typeof target[name] === "function") return target[name]();
@@ -5599,16 +5891,6 @@ const FloorPlanFacades = {
         getComputedStyle(plan.root).getPropertyValue("--m"),
       ) || 56;
     const floorConfigs = plan.currentConfig?.floors ?? [plan.currentConfig];
-    const previousFloorHeight = plan.currentFloorHeight;
-    const normalizePartsAtFloor = (parts, floorConfig) => {
-      const floorHeight = Number(floorConfig?.z0 ?? 0);
-      plan.currentFloorHeight = floorHeight;
-      try {
-        return plan.normalizeParts(parts);
-      } finally {
-        plan.currentFloorHeight = previousFloorHeight;
-      }
-    };
     const rooms = floorConfigs.flatMap((floorConfig) =>
       (floorConfig?.rooms ?? []).flatMap((definition) => {
         try {
@@ -5619,31 +5901,9 @@ const FloorPlanFacades = {
           const defaultWallHeight = Number.isFinite(nextFloorZ0)
             ? Math.min(Math.max(0, nextFloorZ0 - floorZ0), wallMaxHeight)
             : wallMaxHeight;
-          const parts = definition.parts?.length
-            ? normalizePartsAtFloor(definition.parts, floorConfig)
-            : null;
-          const geometry = parts?.length
-            ? {
-                x: Math.min(...parts.map((part) => part.x)),
-                y: Math.min(...parts.map((part) => part.y)),
-                w:
-                  Math.max(...parts.map((part) => part.x + part.w)) -
-                  Math.min(...parts.map((part) => part.x)),
-                l:
-                  Math.max(...parts.map((part) => part.y + part.l)) -
-                  Math.min(...parts.map((part) => part.y)),
-                z0: Math.min(...parts.map((part) => part.z0)),
-                z1: Math.max(...parts.map((part) => part.z1)),
-              }
-            : (() => {
-                const floorHeight = Number(floorConfig?.z0 ?? 0);
-                plan.currentFloorHeight = floorHeight;
-                try {
-                  return plan.normalizeGeometry(definition);
-                } finally {
-                  plan.currentFloorHeight = previousFloorHeight;
-                }
-              })();
+          const resolved = plan.getRoomGeometry(definition.id);
+          const parts = definition.parts?.length ? resolved.normalizedParts : null;
+          const geometry = resolved.nominalGeometry;
           const facadeGeometry =
             geometry.z1 > geometry.z0
               ? geometry
@@ -5846,35 +6106,11 @@ const FloorPlanFacades = {
         if (!base || !["longitudinal", "transverse"].includes(roof.orientation)) {
           return null;
         }
-        const longitudinal = roof.orientation === "longitudinal";
-        const [eave0, eave1] = FloorPlanRoofs.eavePair(roof);
-        const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
-        const pitch = Number(roof.pitch);
-        const baseSpan = longitudinal ? base.w() : base.l();
-        const baseZ1 = FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor);
-        const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
-        const z0 =
-          roof.z0 !== undefined
-            ? plan.resolve(roof.z0)
-            : baseZ1;
+        const baseZ1 = FloorPlanRoofGeometry.baseCeilingZ(plan, base, 0, floor);
         return {
-          longitudinal,
-          x0: base.x0() - (longitudinal ? eave0 : rake0),
-          x1: base.x1() + (longitudinal ? eave1 : rake1),
-          y0: base.y0() - (longitudinal ? rake0 : eave0),
-          y1: base.y1() + (longitudinal ? rake1 : eave1),
-          baseX0: base.x0(),
-          baseX1: base.x1(),
-          baseY0: base.y0(),
-          baseY1: base.y1(),
-          eave0,
-          eave1,
-          pitch,
-          z0,
+          ...FloorPlanRoofGeometry.gableGeometry(plan, roof, { base, floor,
+            z0: roof.z0 !== undefined ? plan.resolve(roof.z0) : baseZ1 }),
           baseZ1,
-          rise,
-          baseSpan,
-          pitchTangent: Math.tan((pitch * Math.PI) / 180),
         };
       };
       const roofs = plan.allRoofs ?? [];
@@ -6785,18 +7021,7 @@ const FloorPlanSlabs = {
         return plan.getRoomGeometry(room.id)?.geometryParts ?? [];
       }).filter(({ x, y, w, l }) => [x, y, w, l].every(Number.isFinite) && w > 0 && l > 0);
       // Partition the union so adjacent/overlapping rooms never stack concrete.
-      const xs = [...new Set(rectangles.flatMap((r) => [r.x, r.x + r.w]))].sort((a, b) => a - b);
-      const ys = [...new Set(rectangles.flatMap((r) => [r.y, r.y + r.l]))].sort((a, b) => a - b);
-      const parts = [];
-      for (let x = 0; x < xs.length - 1; x += 1) {
-        for (let y = 0; y < ys.length - 1; y += 1) {
-          const cx = (xs[x] + xs[x + 1]) / 2;
-          const cy = (ys[y] + ys[y + 1]) / 2;
-          if (rectangles.some((r) => cx > r.x && cx < r.x + r.w && cy > r.y && cy < r.y + r.l)) {
-            parts.push({ x: xs[x], y: ys[y], w: xs[x + 1] - xs[x], l: ys[y + 1] - ys[y] });
-          }
-        }
-      }
+      const parts = FloorPlanGeometryOperations.partitionRectangles(rectangles);
       return (floor.slabs ?? [{ id: `slab-${floor.id ?? index}`, label: `Laje — ${floor.label || floor.id || "Piso"}`, thickness: 0.15 }]).map((definition) => {
         const thickness = Number(definition.thickness ?? 0.15);
         if (!Number.isFinite(thickness) || thickness <= 0) throw new Error("A espessura da laje deve ser positiva.");
@@ -7044,7 +7269,7 @@ const FloorPlan3DElements = {
     const styles = getComputedStyle(plan.root);
     const opaque = (value) => value.replace(/^rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)$/, "rgb($1,$2,$3)");
     const low = new THREE.Color(opaque(styles.getPropertyValue("--theme-circulation").trim()));
-    const high = new THREE.Color(opaque(styles.getPropertyValue("--theme-roof-gradient-dark").trim()));
+    const high = new THREE.Color(opaque(styles.getPropertyValue("--theme-stair-gradient-dark").trim()));
     const ratio = 1 - FloorPlanGeometry.stairGradientRatio(z, stair.stairGradient);
     const material = baseMaterial.clone();
     // Match the sRGB interpolation used by color-mix in the plan view.
@@ -7266,12 +7491,12 @@ const FloorPlan3DElements = {
 
 const FloorPlan3DRoofs = {
   render({ plan, THREE, scene, roofMaterial, roofEdgeMaterial, roofLineMaterial }) {
-    FloorPlanRoofs.intersectingSurfaces(plan).forEach(({ roof, polygons }) => {
+    FloorPlanRoofGeometry.intersectingSurfaces(plan).forEach(({ roof, polygons }) => {
       if (!polygons.length) return;
       const value = roof.thickness ?? 0.12;
       const resolved = Number(plan.resolve(value));
       const thickness = Number.isFinite(resolved) && resolved >= 0 ? resolved : 0.12;
-      const { faces, edges } = FloorPlanRoofs.solidSurface(polygons, thickness);
+      const { faces, edges } = FloorPlanRoofGeometry.solidSurface(polygons, thickness);
       const vertices = [];
       const geometry = new THREE.BufferGeometry();
       faces.forEach((polygon, faceIndex) => {
@@ -7568,24 +7793,12 @@ const FloorPlanFacades3D = {
         const defaultHeight = Number.isFinite(nextZ0)
           ? Math.min(Math.max(0, nextZ0 - floorZ0), wallMaxHeight)
           : wallMaxHeight;
-        const partReferences = [...(reference.partReferences?.values() ?? [])];
-        const partValues = (method) =>
-          partReferences
-            .map((part) => Number(part[method]()))
-            .filter(Number.isFinite);
-        const partX0 = partValues("x0");
-        const partX1 = partValues("x1");
-        const partY0 = partValues("y0");
-        const partY1 = partValues("y1");
-        const partZ0 = partValues("z0");
-        const partZ1 = partValues("z1");
-        const x0 = partX0.length ? Math.min(...partX0) : Number(reference.x0());
-        const x1 = partX1.length ? Math.max(...partX1) : Number(reference.x1());
-        const y0 = partY0.length ? Math.min(...partY0) : Number(reference.y0());
-        const y1 = partY1.length ? Math.max(...partY1) : Number(reference.y1());
-        const hasPartElevation = partZ0.length > 0 && partZ1.length > 0;
-        const z0 = hasPartElevation ? Math.min(...partZ0) : floorZ0;
-        const z1 = hasPartElevation ? Math.max(...partZ1) : z0;
+        const nominal = reference.nominalGeometry;
+        const x0 = nominal.x, x1 = nominal.x + nominal.w;
+        const y0 = nominal.y, y1 = nominal.y + nominal.l;
+        // Keep the renderer's legacy floor-level fallback for simple rooms.
+        const z0 = definition?.parts?.length ? nominal.z0 : floorZ0;
+        const z1 = definition?.parts?.length ? nominal.z1 : z0;
         const facadeZ1 = z1 > z0 ? z1 : z0 + defaultHeight;
         return {
           ...reference,
@@ -7604,29 +7817,14 @@ const FloorPlanFacades3D = {
     const stairLandings = [];
     floors.filter((floor) => !plan.visibleFloor || floor === plan.visibleFloor).forEach((floor) => {
       (floor?.rooms ?? []).forEach((definition) => {
-        if (isStairFlight(definition)) {
-          const part = plan.normalizeGeometryAtFloor(definition, floor);
-          stairFlights.push({ ...part, stairGradient: FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), [part]) });
-        }
-        if (String(definition.classes || "").split(/\s+/).includes("stair-landing")) {
-          const part = plan.normalizeGeometryAtFloor(definition, floor);
-          stairLandings.push({ ...part, stairGradient: FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), [part]) });
-        }
-        if (!Array.isArray(definition.parts)) return;
-        const previousHeight = plan.currentFloorHeight;
-        plan.currentFloorHeight = Number(floor?.z0 ?? 0);
-        try {
-          const parts = plan.normalizeParts(definition.parts);
-          const stairParts = parts.filter((part) => isStairFlight(part) ||
-            String(part.classes || "").split(/\s+/).includes("stair-landing"));
-          const range = FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), stairParts);
-          stairFlights.push(...parts.filter(isStairFlight).map((part) => ({ ...part, stairGradient: range })));
-          stairLandings.push(...parts.filter((part) =>
-            String(part.classes || "").split(/\s+/).includes("stair-landing"),
-          ).map((part) => ({ ...part, stairGradient: range })));
-        } finally {
-          plan.currentFloorHeight = previousHeight;
-        }
+        const parts = plan.getRoomGeometry(definition.id).normalizedParts;
+        const stairParts = parts.filter((part) => isStairFlight(part) ||
+          String(part.classes || "").split(/\s+/).includes("stair-landing"));
+        const range = FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), stairParts);
+        stairFlights.push(...stairParts.filter(isStairFlight).map((part) => ({ ...part, stairGradient: range })));
+        stairLandings.push(...stairParts.filter((part) =>
+          String(part.classes || "").split(/\s+/).includes("stair-landing"),
+        ).map((part) => ({ ...part, stairGradient: range })));
       });
     });
 
@@ -7695,44 +7893,15 @@ const FloorPlanFacades3D = {
       }
       if (roof.type !== "gable") return;
       try {
-        const baseDefinition = roof.base ?? roof;
-        const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
-        const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
-        const longitudinal = roof.orientation === "longitudinal";
-        const [overhang0, overhang1] = FloorPlanRoofs.overhangPair(
-          longitudinal ? FloorPlanRoofs.eavePair(roof) : roof.rake,
-        );
-        const baseX0 = Number(base.x0());
-        const baseX1 = Number(base.x1());
-        const baseY0 = Number(base.y0());
-        const baseY1 = Number(base.y1());
-        const baseSpan = longitudinal
-          ? baseX1 - baseX0
-          : baseY1 - baseY0;
-        const pitch = Number(roof.pitch);
-        const z0 = roof.z0 === undefined
-          ? FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor)
-          : plan.resolve(roof.z0);
-        const pitchTangent = Math.tan((pitch * Math.PI) / 180);
-        const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
-        const x0 = baseX0 - overhang0;
-        const x1 = baseX1 + overhang1;
-        const [depthOverhang0, depthOverhang1] = FloorPlanRoofs.overhangPair(
-          longitudinal ? roof.rake : FloorPlanRoofs.eavePair(roof),
-        );
-        const y0 = baseY0 - depthOverhang0;
-        const y1 = baseY1 + depthOverhang1;
-        const [slopeOverhang0, slopeOverhang1] = FloorPlanRoofs.eavePair(roof);
+        const { x0, x1, y0, y1, z0, rise, pitchTangent, minZ, peakZ } =
+          FloorPlanRoofGeometry.gableGeometry(plan, roof);
         if (finite(x0, x1, y0, y1, z0, rise, pitchTangent)) {
           drawingBounds.x0 = Math.min(drawingBounds.x0, x0);
           drawingBounds.x1 = Math.max(drawingBounds.x1, x1);
           drawingBounds.y0 = Math.min(drawingBounds.y0, y0);
           drawingBounds.y1 = Math.max(drawingBounds.y1, y1);
-          drawingBounds.z0 = Math.min(
-            drawingBounds.z0,
-            z0 - Math.max(slopeOverhang0, slopeOverhang1) * pitchTangent,
-          );
-          drawingBounds.z1 = Math.max(drawingBounds.z1, z0 + rise);
+          drawingBounds.z0 = Math.min(drawingBounds.z0, minZ);
+          drawingBounds.z1 = Math.max(drawingBounds.z1, peakZ);
         }
       } catch {
         // Invalid roof geometry is reported by the regular roof validator.
@@ -7966,7 +8135,61 @@ const FloorPlanFacades3D = {
 window.FloorPlanFacades3D = FloorPlanFacades3D;
 
 
-const FloorPlanRoofs = {
+// Shared roof construction and intersections; no DOM or rendering dependencies.
+const FloorPlanRoofGeometry = {
+  // Construct the nominal gable once. Consumers retain their existing
+  // validation policy and choose full eaves or the wall-contact footprint.
+  gableGeometry(plan, roof, { includeEaves = true, base, floor, z0 } = {}) {
+    if (!base) {
+      floor ??= this.floorForRoof(plan, roof, roof.base ?? roof);
+      base = this.resolveBase(plan, roof.base ?? roof, floor);
+    }
+    const longitudinal = roof.orientation === "longitudinal";
+    const pitch = Number(roof.pitch);
+    const eave = this.eavePair(roof), rake = this.overhangPair(roof.rake);
+    const [e0, e1] = includeEaves ? eave : [0, 0];
+    const [r0, r1] = rake;
+    const baseX0 = base.x0(), baseX1 = base.x1();
+    const baseY0 = base.y0(), baseY1 = base.y1();
+    const x0 = baseX0 - (longitudinal ? e0 : r0), x1 = baseX1 + (longitudinal ? e1 : r1);
+    const y0 = baseY0 - (longitudinal ? r0 : e0), y1 = baseY1 + (longitudinal ? r1 : e1);
+    const start = longitudinal ? baseX0 : baseY0, end = longitudinal ? baseX1 : baseY1;
+    z0 ??= roof.z0 === undefined ? this.baseCeilingZ(plan, base, 0, floor) : plan.resolve(roof.z0);
+    const tangent = Math.tan(pitch * Math.PI / 180);
+    const ridge = (start + end) / 2;
+    const baseSpan = end - start;
+    const rise = baseSpan * tangent / 2;
+    const slopes = longitudinal
+      ? [[-tangent, 0, 1, start * tangent - z0], [tangent, 0, 1, -end * tangent - z0]]
+      : [[0, -tangent, 1, start * tangent - z0], [0, tangent, 1, -end * tangent - z0]];
+    const at = (x, y) => [x, y, z0 + rise - Math.abs((longitudinal ? x : y) - ridge) * tangent];
+    const polygons = longitudinal ? [
+      [at(x0, y0), at(ridge, y0), at(ridge, y1), at(x0, y1)],
+      [at(ridge, y0), at(x1, y0), at(x1, y1), at(ridge, y1)],
+    ] : [
+      [at(x0, y0), at(x1, y0), at(x1, ridge), at(x0, ridge)],
+      [at(x0, ridge), at(x1, ridge), at(x1, y1), at(x0, y1)],
+    ];
+    return {
+      base, longitudinal, pitch, eave, rake, eave0: eave[0], eave1: eave[1],
+      baseX0, baseX1, baseY0, baseY1, baseSpan, z0, rise, pitchTangent: tangent,
+      x0, x1, y0, y1, roofWidth: x1 - x0, roofLength: y1 - y0,
+      ridgeLength: longitudinal ? y1 - y0 : x1 - x0,
+      ridgeX0: longitudinal ? ridge : x0, ridgeX1: longitudinal ? ridge : x1,
+      ridgeY0: longitudinal ? y0 : ridge, ridgeY1: longitudinal ? y1 : ridge,
+      minZ: z0 - Math.max(e0, e1) * tangent, peakZ: z0 + rise,
+      bounds: [[-1, 0, 0, x0], [1, 0, 0, -x1], [0, -1, 0, y0], [0, 1, 0, -y1]],
+      // Rake extensions are drawn but do not remove roofs beneath them.
+      intersectionBounds: [
+        [-1, 0, 0, longitudinal ? x0 : baseX0],
+        [1, 0, 0, -(longitudinal ? x1 : baseX1)],
+        [0, -1, 0, longitudinal ? baseY0 : y0],
+        [0, 1, 0, -(longitudinal ? baseY1 : y1)],
+      ],
+      slopes, polygons,
+    };
+  },
+
   eavePair(roof) {
     const legacy = this.overhangPair(roof.eave);
     return [Number(roof.eaves?.left ?? legacy[0]), Number(roof.eaves?.right ?? legacy[1])];
@@ -7980,8 +8203,6 @@ const FloorPlanRoofs = {
     return pitch;
   },
 
-  // Split at the support lines before changing the overhang slope. Each
-  // resulting patch has its own clipping volume, including at roof crossings.
   eavePatches(plan, definition) {
     const { roof } = definition;
     if (roof.eaves?.pitch === undefined) return [definition];
@@ -8032,14 +8253,6 @@ const FloorPlanRoofs = {
       + (eaves[0] + eaves[1]) / Math.cos(this.eavePitch(roof) * Math.PI / 180));
   },
 
-  axisLabel(plan, roof, length) {
-    if (roof.type !== "shed") return `${plan.roofOrientationLabel(roof.orientation)} · ${plan.formatMeters(length)} m`;
-    const slope = roof.slope ?? (roof.orientation === "longitudinal" ? "right" : "bottom");
-    const direction = { top: "frente", bottom: "fundos", left: "esquerda", right: "direita" }[slope];
-    return `Caimento: ${direction} · borda alta: ${plan.formatMeters(length)} m`;
-  },
-
-  // z0 é a cota da borda baixa na base, antes do avanço dos beirais.
   shedGeometry(plan, roof, includeEaves = true) {
     if (!["longitudinal", "transverse"].includes(roof.orientation)) {
       throw new Error('Telhado shed precisa de orientação "longitudinal" ou "transverse"');
@@ -8090,20 +8303,7 @@ const FloorPlanRoofs = {
   },
 
   clipPolygon(points, plane) {
-    if (!points.length) return [];
-    const distances = points.map((point) => plane.slice(0, 3).reduce((sum, value, i) => sum + value * point[i], plane[3]));
-    if (distances.every((value) => value <= 1e-8)) return points;
-    if (distances.every((value) => value >= -1e-8)) return [];
-    const result = [];
-    points.forEach((point, i) => {
-      const next = points[(i + 1) % points.length];
-      const a = distances[i], b = distances[(i + 1) % points.length];
-      if (a <= 1e-8) result.push(point);
-      if ((a < -1e-8 && b > 1e-8) || (a > 1e-8 && b < -1e-8)) {
-        result.push(point.map((value, axis) => value + (next[axis] - value) * a / (a - b)));
-      }
-    });
-    return result.length >= 3 ? result : [];
+    return FloorPlanGeometryOperations.clipPolygon(points, plane);
   },
 
   intersectingSurfaces(plan, roofs = plan.allRoofs ?? []) {
@@ -8124,40 +8324,11 @@ const FloorPlanRoofs = {
       }
       if (roof.type !== "gable" || !["longitudinal", "transverse"].includes(roof.orientation)) return [];
       try {
-        const floor = this.floorForRoof(plan, roof, roof.base ?? roof);
-        const base = this.resolveBase(plan, roof.base ?? roof, floor);
-        const longitudinal = roof.orientation === "longitudinal";
-        const [e0, e1] = this.eavePair(roof);
-        const [r0, r1] = this.overhangPair(roof.rake);
-        const x0 = base.x0() - (longitudinal ? e0 : r0), x1 = base.x1() + (longitudinal ? e1 : r1);
-        const y0 = base.y0() - (longitudinal ? r0 : e0), y1 = base.y1() + (longitudinal ? r1 : e1);
-        const start = longitudinal ? base.x0() : base.y0();
-        const end = longitudinal ? base.x1() : base.y1();
-        const tangent = Math.tan(Number(roof.pitch) * Math.PI / 180);
-        const z = roof.z0 === undefined ? this.baseCeilingZ(plan, base, 0, floor) : plan.resolve(roof.z0);
-        if (![x0, x1, y0, y1, tangent, z].every(Number.isFinite) || tangent < 0 || x1 <= x0 || y1 <= y0) return [];
-        const ridge = (start + end) / 2;
-        const rise = (end - start) * tangent / 2;
-        const slopes = longitudinal
-          ? [[-tangent, 0, 1, start * tangent - z], [tangent, 0, 1, -end * tangent - z]]
-          : [[0, -tangent, 1, start * tangent - z], [0, tangent, 1, -end * tangent - z]];
-        const at = (x, y) => [x, y, z + rise - Math.abs((longitudinal ? x : y) - ridge) * tangent];
-        const polygons = longitudinal ? [
-          [at(x0, y0), at(ridge, y0), at(ridge, y1), at(x0, y1)],
-          [at(ridge, y0), at(x1, y0), at(x1, y1), at(ridge, y1)],
-        ] : [
-          [at(x0, y0), at(x1, y0), at(x1, ridge), at(x0, ridge)],
-          [at(x0, ridge), at(x1, ridge), at(x1, y1), at(x0, y1)],
-        ];
-        // Rake extensions are drawn, but do not remove roofs beneath them.
-        // Eave bounds and the roof's slopes still participate in clipping.
-        const bounds = [
-          [-1, 0, 0, longitudinal ? x0 : base.x0()],
-          [1, 0, 0, -(longitudinal ? x1 : base.x1())],
-          [0, -1, 0, longitudinal ? base.y0() : y0],
-          [0, 1, 0, -(longitudinal ? base.y1() : y1)],
-        ];
-        return [{ roof, polygons, planes: [...bounds, ...slopes] }];
+        const geometry = this.gableGeometry(plan, roof);
+        const { x0, x1, y0, y1, pitchTangent, z0, polygons, intersectionBounds, slopes } = geometry;
+        if (![x0, x1, y0, y1, pitchTangent, z0].every(Number.isFinite)
+          || pitchTangent < 0 || x1 <= x0 || y1 <= y0) return [];
+        return [{ roof, polygons, planes: [...intersectionBounds, ...slopes] }];
       } catch {
         return [];
       }
@@ -8195,7 +8366,6 @@ const FloorPlanRoofs = {
     return definitions.map(({ roof }) => ({ roof, polygons: clipped.filter(entry => entry.roof === roof).flatMap(entry => entry.polygons) }));
   },
 
-  // Thickness is vertical: the existing surface remains the wall contact plane.
   solidSurface(polygons, thickness) {
     const top = (point) => [point[0], point[1], point[2] + thickness];
     const faces = polygons.map((polygon) => polygon.map(top));
@@ -8341,7 +8511,7 @@ const FloorPlanRoofs = {
     const candidates = zoneDefinitions
       .map((definition) => {
         try {
-          return FloorPlanRoofs.asGeometryBox(
+          return this.asGeometryBox(
             plan.normalizeGeometryAtFloor(definition, owningFloor),
           );
         } catch {
@@ -8378,7 +8548,7 @@ const FloorPlanRoofs = {
     if (typeof baseDefinition === "string") {
       const base = plan.references.get(baseDefinition);
       if (!base) throw new Error(`Unknown roof base reference: ${baseDefinition}`);
-      return FloorPlanRoofs.asGeometryBox(base);
+      return this.asGeometryBox(base);
     }
     if (!baseDefinition || typeof baseDefinition !== "object") {
       throw new Error("A roof base must be an object or a reference ID");
@@ -8386,12 +8556,84 @@ const FloorPlanRoofs = {
     const base = floorConfig
       ? plan.normalizeGeometryAtFloor(baseDefinition, floorConfig)
       : plan.normalizeGeometry(baseDefinition);
-    return FloorPlanRoofs.asGeometryBox(base);
+    return this.asGeometryBox(base);
   },
 
   overhangPair(value) {
     const values = Array.isArray(value) ? value : [value ?? 0, value ?? 0];
     return [Number(values[0] ?? 0), Number(values[1] ?? 0)];
+  },
+};
+
+window.FloorPlanRoofGeometry = FloorPlanRoofGeometry;
+
+
+const FloorPlanRoofs = {
+  eavePair(roof) {
+    return FloorPlanRoofGeometry.eavePair(roof);
+  },
+
+  eavePitch(roof) {
+    return FloorPlanRoofGeometry.eavePitch(roof);
+  },
+
+  // Split at the support lines before changing the overhang slope. Each
+  // resulting patch has its own clipping volume, including at roof crossings.
+  eavePatches(plan, definition) {
+    return FloorPlanRoofGeometry.eavePatches(plan, definition);
+  },
+
+  surfaceArea(roof, baseSpan, ridgeLength) {
+    return FloorPlanRoofGeometry.surfaceArea(roof, baseSpan, ridgeLength);
+  },
+
+  axisLabel(plan, roof, length) {
+    if (roof.type !== "shed") return `${plan.roofOrientationLabel(roof.orientation)} · ${plan.formatMeters(length)} m`;
+    const slope = roof.slope ?? (roof.orientation === "longitudinal" ? "right" : "bottom");
+    const direction = { top: "frente", bottom: "fundos", left: "esquerda", right: "direita" }[slope];
+    return `Caimento: ${direction} · borda alta: ${plan.formatMeters(length)} m`;
+  },
+
+  // z0 é a cota da borda baixa na base, antes do avanço dos beirais.
+  shedGeometry(plan, roof, includeEaves = true) {
+    return FloorPlanRoofGeometry.shedGeometry(plan, roof, includeEaves);
+  },
+
+  clipPolygon(points, plane) {
+    return FloorPlanRoofGeometry.clipPolygon(points, plane);
+  },
+
+  intersectingSurfaces(plan, roofs = plan.allRoofs ?? []) {
+    return FloorPlanRoofGeometry.intersectingSurfaces(plan, roofs);
+  },
+
+  // Thickness is vertical: the existing surface remains the wall contact plane.
+  solidSurface(polygons, thickness) {
+    return FloorPlanRoofGeometry.solidSurface(polygons, thickness);
+  },
+
+  surfaceEdges(polygons, boundaryOnly = false) {
+    return FloorPlanRoofGeometry.surfaceEdges(polygons, boundaryOnly);
+  },
+
+  asGeometryBox(base, label = "roof base") {
+    return FloorPlanRoofGeometry.asGeometryBox(base, label);
+  },
+
+  floorForRoof(plan, roof, baseDefinition) {
+    return FloorPlanRoofGeometry.floorForRoof(plan, roof, baseDefinition);
+  },
+
+  baseCeilingZ(plan, base, fallback = 0, floorConfig) {
+    return FloorPlanRoofGeometry.baseCeilingZ(plan, base, fallback, floorConfig);
+  },
+
+  resolveBase(plan, baseDefinition, floorConfig) {
+    return FloorPlanRoofGeometry.resolveBase(plan, baseDefinition, floorConfig);
+  },
+
+  overhangPair(value) {
+    return FloorPlanRoofGeometry.overhangPair(value);
   },
 
   formatOverhang(plan, value) {
@@ -8442,29 +8684,15 @@ const FloorPlanRoofs = {
         ) {
           throw new Error("A roof eave and rake must be non-negative numbers");
         }
-        const longitudinal = roof.orientation === "longitudinal";
-        const x0 = base.x0() - (longitudinal ? eave0 : rake0);
-        const x1 = base.x1() + (longitudinal ? eave1 : rake1);
-        const y0 = base.y0() - (longitudinal ? rake0 : eave0);
-        const y1 = base.y1() + (longitudinal ? rake1 : eave1);
         const z0 = shed ? shed.z0 :
           roof.z0 !== undefined
             ? plan.resolve(roof.z0)
             : FloorPlanRoofs.baseCeilingZ(plan, base);
         if (!Number.isFinite(z0))
           throw new Error("A cota z0 do telhado precisa ser numérica");
-        const radians = (pitch * Math.PI) / 180;
-        const baseSpan = longitudinal ? base.w() : base.l();
-        const baseX0 = base.x0();
-        const baseX1 = base.x1();
-        const baseY0 = base.y0();
-        const baseY1 = base.y1();
-        const ridgeX = shed ? shed.ridgeX0 : longitudinal ? (baseX0 + baseX1) / 2 : x0;
-        const ridgeY = shed ? shed.ridgeY0 : longitudinal ? y0 : (baseY0 + baseY1) / 2;
-        const ridgeEndX = shed ? shed.ridgeX1 : longitudinal ? ridgeX : x1;
-        const ridgeEndY = shed ? shed.ridgeY1 : longitudinal ? y1 : ridgeY;
-        const ridgeLength = Math.hypot(ridgeEndX - ridgeX, ridgeEndY - ridgeY);
-        const rise = shed ? shed.rise : (baseSpan / 2) * Math.tan(radians);
+        const geometry = shed ?? FloorPlanRoofGeometry.gableGeometry(plan, roof, { base, z0 });
+        const { longitudinal, x0, x1, y0, y1, rise, ridgeLength } = geometry;
+        const { ridgeX0: ridgeX, ridgeY0: ridgeY, ridgeX1: ridgeEndX, ridgeY1: ridgeEndY } = geometry;
         roof.bounds = () =>
           FloorPlanGeometryBox.fromValues({
             x: x0,
@@ -8614,6 +8842,129 @@ const FloorPlanRoofs = {
 window.FloorPlanRoofs = FloorPlanRoofs;
 
 
+// Pure height-band analysis. All regions use the supplied physical roof underside.
+const FloorPlanHeadroomAnalysis = {
+  thresholds: [1.3, 2.1, 3],
+
+  area(polygon) {
+    return FloorPlanGeometryOperations.area(polygon);
+  },
+
+  rectangle({ x, y, w, l }) {
+    return FloorPlanGeometryOperations.rectangle({ x, y, w, l });
+  },
+
+  subtract(polygon, cutter) {
+    return FloorPlanGeometryOperations.subtract(polygon, cutter);
+  },
+
+  union(polygons) {
+    return FloorPlanGeometryOperations.union(polygons);
+  },
+
+  calculate(parts, surfaces, floorZ, deductions = [], thresholds = this.thresholds) {
+    // Use the same intersected underside polygons as the 3D roof. Thickness
+    // grows above this reference surface, as in solidSurface(). Retained lower
+    // roofs (clip_intersections: false / rake extensions) also limit clearance.
+    const overhead = surfaces.flatMap(entry => entry.polygons)
+      .map(polygon => FloorPlanGeometryOperations.clipPolygon(polygon, [0, 0, -1, floorZ + 1e-8]))
+      .filter(polygon => this.area(polygon) > 1e-10);
+    const footprints = this.union(parts.map(part => this.rectangle(part)));
+    return thresholds.map(height => {
+      const high = overhead.map(polygon => FloorPlanGeometryOperations.clipPolygon(polygon, [0, 0, -1, floorZ + height]));
+      const low = overhead.map(polygon => FloorPlanGeometryOperations.clipPolygon(polygon, [0, 0, 1, -floorZ - height]))
+        .filter(polygon => polygon.some(point => point[2] < floorZ + height - 1e-8));
+      const candidates = high.flatMap(polygon => footprints.flatMap(footprint => {
+        let pieces = [polygon];
+        for (let i = 0; i < footprint.length; i += 1) {
+          const p = footprint[i], q = footprint[(i + 1) % footprint.length];
+          const a = q[1] - p[1], b = p[0] - q[0];
+          pieces = pieces.map(piece => FloorPlanGeometryOperations.clipPolygon(piece, [a, b, 0, -a*p[0]-b*p[1]]));
+        }
+        return pieces.filter(piece => this.area(piece) > 1e-10);
+      }));
+      let polygons = this.union(candidates);
+      for (const cutter of [...low, ...deductions.map(part => this.rectangle(part))])
+        polygons = polygons.flatMap(polygon => this.subtract(polygon, cutter));
+      return { height, polygons, area: polygons.reduce((sum, polygon) => sum + this.area(polygon), 0) };
+    });
+  },
+
+  analyzeRoom(room, surfaces, deductions, thresholds = this.thresholds) {
+    const areas = this.calculate(room.parts, surfaces, room.z0, deductions, thresholds);
+    const covered = this.calculate(room.parts, surfaces, room.z0, deductions, [0])[0];
+    const cumulative = [covered, ...areas];
+    const bands = cumulative.map(({ height, polygons }, index) => {
+      let region = polygons;
+      for (const cutter of cumulative[index + 1]?.polygons ?? [])
+        region = region.flatMap((polygon) => this.subtract(polygon, cutter));
+      const largest = region.reduce((best, polygon) =>
+        this.area(polygon) > this.area(best) ? polygon : best, []);
+      return {
+        height,
+        polygons: region,
+        area: region.reduce((sum, polygon) => sum + this.area(polygon), 0),
+        labelPosition: largest.length ? [0, 1].map((axis) =>
+          largest.reduce((sum, point) => sum + point[axis], 0) / largest.length) : null,
+      };
+    });
+    return { areas, covered, bands };
+  },
+};
+
+window.FloorPlanHeadroomAnalysis = FloorPlanHeadroomAnalysis;
+
+
+// Render precomputed regions; visibility affects presentation only.
+const FloorPlanHeadroomView = {
+  appendBands(plan, svg, result, { colors, label, allLabels = false }) {
+    result.bands.forEach(({ height, polygons: band, area: bandArea, labelPosition }, index) => {
+      const area = index === 0 ? bandArea : result.areas[index - 1].area;
+      const path = document.createElementNS(svg.namespaceURI, "path");
+      path.setAttribute("d", band.map(polygon => `M${polygon.map(p => `${p[0]},${p[1]}`).join("L")}Z`).join(" "));
+      path.setAttribute("fill", index === 0 ? "rgba(210, 110, 25, 0.24)" : colors[index - 1]);
+      const title = document.createElementNS(svg.namespaceURI, "title");
+      title.textContent = index === 0
+        ? `${label}: altura < 1,30 m — ${plan.formatMeters(bandArea)} m²`
+        : `${label}: altura ≥ ${plan.formatMeters(height)} m — ${plan.formatMeters(area)} m²`;
+      path.append(title);
+      svg.append(path);
+      if (labelPosition && (allLabels || height < 3)) {
+        const annotation = document.createElementNS(svg.namespaceURI, "text");
+        annotation.setAttribute("class", "headroom-height-label");
+        annotation.setAttribute("x", labelPosition[0]);
+        annotation.setAttribute("y", labelPosition[1]);
+        annotation.textContent = allLabels && height === 0 ? "1,3−" : `${height.toLocaleString("pt-BR")}+`;
+        svg.append(annotation);
+      }
+    });
+  },
+
+  render(plan, { results, enabled, colors }) {
+    const legend = document.querySelector("#comfort-legend");
+    if (legend) legend.hidden = !plan.roomElements.some((room) => enabled(room.dataset.id))
+      && !plan.root.querySelector(".stair-headroom-zone:not(.layer-hidden)");
+    for (const room of plan.roomElements) {
+      room.querySelectorAll(":scope > .headroom-zone").forEach((element) => element.remove());
+      const result = results?.get(room.dataset.id);
+      if (!result) continue;
+      room.comfortAreas = result.areas;
+      if (!enabled(room.dataset.id)) continue;
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("class", "headroom-zone");
+      svg.setAttribute("aria-label", `Altura livre — ${room.dataset.label}`);
+      svg.setAttribute("viewBox", `${room.x0()} ${room.y0()} ${room.w()} ${room.l()}`);
+      svg.setAttribute("preserveAspectRatio", "none");
+      svg.setAttribute("overflow", "hidden");
+      this.appendBands(plan, svg, result, { colors, label: room.dataset.label });
+      room.append(svg);
+    }
+  },
+};
+
+window.FloorPlanHeadroomView = FloorPlanHeadroomView;
+
+
 const FloorPlanHeadroom = {
   thresholds: [1.3, 2.1, 3],
 
@@ -8625,116 +8976,60 @@ const FloorPlanHeadroom = {
   colors: ["rgba(240, 140, 35, 0.14)", "rgba(245, 215, 75, 0.14)", "rgba(255, 255, 255, 0.35)"],
 
   area(polygon) {
-    return Math.abs(polygon.reduce((sum, [x, y], i) => {
-      const next = polygon[(i + 1) % polygon.length];
-      return sum + x * next[1] - next[0] * y;
-    }, 0)) / 2;
+    return FloorPlanGeometryOperations.area(polygon);
   },
 
   rectangle({ x, y, w, l }) {
-    return [[x, y, 0], [x + w, y, 0], [x + w, y + l, 0], [x, y + l, 0]];
+    return FloorPlanGeometryOperations.rectangle({ x, y, w, l });
   },
 
   // Subtract a convex footprint, preserving disjoint convex pieces.
   subtract(polygon, cutter) {
-    if (!cutter.length || this.area(cutter) < 1e-10) return [polygon];
-    const signed = cutter.reduce((sum, p, i) => {
-      const q = cutter[(i + 1) % cutter.length];
-      return sum + p[0] * q[1] - q[0] * p[1];
-    }, 0);
-    let inside = polygon;
-    const outside = [];
-    for (let i = 0; i < cutter.length && inside.length; i += 1) {
-      const p = cutter[i], q = cutter[(i + 1) % cutter.length];
-      const sign = signed > 0 ? 1 : -1;
-      const a = sign * (q[1] - p[1]), b = sign * (p[0] - q[0]);
-      const plane = [a, b, 0, -a * p[0] - b * p[1]];
-      const next = FloorPlanRoofs.clipPolygon(inside, plane);
-      const remainder = FloorPlanRoofs.clipPolygon(inside, plane.map(v => -v));
-      if (remainder.length && this.area(remainder) > 1e-10 && remainder !== next) outside.push(remainder);
-      inside = next;
-    }
-    return outside;
+    return FloorPlanGeometryOperations.subtract(polygon, cutter);
   },
 
   union(polygons) {
-    const result = [];
-    for (const polygon of polygons) {
-      let pieces = [polygon];
-      for (const previous of result) pieces = pieces.flatMap(piece => this.subtract(piece, previous));
-      result.push(...pieces.filter(piece => this.area(piece) > 1e-10));
-    }
-    return result;
+    return FloorPlanGeometryOperations.union(polygons);
   },
 
   calculate(parts, surfaces, floorZ, deductions = [], thresholds = this.thresholds) {
-    // Use the same intersected underside polygons as the 3D roof. Thickness
-    // grows above this reference surface, as in solidSurface(). Retained lower
-    // roofs (clip_intersections: false / rake extensions) also limit clearance.
-    const overhead = surfaces.flatMap(entry => entry.polygons)
-      .map(polygon => FloorPlanRoofs.clipPolygon(polygon, [0, 0, -1, floorZ + 1e-8]))
-      .filter(polygon => this.area(polygon) > 1e-10);
-    const footprints = this.union(parts.map(part => this.rectangle(part)));
-    return thresholds.map(height => {
-      const high = overhead.map(polygon => FloorPlanRoofs.clipPolygon(polygon, [0, 0, -1, floorZ + height]));
-      const low = overhead.map(polygon => FloorPlanRoofs.clipPolygon(polygon, [0, 0, 1, -floorZ - height]))
-        .filter(polygon => polygon.some(point => point[2] < floorZ + height - 1e-8));
-      const candidates = high.flatMap(polygon => footprints.flatMap(footprint => {
-        let pieces = [polygon];
-        for (let i = 0; i < footprint.length; i += 1) {
-          const p = footprint[i], q = footprint[(i + 1) % footprint.length];
-          const a = q[1] - p[1], b = p[0] - q[0];
-          pieces = pieces.map(piece => FloorPlanRoofs.clipPolygon(piece, [a, b, 0, -a*p[0]-b*p[1]]));
-        }
-        return pieces.filter(piece => this.area(piece) > 1e-10);
-      }));
-      let polygons = this.union(candidates);
-      for (const cutter of [...low, ...deductions.map(part => this.rectangle(part))])
-        polygons = polygons.flatMap(polygon => this.subtract(polygon, cutter));
-      return { height, polygons, area: polygons.reduce((sum, polygon) => sum + this.area(polygon), 0) };
-    });
+    return FloorPlanHeadroomAnalysis.calculate(parts, surfaces, floorZ, deductions, thresholds);
+  },
+
+  prepare(plan) {
+    const rooms = [...plan.roomDefinitions.entries()]
+      .filter(([id]) => !plan.invalidRoomIds?.has(id))
+      .map(([id, definition]) => {
+        const reference = plan.getRoomGeometry(id);
+        return {
+          id,
+          floorId: plan.roomFloorConfigs.get(id)?.id,
+          z0: reference.z0(),
+          overlapTargets: plan.normalizeOverlapTargets(definition.overlaps),
+          parts: reference.normalizedParts.map((part) => ({
+            ...part,
+            overlapTargets: plan.normalizeOverlapTargets(part.overlaps ?? definition.overlaps),
+          })),
+        };
+      });
+    const items = plan.allItems.map((item) => ({
+      x: item.x, y: item.y, w: item.w, l: item.l, floorId: item.floorId,
+      overlapTargets: plan.normalizeOverlapTargets(item.overlaps),
+    }));
+    const surfaces = FloorPlanRoofGeometry.intersectingSurfaces(plan);
+    plan.headroomResults = new Map(rooms.map((room) => {
+      const deductions = FloorPlanRoomArea.deductionsFor(room, rooms, items, { sameFloor: true });
+      return [room.id, FloorPlanHeadroomAnalysis.analyzeRoom(room, surfaces, deductions, this.thresholds)];
+    }));
+    return plan.headroomResults;
   },
 
   render(plan) {
-    const surfaces = FloorPlanRoofs.intersectingSurfaces(plan);
-    const enabled = room => this.enabled(plan, room.dataset.id);
-    const legend = document.querySelector("#comfort-legend");
-    if (legend) legend.hidden = !plan.roomElements.some(enabled);
-    for (const room of plan.roomElements) {
-      if (!enabled(room)) continue;
-      const ids = new Set([room.dataset.id, ...room.geometryParts.map(part => `${room.dataset.id}.${part.id}`)]);
-      const deductions = plan.roomElements.filter(other => other !== room && other.dataset.floorId === room.dataset.floorId)
-        .flatMap(other => other.geometryParts.filter(part =>
-          (part.overlapTargets ?? other.allowedOverlaps ?? []).some(id => ids.has(id))));
-      deductions.push(...plan.itemElements.filter(item => item.dataset.floorId === room.dataset.floorId &&
-        (item.allowedOverlaps ?? []).some(id => ids.has(id)))
-        .map(item => ({ x: item.x0(), y: item.y0(), w: item.w(), l: item.l() })));
-      room.comfortAreas = this.calculate(room.geometryParts, surfaces, room.z0(), deductions);
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.setAttribute("class", "headroom-zone");
-      svg.setAttribute("aria-label", `Altura livre — ${room.dataset.label}`);
-      svg.setAttribute("viewBox", `${room.x0()} ${room.y0()} ${room.w()} ${room.l()}`);
-      svg.setAttribute("preserveAspectRatio", "none");
-      svg.setAttribute("overflow", "hidden");
-      const covered = this.calculate(room.geometryParts, surfaces, room.z0(), deductions, [0])[0];
-      const bands = [covered, ...room.comfortAreas];
-      bands.forEach(({ height, polygons, area }, index) => {
-        // Paint disjoint bands so translucent colors never mix.
-        let band = polygons;
-        for (const cutter of bands[index + 1]?.polygons ?? [])
-          band = band.flatMap(polygon => this.subtract(polygon, cutter));
-        const path = document.createElementNS(svg.namespaceURI, "path");
-        path.setAttribute("d", band.map(polygon => `M${polygon.map(p => `${p[0]},${p[1]}`).join("L")}Z`).join(" "));
-        path.setAttribute("fill", index === 0 ? "rgba(210, 110, 25, 0.24)" : this.colors[index - 1]);
-        const title = document.createElementNS(svg.namespaceURI, "title");
-        title.textContent = index === 0
-          ? `${room.dataset.label}: altura < 1,30 m — ${plan.formatMeters(band.reduce((sum, polygon) => sum + this.area(polygon), 0))} m²`
-          : `${room.dataset.label}: altura ≥ ${plan.formatMeters(height)} m — ${plan.formatMeters(area)} m²`;
-        path.append(title);
-        svg.append(path);
-      });
-      room.append(svg);
-    }
+    return FloorPlanHeadroomView.render(plan, {
+      results: plan.headroomResults,
+      enabled: (id) => this.enabled(plan, id),
+      colors: this.colors,
+    });
   },
 };
 window.FloorPlanHeadroom = FloorPlanHeadroom;
@@ -8962,53 +9257,7 @@ const FloorPlanWalls = {
 
   // Clip a convex solid, closing the cut with a face ordered around its normal.
   clipSolid(faces, plane) {
-    const distance = (point) => plane.slice(0, 3).reduce((sum, n, i) => sum + n * point[i], plane[3]);
-    const distances = faces.flat().map(distance);
-    if (distances.every((value) => value <= 1e-9)) return faces;
-    if (distances.every((value) => value >= -1e-9)) return [];
-    const cuts = [];
-    const result = faces.map((face) => {
-      const polygon = [];
-      face.forEach((point, i) => {
-        const next = face[(i + 1) % face.length];
-        const a = distance(point);
-        const b = distance(next);
-        if (a <= 1e-9) polygon.push(point);
-        if ((a < -1e-9 && b > 1e-9) || (a > 1e-9 && b < -1e-9)) {
-          const cut = point.map((value, axis) => value + (next[axis] - value) * a / (a - b));
-          polygon.push(cut);
-          cuts.push(cut);
-        } else if (Math.abs(a) <= 1e-9) cuts.push(point);
-      });
-      return polygon;
-    }).filter((face) => face.length >= 3);
-    const unique = cuts.filter((point, i) => cuts.findIndex((other) =>
-      point.every((value, axis) => Math.abs(value - other[axis]) < 1e-8)) === i);
-    if (unique.length >= 3) {
-      const center = unique[0].map((_, axis) => unique.reduce((sum, point) => sum + point[axis], 0) / unique.length);
-      const normal = plane.slice(0, 3);
-      const magnitude = Math.hypot(...normal);
-      const n = normal.map((value) => value / magnitude);
-      const seed = Math.abs(n[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
-      const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
-      const u = cross(n, seed);
-      const v = cross(n, u);
-      const angle = (point) => {
-        const delta = point.map((value, axis) => value - center[axis]);
-        return Math.atan2(delta.reduce((sum, value, axis) => sum + value * v[axis], 0), delta.reduce((sum, value, axis) => sum + value * u[axis], 0));
-      };
-      unique.sort((a, b) => angle(a) - angle(b));
-      result.push(unique);
-    }
-    const volume = result.reduce((sum, face) => {
-      const a = face[0];
-      for (let i = 1; i < face.length - 1; i += 1) {
-        const b = face[i], c = face[i + 1];
-        sum += a[0] * (b[1] * c[2] - b[2] * c[1]) + a[1] * (b[2] * c[0] - b[0] * c[2]) + a[2] * (b[0] * c[1] - b[1] * c[0]);
-      }
-      return sum;
-    }, 0);
-    return Math.abs(volume) > 1e-10 ? result : [];
+    return FloorPlanGeometryOperations.clipSolid(faces, plane);
   },
 
   outlineSegments(solids) {
@@ -9227,32 +9476,16 @@ const FloorPlanWalls = {
     return roofs.flatMap((roof) => {
       if (roof.type === "shed") {
         try {
-          const { peakZ, bounds, slopes } = FloorPlanRoofs.shedGeometry(plan, roof, false);
+          const { peakZ, bounds, slopes } = FloorPlanRoofGeometry.shedGeometry(plan, roof, false);
           return [{ peakZ, bounds, slopes }];
         } catch { return []; }
       }
       if (roof.type !== "gable" || !["longitudinal", "transverse"].includes(roof.orientation)) return [];
       try {
-        const floor = FloorPlanRoofs.floorForRoof(plan, roof, roof.base ?? roof);
-        const base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof, floor);
-        const longitudinal = roof.orientation === "longitudinal";
-        const [r0, r1] = FloorPlanRoofs.overhangPair(roof.rake);
-        const x0 = base.x0() - (longitudinal ? 0 : r0);
-        const x1 = base.x1() + (longitudinal ? 0 : r1);
-        const y0 = base.y0() - (longitudinal ? r0 : 0);
-        const y1 = base.y1() + (longitudinal ? r1 : 0);
-        const start = longitudinal ? base.x0() : base.y0();
-        const end = longitudinal ? base.x1() : base.y1();
-        const tangent = Math.tan(Number(roof.pitch) * Math.PI / 180);
-        const z = roof.z0 === undefined ? FloorPlanRoofs.baseCeilingZ(plan, base, 0, floor) : plan.resolve(roof.z0);
-        if (![x0, x1, y0, y1, tangent, z].every(Number.isFinite) || tangent < 0) return [];
-        return [{
-          peakZ: z + (end - start) * tangent / 2,
-          bounds: [[-1, 0, 0, x0], [1, 0, 0, -x1], [0, -1, 0, y0], [0, 1, 0, -y1]],
-          slopes: longitudinal
-            ? [[-tangent, 0, 1, tangent * start - z], [tangent, 0, 1, -tangent * end - z]]
-            : [[0, -tangent, 1, tangent * start - z], [0, tangent, 1, -tangent * end - z]],
-        }];
+        const { peakZ, bounds, slopes, x0, x1, y0, y1, pitchTangent, z0 } =
+          FloorPlanRoofGeometry.gableGeometry(plan, roof, { includeEaves: false });
+        if (![x0, x1, y0, y1, pitchTangent, z0].every(Number.isFinite) || pitchTangent < 0) return [];
+        return [{ peakZ, bounds, slopes }];
       } catch {
         return [];
       }
@@ -9260,9 +9493,7 @@ const FloorPlanWalls = {
   },
 
   boxFaces(x0, y0, z0, x1, y1, z1) {
-    const a = [x0, y0, z0], b = [x1, y0, z0], c = [x1, y1, z0], d = [x0, y1, z0];
-    const e = [x0, y0, z1], f = [x1, y0, z1], g = [x1, y1, z1], h = [x0, y1, z1];
-    return [[a, d, c, b], [e, f, g, h], [a, b, f, e], [b, c, g, f], [c, d, h, g], [d, a, e, h]];
+    return FloorPlanGeometryOperations.boxFaces(x0, y0, z0, x1, y1, z1);
   },
 
   geometryParts(wall) {
@@ -10017,13 +10248,11 @@ const FloorPlanElements = {
   },
 
   resolveItemType(plan, item) {
-    const previous = plan.itemReferenceContext;
-    plan.itemReferenceContext = true;
-    try {
-      return this.resolveItemDefinition(plan, item);
-    } finally {
-      plan.itemReferenceContext = previous;
-    }
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      itemReferences: true,
+      roomBoundsCache: new Map(),
+    });
+    return this.resolveItemDefinition(scoped, item);
   },
 
   resolveItemDefinition(plan, item) {
@@ -10180,10 +10409,8 @@ const FloorPlanReferences = {
       plan.references.set(id, reference);
     });
     const floors = config.floors ?? [config];
-    const roomFloors = new Map();
     floors.forEach((floor) => {
       (floor.rooms ?? []).forEach((room) => {
-        roomFloors.set(room.id, floor);
         plan.roomFloorConfigs.set(room.id, floor);
       });
     });
@@ -10194,10 +10421,7 @@ const FloorPlanReferences = {
     FloorPlanReferences.registerStaticItemReferences(plan, config);
     FloorPlanReferences.registerWallReferences(plan, config);
     plan.registerRoofReferences(config);
-    const previousFloorHeight = plan.currentFloorHeight;
     plan.roomDefinitions.forEach((_room, id) => {
-      const floor = roomFloors.get(id) ?? floors[0];
-      plan.currentFloorHeight = Number(floor?.z0 ?? 0);
       try {
         plan.getRoomGeometry(id);
       } catch (error) {
@@ -10208,8 +10432,6 @@ const FloorPlanReferences = {
           opening: plan.roomDefinitions.get(id),
           message: error.message,
         });
-      } finally {
-        plan.currentFloorHeight = previousFloorHeight;
       }
     });
     FloorPlanWalls.normalizeRoomWalls(plan, config);
@@ -10317,13 +10539,13 @@ const FloorPlanReferences = {
         plan.resolve(toXValue, {
           x0: startX(),
           y0: startY(),
-          z0: plan.currentFloorHeight,
+          z0: FloorPlanGeometry.context(plan).floorZ,
         });
       const endpointY = () =>
         plan.resolve(toYValue, {
           x0: startX(),
           y0: startY(),
-          z0: plan.currentFloorHeight,
+          z0: FloorPlanGeometry.context(plan).floorZ,
         });
       plan.references.set(guide.id, {
         x0: startX,
@@ -10498,8 +10720,8 @@ const FloorPlanReferences = {
         if (plan.references.has(roof.id)) return;
         try {
           const baseDefinition = roof.base ?? roof;
-          const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
-          const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
+          const floor = FloorPlanRoofGeometry.floorForRoof(plan, roof, baseDefinition);
+          const base = FloorPlanRoofGeometry.resolveBase(plan, baseDefinition, floor);
           plan.references.set(roof.id, base);
         } catch (error) {
           unresolved.push(roof);
@@ -10631,54 +10853,56 @@ const FloorPlanReferences = {
     return [...globalGuides, ...(floorConfig.guides ?? [])];
   },
 
-  validateInactiveFloorFeatures(plan, config, activeFloorIndex) {
-    (config.floors ?? []).forEach((floorConfig, floorIndex) => {
-      if (floorIndex === activeFloorIndex) return;
-      const previousFloorHeight = plan.currentFloorHeight;
-      plan.currentFloorHeight = Number(floorConfig.z0 ?? 0);
+  collectFloorFeatureErrors(plan, floorConfig) {
+    const errors = [];
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      floorZ: Number(floorConfig.z0 ?? 0), floorId: floorConfig.id ?? null,
+    });
+    (floorConfig.zones ?? []).forEach((zone, index) => {
       try {
-        (floorConfig.zones ?? []).forEach((zone, index) => {
-          try {
-            plan.normalizeGeometry(zone);
-          } catch (error) {
-            plan.errors.push({
-              index,
-              opening: zone,
-              category: "zone",
-              message: error.message,
-            });
-          }
+        scoped.normalizeGeometry(zone);
+      } catch (error) {
+        errors.push({
+          index,
+          opening: zone,
+          category: "zone",
+          message: error.message,
         });
-        (window.FloorPlanElements?.items(plan, floorConfig) ?? floorConfig.items ?? []).forEach((item, index) => {
-          try {
-            plan.normalizeGeometry(plan.resolveItemType(item));
-          } catch (error) {
-            plan.errors.push({
-              index,
-              opening: item,
-              category: "item",
-              message: error.message,
-            });
-          }
-        });
-        [
-          ...FloorPlanOpenings.forFloor(plan, floorConfig),
-        ].forEach((opening, index) => {
-          if (plan.isVerticalOpening(opening)) return;
-          try {
-            plan.normalizeOpening(opening);
-          } catch (error) {
-            plan.errors.push({
-              index,
-              opening,
-              category: opening.type === "door" ? "door" : opening.type === "window" ? "window" : "opening",
-              message: error.message,
-            });
-          }
-        });
-      } finally {
-        plan.currentFloorHeight = previousFloorHeight;
       }
+    });
+    (window.FloorPlanElements?.items(scoped, floorConfig) ?? floorConfig.items ?? []).forEach((item, index) => {
+      try {
+        scoped.normalizeGeometry(scoped.resolveItemType(item));
+      } catch (error) {
+        errors.push({
+          index,
+          opening: item,
+          category: "item",
+          message: error.message,
+        });
+      }
+    });
+    [
+      ...FloorPlanOpenings.forFloor(scoped, floorConfig),
+    ].forEach((opening, index) => {
+      if (scoped.isVerticalOpening(opening)) return;
+      try {
+        scoped.normalizeOpening(opening);
+      } catch (error) {
+        errors.push({
+          index,
+          opening,
+          category: opening.type === "door" ? "door" : opening.type === "window" ? "window" : "opening",
+          message: error.message,
+        });
+      }
+    });
+    return errors;
+  },
+
+  validateInactiveFloorFeatures(plan, config, activeFloorIndex) {
+    (config.floors ?? []).forEach((floor, index) => {
+      if (index !== activeFloorIndex) plan.errors.push(...this.collectFloorFeatureErrors(plan, floor));
     });
   },
 
@@ -10704,7 +10928,7 @@ const FloorPlanReferences = {
     const globalRoofs = config.floors ? (config.roofs ?? []) : [];
     globalRoofs.forEach((roof) => {
       const baseDefinition = roof.base ?? roof;
-      const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
+      const floor = FloorPlanRoofGeometry.floorForRoof(plan, roof, baseDefinition);
       plan.allRoofs.push({
         ...roof,
         floorId: floor?.id ?? null,
@@ -10712,8 +10936,9 @@ const FloorPlanReferences = {
       });
     });
     floors.forEach((floorConfig) => {
-      const previousFloorHeight = plan.currentFloorHeight;
-      plan.currentFloorHeight = Number(floorConfig.z0 ?? 0);
+      const scoped = FloorPlanGeometry.inContext(plan, {
+        floorZ: Number(floorConfig.z0 ?? 0), floorId: floorConfig.id ?? null,
+      });
       (floorConfig.roofs ?? []).forEach((roof) => {
         plan.allRoofs.push({
           ...roof,
@@ -10721,10 +10946,10 @@ const FloorPlanReferences = {
           floorLabel: floorConfig.label,
         });
       });
-      (window.FloorPlanElements?.items(plan, floorConfig) ?? floorConfig.items ?? []).forEach((item) => {
+      (window.FloorPlanElements?.items(scoped, floorConfig) ?? floorConfig.items ?? []).forEach((item) => {
         try {
-          const resolvedItem = plan.resolveItemType(item);
-          const geometry = plan.normalizeGeometry(resolvedItem);
+          const resolvedItem = scoped.resolveItemType(item);
+          const geometry = scoped.normalizeGeometry(resolvedItem);
           plan.allItems.push({
             ...resolvedItem,
             ...geometry,
@@ -10735,10 +10960,10 @@ const FloorPlanReferences = {
           // The active-floor render path records the detailed error.
         }
       });
-      FloorPlanOpenings.forFloor(plan, floorConfig).forEach((opening) => {
-        if (plan.isVerticalOpening(opening)) return;
+      FloorPlanOpenings.forFloor(scoped, floorConfig).forEach((opening) => {
+        if (scoped.isVerticalOpening(opening)) return;
         try {
-          const feature = plan.normalizeOpening(opening);
+          const feature = scoped.normalizeOpening(opening);
           const target =
             feature.type === "window" ? plan.allWindows : plan.allOpenings;
           target.push({
@@ -10750,7 +10975,6 @@ const FloorPlanReferences = {
           // Validation and rendering record the error with its source data.
         }
       });
-      plan.currentFloorHeight = previousFloorHeight;
     });
   },
 
@@ -10772,6 +10996,12 @@ const FloorPlanReferences = {
       area: () => plan.getRoomGeometry(id).area(),
       wallState: (side) => plan.getRoomGeometry(id).wallState(side),
       hasWall: (side) => plan.getRoomGeometry(id).hasWall(side),
+      get normalizedParts() {
+        return plan.getRoomGeometry(id).normalizedParts;
+      },
+      get nominalGeometry() {
+        return plan.getRoomGeometry(id).nominalGeometry;
+      },
       get geometryParts() {
         return plan.getRoomGeometry(id).geometryParts;
       },
@@ -10788,47 +11018,30 @@ const FloorPlanReferences = {
 
   normalizeParts(plan, parts) {
     const localReferences = new Map();
-    plan.partReferenceStack.push(localReferences);
-    try {
-      const geometries = new Map();
-      const pending = new Set();
-      const geometryAt = (index) => {
-        if (geometries.has(index)) return geometries.get(index);
-        const part = parts[index];
-        if (pending.has(index)) throw new Error(`Referência circular entre partes: ${part.id || index + 1}`);
-        pending.add(index);
-        try {
-          const geometry = { ...plan.normalizeGeometry(part), id: part.id || `part-${index + 1}` };
-          geometries.set(index, geometry);
-          return geometry;
-        } finally {
-          pending.delete(index);
-        }
-      };
-      parts.forEach((part, index) => {
-        const reference = {
-          x0: () => geometryAt(index).x,
-          x1: () => geometryAt(index).x + geometryAt(index).w,
-          xc: () => geometryAt(index).x + geometryAt(index).w / 2,
-          y0: () => geometryAt(index).y,
-          y1: () => geometryAt(index).y + geometryAt(index).l,
-          yc: () => geometryAt(index).y + geometryAt(index).l / 2,
-          z0: () => geometryAt(index).z0,
-          z1: () => geometryAt(index).z1,
-          zc: () => (geometryAt(index).z0 + geometryAt(index).z1) / 2,
-          h: () => geometryAt(index).h,
-          w: () => geometryAt(index).w,
-          l: () => geometryAt(index).l,
-          area: () => geometryAt(index).w * geometryAt(index).l,
-        };
-        const id = part.id || `part-${index + 1}`;
-        FloorPlanGeometryBox.attach(reference, { label: id });
-        localReferences.set(id, reference);
-      });
-      return parts.map((_, index) => geometryAt(index));
-    } finally {
-      plan.partReferenceStack.pop();
-    }
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      partScopes: [...FloorPlanGeometry.context(plan).partScopes, localReferences],
+    });
+    const geometries = new Map();
+    const pending = new Set();
+    const geometryAt = (index) => {
+      if (geometries.has(index)) return geometries.get(index);
+      const part = parts[index];
+      if (pending.has(index)) throw new Error(`Referência circular entre partes: ${part.id || index + 1}`);
+      pending.add(index);
+      try {
+        const geometry = { ...scoped.normalizeGeometry(part), id: part.id || `part-${index + 1}` };
+        geometries.set(index, geometry);
+        return geometry;
+      } finally {
+        pending.delete(index);
+      }
+    };
+    parts.forEach((part, index) => {
+      const id = part.id || `part-${index + 1}`;
+      const reference = FloorPlanGeometryBox.fromGeometry(() => geometryAt(index), { label: id });
+      localReferences.set(id, reference);
+    });
+    return parts.map((_, index) => geometryAt(index));
   },
 
   getRoomGeometry(plan, id) {
@@ -10849,85 +11062,266 @@ const FloorPlanReferences = {
       throw new Error(`Circular room reference: ${id}`);
 
     plan.roomGeometryStack.add(id);
-    const previousFloorHeight = plan.currentFloorHeight;
     try {
       const room = plan.roomDefinitions.get(id);
       const owningFloor = plan.roomFloorConfigs?.get(id);
-      if (owningFloor) plan.currentFloorHeight = Number(owningFloor.z0 ?? 0);
-      const parts = room.parts?.length
-        ? plan.normalizeParts(room.parts)
-        : undefined;
-      const geometry = parts?.length
-        ? {
-            x: Math.min(...parts.map((part) => part.x)),
-            y: Math.min(...parts.map((part) => part.y)),
-            w:
-              Math.max(...parts.map((part) => part.x + part.w)) -
-              Math.min(...parts.map((part) => part.x)),
-            l:
-              Math.max(...parts.map((part) => part.y + part.l)) -
-              Math.min(...parts.map((part) => part.y)),
-          }
-        : plan.normalizeGeometry(room);
+      const scoped = FloorPlanGeometry.inContext(plan, {
+        ...(owningFloor ? { floorZ: Number(owningFloor.z0 ?? 0), floorId: owningFloor.id ?? null } : {}),
+        itemReferences: false,
+      });
+      const { normalizedParts, nominalGeometry } = FloorPlanGeometryDomain.normalizeRoomGeometry(scoped, room);
+      const compound = Boolean(room.parts?.length);
       const walls = plan.normalizeWalls(room.walls);
-      const reference = {
-        x0: () => geometry.x,
-        x1: () => geometry.x + geometry.w,
-        xc: () => geometry.x + geometry.w / 2,
-        y0: () => geometry.y,
-        y1: () => geometry.y + geometry.l,
-        yc: () => geometry.y + geometry.l / 2,
-        z0: () => geometry.z0,
-        z1: () => geometry.z1,
-        zc: () => (geometry.z0 + geometry.z1) / 2,
-        h: () => geometry.h,
-        w: () => geometry.w,
-        l: () => geometry.l,
-        area: () =>
-          parts?.length
-            ? parts.reduce((total, part) => total + part.w * part.l, 0)
-            : geometry.w * geometry.l,
+      const reference = FloorPlanGeometryBox.fromGeometry(nominalGeometry, { compound, label: id });
+      Object.assign(reference, {
+        nominalGeometry,
+        normalizedParts,
+        // Compatibility projection: analyses still expect axis-aligned XY parts.
+        geometryParts: normalizedParts.map(({ x, y, w, l }) => ({ x, y, w, l })),
+        area: () => normalizedParts.reduce((total, part) => total + part.w * part.l, 0),
         wallState: (side) => walls[side],
         hasWall: (side) => walls[side] === "solid",
-        geometryParts: parts?.length
-          ? parts.map(({ x, y, w, l }) => ({ x, y, w, l }))
-          : [{ x: geometry.x, y: geometry.y, w: geometry.w, l: geometry.l }],
-        partReferences: new Map(
-          (parts ?? []).map((part) => {
-            const reference = {
-              x0: () => part.x,
-              x1: () => part.x + part.w,
-              xc: () => part.x + part.w / 2,
-              y0: () => part.y,
-              y1: () => part.y + part.l,
-              yc: () => part.y + part.l / 2,
-              z0: () => part.z0,
-              z1: () => part.z1,
-              zc: () => (part.z0 + part.z1) / 2,
-              h: () => part.h,
-              w: () => part.w,
-              l: () => part.l,
-              area: () => part.w * part.l,
-            };
-            FloorPlanGeometryBox.attach(reference, { label: part.id });
-            return [part.id, reference];
-          }),
-        ),
-      };
-      FloorPlanGeometryBox.attach(reference, {
-        compound: Boolean(parts?.length),
-        label: id,
+        partReferences: new Map(compound ? normalizedParts.map((part) => [part.id,
+          FloorPlanGeometryBox.fromGeometry(part, { label: part.id }),
+        ]) : []),
       });
       plan.roomGeometryCache.set(id, reference);
       return reference;
     } finally {
-      plan.currentFloorHeight = previousFloorHeight;
       plan.roomGeometryStack.delete(id);
     }
   },
 };
 
 window.FloorPlanReferences = FloorPlanReferences;
+
+
+// Natural XY communications between nominal room boundaries. Explicit doors,
+// windows, vertical openings and navigability are separate concerns.
+const FloorPlanCommunications = {
+  analyze(rooms, walls = []) {
+    const communications = [];
+    const pairs = [
+      ["right", "left", "vertical"],
+      ["left", "right", "vertical"],
+      ["bottom", "top", "horizontal"],
+      ["top", "bottom", "horizontal"],
+    ];
+    for (let index = 0; index < rooms.length; index += 1) {
+      for (
+        let otherIndex = index + 1;
+        otherIndex < rooms.length;
+        otherIndex += 1
+      ) {
+        const first = rooms[index];
+        const second = rooms[otherIndex];
+        const firstFloor = first.floor;
+        const secondFloor = second.floor;
+        if (firstFloor && secondFloor && firstFloor.id !== secondFloor.id) continue;
+
+        for (const [firstSide, secondSide, orientation] of pairs) {
+          if (
+            first.boundaries[firstSide].state === "solid" ||
+            second.boundaries[secondSide].state === "solid"
+          )
+            continue;
+
+          const firstSegment = first.boundaries[firstSide];
+          const secondSegment = second.boundaries[secondSide];
+          if (
+            Math.abs(firstSegment.coordinate - secondSegment.coordinate) >= 1e-9
+          )
+            continue;
+
+          const start = Math.max(firstSegment.start, secondSegment.start);
+          const end = Math.min(firstSegment.end, secondSegment.end);
+          if (end <= start) continue;
+
+          const firstId = first.id || `room-${index + 1}`;
+          const secondId = second.id || `room-${otherIndex + 1}`;
+          let gaps = [[start, end]];
+          const epsilon = 1e-9;
+          const floorZ = Number(firstFloor?.z0 ?? first.z0 ?? 0);
+          for (const wall of walls) {
+            if (wall.scopeFloorId && firstFloor && wall.scopeFloorId !== firstFloor.id) continue;
+            // Somente paredes que alcançam o piso fecham a passagem em planta.
+            if (wall.z0 > floorZ + epsilon || wall.z1 <= floorZ + epsilon) continue;
+            const points = wall.points ?? [];
+            for (let segment = 0; segment < points.length - 1; segment += 1) {
+              const from = points[segment];
+              const to = points[segment + 1];
+              const along = orientation === "vertical" ? 1 : 0;
+              const across = 1 - along;
+              if (Math.abs(from[across] - to[across]) > epsilon ||
+                Math.abs(from[across] - firstSegment.coordinate) > Math.max(epsilon, (wall.thickness ?? 0) / 2)) continue;
+              const wallStart = Math.min(from[along], to[along]);
+              const wallEnd = Math.max(from[along], to[along]);
+              gaps = gaps.flatMap(([a, b]) => {
+                if (wallEnd <= a + epsilon || wallStart >= b - epsilon) return [[a, b]];
+                return [[a, Math.min(b, wallStart)], [Math.max(a, wallEnd), b]]
+                  .filter(([left, right]) => right - left > epsilon);
+              });
+            }
+          }
+          const length = gaps.reduce((total, [a, b]) => total + b - a, 0);
+          if (length <= epsilon) continue;
+          communications.push({
+            id: `${firstId}-${secondId}`,
+            firstId,
+            secondId,
+            firstLabel: first.label || firstId,
+            secondLabel: second.label || secondId,
+            orientation,
+            length,
+            floorId: firstFloor?.id ?? null,
+            z0: floorZ,
+            coordinate: firstSegment.coordinate,
+            firstSide,
+            secondSide,
+            segments: gaps.map(([a, b]) => ({
+              from: orientation === "vertical" ? [firstSegment.coordinate, a, floorZ] : [a, firstSegment.coordinate, floorZ],
+              to: orientation === "vertical" ? [firstSegment.coordinate, b, floorZ] : [b, firstSegment.coordinate, floorZ],
+              length: b - a,
+            })),
+          });
+        }
+      }
+    }
+
+    return communications;
+  },
+
+  fromReferences(plan, references) {
+    const sides = ["top", "right", "bottom", "left"];
+    const rooms = references.map((reference) => {
+      const floor = plan.roomFloorConfigs?.get(reference.dataset.id);
+      return {
+        id: reference.dataset.id,
+        label: reference.dataset.label,
+        floor: floor ? { id: floor.id, z0: floor.z0 } : null,
+        z0: reference.z0?.() ?? 0,
+        boundaries: Object.fromEntries(sides.map((side) => [side, {
+          ...plan.wallSegment(reference, side),
+          state: reference.wallState(side),
+        }])),
+      };
+    });
+    const walls = [...(plan.independentWalls?.values() ?? [])].map((wall) => ({
+      points: wall.path?.points ?? [],
+      z0: wall.z0, z1: wall.z1,
+      thickness: wall.thickness,
+      scopeFloorId: wall.scopeFloorId,
+    }));
+    return this.analyze(rooms, walls);
+  },
+
+  prepare(plan) {
+    const references = plan.allRooms.filter((room) => !plan.invalidRoomIds?.has(room.id))
+      .map((room) => room.reference);
+    plan.communicationResults = this.fromReferences(plan, references);
+    plan.naturalCommunications = plan.communicationResults;
+    return plan.communicationResults;
+  },
+};
+
+window.FloorPlanCommunications = FloorPlanCommunications;
+
+
+// Declarative layers and nominal XY overlaps. This is not a physical 3D
+// collision detector. Inputs and results contain no elements or view state.
+const FloorPlanOverlapAnalysis = {
+  partKey(roomId, partId) {
+    return partId && roomId ? `${roomId}.${partId}` : roomId;
+  },
+
+  analyze({ rooms = [], items = [] }) {
+    const errors = [];
+    const pieces = rooms.flatMap((room, roomIndex) => room.parts.map((part) => ({
+      roomIndex,
+      roomId: room.id,
+      label: room.label,
+      floorId: room.floorId,
+      part,
+      key: this.partKey(room.id, part.id),
+      overlapTargets: part.overlapTargets ?? room.overlapTargets ?? [],
+      overlayTargets: part.overlayTargets ?? room.overlayTargets ?? [],
+    })));
+    const nodes = [...pieces, ...items.map((item) => ({
+      key: item.id,
+      overlayTargets: item.overlayTargets ?? [],
+    }))].filter((node) => node.key);
+    const nodesByKey = new Map(nodes.map((node) => [node.key, node]));
+    const nodesByRoom = new Map();
+    pieces.forEach((piece) => {
+      if (!nodesByRoom.has(piece.roomId)) nodesByRoom.set(piece.roomId, []);
+      nodesByRoom.get(piece.roomId).push(piece);
+    });
+    const targetNodes = (target) => nodesByKey.has(target)
+      ? [nodesByKey.get(target)] : nodesByRoom.get(target) ?? [];
+    const edges = new Map(nodes.map((node) => [node.key, []]));
+    nodes.forEach((node) => node.overlayTargets.forEach((target) => {
+      const matches = targetNodes(target);
+      if (!matches.length) {
+        errors.push({ category: "overlap", id: node.key,
+          message: `Referência de sobreposição inexistente: ${target}` });
+      }
+      matches.forEach((targetNode) => edges.get(node.key).push(targetNode.key));
+    }));
+    const layers = new Map();
+    const visiting = new Set();
+    const calculateLayer = (key) => {
+      if (layers.has(key)) return layers.get(key);
+      if (visiting.has(key)) {
+        errors.push({ category: "overlap", id: key,
+          message: `Ciclo de camadas detectado envolvendo ${key}` });
+        return 0;
+      }
+      visiting.add(key);
+      const layer = edges.get(key).reduce((highest, target) =>
+        Math.max(highest, calculateLayer(target) + 1), 0);
+      visiting.delete(key);
+      layers.set(key, layer);
+      return layer;
+    };
+    nodes.forEach((node) => calculateLayer(node.key));
+
+    const collidingRooms = new Set();
+    const collisionKeys = new Set();
+    const targetMatches = (targets, target) => targets.includes(target.key) || targets.includes(target.roomId);
+    const epsilon = 1e-9;
+    for (let index = 0; index < pieces.length; index += 1) {
+      for (let otherIndex = index + 1; otherIndex < pieces.length; otherIndex += 1) {
+        const first = pieces[index], second = pieces[otherIndex];
+        if (first.floorId && second.floorId && first.floorId !== second.floorId) continue;
+        const width = Math.min(first.part.x + first.part.w, second.part.x + second.part.w)
+          - Math.max(first.part.x, second.part.x);
+        const length = Math.min(first.part.y + first.part.l, second.part.y + second.part.l)
+          - Math.max(first.part.y, second.part.y);
+        if (!(width > epsilon && length > epsilon)) continue;
+        if (targetMatches(first.overlapTargets, second) || targetMatches(second.overlapTargets, first)) continue;
+        collidingRooms.add(first.roomIndex);
+        collidingRooms.add(second.roomIndex);
+        const firstId = first.roomId || first.label || "elemento";
+        const secondId = second.roomId || second.label || "elemento";
+        const key = [firstId, secondId].sort().join(" / ");
+        if (collisionKeys.has(key)) continue;
+        collisionKeys.add(key);
+        errors.push({ category: "collision", id: key,
+          message: `Sobreposição entre ${firstId} e ${secondId}` });
+      }
+    }
+    return {
+      layers,
+      roomLayers: rooms.map((room) => Math.max(...room.parts.map((part) =>
+        layers.get(this.partKey(room.id, part.id)) ?? 0))),
+      maxLayer: Math.max(0, ...layers.values()),
+      collidingRooms,
+      errors,
+    };
+  },
+};
+
+window.FloorPlanOverlapAnalysis = FloorPlanOverlapAnalysis;
 
 
 const FloorPlanLayers = {
@@ -10937,172 +11331,50 @@ const FloorPlanLayers = {
 
   updateOverlaps(plan) {
     const rooms = [...plan.roomElements, ...plan.stairElements];
-    plan.errors = plan.errors.filter(
-      (error) => !["collision", "overlap"].includes(error.category),
-    );
-    rooms.forEach((room) => {
-      room.classList.remove(
-        "room-overlap",
-        "room-overlap-above",
-        "room-overlap-below",
-      );
-    });
-
-    const pieces = rooms.flatMap((room) =>
-      room.geometryParts.map((part) => ({
-        room,
-        part,
-        key:
-          part.id && room.dataset.id
-            ? `${room.dataset.id}.${part.id}`
-            : room.dataset.id,
-        overlapTargets: part.overlapTargets ?? room.allowedOverlaps,
-        overlayTargets: part.overlayTargets ?? room.allowedOverlays,
+    const analysis = FloorPlanOverlapAnalysis.analyze({
+      rooms: rooms.map((room) => ({
+        id: room.dataset.id,
+        label: room.dataset.label,
+        floorId: room.dataset.floorId,
+        overlapTargets: room.allowedOverlaps,
+        overlayTargets: room.allowedOverlays,
+        parts: room.geometryParts.map((part) => ({
+          id: part.id, x: part.x, y: part.y, w: part.w, l: part.l,
+          overlapTargets: part.overlapTargets,
+          overlayTargets: part.overlayTargets,
+        })),
       })),
-    );
-    const itemPieces = plan.itemElements.map((item) => ({
-      item,
-      key: item.dataset.id,
-      overlapTargets: item.allowedOverlaps ?? [],
-      overlayTargets: item.allowedOverlays ?? [],
-      part: { x: item.x0(), y: item.y0(), w: item.w(), l: item.l() },
-    }));
-    const nodes = [...pieces, ...itemPieces].filter((piece) => piece.key);
-    const nodesByKey = new Map(nodes.map((node) => [node.key, node]));
-    const nodesByRoom = new Map();
-    pieces.forEach((piece) => {
-      const roomId = piece.room.dataset.id;
-      if (!nodesByRoom.has(roomId)) nodesByRoom.set(roomId, []);
-      nodesByRoom.get(roomId).push(piece);
+      items: plan.itemElements.map((item) => ({
+        id: item.dataset.id,
+        overlayTargets: item.allowedOverlays,
+      })),
     });
-
-    const targetNodes = (target) =>
-      nodesByKey.has(target)
-        ? [nodesByKey.get(target)]
-        : (nodesByRoom.get(target) ?? []);
-    const targetMatches = (targets, targetPiece) =>
-      targets.includes(targetPiece.key) ||
-      targets.includes(targetPiece.room?.dataset.id);
-
-    const edges = new Map(nodes.map((node) => [node.key, []]));
-    nodes.forEach((node) => {
-      node.overlayTargets.forEach((target) => {
-        const matches = targetNodes(target);
-        if (matches.length === 0) {
-          plan.errors.push({
-            category: "overlap",
-            id: node.key,
-            message: `Referência de sobreposição inexistente: ${target}`,
-          });
-          return;
-        }
-        matches.forEach((targetNode) => {
-          edges.get(node.key).push(targetNode.key);
-        });
+    plan.errors = [
+      ...plan.errors.filter((error) => !["collision", "overlap"].includes(error.category)),
+      ...analysis.errors,
+    ];
+    rooms.forEach((room, index) => {
+      room.classList.remove("room-overlap", "room-overlap-above", "room-overlap-below");
+      if (analysis.collidingRooms.has(index)) room.classList.add("room-overlap");
+      room.geometryParts.forEach((part) => {
+        const key = FloorPlanOverlapAnalysis.partKey(room.dataset.id, part.id);
+        if (!key) return;
+        const layer = analysis.layers.get(key) ?? 0;
+        const element = part.element || room;
+        element.dataset.layer = String(layer);
+        element.style.setProperty("--layer", layer);
       });
+      room.dataset.layer = String(analysis.roomLayers[index]);
     });
-
-    const layers = new Map();
-    const visiting = new Set();
-    const visited = new Set();
-    const calculateLayer = (key) => {
-      if (layers.has(key)) return layers.get(key);
-      if (visiting.has(key)) {
-        plan.errors.push({
-          category: "overlap",
-          id: key,
-          message: `Ciclo de camadas detectado envolvendo ${key}`,
-        });
-        return 0;
-      }
-      visiting.add(key);
-      const layer = edges
-        .get(key)
-        .reduce(
-          (highest, target) => Math.max(highest, calculateLayer(target) + 1),
-          0,
-        );
-      visiting.delete(key);
-      visited.add(key);
-      layers.set(key, layer);
-      return layer;
-    };
-    nodes.forEach((node) => {
-      calculateLayer(node.key);
+    plan.itemElements.forEach((item) => {
+      if (!item.dataset.id) return;
+      const layer = analysis.layers.get(item.dataset.id) ?? 0;
+      item.dataset.layer = String(layer);
+      item.style.setProperty("--layer", layer);
     });
-    const maxLayer = Math.max(0, ...layers.values());
-    nodes.forEach((node) => {
-      const layer = layers.get(node.key) ?? 0;
-      node.layer = layer;
-      const element = node.item || node.part.element || node.room;
-      element.dataset.layer = String(layer);
-      element.style.setProperty("--layer", layer);
-    });
-    rooms.forEach((room) => {
-      room.dataset.layer = String(
-        Math.max(
-          ...room.geometryParts.map(
-            (part) =>
-              layers.get(
-                part.id && room.dataset.id
-                  ? `${room.dataset.id}.${part.id}`
-                  : room.dataset.id,
-              ) ?? 0,
-          ),
-        ),
-      );
-    });
-    plan.maxLayer = maxLayer;
+    plan.maxLayer = analysis.maxLayer;
     plan.updateLayerVisibility();
-
-    const collisionKeys = new Set();
-    const epsilon = 1e-9;
-    for (let index = 0; index < pieces.length; index += 1) {
-      for (
-        let otherIndex = index + 1;
-        otherIndex < pieces.length;
-        otherIndex += 1
-      ) {
-        const first = pieces[index];
-        const second = pieces[otherIndex];
-        if (first.room.dataset.floorId && second.room.dataset.floorId &&
-          first.room.dataset.floorId !== second.room.dataset.floorId) continue;
-        const overlapWidth =
-          Math.min(first.part.x + first.part.w, second.part.x + second.part.w) -
-          Math.max(first.part.x, second.part.x);
-        const overlapHeight =
-          Math.min(first.part.y + first.part.l, second.part.y + second.part.l) -
-          Math.max(first.part.y, second.part.y);
-        const overlaps = overlapWidth > epsilon && overlapHeight > epsilon;
-        const firstAbove = targetMatches(first.overlayTargets, second);
-        const secondAbove = targetMatches(second.overlayTargets, first);
-        const firstAllowed = targetMatches(first.overlapTargets, second);
-        const secondAllowed = targetMatches(second.overlapTargets, first);
-        const allowed = firstAllowed || secondAllowed;
-
-        if (overlaps && !allowed) {
-          first.room.classList.add("room-overlap");
-          second.room.classList.add("room-overlap");
-          const firstId =
-            first.room.dataset.id || first.room.dataset.label || "elemento";
-          const secondId =
-            second.room.dataset.id || second.room.dataset.label || "elemento";
-          const collisionKey = [firstId, secondId].sort().join(" / ");
-          if (!collisionKeys.has(collisionKey)) {
-            collisionKeys.add(collisionKey);
-            plan.errors.push({
-              category: "collision",
-              id: collisionKey,
-              message: `Sobreposição entre ${firstId} e ${secondId}`,
-            });
-          }
-        } else if (overlaps) {
-          // Declarative overlaps are intentional: keep both elements with
-          // their normal appearance. The layer graph still records which
-          // element is above the other for visibility and area calculations.
-        }
-      }
-    }
+    return analysis;
   },
 
   cycleLayer(plan) {
@@ -11137,6 +11409,8 @@ const FloorPlanLayers = {
           !this.isLayerVisible(layer, cutoff),
         );
       });
+    window.FloorPlanStairHeadroomView?.updateVisibility(plan);
+    window.FloorPlanStairAccessView?.updateVisibility(plan);
     if (plan.layerOptions) {
       const visible = Boolean(plan.currentConfig && plan.maxLayer > 0);
       const container = plan.layerOptions.closest(".layer-selector");
@@ -11667,10 +11941,11 @@ const FloorPlanLists = {
       const height = document.createElement("span");
       height.textContent = plan.formatFixed(room.l());
 
-      if (activeRoom?.comfortAreas) {
+      const comfortAreas = plan.headroomResults?.get(roomEntry.id)?.areas ?? activeRoom?.comfortAreas;
+      if (comfortAreas) {
         const comfort = document.createElement("small");
         comfort.className = "comfort-areas";
-        comfort.textContent = activeRoom.comfortAreas.map(({ height, area }) =>
+        comfort.textContent = comfortAreas.map(({ height, area }) =>
           `≥ ${plan.formatMeters(height)} m: ${plan.formatMeters(area)} m²`).join(" · ");
         label.append(comfort);
       }
@@ -11941,94 +12216,17 @@ const FloorPlanLists = {
   },
 
   findNaturalCommunications(plan, rooms = plan.roomElements) {
-    const communications = [];
-    const pairs = [
-      ["right", "left", "vertical"],
-      ["left", "right", "vertical"],
-      ["bottom", "top", "horizontal"],
-      ["top", "bottom", "horizontal"],
-    ];
-    for (let index = 0; index < rooms.length; index += 1) {
-      for (
-        let otherIndex = index + 1;
-        otherIndex < rooms.length;
-        otherIndex += 1
-      ) {
-        const first = rooms[index];
-        const second = rooms[otherIndex];
-        const firstFloor = plan.roomFloorConfigs?.get(first.dataset.id);
-        const secondFloor = plan.roomFloorConfigs?.get(second.dataset.id);
-        if (firstFloor && secondFloor && firstFloor.id !== secondFloor.id) continue;
-
-        for (const [firstSide, secondSide, orientation] of pairs) {
-          if (
-            first.wallState(firstSide) === "solid" ||
-            second.wallState(secondSide) === "solid"
-          )
-            continue;
-
-          const firstSegment = plan.wallSegment(first, firstSide);
-          const secondSegment = plan.wallSegment(second, secondSide);
-          if (
-            Math.abs(firstSegment.coordinate - secondSegment.coordinate) >= 1e-9
-          )
-            continue;
-
-          const start = Math.max(firstSegment.start, secondSegment.start);
-          const end = Math.min(firstSegment.end, secondSegment.end);
-          if (end <= start) continue;
-
-          const firstId = first.dataset.id || `room-${index + 1}`;
-          const secondId = second.dataset.id || `room-${otherIndex + 1}`;
-          let gaps = [[start, end]];
-          const epsilon = 1e-9;
-          const floorZ = Number(firstFloor?.z0 ?? first.z0?.() ?? 0);
-          for (const wall of plan.independentWalls?.values() ?? []) {
-            if (wall.scopeFloorId && firstFloor && wall.scopeFloorId !== firstFloor.id) continue;
-            // Somente paredes que alcançam o piso fecham a passagem em planta.
-            if (wall.z0 > floorZ + epsilon || wall.z1 <= floorZ + epsilon) continue;
-            const points = wall.path?.points ?? [];
-            for (let segment = 0; segment < points.length - 1; segment += 1) {
-              const from = points[segment];
-              const to = points[segment + 1];
-              const along = orientation === "vertical" ? 1 : 0;
-              const across = 1 - along;
-              if (Math.abs(from[across] - to[across]) > epsilon ||
-                Math.abs(from[across] - firstSegment.coordinate) > Math.max(epsilon, (wall.thickness ?? 0) / 2)) continue;
-              const wallStart = Math.min(from[along], to[along]);
-              const wallEnd = Math.max(from[along], to[along]);
-              gaps = gaps.flatMap(([a, b]) => {
-                if (wallEnd <= a + epsilon || wallStart >= b - epsilon) return [[a, b]];
-                return [[a, Math.min(b, wallStart)], [Math.max(a, wallEnd), b]]
-                  .filter(([left, right]) => right - left > epsilon);
-              });
-            }
-          }
-          const length = gaps.reduce((total, [a, b]) => total + b - a, 0);
-          if (length <= epsilon) continue;
-          communications.push({
-            id: `${firstId}-${secondId}`,
-            firstId,
-            secondId,
-            firstLabel: first.dataset.label || firstId,
-            secondLabel: second.dataset.label || secondId,
-            orientation,
-            length,
-          });
-        }
-      }
-    }
-
-    return communications;
+    return FloorPlanCommunications.fromReferences(plan, rooms);
   },
 
   updateNaturalList(plan, target = plan.naturalList, floor = null) {
     if (!target) return;
 
-    const rooms = floor
-      ? plan.allRooms.filter((room) => room.floorId === floor.id).map((room) => room.reference)
-      : plan.roomElements;
-    const communications = this.findNaturalCommunications(plan, rooms);
+    const communications = plan.communicationResults
+      ? plan.communicationResults.filter((entry) => !floor || (entry.floorId ?? null) === (floor.id ?? null))
+      : this.findNaturalCommunications(plan, floor
+          ? plan.allRooms.filter((room) => room.floorId === floor.id).map((room) => room.reference)
+          : plan.roomElements);
     if (!floor) plan.naturalCommunications = communications;
     target.replaceChildren();
     if (communications.length === 0) {
@@ -12625,10 +12823,9 @@ const FloorPlanTextExport = {
 
       this.appendOpeningTables(plan, lines, [...floorOpenings, ...floorWindows], "###");
 
-      const floorCommunications = FloorPlanLists.findNaturalCommunications(
-        plan,
-        floorRooms.map((entry) => entry.reference || entry),
-      );
+      const floorCommunications = plan.communicationResults
+        ? plan.communicationResults.filter((entry) => (entry.floorId ?? null) === (floor.id ?? null))
+        : FloorPlanCommunications.fromReferences(plan, floorRooms.map((entry) => entry.reference || entry));
       lines.push("", "### Comunicações naturais", "");
       if (floorCommunications.length === 0) {
         lines.push("Nenhuma comunicação natural detectada neste piso.");
@@ -12692,14 +12889,28 @@ const stairAxisFor = (data, width, length) => {
 };
 
 const FloorPlanGeometryDomain = {
+  normalizeRoomGeometry(plan, room) {
+    const compound = Boolean(room.parts?.length);
+    const parts = compound ? plan.normalizeParts(room.parts) : [plan.normalizeGeometry(room)];
+    const floor = plan.roomFloorConfigs?.get(room.id);
+    const normalizedParts = parts.map((part) => ({
+      ...part,
+      id: part.id ?? room.id,
+      ownerId: room.id,
+      floorId: floor?.id ?? plan.currentFloorId ?? null,
+    }));
+    return {
+      normalizedParts,
+      nominalGeometry: compound ? FloorPlanGeometryBox.envelope(normalizedParts) : normalizedParts[0],
+    };
+  },
+
   normalizeGeometryAtFloor(plan, data, floorConfig) {
-    const previousHeight = plan.currentFloorHeight;
-    plan.currentFloorHeight = Number(floorConfig?.z0 ?? 0);
-    try {
-      return plan.normalizeGeometry(data);
-    } finally {
-      plan.currentFloorHeight = previousHeight;
-    }
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      floorZ: Number(floorConfig?.z0 ?? 0),
+      floorId: floorConfig?.id ?? null,
+    });
+    return scoped.normalizeGeometry(data);
   },
 
   addSpanningStairs(plan, config, floorConfig) {
@@ -12751,16 +12962,11 @@ const FloorPlanGeometryDomain = {
   },
 
   normalizeGeometry(plan, data) {
-    const previous = plan.itemReferenceContext;
-    const previousCache = plan.itemRoomBoundsCache;
-    plan.itemRoomBoundsCache = new Map();
-    plan.itemReferenceContext = Boolean(data?.[FloorPlanGeometry.itemDefinition]);
-    try {
-      return this.normalizeGeometryDefinition(plan, data);
-    } finally {
-      plan.itemReferenceContext = previous;
-      plan.itemRoomBoundsCache = previousCache;
-    }
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      itemReferences: Boolean(data?.[FloorPlanGeometry.itemDefinition]),
+      roomBoundsCache: new Map(),
+    });
+    return this.normalizeGeometryDefinition(scoped, data);
   },
 
   normalizeGeometryDefinition(plan, data) {
@@ -13097,8 +13303,50 @@ window.FloorPlanGeometryDomain = FloorPlanGeometryDomain;
 
 
 const FloorPlanDom = {
+  configureWallTooltip(plan) {
+    let tooltip;
+    let activeWall;
+    let title;
+    const hide = () => {
+      if (activeWall) activeWall.title = title;
+      activeWall = null;
+      if (tooltip) tooltip.hidden = true;
+    };
+    plan.root.addEventListener("pointermove", (event) => {
+      // Room fills and labels can sit above independent knee walls.
+      // Inspect the stack under the cursor so those walls remain identifiable.
+      const wall = document.elementsFromPoint(event.clientX, event.clientY)
+        .find((element) => element.matches(".plan-wall") && plan.root.contains(element));
+      if (!wall || plan.pointerPan || event.pointerType === "touch") {
+        hide();
+        return;
+      }
+      if (wall !== activeWall) {
+        hide();
+        title = wall.title;
+        if (!title) return;
+        if (!tooltip) {
+          tooltip = document.createElement("div");
+          tooltip.className = "wall-tooltip";
+          tooltip.setAttribute("role", "tooltip");
+          document.body.append(tooltip);
+        }
+        activeWall = wall;
+        // Restore the native title on exit; avoid two tooltips during hover.
+        wall.removeAttribute("title");
+        tooltip.textContent = title;
+        tooltip.hidden = false;
+      }
+      tooltip.style.left = `${Math.max(4, Math.min(event.clientX + 12, window.innerWidth - tooltip.offsetWidth - 4))}px`;
+      tooltip.style.top = `${Math.max(4, Math.min(event.clientY + 16, window.innerHeight - tooltip.offsetHeight - 4))}px`;
+    });
+    plan.root.addEventListener("pointerleave", hide);
+    window.addEventListener("scroll", hide, true);
+    window.addEventListener("resize", hide);
+  },
+
   applyStairGradient(element, geometry, range) {
-    const color = (z) => `color-mix(in srgb, var(--theme-circulation), var(--theme-roof-gradient-dark) ${
+    const color = (z) => `color-mix(in srgb, var(--theme-circulation), var(--theme-stair-gradient-dark) ${
       ((1 - FloorPlanGeometry.stairGradientRatio(z, range)) * 100).toFixed(4)}%)`;
     let background = color(geometry.z0);
     if (geometry.h > 0) {
@@ -13244,34 +13492,26 @@ const FloorPlanDom = {
   addRoom(plan, room) {
     const derived = room.derived === true;
     const { container = plan.root } = room;
-    const parts = room.parts?.length
-      ? plan.normalizeParts(room.parts)
-      : undefined;
+    const resolved = !derived && plan.roomDefinitions?.get(room.id) === room
+      ? plan.getRoomGeometry(room.id)
+      : FloorPlanGeometryDomain.normalizeRoomGeometry(plan, room);
+    const parts = room.parts?.length ? resolved.normalizedParts : undefined;
     const stairParts = parts?.filter((part) => String(part.classes ?? "").split(/\s+/)
       .some((name) => ["stair-flight", "stair-landing"].includes(name))) ?? [];
     const sourceFloor = plan.roomFloorConfigs?.get(room.id);
     const stairGradient = stairParts.length ? FloorPlanGeometry.stairGradientRange(
       Number(sourceFloor?.z0 ?? plan.currentFloorHeight), stairParts) : null;
-    const geometry = parts?.length
-      ? {
-          x: Math.min(...parts.map((part) => part.x)),
-          y: Math.min(...parts.map((part) => part.y)),
-          w:
-            Math.max(...parts.map((part) => part.x + part.w)) -
-            Math.min(...parts.map((part) => part.x)),
-          l:
-            Math.max(...parts.map((part) => part.y + part.l)) -
-            Math.min(...parts.map((part) => part.y)),
-        }
-      : {};
+    const geometry = resolved.nominalGeometry;
     const roomData = parts?.length
       ? {
           ...room,
-          pos: [geometry.x, geometry.y],
-          size: [geometry.w, geometry.l],
+          pos: [geometry.x, geometry.y, geometry.z0],
+          size: [geometry.w, geometry.l, geometry.h],
         }
       : room;
     const element = plan.add({ ...roomData, room: true, container });
+    element.normalizedParts = resolved.normalizedParts;
+    element.nominalGeometry = resolved.nominalGeometry;
     if (derived) {
       element.dataset.derived = "true";
       if (room.classes?.split(/\s+/).includes("stair-flight"))
@@ -13310,29 +13550,9 @@ const FloorPlanDom = {
         compound: true,
         label: room.id || room.label || "room",
       });
-      element.partReferences = new Map(
-        parts.map((part) => [
-          part.id,
-          {
-            x0: () => part.x,
-            x1: () => part.x + part.w,
-            xc: () => part.x + part.w / 2,
-            y0: () => part.y,
-            y1: () => part.y + part.l,
-            yc: () => part.y + part.l / 2,
-            z0: () => part.z0,
-            z1: () => part.z1,
-            zc: () => (part.z0 + part.z1) / 2,
-            h: () => part.h,
-            w: () => part.w,
-            l: () => part.l,
-            area: () => part.w * part.l,
-          },
-        ]),
-      );
-      element.partReferences.forEach((reference, partId) =>
-        FloorPlanGeometryBox.attach(reference, { label: partId }),
-      );
+      element.partReferences = new Map(parts.map((part) => [part.id,
+        FloorPlanGeometryBox.fromGeometry(part, { label: part.id }),
+      ]));
       parts.forEach((part) => {
         const partElement = document.createElement("div");
         const partClasses = part.classes || room.classes || "";
@@ -13354,17 +13574,7 @@ const FloorPlanDom = {
         partElement.style.setProperty("--z0", part.z0);
         partElement.style.setProperty("--z1", part.z1);
         partElement.style.setProperty("--h", part.h);
-        partElement.x0 = () => Number(part.x);
-        partElement.x1 = () => Number(part.x) + Number(part.w);
-        partElement.y0 = () => Number(part.y);
-        partElement.y1 = () => Number(part.y) + Number(part.l);
-        partElement.z0 = () => Number(part.z0);
-        partElement.z1 = () => Number(part.z1);
-        partElement.w = () => Number(part.w);
-        partElement.l = () => Number(part.l);
-        partElement.h = () => Number(part.h);
-        partElement.area = () => Number(part.w) * Number(part.l);
-        FloorPlanGeometryBox.attach(partElement, { label: part.id });
+        Object.assign(partElement, FloorPlanGeometryBox.fromGeometry(part, { label: part.id }));
         const partColor = part.color ?? room.color;
         if (partColor)
           partElement.style.backgroundColor = plan.themeFillColor(partColor);
@@ -13439,6 +13649,35 @@ window.FloorPlanDom = FloorPlanDom;
 
 
 const FloorPlanHtmlExport = {
+  captureFloorViews(plan, capture) {
+    const floors = plan.currentConfig.floors ?? [plan.currentConfig];
+    const original = {
+      activeFloor: Math.max(0, floors.findIndex((floor) => floor.id === plan.currentFloorId)),
+      showAllFloors: plan.showAllFloors,
+      multiFloorMode: plan.multiFloorMode,
+      layerCutoff: plan.layerCutoff,
+    };
+    try {
+      plan.multiFloorMode = false;
+      return floors.map((floor, activeFloor) => {
+        plan.renderView({ activeFloor, showAllFloors: false });
+        plan.layerCutoff = original.layerCutoff;
+        plan.updateLayerVisibility();
+        return capture(floor, activeFloor);
+      });
+    } finally {
+      plan.multiFloorMode = original.multiFloorMode;
+      try {
+        plan.renderView({ activeFloor: original.activeFloor, showAllFloors: original.showAllFloors });
+      } finally {
+        plan.multiFloorMode = original.multiFloorMode;
+        plan.layerCutoff = original.layerCutoff;
+        plan.updateLayerVisibility();
+        plan.renderMultiFloorUnderlay();
+      }
+    }
+  },
+
   namespaceSvgReferences(root, namespace) {
     root.querySelectorAll("svg").forEach((svg) => {
       const ids = new Map();
@@ -13471,14 +13710,6 @@ const FloorPlanHtmlExport = {
       return;
     }
 
-    const sourceConfig = plan.currentConfig;
-    const floors = sourceConfig.floors ?? [sourceConfig];
-    const originalFloorIndex = Math.max(
-      0,
-      floors.findIndex((floor) => floor.id === plan.currentFloorId),
-    );
-    const originalMultiFloorMode = plan.multiFloorMode;
-    const floorSnapshots = [];
     const hasFacade3DCanvas = Boolean(
       plan.facade3dLayer?.querySelector("canvas.facade-3d-canvas"),
     );
@@ -13491,32 +13722,14 @@ const FloorPlanHtmlExport = {
 
     // Capture one rendered diagram per floor. The exported file is static, so
     // the snapshots are assembled without carrying the application scripts.
-    try {
-      plan.multiFloorMode = false;
-      for (let floorIndex = 0; floorIndex < floors.length; floorIndex += 1) {
-        plan.load(
-          { ...sourceConfig, activeFloor: floorIndex },
-          { preservePresentation: true },
-        );
-        const livePlan = document.querySelector("#floor-plan");
-        if (!livePlan) throw new Error("A área da planta não foi encontrada.");
-        floorSnapshots.push({
-          label:
-            floors[floorIndex].label ||
-            floors[floorIndex].id ||
-            `Piso ${floorIndex + 1}`,
-          element: livePlan.cloneNode(true),
-        });
-      }
-    } finally {
-      plan.multiFloorMode = originalMultiFloorMode;
-      plan.load(
-        { ...sourceConfig, activeFloor: originalFloorIndex },
-        { preservePresentation: true },
-      );
-      plan.multiFloorMode = originalMultiFloorMode;
-      plan.renderMultiFloorUnderlay();
-    }
+    const floorSnapshots = this.captureFloorViews(plan, (floor, floorIndex) => {
+      const livePlan = document.querySelector("#floor-plan");
+      if (!livePlan) throw new Error("A área da planta não foi encontrada.");
+      return {
+        label: floor.label || floor.id || `Piso ${floorIndex + 1}`,
+        element: livePlan.cloneNode(true),
+      };
+    });
 
     const exportedDocument = document.cloneNode(true);
     const exportedPlan = exportedDocument.querySelector("#floor-plan");
@@ -13623,6 +13836,359 @@ const FloorPlanHtmlExport = {
 window.FloorPlanHtmlExport = FloorPlanHtmlExport;
 
 
+// Nominal contacts are candidates for access, not proof of obstacle-free passage.
+const FloorPlanStairConnectivity = {
+  analyze(parts, floors, epsilon = 1e-7) {
+    const nodes = [], diagnostics = [];
+    for (const part of parts) {
+      const classes = (part.classes ?? "").split(/\s+/);
+      const kind = classes.includes("stair-flight") ? "flight"
+        : classes.includes("stair-landing") ? "landing" : null;
+      if (!kind) continue;
+      const key = JSON.stringify([part.ownerId, part.id]);
+      if (![part.x, part.y, part.w, part.l, part.z0, part.z1].every(Number.isFinite)
+        || part.w <= 0 || part.l <= 0 || part.z1 < part.z0
+        || (part.rotation ?? 0) !== 0
+        || (kind === "flight" && (part.z1 <= part.z0
+          || !["horizontal", "vertical"].includes(part.stairAxis)))
+        || (kind === "landing" && Math.abs(part.z1 - part.z0) > epsilon)) {
+        diagnostics.push({ key, reason: "unsupported-geometry" });
+        continue;
+      }
+      if (nodes.some((node) => node.key === key)) {
+        diagnostics.push({ key, reason: "duplicate-part" });
+        continue;
+      }
+      const node = { key, ownerId: part.ownerId, partId: part.id, floorId: part.floorId,
+        kind, bounds: { x: part.x, y: part.y, w: part.w, l: part.l, z: part.z0 }, ends: [] };
+      if (kind === "flight") {
+        const horizontal = part.stairAxis === "horizontal";
+        const increasing = (part.stairDirection !== "reverse") === (part.stairRise !== "down");
+        node.ends = ["lower", "upper"].map((role) => {
+          const high = (role === "upper") === increasing;
+          const z = role === "lower" ? part.z0 : part.z1;
+          const x = part.x + (horizontal && high ? part.w : 0);
+          const y = part.y + (!horizontal && high ? part.l : 0);
+          return { role, z, axis: horizontal ? "y" : "x",
+            start: { x, y, z }, end: { x: x + (horizontal ? 0 : part.w),
+              y: y + (horizontal ? part.l : 0), z },
+            floorIds: floors.filter((floor) => Math.abs(Number(floor.z0 ?? 0) - z) <= epsilon)
+              .map((floor) => floor.id ?? null) };
+        });
+      }
+      nodes.push(node);
+    }
+    const edges = [];
+    const overlap = (a, b, c, d) => Math.min(b, d) - Math.max(a, c) > epsilon;
+    const touches = (end, landing) => {
+      const b = landing.bounds;
+      if (Math.abs(end.z - b.z) > epsilon) return false;
+      return end.axis === "y"
+        ? (Math.abs(end.start.x - b.x) <= epsilon || Math.abs(end.start.x - b.x - b.w) <= epsilon)
+          && overlap(end.start.y, end.end.y, b.y, b.y + b.l)
+        : (Math.abs(end.start.y - b.y) <= epsilon || Math.abs(end.start.y - b.y - b.l) <= epsilon)
+          && overlap(end.start.x, end.end.x, b.x, b.x + b.w);
+    };
+    nodes.forEach((a, index) => nodes.slice(index + 1).forEach((b) => {
+      for (const end of a.ends) {
+        if (b.kind === "landing" && touches(end, b)) edges.push({ a: a.key, aEnd: end.role, b: b.key });
+        for (const other of b.ends) {
+          const fixed = end.axis === "y" ? "x" : "y";
+          const axis = end.axis;
+          if (end.role !== other.role && end.axis === other.axis
+            && Math.abs(end.z - other.z) <= epsilon
+            && Math.abs(end.start[fixed] - other.start[fixed]) <= epsilon
+            && overlap(end.start[axis], end.end[axis], other.start[axis], other.end[axis]))
+            edges.push({ a: a.key, aEnd: end.role, b: b.key, bEnd: other.role });
+        }
+      }
+      if (a.kind === "landing") for (const end of b.ends)
+        if (touches(end, a)) edges.push({ a: a.key, b: b.key, bEnd: end.role });
+      if (a.kind === "landing" && b.kind === "landing") {
+        const p = a.bounds, q = b.bounds;
+        if (Math.abs(p.z - q.z) <= epsilon && (
+          ((Math.abs(p.x + p.w - q.x) <= epsilon || Math.abs(q.x + q.w - p.x) <= epsilon)
+            && overlap(p.y, p.y + p.l, q.y, q.y + q.l)) ||
+          ((Math.abs(p.y + p.l - q.y) <= epsilon || Math.abs(q.y + q.l - p.y) <= epsilon)
+            && overlap(p.x, p.x + p.w, q.x, q.x + q.w)))) edges.push({ a: a.key, b: b.key });
+      }
+    }));
+    return { nodes, edges, diagnostics };
+  },
+};
+window.FloorPlanStairConnectivity = FloorPlanStairConnectivity;
+
+
+// Required regions remain intact; null availability means restrictions have not been analyzed.
+const FloorPlanDerivedZones = {
+  collect(definitions) {
+    const zones = [], keys = new Set();
+    for (const definition of definitions) {
+      const { ownerId, ruleId, floorId, category, required } = definition;
+      const validPolygon = (polygon) => Array.isArray(polygon) && polygon.length >= 3
+        && polygon.every((point) => point && [point.x, point.y, point.z].every(Number.isFinite)
+          && Math.abs(point.z - polygon[0].z) <= 1e-7)
+        && Math.abs(polygon.reduce((area, point, index) => {
+          const next = polygon[(index + 1) % polygon.length];
+          return area + point.x * next.y - next.x * point.y;
+        }, 0)) > 1e-10;
+      if (typeof ownerId !== "string" || !ownerId.trim()
+        || typeof ruleId !== "string" || !ruleId.trim() || !["comfort", "circulation", "safety"].includes(category)
+        || !Array.isArray(required) || !required.length || !required.every(validPolygon))
+        throw new Error("Zona derivada precisa de origem, regra, categoria e polígonos XYZ válidos");
+      const id = JSON.stringify([ownerId, ruleId, floorId ?? null]);
+      if (keys.has(id)) throw new Error(`Zona derivada duplicada: ${id}`);
+      keys.add(id);
+      zones.push({ id, ownerId, ruleId, floorId: floorId ?? null, category,
+        required: structuredClone(required), available: null, interferences: [] });
+    }
+    return zones;
+  },
+};
+window.FloorPlanDerivedZones = FloorPlanDerivedZones;
+
+
+// Clearance uses the same inclined underside as walls and the 3D stair solids.
+const FloorPlanStairHeadroom = {
+  analyze(parts, floors, roofs = []) {
+    const groups = new Map();
+    for (const part of parts) {
+      const classes = (part.classes ?? "").split(/\s+/);
+      const flight = classes.includes("stair-flight");
+      if (!flight && !classes.includes("stair-landing")) continue;
+      if ((part.rotation ?? 0) !== 0 || !(part.w > 0 && part.l > 0)
+        || ![part.x, part.y, part.z0, part.z1].every(Number.isFinite)) continue;
+      if (flight && (!(part.h > 0) || !["horizontal", "vertical"].includes(part.stairAxis))) continue;
+      if (!flight && Math.abs(part.z1 - part.z0) > 1e-7) continue;
+      let plane;
+      try {
+        plane = flight ? FloorPlanWalls.stairUndersidePlane(part) : [0, 0, 1, -part.z0];
+      } catch {
+        // Invalid risers are reported by the existing stair validation path.
+        continue;
+      }
+      if (!plane.every(Number.isFinite)) continue;
+      const polygon = FloorPlanHeadroomAnalysis.rectangle(part).map(([x, y]) =>
+        [x, y, -(plane[0] * x + plane[1] * y + plane[3]) / plane[2]]);
+      if (!groups.has(part.ownerId)) groups.set(part.ownerId, []);
+      groups.get(part.ownerId).push({ part, polygon });
+    }
+    const results = [];
+    for (const [ownerId, entries] of groups) for (const floor of floors) {
+      const z0 = Number(floor.z0 ?? 0);
+      const overhead = entries.filter(({ polygon }) => polygon.some((point) => point[2] > z0 + 1e-8));
+      if (!overhead.length) continue;
+      const analysis = FloorPlanHeadroomAnalysis.analyzeRoom({ z0,
+        parts: overhead.map(({ part }) => part) },
+      [...overhead.map(({ polygon }) => ({ polygons: [polygon] })), ...roofs], []);
+      if (analysis.covered.area <= 1e-10) continue;
+      results.push({ ownerId, floorId: floor.id ?? null, floorZ: z0,
+        parts: overhead.map(({ part }) => part), ...analysis });
+    }
+    return results;
+  },
+
+  sourceLayers(plan) {
+    const targets = (value) => plan.normalizeOverlapTargets(value);
+    const rooms = plan.allRooms.filter((room) => !plan.invalidRoomIds.has(room.id)).map((room) => {
+      const definition = plan.roomDefinitions.get(room.id);
+      return { id: room.id, floorId: room.floorId,
+        parts: plan.getRoomGeometry(room.id).normalizedParts.map((part) => ({ ...part,
+          overlapTargets: targets(part.overlaps ?? definition.overlaps),
+          overlayTargets: targets(part.overlays ?? definition.overlays) })) };
+    });
+    return FloorPlanOverlapAnalysis.analyze({ rooms,
+      items: plan.allItems.map((item) => ({ id: item.id, overlayTargets: targets(item.overlays) })) }).layers;
+  },
+};
+window.FloorPlanStairHeadroom = FloorPlanStairHeadroom;
+
+
+const FloorPlanStairHeadroomView = {
+  render(plan) {
+    for (const result of plan.stairHeadroomResults ?? []) {
+      if (!plan.showAllFloors && result.floorId !== (plan.currentFloorId ?? null)) continue;
+      const sourceLayers = (plan.stairConnectivity?.nodes ?? [])
+        .filter((node) => node.ownerId === result.ownerId)
+        .map((node) => plan.stairSourceLayers?.get(
+          FloorPlanOverlapAnalysis.partKey(node.ownerId, node.partId)) ?? 0);
+      plan.maxLayer = Math.max(plan.maxLayer, ...sourceLayers);
+      const parts = result.parts;
+      const x = Math.min(...parts.map((p) => p.x)), y = Math.min(...parts.map((p) => p.y));
+      const w = Math.max(...parts.map((p) => p.x + p.w)) - x;
+      const l = Math.max(...parts.map((p) => p.y + p.l)) - y;
+      const element = plan.add({ pos: [x, y, result.floorZ], size: [w, l, 0],
+        classes: "stair-headroom-zone", showLabel: false });
+      element.dataset.stairHeadroomOwner = result.ownerId;
+      element.dataset.floorId = result.floorId ?? "";
+      element.setAttribute("aria-label", "Altura livre sob a escada");
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", `${x} ${y} ${w} ${l}`);
+      svg.setAttribute("preserveAspectRatio", "none");
+      FloorPlanHeadroomView.appendBands(plan, svg, result, {
+        colors: FloorPlanHeadroom.colors, label: "Sob a escada", allLabels: true,
+      });
+      element.append(svg);
+    }
+  },
+
+  isVisible(cutoff, sourceLayers) {
+    return cutoff === 0 && sourceLayers.length > 0 && sourceLayers.every((layer) => layer > 0);
+  },
+
+  updateVisibility(plan) {
+    const nodes = plan.stairConnectivity?.nodes ?? [];
+    let anyVisible = false;
+    plan.root.querySelectorAll(".stair-headroom-zone").forEach((element) => {
+      const ownerId = element.dataset.stairHeadroomOwner;
+      const sourceNodes = nodes.filter((node) => node.ownerId === ownerId);
+      const rooms = [...plan.roomElements, ...plan.stairElements]
+        .filter((room) => room.dataset.id === ownerId);
+      const layers = sourceNodes.map((node) => {
+        const renderedParts = rooms.flatMap((room) => room.geometryParts
+          .filter((part) => part.id === node.partId).map((part) => part.element ?? room));
+        // A source on another floor still uses its prepared layer policy.
+        return renderedParts.length ? Math.min(...renderedParts.map((part) => Number(part.dataset.layer ?? 0)))
+          : plan.stairSourceLayers?.get(FloorPlanOverlapAnalysis.partKey(ownerId, node.partId)) ?? 0;
+      });
+      const visible = this.isVisible(plan.layerCutoff, layers);
+      anyVisible ||= visible;
+      element.classList.toggle("layer-hidden", !visible);
+    });
+    const legend = plan.root.ownerDocument?.querySelector("#comfort-legend");
+    if (legend) legend.hidden = !anyVisible && !plan.root.querySelector(".headroom-zone");
+  },
+};
+window.FloorPlanStairHeadroomView = FloorPlanStairHeadroomView;
+
+
+// Required access footprints; clearance beneath the stair is a separate analysis.
+const FloorPlanStairAccess = {
+  generate(connectivity, { depth = 1.2 } = {}) {
+    if (!Number.isFinite(depth) || depth <= 0)
+      throw new Error("stair_access_depth precisa ser um número positivo em metros");
+    const definitions = [];
+    for (const node of connectivity.nodes) for (const end of node.ends) {
+      const connected = connectivity.edges.some((edge) =>
+        (edge.a === node.key && edge.aEnd === end.role)
+        || (edge.b === node.key && edge.bEnd === end.role));
+      if (connected) continue;
+      const horizontal = end.axis === "y";
+      const outward = horizontal
+        ? (Math.abs(end.start.x - node.bounds.x) < 1e-7 ? -1 : 1)
+        : (Math.abs(end.start.y - node.bounds.y) < 1e-7 ? -1 : 1);
+      const offset = (point) => ({ ...point,
+        x: point.x + (horizontal ? outward * depth : 0),
+        y: point.y + (horizontal ? 0 : outward * depth) });
+      for (const floorId of end.floorIds) definitions.push({
+        ownerId: node.ownerId, ruleId: JSON.stringify(["stair-access", node.partId, end.role]),
+        floorId, category: "circulation",
+        required: [[{ ...end.start }, { ...end.end }, offset(end.end), offset(end.start)]],
+      });
+    }
+    return FloorPlanDerivedZones.collect(definitions);
+  },
+};
+window.FloorPlanStairAccess = FloorPlanStairAccess;
+
+
+const FloorPlanStairAccessView = {
+  render(plan) {
+    for (const zone of plan.derivedZones ?? []) {
+      if (!plan.showAllFloors && zone.floorId !== (plan.currentFloorId ?? null)) continue;
+      const points = zone.required.flat();
+      const x = Math.min(...points.map((p) => p.x)), y = Math.min(...points.map((p) => p.y));
+      const w = Math.max(...points.map((p) => p.x)) - x;
+      const l = Math.max(...points.map((p) => p.y)) - y;
+      const element = plan.add({ pos: [x, y, points[0].z], size: [w, l, 0],
+        classes: "reference-zone stair-access-zone", showLabel: false });
+      element.dataset.stairAccessOwner = zone.ownerId;
+      element.dataset.floorId = zone.floorId ?? "";
+      element.setAttribute("aria-label", "Acesso requerido da escada");
+      element.title = "Acesso requerido da escada — paredes e obstáculos ainda não analisados";
+    }
+  },
+
+  updateVisibility(plan) {
+    plan.root.querySelectorAll(".stair-access-zone").forEach((element) => {
+      const ownerId = element.dataset.stairAccessOwner;
+      const rooms = [...plan.roomElements, ...plan.stairElements]
+        .filter((room) => room.dataset.id === ownerId);
+      const visible = rooms.some((room) => !room.classList.contains("layer-hidden")
+        && !room.classList.contains("plan-hidden") && room.geometryParts.some((part) => {
+          const source = part.element ?? room;
+          return !source.classList.contains("layer-hidden") && !source.classList.contains("plan-hidden");
+        }));
+      element.classList.toggle("layer-hidden", !visible);
+    });
+  },
+};
+window.FloorPlanStairAccessView = FloorPlanStairAccessView;
+
+
+// Prepare one project revision independently of any rendered view.
+const FloorPlanProject = {
+  prepare(plan, source) {
+    const model = FloorPlanModel.fromConfig(source);
+    const config = model.config;
+    plan.preparedProject = null;
+    plan.model = model;
+    plan.currentConfig = config;
+    plan.currentFloorHeight ??= 0;
+    plan.partReferenceStack ??= [];
+    for (const key of ["references", "rooms", "roomReferences", "roomDefinitions",
+      "roomGeometryCache", "partOwners"]) plan[key] ??= new Map();
+    for (const key of ["roomGeometryStack", "globalObjectIds", "validZoneIds", "invalidRoomIds"])
+      plan[key] ??= new Set();
+    plan.errors = [];
+    plan.warnings = model.warnings;
+    plan.itemTypes = { ...(plan.catalog.items ?? {}), ...(config["item-types"] ?? {}) };
+    plan.prepareRoomReferences(config);
+    const floorErrors = new Map(model.floors.map((floor) =>
+      [floor, FloorPlanReferences.collectFloorFeatureErrors(plan, floor)]));
+    plan.prepareGlobalLists(config);
+    FloorPlanHeadroom.prepare(plan);
+    FloorPlanCommunications.prepare(plan);
+    plan.allSlabs = FloorPlanSlabs.collect(plan);
+    const stairParts = plan.allRooms.filter((room) => !plan.invalidRoomIds.has(room.id))
+      .flatMap((room) => plan.getRoomGeometry(room.id).normalizedParts);
+    plan.stairConnectivity = FloorPlanStairConnectivity.analyze(stairParts, model.floors);
+    plan.stairSourceLayers = FloorPlanStairHeadroom.sourceLayers(plan);
+    plan.derivedZones = FloorPlanStairAccess.generate(plan.stairConnectivity,
+      { depth: config.stair_access_depth ?? 1.2 });
+    plan.stairHeadroomResults = FloorPlanStairHeadroom.analyze(stairParts, model.floors,
+      FloorPlanRoofGeometry.intersectingSurfaces(plan));
+    plan.preparedProject = {
+      model,
+      references: new Map(plan.references),
+      rooms: new Map(plan.rooms),
+      errors: [...plan.errors],
+      warnings: model.warnings,
+      floorErrors,
+    };
+    return plan.preparedProject;
+  },
+
+  restoreReferences(plan) {
+    const prepared = plan.preparedProject;
+    for (const key of ["references", "rooms"]) {
+      plan[key].clear();
+      prepared[key].forEach((value, id) => plan[key].set(id, value));
+    }
+  },
+
+  viewErrors(prepared, floor, showAllFloors) {
+    // Visible features still report detailed errors through their renderer.
+    // Reuse validation for inactive floors without duplicating those messages.
+    return [...prepared.errors, ...(!showAllFloors
+      ? [...prepared.floorErrors].flatMap(([candidate, errors]) => candidate === floor ? [] : errors)
+      : [])];
+  },
+};
+
+window.FloorPlanProject = FloorPlanProject;
+
+
 class FloorPlan {
   /**
    * Cria a fachada da planta e conecta os elementos da interface.
@@ -13690,6 +14256,7 @@ class FloorPlan {
     this.currentFloorId = null;
     this.showAllFloors = false;
     this.currentFloorHeight = 0;
+    this.resolutionContext = null;
     this.currentSourceText = null;
     this.model = null;
     this.itemTypes = {};
@@ -13731,6 +14298,7 @@ class FloorPlan {
     root.addEventListener("pointerup", (event) => this.endViewportPan(event));
     root.addEventListener("pointercancel", (event) => this.endViewportPan(event));
     root.addEventListener("lostpointercapture", () => { this.pointerPan = null; });
+    FloorPlanDom.configureWallTooltip(this);
     if (typeof ResizeObserver !== "undefined") {
       this.viewportResizeObserver = new ResizeObserver(() => this.resizeViewport());
       this.viewportResizeObserver.observe(root.parentElement || root);
@@ -13792,21 +14360,7 @@ class FloorPlan {
       floorOptions.addEventListener("change", (event) => {
         const floors = this.currentConfig?.floors;
         if (!Array.isArray(floors)) return;
-        if (event.target.value === "__all_floors__") {
-          this.showAllFloors = true;
-          this.load(this.currentConfig, { preservePresentation: true });
-          return;
-        }
-        this.showAllFloors = false;
-        const activeFloor = floors.findIndex(
-          (floorConfig) => String(floorConfig.id) === event.target.value,
-        );
-        if (activeFloor >= 0) {
-          this.load(
-            { ...this.currentConfig, activeFloor },
-            { preservePresentation: true },
-          );
-        }
+        this.selectFloor(event.target.value);
       });
     }
     if (solarSeasonSelect) {
@@ -14364,27 +14918,52 @@ class FloorPlan {
   renderMultiFloorUnderlay(floorConfig = null) {
     return FloorPlanLayers.renderMultiFloorUnderlay(this, floorConfig);
   }
-  clear() {
+  clearView() {
     FloorPlanRenderer.clearGenerated(this.root);
     this.projectionLayer.replaceChildren();
     this.multiFloorLayer.replaceChildren();
     this.clearTerrain();
-    this.rooms.clear();
-    this.roomReferences.clear();
     this.stairElements = [];
-    this.references.clear();
     this.roomElements = [];
     this.itemElements = [];
     this.zoneElements = [];
     this.openings = [];
     this.windows = [];
-    this.allRoofs = [];
-    this.errors = [];
-    this.warnings = [];
     this.roomArea = 0;
     this.roomCount = 0;
     this.layerCutoff = null;
     this.maxLayer = 0;
+  }
+
+  clear() {
+    this.clearView();
+    this.rooms.clear();
+    this.roomReferences.clear();
+    this.references.clear();
+    this.allRoofs = [];
+    this.headroomResults = new Map();
+    this.communicationResults = null;
+    this.stairConnectivity = null;
+    this.stairSourceLayers = null;
+    this.stairHeadroomResults = [];
+    this.derivedZones = [];
+    this.naturalCommunications = [];
+    this.errors = [];
+    this.warnings = [];
+    this.preparedProject = null;
+  }
+
+  prepareProject(config) {
+    return FloorPlanProject.prepare(this, config);
+  }
+
+  selectFloor(id) {
+    const floors = this.currentConfig?.floors;
+    if (!Array.isArray(floors)) return this;
+    const all = id === "__all_floors__";
+    const index = floors.findIndex((floor) => String(floor.id) === String(all ? this.currentFloorId : id));
+    if (!all && index < 0) return this;
+    return this.renderView({ activeFloor: Math.max(0, index), showAllFloors: all });
   }
 
   /**
@@ -14395,18 +14974,15 @@ class FloorPlan {
    * @returns {FloorPlan} A própria instância, para encadeamento.
    */
   load(config, { preservePresentation = false } = {}) {
-    this.references ??= new Map();
-    this.rooms ??= new Map();
-    this.roomReferences ??= new Map();
-    this.roomDefinitions ??= new Map();
-    this.roomGeometryCache ??= new Map();
-    this.roomGeometryStack ??= new Set();
-    this.partOwners ??= new Map();
-    this.globalObjectIds ??= new Set();
-    this.validZoneIds ??= new Set();
-    this.model = FloorPlanModel.fromConfig(config);
-    config = this.model.config;
-    this.currentConfig = config;
+    this.prepareProject(config);
+    this.configureViewport(this.model.viewport);
+    return this.renderView({ preservePresentation });
+  }
+
+  renderView({ activeFloor = null, showAllFloors = this.showAllFloors, preservePresentation = true } = {}) {
+    if (!this.preparedProject) throw new Error("Prepare um projeto antes de construir a vista");
+    const config = this.currentConfig;
+    this.showAllFloors = showAllFloors;
     document.querySelector("#empty-state")?.setAttribute("hidden", "");
     document.querySelector("#plan-workspace")?.removeAttribute("hidden");
     document.body?.classList.remove("page-empty");
@@ -14426,15 +15002,14 @@ class FloorPlan {
       this.solarSeason = this.solarSeasonSelect.value;
     }
     this.updateSolarTimeControls();
-    this.itemTypes = { ...(this.catalog.items || {}), ...(config["item-types"] || {}) };
     this.theme = {
       ...this.theme,
       ...(config.theme || {}),
       colors: { ...this.theme.colors, ...(this.catalog.colors || {}), ...(config.theme?.colors || {}) }
     };
-    this.configureViewport(this.model.viewport);
-    const configuredFloorIndex = Number.isInteger(config.activeFloor)
-      ? config.activeFloor
+    const requestedFloor = activeFloor ?? config.activeFloor;
+    const configuredFloorIndex = Number.isInteger(requestedFloor)
+      ? requestedFloor
       : config.floors?.findIndex((floorConfig) => floorConfig.id === this.currentFloorId);
     const floorIndex = configuredFloorIndex >= 0 ? configuredFloorIndex : 0;
     const floorConfig = config.floors?.[floorIndex] || config;
@@ -14485,13 +15060,11 @@ class FloorPlan {
     if (this.titleElement) this.titleElement.textContent = title;
     if (typeof document !== "undefined") document.title = title;
     document.querySelector("#project-overview")?.removeAttribute("hidden");
-    this.clear();
-    this.warnings = this.model.warnings;
-    this.prepareRoomReferences(config);
-    if (!this.showAllFloors) this.validateInactiveFloorFeatures(config, floorIndex);
-    this.prepareGlobalLists(config);
+    this.clearView();
+    FloorPlanProject.restoreReferences(this);
+    this.errors = FloorPlanProject.viewErrors(this.preparedProject, floorConfig, this.showAllFloors);
+    this.warnings = this.preparedProject.warnings;
     this.hiddenSlabs ??= new Set();
-    this.allSlabs = FloorPlanSlabs.collect(this);
     FloorPlanSlabs.updateList(this);
     try {
       this.renderTerrain(config.terrain);
@@ -14499,6 +15072,8 @@ class FloorPlan {
       this.errors.push({ category: "presentation", message: error.message });
     }
     this.renderPlanFloors(config, floorConfig);
+    FloorPlanStairHeadroomView.render(this);
+    FloorPlanStairAccessView.render(this);
     this.updateLayerVisibility();
     this.renderMultiFloorUnderlay(floorConfig);
     try {
@@ -14626,7 +15201,7 @@ class FloorPlan {
   }
 
   findNaturalCommunications() {
-    return FloorPlanLists.findNaturalCommunications(this);
+    return FloorPlanCommunications.fromReferences(this, this.roomElements);
   }
 
   updateNaturalList() {

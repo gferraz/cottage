@@ -5,172 +5,50 @@ const FloorPlanLayers = {
 
   updateOverlaps(plan) {
     const rooms = [...plan.roomElements, ...plan.stairElements];
-    plan.errors = plan.errors.filter(
-      (error) => !["collision", "overlap"].includes(error.category),
-    );
-    rooms.forEach((room) => {
-      room.classList.remove(
-        "room-overlap",
-        "room-overlap-above",
-        "room-overlap-below",
-      );
-    });
-
-    const pieces = rooms.flatMap((room) =>
-      room.geometryParts.map((part) => ({
-        room,
-        part,
-        key:
-          part.id && room.dataset.id
-            ? `${room.dataset.id}.${part.id}`
-            : room.dataset.id,
-        overlapTargets: part.overlapTargets ?? room.allowedOverlaps,
-        overlayTargets: part.overlayTargets ?? room.allowedOverlays,
+    const analysis = FloorPlanOverlapAnalysis.analyze({
+      rooms: rooms.map((room) => ({
+        id: room.dataset.id,
+        label: room.dataset.label,
+        floorId: room.dataset.floorId,
+        overlapTargets: room.allowedOverlaps,
+        overlayTargets: room.allowedOverlays,
+        parts: room.geometryParts.map((part) => ({
+          id: part.id, x: part.x, y: part.y, w: part.w, l: part.l,
+          overlapTargets: part.overlapTargets,
+          overlayTargets: part.overlayTargets,
+        })),
       })),
-    );
-    const itemPieces = plan.itemElements.map((item) => ({
-      item,
-      key: item.dataset.id,
-      overlapTargets: item.allowedOverlaps ?? [],
-      overlayTargets: item.allowedOverlays ?? [],
-      part: { x: item.x0(), y: item.y0(), w: item.w(), l: item.l() },
-    }));
-    const nodes = [...pieces, ...itemPieces].filter((piece) => piece.key);
-    const nodesByKey = new Map(nodes.map((node) => [node.key, node]));
-    const nodesByRoom = new Map();
-    pieces.forEach((piece) => {
-      const roomId = piece.room.dataset.id;
-      if (!nodesByRoom.has(roomId)) nodesByRoom.set(roomId, []);
-      nodesByRoom.get(roomId).push(piece);
+      items: plan.itemElements.map((item) => ({
+        id: item.dataset.id,
+        overlayTargets: item.allowedOverlays,
+      })),
     });
-
-    const targetNodes = (target) =>
-      nodesByKey.has(target)
-        ? [nodesByKey.get(target)]
-        : (nodesByRoom.get(target) ?? []);
-    const targetMatches = (targets, targetPiece) =>
-      targets.includes(targetPiece.key) ||
-      targets.includes(targetPiece.room?.dataset.id);
-
-    const edges = new Map(nodes.map((node) => [node.key, []]));
-    nodes.forEach((node) => {
-      node.overlayTargets.forEach((target) => {
-        const matches = targetNodes(target);
-        if (matches.length === 0) {
-          plan.errors.push({
-            category: "overlap",
-            id: node.key,
-            message: `Referência de sobreposição inexistente: ${target}`,
-          });
-          return;
-        }
-        matches.forEach((targetNode) => {
-          edges.get(node.key).push(targetNode.key);
-        });
+    plan.errors = [
+      ...plan.errors.filter((error) => !["collision", "overlap"].includes(error.category)),
+      ...analysis.errors,
+    ];
+    rooms.forEach((room, index) => {
+      room.classList.remove("room-overlap", "room-overlap-above", "room-overlap-below");
+      if (analysis.collidingRooms.has(index)) room.classList.add("room-overlap");
+      room.geometryParts.forEach((part) => {
+        const key = FloorPlanOverlapAnalysis.partKey(room.dataset.id, part.id);
+        if (!key) return;
+        const layer = analysis.layers.get(key) ?? 0;
+        const element = part.element || room;
+        element.dataset.layer = String(layer);
+        element.style.setProperty("--layer", layer);
       });
+      room.dataset.layer = String(analysis.roomLayers[index]);
     });
-
-    const layers = new Map();
-    const visiting = new Set();
-    const visited = new Set();
-    const calculateLayer = (key) => {
-      if (layers.has(key)) return layers.get(key);
-      if (visiting.has(key)) {
-        plan.errors.push({
-          category: "overlap",
-          id: key,
-          message: `Ciclo de camadas detectado envolvendo ${key}`,
-        });
-        return 0;
-      }
-      visiting.add(key);
-      const layer = edges
-        .get(key)
-        .reduce(
-          (highest, target) => Math.max(highest, calculateLayer(target) + 1),
-          0,
-        );
-      visiting.delete(key);
-      visited.add(key);
-      layers.set(key, layer);
-      return layer;
-    };
-    nodes.forEach((node) => {
-      calculateLayer(node.key);
+    plan.itemElements.forEach((item) => {
+      if (!item.dataset.id) return;
+      const layer = analysis.layers.get(item.dataset.id) ?? 0;
+      item.dataset.layer = String(layer);
+      item.style.setProperty("--layer", layer);
     });
-    const maxLayer = Math.max(0, ...layers.values());
-    nodes.forEach((node) => {
-      const layer = layers.get(node.key) ?? 0;
-      node.layer = layer;
-      const element = node.item || node.part.element || node.room;
-      element.dataset.layer = String(layer);
-      element.style.setProperty("--layer", layer);
-    });
-    rooms.forEach((room) => {
-      room.dataset.layer = String(
-        Math.max(
-          ...room.geometryParts.map(
-            (part) =>
-              layers.get(
-                part.id && room.dataset.id
-                  ? `${room.dataset.id}.${part.id}`
-                  : room.dataset.id,
-              ) ?? 0,
-          ),
-        ),
-      );
-    });
-    plan.maxLayer = maxLayer;
+    plan.maxLayer = analysis.maxLayer;
     plan.updateLayerVisibility();
-
-    const collisionKeys = new Set();
-    const epsilon = 1e-9;
-    for (let index = 0; index < pieces.length; index += 1) {
-      for (
-        let otherIndex = index + 1;
-        otherIndex < pieces.length;
-        otherIndex += 1
-      ) {
-        const first = pieces[index];
-        const second = pieces[otherIndex];
-        if (first.room.dataset.floorId && second.room.dataset.floorId &&
-          first.room.dataset.floorId !== second.room.dataset.floorId) continue;
-        const overlapWidth =
-          Math.min(first.part.x + first.part.w, second.part.x + second.part.w) -
-          Math.max(first.part.x, second.part.x);
-        const overlapHeight =
-          Math.min(first.part.y + first.part.l, second.part.y + second.part.l) -
-          Math.max(first.part.y, second.part.y);
-        const overlaps = overlapWidth > epsilon && overlapHeight > epsilon;
-        const firstAbove = targetMatches(first.overlayTargets, second);
-        const secondAbove = targetMatches(second.overlayTargets, first);
-        const firstAllowed = targetMatches(first.overlapTargets, second);
-        const secondAllowed = targetMatches(second.overlapTargets, first);
-        const allowed = firstAllowed || secondAllowed;
-
-        if (overlaps && !allowed) {
-          first.room.classList.add("room-overlap");
-          second.room.classList.add("room-overlap");
-          const firstId =
-            first.room.dataset.id || first.room.dataset.label || "elemento";
-          const secondId =
-            second.room.dataset.id || second.room.dataset.label || "elemento";
-          const collisionKey = [firstId, secondId].sort().join(" / ");
-          if (!collisionKeys.has(collisionKey)) {
-            collisionKeys.add(collisionKey);
-            plan.errors.push({
-              category: "collision",
-              id: collisionKey,
-              message: `Sobreposição entre ${firstId} e ${secondId}`,
-            });
-          }
-        } else if (overlaps) {
-          // Declarative overlaps are intentional: keep both elements with
-          // their normal appearance. The layer graph still records which
-          // element is above the other for visibility and area calculations.
-        }
-      }
-    }
+    return analysis;
   },
 
   cycleLayer(plan) {
@@ -205,6 +83,8 @@ const FloorPlanLayers = {
           !this.isLayerVisible(layer, cutoff),
         );
       });
+    window.FloorPlanStairHeadroomView?.updateVisibility(plan);
+    window.FloorPlanStairAccessView?.updateVisibility(plan);
     if (plan.layerOptions) {
       const visible = Boolean(plan.currentConfig && plan.maxLayer > 0);
       const container = plan.layerOptions.closest(".layer-selector");

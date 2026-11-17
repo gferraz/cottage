@@ -35,10 +35,8 @@ const FloorPlanReferences = {
       plan.references.set(id, reference);
     });
     const floors = config.floors ?? [config];
-    const roomFloors = new Map();
     floors.forEach((floor) => {
       (floor.rooms ?? []).forEach((room) => {
-        roomFloors.set(room.id, floor);
         plan.roomFloorConfigs.set(room.id, floor);
       });
     });
@@ -49,10 +47,7 @@ const FloorPlanReferences = {
     FloorPlanReferences.registerStaticItemReferences(plan, config);
     FloorPlanReferences.registerWallReferences(plan, config);
     plan.registerRoofReferences(config);
-    const previousFloorHeight = plan.currentFloorHeight;
     plan.roomDefinitions.forEach((_room, id) => {
-      const floor = roomFloors.get(id) ?? floors[0];
-      plan.currentFloorHeight = Number(floor?.z0 ?? 0);
       try {
         plan.getRoomGeometry(id);
       } catch (error) {
@@ -63,8 +58,6 @@ const FloorPlanReferences = {
           opening: plan.roomDefinitions.get(id),
           message: error.message,
         });
-      } finally {
-        plan.currentFloorHeight = previousFloorHeight;
       }
     });
     FloorPlanWalls.normalizeRoomWalls(plan, config);
@@ -172,13 +165,13 @@ const FloorPlanReferences = {
         plan.resolve(toXValue, {
           x0: startX(),
           y0: startY(),
-          z0: plan.currentFloorHeight,
+          z0: FloorPlanGeometry.context(plan).floorZ,
         });
       const endpointY = () =>
         plan.resolve(toYValue, {
           x0: startX(),
           y0: startY(),
-          z0: plan.currentFloorHeight,
+          z0: FloorPlanGeometry.context(plan).floorZ,
         });
       plan.references.set(guide.id, {
         x0: startX,
@@ -353,8 +346,8 @@ const FloorPlanReferences = {
         if (plan.references.has(roof.id)) return;
         try {
           const baseDefinition = roof.base ?? roof;
-          const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
-          const base = FloorPlanRoofs.resolveBase(plan, baseDefinition, floor);
+          const floor = FloorPlanRoofGeometry.floorForRoof(plan, roof, baseDefinition);
+          const base = FloorPlanRoofGeometry.resolveBase(plan, baseDefinition, floor);
           plan.references.set(roof.id, base);
         } catch (error) {
           unresolved.push(roof);
@@ -486,54 +479,56 @@ const FloorPlanReferences = {
     return [...globalGuides, ...(floorConfig.guides ?? [])];
   },
 
-  validateInactiveFloorFeatures(plan, config, activeFloorIndex) {
-    (config.floors ?? []).forEach((floorConfig, floorIndex) => {
-      if (floorIndex === activeFloorIndex) return;
-      const previousFloorHeight = plan.currentFloorHeight;
-      plan.currentFloorHeight = Number(floorConfig.z0 ?? 0);
+  collectFloorFeatureErrors(plan, floorConfig) {
+    const errors = [];
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      floorZ: Number(floorConfig.z0 ?? 0), floorId: floorConfig.id ?? null,
+    });
+    (floorConfig.zones ?? []).forEach((zone, index) => {
       try {
-        (floorConfig.zones ?? []).forEach((zone, index) => {
-          try {
-            plan.normalizeGeometry(zone);
-          } catch (error) {
-            plan.errors.push({
-              index,
-              opening: zone,
-              category: "zone",
-              message: error.message,
-            });
-          }
+        scoped.normalizeGeometry(zone);
+      } catch (error) {
+        errors.push({
+          index,
+          opening: zone,
+          category: "zone",
+          message: error.message,
         });
-        (window.FloorPlanElements?.items(plan, floorConfig) ?? floorConfig.items ?? []).forEach((item, index) => {
-          try {
-            plan.normalizeGeometry(plan.resolveItemType(item));
-          } catch (error) {
-            plan.errors.push({
-              index,
-              opening: item,
-              category: "item",
-              message: error.message,
-            });
-          }
-        });
-        [
-          ...FloorPlanOpenings.forFloor(plan, floorConfig),
-        ].forEach((opening, index) => {
-          if (plan.isVerticalOpening(opening)) return;
-          try {
-            plan.normalizeOpening(opening);
-          } catch (error) {
-            plan.errors.push({
-              index,
-              opening,
-              category: opening.type === "door" ? "door" : opening.type === "window" ? "window" : "opening",
-              message: error.message,
-            });
-          }
-        });
-      } finally {
-        plan.currentFloorHeight = previousFloorHeight;
       }
+    });
+    (window.FloorPlanElements?.items(scoped, floorConfig) ?? floorConfig.items ?? []).forEach((item, index) => {
+      try {
+        scoped.normalizeGeometry(scoped.resolveItemType(item));
+      } catch (error) {
+        errors.push({
+          index,
+          opening: item,
+          category: "item",
+          message: error.message,
+        });
+      }
+    });
+    [
+      ...FloorPlanOpenings.forFloor(scoped, floorConfig),
+    ].forEach((opening, index) => {
+      if (scoped.isVerticalOpening(opening)) return;
+      try {
+        scoped.normalizeOpening(opening);
+      } catch (error) {
+        errors.push({
+          index,
+          opening,
+          category: opening.type === "door" ? "door" : opening.type === "window" ? "window" : "opening",
+          message: error.message,
+        });
+      }
+    });
+    return errors;
+  },
+
+  validateInactiveFloorFeatures(plan, config, activeFloorIndex) {
+    (config.floors ?? []).forEach((floor, index) => {
+      if (index !== activeFloorIndex) plan.errors.push(...this.collectFloorFeatureErrors(plan, floor));
     });
   },
 
@@ -559,7 +554,7 @@ const FloorPlanReferences = {
     const globalRoofs = config.floors ? (config.roofs ?? []) : [];
     globalRoofs.forEach((roof) => {
       const baseDefinition = roof.base ?? roof;
-      const floor = FloorPlanRoofs.floorForRoof(plan, roof, baseDefinition);
+      const floor = FloorPlanRoofGeometry.floorForRoof(plan, roof, baseDefinition);
       plan.allRoofs.push({
         ...roof,
         floorId: floor?.id ?? null,
@@ -567,8 +562,9 @@ const FloorPlanReferences = {
       });
     });
     floors.forEach((floorConfig) => {
-      const previousFloorHeight = plan.currentFloorHeight;
-      plan.currentFloorHeight = Number(floorConfig.z0 ?? 0);
+      const scoped = FloorPlanGeometry.inContext(plan, {
+        floorZ: Number(floorConfig.z0 ?? 0), floorId: floorConfig.id ?? null,
+      });
       (floorConfig.roofs ?? []).forEach((roof) => {
         plan.allRoofs.push({
           ...roof,
@@ -576,10 +572,10 @@ const FloorPlanReferences = {
           floorLabel: floorConfig.label,
         });
       });
-      (window.FloorPlanElements?.items(plan, floorConfig) ?? floorConfig.items ?? []).forEach((item) => {
+      (window.FloorPlanElements?.items(scoped, floorConfig) ?? floorConfig.items ?? []).forEach((item) => {
         try {
-          const resolvedItem = plan.resolveItemType(item);
-          const geometry = plan.normalizeGeometry(resolvedItem);
+          const resolvedItem = scoped.resolveItemType(item);
+          const geometry = scoped.normalizeGeometry(resolvedItem);
           plan.allItems.push({
             ...resolvedItem,
             ...geometry,
@@ -590,10 +586,10 @@ const FloorPlanReferences = {
           // The active-floor render path records the detailed error.
         }
       });
-      FloorPlanOpenings.forFloor(plan, floorConfig).forEach((opening) => {
-        if (plan.isVerticalOpening(opening)) return;
+      FloorPlanOpenings.forFloor(scoped, floorConfig).forEach((opening) => {
+        if (scoped.isVerticalOpening(opening)) return;
         try {
-          const feature = plan.normalizeOpening(opening);
+          const feature = scoped.normalizeOpening(opening);
           const target =
             feature.type === "window" ? plan.allWindows : plan.allOpenings;
           target.push({
@@ -605,7 +601,6 @@ const FloorPlanReferences = {
           // Validation and rendering record the error with its source data.
         }
       });
-      plan.currentFloorHeight = previousFloorHeight;
     });
   },
 
@@ -627,6 +622,12 @@ const FloorPlanReferences = {
       area: () => plan.getRoomGeometry(id).area(),
       wallState: (side) => plan.getRoomGeometry(id).wallState(side),
       hasWall: (side) => plan.getRoomGeometry(id).hasWall(side),
+      get normalizedParts() {
+        return plan.getRoomGeometry(id).normalizedParts;
+      },
+      get nominalGeometry() {
+        return plan.getRoomGeometry(id).nominalGeometry;
+      },
       get geometryParts() {
         return plan.getRoomGeometry(id).geometryParts;
       },
@@ -643,47 +644,30 @@ const FloorPlanReferences = {
 
   normalizeParts(plan, parts) {
     const localReferences = new Map();
-    plan.partReferenceStack.push(localReferences);
-    try {
-      const geometries = new Map();
-      const pending = new Set();
-      const geometryAt = (index) => {
-        if (geometries.has(index)) return geometries.get(index);
-        const part = parts[index];
-        if (pending.has(index)) throw new Error(`Referência circular entre partes: ${part.id || index + 1}`);
-        pending.add(index);
-        try {
-          const geometry = { ...plan.normalizeGeometry(part), id: part.id || `part-${index + 1}` };
-          geometries.set(index, geometry);
-          return geometry;
-        } finally {
-          pending.delete(index);
-        }
-      };
-      parts.forEach((part, index) => {
-        const reference = {
-          x0: () => geometryAt(index).x,
-          x1: () => geometryAt(index).x + geometryAt(index).w,
-          xc: () => geometryAt(index).x + geometryAt(index).w / 2,
-          y0: () => geometryAt(index).y,
-          y1: () => geometryAt(index).y + geometryAt(index).l,
-          yc: () => geometryAt(index).y + geometryAt(index).l / 2,
-          z0: () => geometryAt(index).z0,
-          z1: () => geometryAt(index).z1,
-          zc: () => (geometryAt(index).z0 + geometryAt(index).z1) / 2,
-          h: () => geometryAt(index).h,
-          w: () => geometryAt(index).w,
-          l: () => geometryAt(index).l,
-          area: () => geometryAt(index).w * geometryAt(index).l,
-        };
-        const id = part.id || `part-${index + 1}`;
-        FloorPlanGeometryBox.attach(reference, { label: id });
-        localReferences.set(id, reference);
-      });
-      return parts.map((_, index) => geometryAt(index));
-    } finally {
-      plan.partReferenceStack.pop();
-    }
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      partScopes: [...FloorPlanGeometry.context(plan).partScopes, localReferences],
+    });
+    const geometries = new Map();
+    const pending = new Set();
+    const geometryAt = (index) => {
+      if (geometries.has(index)) return geometries.get(index);
+      const part = parts[index];
+      if (pending.has(index)) throw new Error(`Referência circular entre partes: ${part.id || index + 1}`);
+      pending.add(index);
+      try {
+        const geometry = { ...scoped.normalizeGeometry(part), id: part.id || `part-${index + 1}` };
+        geometries.set(index, geometry);
+        return geometry;
+      } finally {
+        pending.delete(index);
+      }
+    };
+    parts.forEach((part, index) => {
+      const id = part.id || `part-${index + 1}`;
+      const reference = FloorPlanGeometryBox.fromGeometry(() => geometryAt(index), { label: id });
+      localReferences.set(id, reference);
+    });
+    return parts.map((_, index) => geometryAt(index));
   },
 
   getRoomGeometry(plan, id) {
@@ -704,79 +688,32 @@ const FloorPlanReferences = {
       throw new Error(`Circular room reference: ${id}`);
 
     plan.roomGeometryStack.add(id);
-    const previousFloorHeight = plan.currentFloorHeight;
     try {
       const room = plan.roomDefinitions.get(id);
       const owningFloor = plan.roomFloorConfigs?.get(id);
-      if (owningFloor) plan.currentFloorHeight = Number(owningFloor.z0 ?? 0);
-      const parts = room.parts?.length
-        ? plan.normalizeParts(room.parts)
-        : undefined;
-      const geometry = parts?.length
-        ? {
-            x: Math.min(...parts.map((part) => part.x)),
-            y: Math.min(...parts.map((part) => part.y)),
-            w:
-              Math.max(...parts.map((part) => part.x + part.w)) -
-              Math.min(...parts.map((part) => part.x)),
-            l:
-              Math.max(...parts.map((part) => part.y + part.l)) -
-              Math.min(...parts.map((part) => part.y)),
-          }
-        : plan.normalizeGeometry(room);
+      const scoped = FloorPlanGeometry.inContext(plan, {
+        ...(owningFloor ? { floorZ: Number(owningFloor.z0 ?? 0), floorId: owningFloor.id ?? null } : {}),
+        itemReferences: false,
+      });
+      const { normalizedParts, nominalGeometry } = FloorPlanGeometryDomain.normalizeRoomGeometry(scoped, room);
+      const compound = Boolean(room.parts?.length);
       const walls = plan.normalizeWalls(room.walls);
-      const reference = {
-        x0: () => geometry.x,
-        x1: () => geometry.x + geometry.w,
-        xc: () => geometry.x + geometry.w / 2,
-        y0: () => geometry.y,
-        y1: () => geometry.y + geometry.l,
-        yc: () => geometry.y + geometry.l / 2,
-        z0: () => geometry.z0,
-        z1: () => geometry.z1,
-        zc: () => (geometry.z0 + geometry.z1) / 2,
-        h: () => geometry.h,
-        w: () => geometry.w,
-        l: () => geometry.l,
-        area: () =>
-          parts?.length
-            ? parts.reduce((total, part) => total + part.w * part.l, 0)
-            : geometry.w * geometry.l,
+      const reference = FloorPlanGeometryBox.fromGeometry(nominalGeometry, { compound, label: id });
+      Object.assign(reference, {
+        nominalGeometry,
+        normalizedParts,
+        // Compatibility projection: analyses still expect axis-aligned XY parts.
+        geometryParts: normalizedParts.map(({ x, y, w, l }) => ({ x, y, w, l })),
+        area: () => normalizedParts.reduce((total, part) => total + part.w * part.l, 0),
         wallState: (side) => walls[side],
         hasWall: (side) => walls[side] === "solid",
-        geometryParts: parts?.length
-          ? parts.map(({ x, y, w, l }) => ({ x, y, w, l }))
-          : [{ x: geometry.x, y: geometry.y, w: geometry.w, l: geometry.l }],
-        partReferences: new Map(
-          (parts ?? []).map((part) => {
-            const reference = {
-              x0: () => part.x,
-              x1: () => part.x + part.w,
-              xc: () => part.x + part.w / 2,
-              y0: () => part.y,
-              y1: () => part.y + part.l,
-              yc: () => part.y + part.l / 2,
-              z0: () => part.z0,
-              z1: () => part.z1,
-              zc: () => (part.z0 + part.z1) / 2,
-              h: () => part.h,
-              w: () => part.w,
-              l: () => part.l,
-              area: () => part.w * part.l,
-            };
-            FloorPlanGeometryBox.attach(reference, { label: part.id });
-            return [part.id, reference];
-          }),
-        ),
-      };
-      FloorPlanGeometryBox.attach(reference, {
-        compound: Boolean(parts?.length),
-        label: id,
+        partReferences: new Map(compound ? normalizedParts.map((part) => [part.id,
+          FloorPlanGeometryBox.fromGeometry(part, { label: part.id }),
+        ]) : []),
       });
       plan.roomGeometryCache.set(id, reference);
       return reference;
     } finally {
-      plan.currentFloorHeight = previousFloorHeight;
       plan.roomGeometryStack.delete(id);
     }
   },

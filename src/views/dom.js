@@ -1,6 +1,48 @@
 const FloorPlanDom = {
+  configureWallTooltip(plan) {
+    let tooltip;
+    let activeWall;
+    let title;
+    const hide = () => {
+      if (activeWall) activeWall.title = title;
+      activeWall = null;
+      if (tooltip) tooltip.hidden = true;
+    };
+    plan.root.addEventListener("pointermove", (event) => {
+      // Room fills and labels can sit above independent knee walls.
+      // Inspect the stack under the cursor so those walls remain identifiable.
+      const wall = document.elementsFromPoint(event.clientX, event.clientY)
+        .find((element) => element.matches(".plan-wall") && plan.root.contains(element));
+      if (!wall || plan.pointerPan || event.pointerType === "touch") {
+        hide();
+        return;
+      }
+      if (wall !== activeWall) {
+        hide();
+        title = wall.title;
+        if (!title) return;
+        if (!tooltip) {
+          tooltip = document.createElement("div");
+          tooltip.className = "wall-tooltip";
+          tooltip.setAttribute("role", "tooltip");
+          document.body.append(tooltip);
+        }
+        activeWall = wall;
+        // Restore the native title on exit; avoid two tooltips during hover.
+        wall.removeAttribute("title");
+        tooltip.textContent = title;
+        tooltip.hidden = false;
+      }
+      tooltip.style.left = `${Math.max(4, Math.min(event.clientX + 12, window.innerWidth - tooltip.offsetWidth - 4))}px`;
+      tooltip.style.top = `${Math.max(4, Math.min(event.clientY + 16, window.innerHeight - tooltip.offsetHeight - 4))}px`;
+    });
+    plan.root.addEventListener("pointerleave", hide);
+    window.addEventListener("scroll", hide, true);
+    window.addEventListener("resize", hide);
+  },
+
   applyStairGradient(element, geometry, range) {
-    const color = (z) => `color-mix(in srgb, var(--theme-circulation), var(--theme-roof-gradient-dark) ${
+    const color = (z) => `color-mix(in srgb, var(--theme-circulation), var(--theme-stair-gradient-dark) ${
       ((1 - FloorPlanGeometry.stairGradientRatio(z, range)) * 100).toFixed(4)}%)`;
     let background = color(geometry.z0);
     if (geometry.h > 0) {
@@ -146,34 +188,26 @@ const FloorPlanDom = {
   addRoom(plan, room) {
     const derived = room.derived === true;
     const { container = plan.root } = room;
-    const parts = room.parts?.length
-      ? plan.normalizeParts(room.parts)
-      : undefined;
+    const resolved = !derived && plan.roomDefinitions?.get(room.id) === room
+      ? plan.getRoomGeometry(room.id)
+      : FloorPlanGeometryDomain.normalizeRoomGeometry(plan, room);
+    const parts = room.parts?.length ? resolved.normalizedParts : undefined;
     const stairParts = parts?.filter((part) => String(part.classes ?? "").split(/\s+/)
       .some((name) => ["stair-flight", "stair-landing"].includes(name))) ?? [];
     const sourceFloor = plan.roomFloorConfigs?.get(room.id);
     const stairGradient = stairParts.length ? FloorPlanGeometry.stairGradientRange(
       Number(sourceFloor?.z0 ?? plan.currentFloorHeight), stairParts) : null;
-    const geometry = parts?.length
-      ? {
-          x: Math.min(...parts.map((part) => part.x)),
-          y: Math.min(...parts.map((part) => part.y)),
-          w:
-            Math.max(...parts.map((part) => part.x + part.w)) -
-            Math.min(...parts.map((part) => part.x)),
-          l:
-            Math.max(...parts.map((part) => part.y + part.l)) -
-            Math.min(...parts.map((part) => part.y)),
-        }
-      : {};
+    const geometry = resolved.nominalGeometry;
     const roomData = parts?.length
       ? {
           ...room,
-          pos: [geometry.x, geometry.y],
-          size: [geometry.w, geometry.l],
+          pos: [geometry.x, geometry.y, geometry.z0],
+          size: [geometry.w, geometry.l, geometry.h],
         }
       : room;
     const element = plan.add({ ...roomData, room: true, container });
+    element.normalizedParts = resolved.normalizedParts;
+    element.nominalGeometry = resolved.nominalGeometry;
     if (derived) {
       element.dataset.derived = "true";
       if (room.classes?.split(/\s+/).includes("stair-flight"))
@@ -212,29 +246,9 @@ const FloorPlanDom = {
         compound: true,
         label: room.id || room.label || "room",
       });
-      element.partReferences = new Map(
-        parts.map((part) => [
-          part.id,
-          {
-            x0: () => part.x,
-            x1: () => part.x + part.w,
-            xc: () => part.x + part.w / 2,
-            y0: () => part.y,
-            y1: () => part.y + part.l,
-            yc: () => part.y + part.l / 2,
-            z0: () => part.z0,
-            z1: () => part.z1,
-            zc: () => (part.z0 + part.z1) / 2,
-            h: () => part.h,
-            w: () => part.w,
-            l: () => part.l,
-            area: () => part.w * part.l,
-          },
-        ]),
-      );
-      element.partReferences.forEach((reference, partId) =>
-        FloorPlanGeometryBox.attach(reference, { label: partId }),
-      );
+      element.partReferences = new Map(parts.map((part) => [part.id,
+        FloorPlanGeometryBox.fromGeometry(part, { label: part.id }),
+      ]));
       parts.forEach((part) => {
         const partElement = document.createElement("div");
         const partClasses = part.classes || room.classes || "";
@@ -256,17 +270,7 @@ const FloorPlanDom = {
         partElement.style.setProperty("--z0", part.z0);
         partElement.style.setProperty("--z1", part.z1);
         partElement.style.setProperty("--h", part.h);
-        partElement.x0 = () => Number(part.x);
-        partElement.x1 = () => Number(part.x) + Number(part.w);
-        partElement.y0 = () => Number(part.y);
-        partElement.y1 = () => Number(part.y) + Number(part.l);
-        partElement.z0 = () => Number(part.z0);
-        partElement.z1 = () => Number(part.z1);
-        partElement.w = () => Number(part.w);
-        partElement.l = () => Number(part.l);
-        partElement.h = () => Number(part.h);
-        partElement.area = () => Number(part.w) * Number(part.l);
-        FloorPlanGeometryBox.attach(partElement, { label: part.id });
+        Object.assign(partElement, FloorPlanGeometryBox.fromGeometry(part, { label: part.id }));
         const partColor = part.color ?? room.color;
         if (partColor)
           partElement.style.backgroundColor = plan.themeFillColor(partColor);

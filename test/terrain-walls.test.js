@@ -1,3 +1,4 @@
+require("./helpers/load-modules");
 const { test } = require("node:test");
 const assert = require("node:assert/strict");
 globalThis.window = globalThis;

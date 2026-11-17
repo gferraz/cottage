@@ -4,6 +4,42 @@
  * available for objects that are actually one rectangle.
  */
 const FloorPlanGeometryBox = {
+  // Nominal envelope only: rotation is retained on the parts, not applied here.
+  envelope(parts) {
+    if (!parts.length) throw new Error("O envelope precisa de pelo menos uma parte");
+    const x = Math.min(...parts.map((part) => part.x));
+    const y = Math.min(...parts.map((part) => part.y));
+    const z0 = Math.min(...parts.map((part) => part.z0));
+    const z1 = Math.max(...parts.map((part) => part.z1));
+    return {
+      x, y, z0, z1,
+      w: Math.max(...parts.map((part) => part.x + part.w)) - x,
+      l: Math.max(...parts.map((part) => part.y + part.l)) - y,
+      h: z1 - z0,
+    };
+  },
+
+  // Lazy input supports forward/circular-reference detection in the resolver.
+  fromGeometry(geometry, options = {}) {
+    const values = typeof geometry === "function" ? geometry : () => geometry;
+    const reference = {
+      x0: () => values().x,
+      x1: () => values().x + values().w,
+      xc: () => values().x + values().w / 2,
+      y0: () => values().y,
+      y1: () => values().y + values().l,
+      yc: () => values().y + values().l / 2,
+      z0: () => values().z0,
+      z1: () => values().z1,
+      zc: () => (values().z0 + values().z1) / 2,
+      w: () => values().w,
+      l: () => values().l,
+      h: () => values().h,
+      area: () => values().w * values().l,
+    };
+    return this.attach(reference, options);
+  },
+
   attach(target, { compound = false, label = "object" } = {}) {
     const value = (name, fallback) => {
       if (typeof target[name] === "function") return target[name]();

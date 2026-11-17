@@ -1,11 +1,11 @@
 const FloorPlan3DRoofs = {
   render({ plan, THREE, scene, roofMaterial, roofEdgeMaterial, roofLineMaterial }) {
-    FloorPlanRoofs.intersectingSurfaces(plan).forEach(({ roof, polygons }) => {
+    FloorPlanRoofGeometry.intersectingSurfaces(plan).forEach(({ roof, polygons }) => {
       if (!polygons.length) return;
       const value = roof.thickness ?? 0.12;
       const resolved = Number(plan.resolve(value));
       const thickness = Number.isFinite(resolved) && resolved >= 0 ? resolved : 0.12;
-      const { faces, edges } = FloorPlanRoofs.solidSurface(polygons, thickness);
+      const { faces, edges } = FloorPlanRoofGeometry.solidSurface(polygons, thickness);
       const vertices = [];
       const geometry = new THREE.BufferGeometry();
       faces.forEach((polygon, faceIndex) => {

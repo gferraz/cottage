@@ -781,6 +781,22 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   background: transparent;
   border: 1px dashed var(--theme-wall-virtual);
 }
+.wall-tooltip {
+  position: fixed;
+  z-index: 1000;
+  max-width: calc(100vw - 8px);
+  padding: 5px 8px;
+  border: 1px solid var(--theme-border-light);
+  border-radius: 4px;
+  background: var(--theme-button);
+  color: var(--theme-text);
+  font: 12px ui-monospace, monospace;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+@media print {
+  .wall-tooltip { display: none; }
+}
 .plan-item.railing {
   z-index: 18;
   opacity: 1;
@@ -797,6 +813,37 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   pointer-events: none;
 }
 
+
+.plan-item.stair-access-zone {
+  z-index: 6;
+  opacity: 1;
+  background: repeating-linear-gradient(135deg, rgba(90, 120, 160, 0.16) 0 2px, transparent 2px 8px);
+  border: 1px dashed rgba(65, 95, 135, 0.9);
+}
+.site .stair-access-zone::after { rotate: 180deg; }
+.stair-access-zone::after {
+  content: "Acesso";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #415f87;
+  font-size: 9px;
+  text-shadow: 0 0 3px white, 0 0 3px white;
+}
+
+.plan-item.stair-headroom-zone {
+  z-index: 6;
+  opacity: 1;
+  pointer-events: none;
+  border: none;
+  background: transparent;
+}
+.stair-headroom-zone > svg {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
 
 .plan-item.plan-opening {
   z-index: 15;
@@ -894,12 +941,12 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 }
 .outdoor { background: var(--theme-outdoor); }
 .service { background: var(--theme-service); }
-.circulation, .stair-landing { background: var(--theme-circulation); }
+.circulation, .stair-landing, .stair-flight { background: var(--theme-circulation); }
 .stair-flight[data-stair-rise="up"],
 .stair-flight[data-stair-rise="down"] {
-  --stair-opaque: rgba(180, 145, 88, 0.62);
-  --stair-clearance: rgba(205, 177, 125, 0.16);
-  --stair-transparent: rgba(245, 238, 222, 0.08);
+  --stair-opaque: var(--theme-circulation);
+  --stair-clearance: color-mix(in srgb, var(--theme-circulation) 26%, transparent);
+  --stair-transparent: color-mix(in srgb, var(--theme-circulation) 8%, transparent);
   background: linear-gradient(
     to bottom,
     var(--stair-opaque) 0%,
@@ -1676,6 +1723,16 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
 .room:has(> .headroom-zone) small {
   position: relative;
   z-index: 1;
+}
+.headroom-height-label {
+  font-size: 0.14px;
+  font-weight: normal;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: var(--theme-text);
+  stroke: var(--theme-surface, #fff);
+  stroke-width: 0.025px;
+  paint-order: stroke;
 }
 .comfort-areas { display: block; font-size: 0.75rem; font-weight: normal; }
 .comfort-legend { font-size: 0.8rem; color: var(--theme-muted); }

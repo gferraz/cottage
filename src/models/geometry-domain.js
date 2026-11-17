@@ -5,14 +5,28 @@ const stairAxisFor = (data, width, length) => {
 };
 
 const FloorPlanGeometryDomain = {
+  normalizeRoomGeometry(plan, room) {
+    const compound = Boolean(room.parts?.length);
+    const parts = compound ? plan.normalizeParts(room.parts) : [plan.normalizeGeometry(room)];
+    const floor = plan.roomFloorConfigs?.get(room.id);
+    const normalizedParts = parts.map((part) => ({
+      ...part,
+      id: part.id ?? room.id,
+      ownerId: room.id,
+      floorId: floor?.id ?? plan.currentFloorId ?? null,
+    }));
+    return {
+      normalizedParts,
+      nominalGeometry: compound ? FloorPlanGeometryBox.envelope(normalizedParts) : normalizedParts[0],
+    };
+  },
+
   normalizeGeometryAtFloor(plan, data, floorConfig) {
-    const previousHeight = plan.currentFloorHeight;
-    plan.currentFloorHeight = Number(floorConfig?.z0 ?? 0);
-    try {
-      return plan.normalizeGeometry(data);
-    } finally {
-      plan.currentFloorHeight = previousHeight;
-    }
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      floorZ: Number(floorConfig?.z0 ?? 0),
+      floorId: floorConfig?.id ?? null,
+    });
+    return scoped.normalizeGeometry(data);
   },
 
   addSpanningStairs(plan, config, floorConfig) {
@@ -64,16 +78,11 @@ const FloorPlanGeometryDomain = {
   },
 
   normalizeGeometry(plan, data) {
-    const previous = plan.itemReferenceContext;
-    const previousCache = plan.itemRoomBoundsCache;
-    plan.itemRoomBoundsCache = new Map();
-    plan.itemReferenceContext = Boolean(data?.[FloorPlanGeometry.itemDefinition]);
-    try {
-      return this.normalizeGeometryDefinition(plan, data);
-    } finally {
-      plan.itemReferenceContext = previous;
-      plan.itemRoomBoundsCache = previousCache;
-    }
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      itemReferences: Boolean(data?.[FloorPlanGeometry.itemDefinition]),
+      roomBoundsCache: new Map(),
+    });
+    return this.normalizeGeometryDefinition(scoped, data);
   },
 
   normalizeGeometryDefinition(plan, data) {

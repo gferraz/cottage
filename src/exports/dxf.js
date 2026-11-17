@@ -1,17 +1,17 @@
 const FloorPlanExport = {
   roofMetrics(plan, roof) {
     if (roof.type === "shed") {
-      try { return FloorPlanRoofs.shedGeometry(plan, roof); } catch { return null; }
+      try { return FloorPlanRoofGeometry.shedGeometry(plan, roof); } catch { return null; }
     }
     let base;
     try {
-      base = FloorPlanRoofs.resolveBase(plan, roof.base ?? roof);
+      base = FloorPlanRoofGeometry.resolveBase(plan, roof.base ?? roof);
     } catch {
       return null;
     }
     const pitch = Number(roof.pitch);
-    const [eave0, eave1] = FloorPlanRoofs.eavePair(roof);
-    const [rake0, rake1] = FloorPlanRoofs.overhangPair(roof.rake);
+    const [eave0, eave1] = FloorPlanRoofGeometry.eavePair(roof);
+    const [rake0, rake1] = FloorPlanRoofGeometry.overhangPair(roof.rake);
     if (
       !base ||
       !Number.isFinite(pitch) ||
@@ -20,22 +20,16 @@ const FloorPlanExport = {
       [eave0, eave1, rake0, rake1].some((value) => value < 0)
     )
       return null;
-    const longitudinal = roof.orientation === "longitudinal";
-    const roofWidth = base.w() + (longitudinal ? eave0 + eave1 : rake0 + rake1);
-    const roofLength = base.l() + (longitudinal ? rake0 + rake1 : eave0 + eave1);
-    const x0 = base.x0() - (longitudinal ? eave0 : rake0);
-    const x1 = base.x1() + (longitudinal ? eave1 : rake1);
-    const y0 = base.y0() - (longitudinal ? rake0 : eave0);
-    const y1 = base.y1() + (longitudinal ? rake1 : eave1);
-    const baseElevation =
-      roof.z0 !== undefined ? plan.resolve(roof.z0) : base.z1 ? base.z1() : 0;
-    const baseSpan = longitudinal ? base.w() : base.l();
-    const rise = (baseSpan / 2) * Math.tan((pitch * Math.PI) / 180);
-    const ridgeLength = longitudinal ? roofLength : roofWidth;
+    // Historical export policy: use the declared base top, not the ceiling
+    // inferred by renderers. Area without eaves.pitch also retains its formula.
+    const baseElevation = roof.z0 !== undefined ? plan.resolve(roof.z0) : base.z1 ? base.z1() : 0;
+    const geometry = FloorPlanRoofGeometry.gableGeometry(plan, roof, { base, z0: baseElevation });
+    const { longitudinal, roofWidth, roofLength, x0, x1, y0, y1,
+      baseSpan, rise, ridgeLength, ridgeX0, ridgeY0, ridgeX1, ridgeY1 } = geometry;
     const slopeA = longitudinal ? eave0 : rake0;
     const slopeB = longitudinal ? eave1 : rake1;
     const surfaceArea = roof.eaves?.pitch !== undefined
-      ? FloorPlanRoofs.surfaceArea(roof, baseSpan, ridgeLength)
+      ? FloorPlanRoofGeometry.surfaceArea(roof, baseSpan, ridgeLength)
       :
       (Math.hypot(baseSpan / 2 + slopeA, rise) +
         Math.hypot(baseSpan / 2 + slopeB, rise)) *
@@ -56,10 +50,7 @@ const FloorPlanExport = {
       rise,
       ridgeLength,
       surfaceArea,
-      ridgeX0: longitudinal ? (base.x0() + base.x1()) / 2 : x0,
-      ridgeY0: longitudinal ? y0 : (base.y0() + base.y1()) / 2,
-      ridgeX1: longitudinal ? (base.x0() + base.x1()) / 2 : x1,
-      ridgeY1: longitudinal ? y1 : (base.y0() + base.y1()) / 2,
+      ridgeX0, ridgeY0, ridgeX1, ridgeY1,
     };
   },
 
@@ -268,8 +259,8 @@ const FloorPlanExport = {
         if (!metrics) return;
         const { x0, x1, y0, y1, ridgeX0, ridgeY0, ridgeX1, ridgeY1 } = metrics;
         if (roof.eaves?.pitch !== undefined) {
-          const surfaces = FloorPlanRoofs.intersectingSurfaces(plan, [roof]);
-          const edges = FloorPlanRoofs.surfaceEdges(surfaces.flatMap(entry => entry.polygons));
+          const surfaces = FloorPlanRoofGeometry.intersectingSurfaces(plan, [roof]);
+          const edges = FloorPlanRoofGeometry.surfaceEdges(surfaces.flatMap(entry => entry.polygons));
           for (let i = 0; i < edges.length; i += 2) {
             const a = edges[i], b = edges[i + 1];
             line("ROOFS", a[0], a[1], b[0], b[1], a[2], b[2]);

@@ -65,6 +65,7 @@ class FloorPlan {
     this.currentFloorId = null;
     this.showAllFloors = false;
     this.currentFloorHeight = 0;
+    this.resolutionContext = null;
     this.currentSourceText = null;
     this.model = null;
     this.itemTypes = {};
@@ -106,6 +107,7 @@ class FloorPlan {
     root.addEventListener("pointerup", (event) => this.endViewportPan(event));
     root.addEventListener("pointercancel", (event) => this.endViewportPan(event));
     root.addEventListener("lostpointercapture", () => { this.pointerPan = null; });
+    FloorPlanDom.configureWallTooltip(this);
     if (typeof ResizeObserver !== "undefined") {
       this.viewportResizeObserver = new ResizeObserver(() => this.resizeViewport());
       this.viewportResizeObserver.observe(root.parentElement || root);
@@ -167,21 +169,7 @@ class FloorPlan {
       floorOptions.addEventListener("change", (event) => {
         const floors = this.currentConfig?.floors;
         if (!Array.isArray(floors)) return;
-        if (event.target.value === "__all_floors__") {
-          this.showAllFloors = true;
-          this.load(this.currentConfig, { preservePresentation: true });
-          return;
-        }
-        this.showAllFloors = false;
-        const activeFloor = floors.findIndex(
-          (floorConfig) => String(floorConfig.id) === event.target.value,
-        );
-        if (activeFloor >= 0) {
-          this.load(
-            { ...this.currentConfig, activeFloor },
-            { preservePresentation: true },
-          );
-        }
+        this.selectFloor(event.target.value);
       });
     }
     if (solarSeasonSelect) {
@@ -739,27 +727,52 @@ class FloorPlan {
   renderMultiFloorUnderlay(floorConfig = null) {
     return FloorPlanLayers.renderMultiFloorUnderlay(this, floorConfig);
   }
-  clear() {
+  clearView() {
     FloorPlanRenderer.clearGenerated(this.root);
     this.projectionLayer.replaceChildren();
     this.multiFloorLayer.replaceChildren();
     this.clearTerrain();
-    this.rooms.clear();
-    this.roomReferences.clear();
     this.stairElements = [];
-    this.references.clear();
     this.roomElements = [];
     this.itemElements = [];
     this.zoneElements = [];
     this.openings = [];
     this.windows = [];
-    this.allRoofs = [];
-    this.errors = [];
-    this.warnings = [];
     this.roomArea = 0;
     this.roomCount = 0;
     this.layerCutoff = null;
     this.maxLayer = 0;
+  }
+
+  clear() {
+    this.clearView();
+    this.rooms.clear();
+    this.roomReferences.clear();
+    this.references.clear();
+    this.allRoofs = [];
+    this.headroomResults = new Map();
+    this.communicationResults = null;
+    this.stairConnectivity = null;
+    this.stairSourceLayers = null;
+    this.stairHeadroomResults = [];
+    this.derivedZones = [];
+    this.naturalCommunications = [];
+    this.errors = [];
+    this.warnings = [];
+    this.preparedProject = null;
+  }
+
+  prepareProject(config) {
+    return FloorPlanProject.prepare(this, config);
+  }
+
+  selectFloor(id) {
+    const floors = this.currentConfig?.floors;
+    if (!Array.isArray(floors)) return this;
+    const all = id === "__all_floors__";
+    const index = floors.findIndex((floor) => String(floor.id) === String(all ? this.currentFloorId : id));
+    if (!all && index < 0) return this;
+    return this.renderView({ activeFloor: Math.max(0, index), showAllFloors: all });
   }
 
   /**
@@ -770,18 +783,15 @@ class FloorPlan {
    * @returns {FloorPlan} A própria instância, para encadeamento.
    */
   load(config, { preservePresentation = false } = {}) {
-    this.references ??= new Map();
-    this.rooms ??= new Map();
-    this.roomReferences ??= new Map();
-    this.roomDefinitions ??= new Map();
-    this.roomGeometryCache ??= new Map();
-    this.roomGeometryStack ??= new Set();
-    this.partOwners ??= new Map();
-    this.globalObjectIds ??= new Set();
-    this.validZoneIds ??= new Set();
-    this.model = FloorPlanModel.fromConfig(config);
-    config = this.model.config;
-    this.currentConfig = config;
+    this.prepareProject(config);
+    this.configureViewport(this.model.viewport);
+    return this.renderView({ preservePresentation });
+  }
+
+  renderView({ activeFloor = null, showAllFloors = this.showAllFloors, preservePresentation = true } = {}) {
+    if (!this.preparedProject) throw new Error("Prepare um projeto antes de construir a vista");
+    const config = this.currentConfig;
+    this.showAllFloors = showAllFloors;
     document.querySelector("#empty-state")?.setAttribute("hidden", "");
     document.querySelector("#plan-workspace")?.removeAttribute("hidden");
     document.body?.classList.remove("page-empty");
@@ -801,15 +811,14 @@ class FloorPlan {
       this.solarSeason = this.solarSeasonSelect.value;
     }
     this.updateSolarTimeControls();
-    this.itemTypes = { ...(this.catalog.items || {}), ...(config["item-types"] || {}) };
     this.theme = {
       ...this.theme,
       ...(config.theme || {}),
       colors: { ...this.theme.colors, ...(this.catalog.colors || {}), ...(config.theme?.colors || {}) }
     };
-    this.configureViewport(this.model.viewport);
-    const configuredFloorIndex = Number.isInteger(config.activeFloor)
-      ? config.activeFloor
+    const requestedFloor = activeFloor ?? config.activeFloor;
+    const configuredFloorIndex = Number.isInteger(requestedFloor)
+      ? requestedFloor
       : config.floors?.findIndex((floorConfig) => floorConfig.id === this.currentFloorId);
     const floorIndex = configuredFloorIndex >= 0 ? configuredFloorIndex : 0;
     const floorConfig = config.floors?.[floorIndex] || config;
@@ -860,13 +869,11 @@ class FloorPlan {
     if (this.titleElement) this.titleElement.textContent = title;
     if (typeof document !== "undefined") document.title = title;
     document.querySelector("#project-overview")?.removeAttribute("hidden");
-    this.clear();
-    this.warnings = this.model.warnings;
-    this.prepareRoomReferences(config);
-    if (!this.showAllFloors) this.validateInactiveFloorFeatures(config, floorIndex);
-    this.prepareGlobalLists(config);
+    this.clearView();
+    FloorPlanProject.restoreReferences(this);
+    this.errors = FloorPlanProject.viewErrors(this.preparedProject, floorConfig, this.showAllFloors);
+    this.warnings = this.preparedProject.warnings;
     this.hiddenSlabs ??= new Set();
-    this.allSlabs = FloorPlanSlabs.collect(this);
     FloorPlanSlabs.updateList(this);
     try {
       this.renderTerrain(config.terrain);
@@ -874,6 +881,8 @@ class FloorPlan {
       this.errors.push({ category: "presentation", message: error.message });
     }
     this.renderPlanFloors(config, floorConfig);
+    FloorPlanStairHeadroomView.render(this);
+    FloorPlanStairAccessView.render(this);
     this.updateLayerVisibility();
     this.renderMultiFloorUnderlay(floorConfig);
     try {
@@ -1001,7 +1010,7 @@ class FloorPlan {
   }
 
   findNaturalCommunications() {
-    return FloorPlanLists.findNaturalCommunications(this);
+    return FloorPlanCommunications.fromReferences(this, this.roomElements);
   }
 
   updateNaturalList() {

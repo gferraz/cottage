@@ -304,9 +304,18 @@ autônoma, com JavaScript e CSS incorporados em um único arquivo, execute:
 bin/build
 ```
 
-O resultado será salvo em `dist/floor-plan.html`. Esse arquivo pode ser copiado
-ou aberto diretamente, sem servidor local e sem dependências externas. O JSON da
+O resultado será salvo em `dist/index.html`. Esse arquivo pode ser copiado
+ou aberto diretamente, sem servidor local. A visualização 3D carrega Three.js de um CDN. O JSON da
 planta continua sendo escolhido pelo botão “Carregar JSON”.
+
+## Publicar no GitHub Pages
+
+Em **Settings → Pages → Build and deployment → Source**, selecione **GitHub Actions**.
+O workflow `.github/workflows/pages.yml` executa os testes, gera o HTML portátil
+e publica somente a pasta `dist` a cada push em `main`. Também pode ser executado
+manualmente em **Actions → Publicar no GitHub Pages → Run workflow**.
+
+O endereço padrão é https://gferraz.github.io/cottage/.
 
 ## Arquivos principais
 

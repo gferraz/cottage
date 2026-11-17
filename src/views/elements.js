@@ -162,13 +162,11 @@ const FloorPlanElements = {
   },
 
   resolveItemType(plan, item) {
-    const previous = plan.itemReferenceContext;
-    plan.itemReferenceContext = true;
-    try {
-      return this.resolveItemDefinition(plan, item);
-    } finally {
-      plan.itemReferenceContext = previous;
-    }
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      itemReferences: true,
+      roomBoundsCache: new Map(),
+    });
+    return this.resolveItemDefinition(scoped, item);
   },
 
   resolveItemDefinition(plan, item) {
