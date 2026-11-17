@@ -1,4 +1,31 @@
 const FloorPlanHtmlExport = {
+  captureFloorViews(plan, capture) {
+    const floors = plan.currentConfig.floors ?? [plan.currentConfig];
+    const original = {
+      activeFloor: Math.max(0, floors.findIndex((floor) => floor.id === plan.currentFloorId)),
+      showAllFloors: plan.showAllFloors,
+      multiFloorMode: plan.multiFloorMode,
+      layerCutoff: plan.layerCutoff,
+    };
+    try {
+      plan.multiFloorMode = false;
+      return floors.map((floor, activeFloor) => {
+        plan.renderView({ activeFloor, showAllFloors: false });
+        return capture(floor, activeFloor);
+      });
+    } finally {
+      plan.multiFloorMode = original.multiFloorMode;
+      try {
+        plan.renderView({ activeFloor: original.activeFloor, showAllFloors: original.showAllFloors });
+      } finally {
+        plan.multiFloorMode = original.multiFloorMode;
+        plan.layerCutoff = original.layerCutoff;
+        plan.updateLayerVisibility();
+        plan.renderMultiFloorUnderlay();
+      }
+    }
+  },
+
   namespaceSvgReferences(root, namespace) {
     root.querySelectorAll("svg").forEach((svg) => {
       const ids = new Map();
@@ -31,14 +58,6 @@ const FloorPlanHtmlExport = {
       return;
     }
 
-    const sourceConfig = plan.currentConfig;
-    const floors = sourceConfig.floors ?? [sourceConfig];
-    const originalFloorIndex = Math.max(
-      0,
-      floors.findIndex((floor) => floor.id === plan.currentFloorId),
-    );
-    const originalMultiFloorMode = plan.multiFloorMode;
-    const floorSnapshots = [];
     const hasFacade3DCanvas = Boolean(
       plan.facade3dLayer?.querySelector("canvas.facade-3d-canvas"),
     );
@@ -51,32 +70,14 @@ const FloorPlanHtmlExport = {
 
     // Capture one rendered diagram per floor. The exported file is static, so
     // the snapshots are assembled without carrying the application scripts.
-    try {
-      plan.multiFloorMode = false;
-      for (let floorIndex = 0; floorIndex < floors.length; floorIndex += 1) {
-        plan.load(
-          { ...sourceConfig, activeFloor: floorIndex },
-          { preservePresentation: true },
-        );
-        const livePlan = document.querySelector("#floor-plan");
-        if (!livePlan) throw new Error("A área da planta não foi encontrada.");
-        floorSnapshots.push({
-          label:
-            floors[floorIndex].label ||
-            floors[floorIndex].id ||
-            `Piso ${floorIndex + 1}`,
-          element: livePlan.cloneNode(true),
-        });
-      }
-    } finally {
-      plan.multiFloorMode = originalMultiFloorMode;
-      plan.load(
-        { ...sourceConfig, activeFloor: originalFloorIndex },
-        { preservePresentation: true },
-      );
-      plan.multiFloorMode = originalMultiFloorMode;
-      plan.renderMultiFloorUnderlay();
-    }
+    const floorSnapshots = this.captureFloorViews(plan, (floor, floorIndex) => {
+      const livePlan = document.querySelector("#floor-plan");
+      if (!livePlan) throw new Error("A área da planta não foi encontrada.");
+      return {
+        label: floor.label || floor.id || `Piso ${floorIndex + 1}`,
+        element: livePlan.cloneNode(true),
+      };
+    });
 
     const exportedDocument = document.cloneNode(true);
     const exportedPlan = exportedDocument.querySelector("#floor-plan");

@@ -479,51 +479,56 @@ const FloorPlanReferences = {
     return [...globalGuides, ...(floorConfig.guides ?? [])];
   },
 
+  collectFloorFeatureErrors(plan, floorConfig) {
+    const errors = [];
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      floorZ: Number(floorConfig.z0 ?? 0), floorId: floorConfig.id ?? null,
+    });
+    (floorConfig.zones ?? []).forEach((zone, index) => {
+      try {
+        scoped.normalizeGeometry(zone);
+      } catch (error) {
+        errors.push({
+          index,
+          opening: zone,
+          category: "zone",
+          message: error.message,
+        });
+      }
+    });
+    (window.FloorPlanElements?.items(scoped, floorConfig) ?? floorConfig.items ?? []).forEach((item, index) => {
+      try {
+        scoped.normalizeGeometry(scoped.resolveItemType(item));
+      } catch (error) {
+        errors.push({
+          index,
+          opening: item,
+          category: "item",
+          message: error.message,
+        });
+      }
+    });
+    [
+      ...FloorPlanOpenings.forFloor(scoped, floorConfig),
+    ].forEach((opening, index) => {
+      if (scoped.isVerticalOpening(opening)) return;
+      try {
+        scoped.normalizeOpening(opening);
+      } catch (error) {
+        errors.push({
+          index,
+          opening,
+          category: opening.type === "door" ? "door" : opening.type === "window" ? "window" : "opening",
+          message: error.message,
+        });
+      }
+    });
+    return errors;
+  },
+
   validateInactiveFloorFeatures(plan, config, activeFloorIndex) {
-    (config.floors ?? []).forEach((floorConfig, floorIndex) => {
-      if (floorIndex === activeFloorIndex) return;
-      const scoped = FloorPlanGeometry.inContext(plan, {
-        floorZ: Number(floorConfig.z0 ?? 0), floorId: floorConfig.id ?? null,
-      });
-      (floorConfig.zones ?? []).forEach((zone, index) => {
-        try {
-          scoped.normalizeGeometry(zone);
-        } catch (error) {
-          scoped.errors.push({
-            index,
-            opening: zone,
-            category: "zone",
-            message: error.message,
-          });
-        }
-      });
-      (window.FloorPlanElements?.items(scoped, floorConfig) ?? floorConfig.items ?? []).forEach((item, index) => {
-        try {
-          scoped.normalizeGeometry(scoped.resolveItemType(item));
-        } catch (error) {
-          scoped.errors.push({
-            index,
-            opening: item,
-            category: "item",
-            message: error.message,
-          });
-        }
-      });
-      [
-        ...FloorPlanOpenings.forFloor(scoped, floorConfig),
-      ].forEach((opening, index) => {
-        if (scoped.isVerticalOpening(opening)) return;
-        try {
-          scoped.normalizeOpening(opening);
-        } catch (error) {
-          scoped.errors.push({
-            index,
-            opening,
-            category: opening.type === "door" ? "door" : opening.type === "window" ? "window" : "opening",
-            message: error.message,
-          });
-        }
-      });
+    (config.floors ?? []).forEach((floor, index) => {
+      if (index !== activeFloorIndex) plan.errors.push(...this.collectFloorFeatureErrors(plan, floor));
     });
   },
 

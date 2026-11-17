@@ -17,3 +17,4 @@ src("models/geometry-box");
 src("models/roof-geometry");
 src("models/headroom-analysis");
 src("models/communications");
+src("models/project");

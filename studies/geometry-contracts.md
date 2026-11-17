@@ -204,3 +204,21 @@ Comparação temporária antes/depois preservou exatamente IDs, rótulos, ordem,
 Limites: a análise continua usando os lados do envelope nominal dos ambientes compostos. Não resolve sua fronteira côncava exata, paredes diagonais, obstáculos de mobiliário, largura física de ombreiras, altura livre ou acesso por portas explícitas. Os segmentos são uma base geométrica para análises futuras, não uma prova de circulação utilizável ou de conformidade.
 
 Próxima entrega: separar a preparação do projeto da construção da vista, para reduzir recomputação e dependência da seleção de pavimento antes de introduzir as zonas automáticas.
+
+### Preparação do projeto separada da construção da vista
+
+`src/models/project.js` reúne a preparação de uma revisão: normalização da configuração, referências, geometria em cache, validação de elementos por pavimento, listas globais, altura livre, comunicações e coleta de lajes. `prepareProject(config)` executa essa sequência sem criar documento ou vista. Cada nova chamada invalida explicitamente a revisão anterior; não há detecção automática de edição em objetos já preparados.
+
+`load(config, options)` continua sendo a entrada pública para carregar/recarregar um projeto e configurar seu viewport inicial. `renderView(options)` reconstrói somente a apresentação a partir da revisão preparada. `selectFloor(id)` passa a usar essa operação, sem chamar `load()`, reprocessar referências ou refazer altura livre/comunicações. A seleção corrente pertence à apresentação; `config.activeFloor` permanece uma indicação inicial da configuração.
+
+O preparo guarda as referências de domínio antes que os renderizadores as substituam por elementos HTML. Antes de cada desenho, os mapas de referências/ambientes são restaurados, mantendo a identidade dos mapas e do cache geométrico. `clearView()` descarta os elementos e contadores da vista; `clear()` também invalida a preparação. Erros de preparo e de validação de pisos inativos são reutilizados, enquanto elementos visíveis continuam emitindo seus diagnósticos no caminho de renderização, evitando duplicação de mensagens.
+
+A exportação HTML usa `captureFloorViews()` para desenhar e capturar cada piso com a mesma preparação. Um `finally` restaura pavimento, modo de todos os pisos, modo multi-pisos e filtro de camadas, inclusive se a captura falhar. Câmera, opções solares e viewport não são reinicializados pelas trocas de vista. A troca normal de pavimento mantém o reinício do filtro de camadas usado anteriormente, para evitar ocultar todo um piso sem camadas superiores.
+
+Validação: 277 testes aprovados. Oito novos testes verificam preparação sem DOM, seleção sem recarga, restauração de referências sem reconstrução de cache, reutilização de diagnósticos, invalidação explícita por revisão, os dois projetos existentes e captura/restauração da exportação com sucesso e falha. Uma comparação temporária preservou itens, aberturas, partes, coberturas e métricas dos dois projetos.
+
+Build concluído e módulos embutidos confirmados no distribuível. Uma prévia instrumentada em navegador integrado de 1280 × 720 pixels confirmou uma única preparação e uma única análise de altura após seleção do pavimento superior, todos os pisos e exportação HTML; as identidades dos dados preparados e os valores das tabelas permaneceram iguais. Nenhum erro do projeto ou JavaScript foi registrado. O HTML exportado foi inspecionado: contém duas plantas, perspectiva rasterizada e nenhum script. A prévia temporária foi removida.
+
+Limites: a vista ainda recalcula suas camadas, áreas de apresentação e projeções e reconstrói terreno/fachadas. A preparação reutiliza coletores sem DOM que ainda residem em módulos de visualização, como `FloorPlanSlabs.collect()` e derivação de acessórios; suas localizações não foram alteradas nesta entrega. A ponte síncrona de referências preguiçosas permanece. O snapshot é interno à revisão corrente, não um formato serializável nem uma cópia independente para rollback.
+
+Próxima entrega: estabelecer a infraestrutura de zonas derivadas e a conectividade das escadas, usando os dados normalizados e as análises agora separados da vista.
