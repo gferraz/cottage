@@ -300,10 +300,11 @@ const FloorPlanLists = {
       const height = document.createElement("span");
       height.textContent = plan.formatFixed(room.l());
 
-      if (activeRoom?.comfortAreas) {
+      const comfortAreas = plan.headroomResults?.get(roomEntry.id)?.areas ?? activeRoom?.comfortAreas;
+      if (comfortAreas) {
         const comfort = document.createElement("small");
         comfort.className = "comfort-areas";
-        comfort.textContent = activeRoom.comfortAreas.map(({ height, area }) =>
+        comfort.textContent = comfortAreas.map(({ height, area }) =>
           `≥ ${plan.formatMeters(height)} m: ${plan.formatMeters(area)} m²`).join(" · ");
         label.append(comfort);
       }

@@ -14,6 +14,35 @@ const surfaces = definitions => FloorPlanRoofs.intersectingSurfaces({
 });
 const close = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-7, `${actual} != ${expected}`);
 
+test('prepared headroom bands partition coverage and retain cumulative threshold areas', () => {
+  const input = { parts: [{ x: 0, y: 0, w: 4, l: 2 }], z0: 0 };
+  const surfaces = [{ polygons: [[[0, 0, 1], [4, 0, 3], [4, 2, 3], [0, 2, 1]]] }];
+  const result = FloorPlanHeadroomAnalysis.analyzeRoom(input, surfaces, []);
+  [6.8, 3.6, 0].forEach((expected, i) => close(result.areas[i].area, expected));
+  [1.2, 3.2, 3.6, 0].forEach((expected, i) => close(result.bands[i].area, expected));
+  close(result.bands.reduce((sum, band) => sum + band.area, 0), result.covered.area);
+  assert.equal(result.bands[3].labelPosition, null);
+  close(result.bands[0].labelPosition[0], 0.3);
+});
+
+test('headroom preparation does not mutate frozen inputs or depend on presentation flags', () => {
+  const freeze = (value) => {
+    if (value && typeof value === 'object') {
+      Object.values(value).forEach(freeze);
+      Object.freeze(value);
+    }
+    return value;
+  };
+  const input = freeze({ parts: [room], z0: 0, comfort_zones: false });
+  const overhead = freeze([{ polygons: [[[0, 0, 4], [4, 0, 4], [4, 4, 4], [0, 4, 4]]] }]);
+  const original = structuredClone({ input, overhead });
+  const hidden = FloorPlanHeadroomAnalysis.analyzeRoom(input, overhead, []);
+  const visible = FloorPlanHeadroomAnalysis.analyzeRoom({ ...input, comfort_zones: true }, overhead, []);
+  assert.deepEqual(hidden, visible);
+  assert.deepEqual({ input, overhead }, original);
+  assert.ok(hidden.areas.every(entry => entry.area === 16));
+});
+
 test('single gable produces exact threshold areas relative to room floor', () => {
   const result = comfort.calculate([room], surfaces([roof('single')]), 0);
   close(result[0].area, 13.6);

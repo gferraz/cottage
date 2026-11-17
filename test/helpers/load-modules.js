@@ -12,5 +12,7 @@ const src = (module) =>
 
 // Keep this list in the same relative order as floor-plan.html.
 src("models/geometry-operations");
+src("models/room-area");
 src("models/geometry-box");
 src("models/roof-geometry");
+src("models/headroom-analysis");

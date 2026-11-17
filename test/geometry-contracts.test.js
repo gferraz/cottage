@@ -323,3 +323,25 @@ test("both cottage projects can analyze every floor from domain parts without re
     }
   }
 });
+
+test("headroom results are prepared for every floor regardless of selected floor or visibility", () => {
+  const config = fixture();
+  config.comfort_zones = false;
+  config.floors.push({ id: "upper", z0: 6, rooms: [
+    { id: "upstairs", pos: [0, 0], size: [4, 3], walls: [] },
+  ] });
+  config.roofs = [{ id: "roof", type: "gable", orientation: "longitudinal",
+    base: "room", pitch: 45, z0: 9 }];
+  const plan = prepare(config);
+  plan.prepareGlobalLists(plan.currentConfig);
+  plan.currentFloorId = "ground";
+  const hidden = FloorPlanHeadroom.prepare(plan);
+  assert.equal(hidden.size, 3);
+  assert.ok(hidden.get("upstairs").areas.every((entry) => entry.area === 12));
+  assert.equal(FloorPlanHeadroom.enabled(plan, "upstairs"), false);
+  plan.currentFloorId = "upper";
+  plan.currentConfig.comfort_zones = true;
+  const visible = FloorPlanHeadroom.prepare(plan);
+  assert.deepEqual(visible, hidden);
+  assert.equal(FloorPlanHeadroom.enabled(plan, "upstairs"), true);
+});

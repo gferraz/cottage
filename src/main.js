@@ -756,6 +756,7 @@ class FloorPlan {
     this.openings = [];
     this.windows = [];
     this.allRoofs = [];
+    this.headroomResults = new Map();
     this.errors = [];
     this.warnings = [];
     this.roomArea = 0;
@@ -867,6 +868,7 @@ class FloorPlan {
     this.prepareRoomReferences(config);
     if (!this.showAllFloors) this.validateInactiveFloorFeatures(config, floorIndex);
     this.prepareGlobalLists(config);
+    FloorPlanHeadroom.prepare(this);
     this.hiddenSlabs ??= new Set();
     this.allSlabs = FloorPlanSlabs.collect(this);
     FloorPlanSlabs.updateList(this);

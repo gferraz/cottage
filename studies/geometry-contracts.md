@@ -52,7 +52,7 @@ Análises futuras devem receber dados de domínio e retornar resultados sem alte
 2. `geometryParts` de ambientes permanece como projeção de compatibilidade com x/y/w/l; outros consumidores acrescentam metadados de apresentação. As partes nominais completas agora estão em `normalizedParts`, conforme a entrega descrita abaixo; ainda não representam sólidos físicos recortados ou transformados.
 3. `area()` de um composto soma áreas das partes; não garante união sem dupla contagem quando elas se sobrepõem. Não mudar esse significado durante uma extração sem identificar os consumidores.
 4. Rotação normalizada não produz automaticamente polígono físico ou envelope rotacionado. `bounds()` não garante essa transformação.
-5. Cálculo de `comfortAreas` ainda ocorre na renderização e pode ser pulado por configuração de exibição. Separar cálculo e desenho será uma entrega posterior.
+5. **Resolvido na separação da altura livre:** os resultados são preparados para todos os ambientes antes da renderização. `comfort_zones` controla o desenho das faixas, e as tabelas consultam resultados independentes do pavimento selecionado.
 6. Comunicações naturais atuais retornam largura agregada, sem os intervalos livres. Não bastam para recortar ou propagar uma zona.
 
 Essas limitações ficam documentadas em vez de receber testes que exijam perpetuar resultados inválidos. Cada correção futura deve adicionar uma expectativa válida e explicar qualquer diferença numérica intencional.
@@ -166,3 +166,23 @@ Build concluído e novo módulo embutido confirmado em `dist/floor-plan.html`. N
 Limite desta entrega: o cálculo é executável sem DOM, mas o caminho atual da interface ainda o invoca a partir dos elementos renderizados. Preparação global de análises independente da vista será uma integração posterior; não foi acrescentada nesta extração. Deduções, altura livre e comunicações ainda precisam da mesma separação.
 
 Próxima entrega: centralizar as deduções de área compartilhadas e separar o preparo da análise de altura livre do desenho das faixas.
+
+### Deduções compartilhadas e altura livre separada do desenho
+
+`src/models/room-area.js` centraliza a seleção de deduções declaradas por ambiente/parte e o cálculo de área líquida a partir de dados simples. O adaptador público `FloorPlanModel.calculateNetRoomArea()` preserva sua assinatura para referências/elementos existentes. Mantém a área bruta somada das partes e subtrai a união das interseções dos recortes, sem descontar duplicatas duas vezes.
+
+O escopo de pavimento é explícito: altura livre usa `sameFloor: true`; o adaptador histórico da área líquida continua usando as coleções fornecidas pelo chamador, sem acrescentar um filtro de pavimento. Isso evita introduzir uma mudança silenciosa na semântica da área líquida durante a extração.
+
+`src/models/headroom-analysis.js` contém o cálculo puro das áreas cumulativas por altura, região coberta e faixas disjuntas, incluindo as posições dos rótulos. Não consulta configuração de visibilidade, DOM ou instância da interface. `src/views/headroom.js` desenha esses resultados sem calcular interseções ou áreas; remove desenhos anteriores para permitir reaplicação sem duplicação.
+
+`FloorPlanHeadroom.prepare()` coleta as partes normalizadas e os itens de todos os pavimentos, calcula as superfícies uma vez e grava `headroomResults`, antes do desenho da planta. O método público `calculate()` continua delegando ao cálculo puro, e `render()` delega à apresentação. As tabelas passam a consultar o mapa global de resultados. `comfortAreas` permanece disponível nos ambientes desenhados como compatibilidade.
+
+Mudança funcional intencional: desabilitar `comfort_zones` deixa de impedir o cálculo. As tabelas também mostram resultados dos pisos que não estão selecionados. A visibilidade das faixas e da legenda continua obedecendo à configuração existente. Áreas nominais, dimensões, espessuras e regras de dedução não foram alteradas.
+
+Validação: 261 testes aprovados. Oito testes adicionais cobrem seleção por ambiente/parte, substituição de permissões herdadas, escopo de pavimento, recortes sobrepostos, entradas congeladas, conservação da região coberta pelas faixas, preparo global e independência de visibilidade/piso selecionado. Uma comparação temporária reproduziu exatamente áreas líquidas, áreas por altura e polígonos cobertos de todos os ambientes dos projetos principal e transversal.
+
+Build concluído e módulos embutidos confirmados no distribuível. As versões de cache dos scripts foram sincronizadas para impedir a mistura de módulos antigos com o novo contrato. No navegador integrado em 1280 × 720 pixels, as versões modular e portátil carregaram com zero erros do projeto e sem erros JavaScript. Uma prévia temporária com faixas ocultas mostrou zero SVGs de altura livre e 30 linhas de resultados iguais às da versão visível; os valores permaneceram iguais após a troca de pavimento. A prévia temporária foi removida após a verificação.
+
+Limites mantidos: altura livre considera as coberturas modeladas e as deduções declaradas; ainda não é uma consulta geral a escadas, lajes e todos os sólidos superiores. A área líquida continua sendo a métrica declarativa existente, não uma área interna física universal. A normalização/preparação do projeto ainda é refeita quando a interface chama `load()`.
+
+Próxima entrega: extrair a análise de comunicações naturais para dados de domínio e preservar os segmentos livres com posição, orientação e pavimento, além da largura agregada usada na lista.

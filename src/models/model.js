@@ -247,45 +247,23 @@ const FloorPlanModel = {
   },
 
   calculateNetRoomArea(room, rooms, items) {
-    const targetIds = new Set([room.dataset.id]);
-    room.geometryParts.forEach((part) => {
-      if (part.id) targetIds.add(`${room.dataset.id}.${part.id}`);
+    // Compatibility adapter for existing element/reference callers. The pure
+    // rule retains the legacy caller-selected scope for net area.
+    const describe = (value) => ({
+      id: value.dataset.id,
+      floorId: value.dataset.floorId,
+      parts: value.geometryParts,
+      overlapTargets: value.allowedOverlaps,
     });
-    const coveredBy = rooms
-      .filter((other) => other !== room)
-      .flatMap((other) =>
-        other.geometryParts.filter((part) =>
-          (part.overlapTargets ?? other.allowedOverlaps ?? []).some((target) =>
-            targetIds.has(target),
-          ),
-        ),
-      );
-    const itemOverlaps = items
-      .filter((item) =>
-        (item.allowedOverlaps ?? []).some((target) => targetIds.has(target)),
-      )
-      .map((item) => ({
-        x: item.x0(),
-        y: item.y0(),
-        w: item.w(),
-        l: item.l(),
-      }));
-    const deductions = [];
-    room.geometryParts.forEach((part) => {
-      [...coveredBy, ...itemOverlaps].forEach((other) => {
-        const x0 = Math.max(part.x, other.x);
-        const y0 = Math.max(part.y, other.y);
-        const x1 = Math.min(part.x + part.w, other.x + other.w);
-        const y1 = Math.min(part.y + part.l, other.y + other.l);
-        if (x1 > x0 && y1 > y0)
-          deductions.push({ x: x0, y: y0, w: x1 - x0, l: y1 - y0 });
-      });
-    });
-    const grossArea = room.geometryParts.reduce(
-      (total, part) => total + part.w * part.l,
-      0,
-    );
-    return grossArea - FloorPlanModel.calculateUnionArea(deductions);
+    const target = describe(room);
+    const roomData = rooms.map((other) => other === room ? target : describe(other));
+    const itemData = items.map((item) => ({
+      x: item.x0(), y: item.y0(), w: item.w(), l: item.l(),
+      floorId: item.dataset?.floorId,
+      overlapTargets: item.allowedOverlaps,
+    }));
+    return FloorPlanRoomArea.netArea(target,
+      FloorPlanRoomArea.deductionsFor(target, roomData, itemData));
   },
 
   floorRows(floors, roomDefinitions, roomReferences) {
