@@ -143,3 +143,26 @@ Uma cadeia profunda de fachadas foi detectada durante a verificação e corrigid
 Build concluído e conteúdo dos módulos confirmado no distribuível. Versões modular e portátil carregaram com zero erros do projeto. Após a correção da cadeia de fachadas, seleção do pavimento superior e de todos os pisos funcionou sem exceder o tempo de espera da automação; planta inspecionada no navegador integrado em 1280 × 720 pixels, sem erros JavaScript no console.
 
 Próxima entrega: separar as análises de camadas/sobreposições, deduções, altura livre e comunicações de sua apresentação no DOM, em incrementos pequenos.
+
+### Análise de camadas e sobreposições extraída
+
+`src/models/overlap-analysis.js` contém `FloorPlanOverlapAnalysis.analyze({ rooms, items })`. A entrada usa dados simples: identidade, rótulo, pavimento, partes XY e listas de referências `overlapTargets`/`overlayTargets`. Não recebe elementos, estilos, visibilidade ou a instância da interface. O resultado contém mapa de camadas por chave, camadas dos ambientes por índice de entrada, camada máxima, índices dos ambientes em conflito e diagnósticos.
+
+`FloorPlanLayers.updateOverlaps()` permanece como adaptador público: copia os dados relevantes dos elementos atuais, chama a análise e aplica os resultados às classes, estilos, controles e lista de erros. As partes entregues à análise não incluem referências a elementos HTML. A função retorna também o resultado, sem armazenar estado interno entre chamadas.
+
+Regras anteriores preservadas:
+
+- `overlays` constrói dependências de camadas; sozinho não autoriza uma interseção XY.
+- `overlaps` de qualquer participante pode autorizar a sobreposição, tanto por ambiente inteiro quanto por parte. Uma lista explícita na parte substitui a lista herdada.
+- Diagnósticos distinguem referências/ciclos (`overlap`) de interseções não permitidas (`collision`), com as mensagens anteriores.
+- Vários pares de partes geram um único diagnóstico por par de ambientes, mantendo todos os participantes marcados.
+- Ambientes identificados em pavimentos diferentes não colidem; contato de borda e sobreposições até a tolerância de 1e-9 são ignorados.
+- Móveis participam do grafo de camadas, mas continuam fora da detecção de colisões XY entre ambientes. A extração não introduz uma verificação física 3D, rotação ou obstáculos nas futuras zonas.
+
+Validação: 253 testes aprovados. Nove testes diretos cobrem o grafo, partes, móveis, permissões, deduplicação, pavimentos, tolerância, ciclos, referências ausentes, objetos sem ID, entrada congelada e independência entre chamadas. Um teste adicional analisa todos os pisos dos projetos principal e transversal diretamente das partes normalizadas, sem renderização, com zero erros e a camada esperada da escada.
+
+Build concluído e novo módulo embutido confirmado em `dist/floor-plan.html`. No navegador integrado em 1280 × 720 pixels, versões modular e portátil carregaram com zero erros do projeto; verificados filtros “Acima da camada 0”, “Camada 0” e seleção de todos os pisos, sem erros JavaScript no console. A escada permanece visível isoladamente no filtro acima da camada base.
+
+Limite desta entrega: o cálculo é executável sem DOM, mas o caminho atual da interface ainda o invoca a partir dos elementos renderizados. Preparação global de análises independente da vista será uma integração posterior; não foi acrescentada nesta extração. Deduções, altura livre e comunicações ainda precisam da mesma separação.
+
+Próxima entrega: centralizar as deduções de área compartilhadas e separar o preparo da análise de altura livre do desenho das faixas.

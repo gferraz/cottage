@@ -11,6 +11,7 @@ for (const name of ["models/terrain", "config/catalog", "config/coordinates",
   "models/openings", "models/references", "views/elements", "models/headroom", "main"]) {
   require(`../src/${name}.js`);
 }
+require("../src/models/overlap-analysis.js");
 
 // Use the real domain facade without constructing the browser interface.
 function prepare(config) {
@@ -298,4 +299,27 @@ test("current cottage stair keeps its intermediate elevation, tread counts and l
     assert.equal(flight.stairAxis, "horizontal");
   }
   assert.deepEqual(source, original);
+});
+
+test("both cottage projects can analyze every floor from domain parts without rendering", () => {
+  for (const file of ["cottage-ferraz-cesar.json5", "cottage-ferraz-cesar-garage-transverse.json5"]) {
+    const plan = prepare(FloorPlanParser.parse(fs.readFileSync(path.join(__dirname, "..", file), "utf8")));
+    assert.deepEqual(plan.errors, []);
+    for (const floor of plan.currentConfig.floors) {
+      const rooms = floor.rooms.map((definition) => ({
+        id: definition.id, floorId: floor.id,
+        overlapTargets: plan.normalizeOverlapTargets(definition.overlaps),
+        overlayTargets: plan.normalizeOverlapTargets(definition.overlays),
+        parts: plan.getRoomGeometry(definition.id).normalizedParts.map((part) => ({
+          ...part,
+          overlapTargets: plan.normalizeOverlapTargets(part.overlaps ?? definition.overlaps),
+          overlayTargets: plan.normalizeOverlapTargets(part.overlays ?? definition.overlays),
+        })),
+      }));
+      const result = FloorPlanOverlapAnalysis.analyze({ rooms });
+      assert.deepEqual(result.errors, [], `${file}: ${floor.id}`);
+      const stairIndex = rooms.findIndex((room) => room.id === "stairs");
+      if (stairIndex >= 0) assert.equal(result.roomLayers[stairIndex], 1);
+    }
+  }
 });
