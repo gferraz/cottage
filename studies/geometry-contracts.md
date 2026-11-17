@@ -269,3 +269,15 @@ O cálculo é genérico por proprietário, partes e cotas, sem IDs ou posições
 A exportação HTML mantém o filtro escolhido durante as capturas dos pavimentos, para preservar a opção de mostrar as faixas em Camada 0, e restaura o estado original. O CSS portátil inclui as projeções SVG e a tipografia dos rótulos.
 
 Validação: 293 testes aprovados. Cobertura inclui as quatro faixas e sua partição, eixos/sentidos, espelhos explícitos, patamares, cotas absolutas, múltiplos proprietários, interseções de faces inferiores/coberturas, geometrias não suportadas, política de exibição, preservação das análises e apresentação compartilhada. Os dois estudos preparam faixas da escada interna no térreo. No estudo atual não há região 3+ sob a escada, pois sua face inferior não alcança 3 m sobre o térreo. Build concluído e módulos/CSS confirmados no distribuível. Navegador integrado em 1280 × 720: conferidos cores/rótulos na planta rotacionada, Camada 0, Todas, Acima da camada 0, todos os pisos e ausência de projeção sob essa escada no piso dos dormitórios; sem erros JavaScript.
+
+## Regra final: acessos e altura livre coexistem
+
+Esclarecimento posterior do usuário: **os acessos também são desejados**, como regiões distintas das faixas de altura livre. A remoção dos acessos descrita na seção anterior foi revertida. Esta é a regra vigente:
+
+- Acessos de aproximação/saída: aparecem quando a escadaria de origem está renderizada e visível. A seleção Camada 0 não os oculta por si só: se a origem pertencer à camada 0 e continuar visível, seus acessos continuam visíveis.
+- Altura livre sob a escada: mantém a regra Camada 0 com a origem oculta, usando 1,3−, 1,3+, 2,1+ e 3+.
+- As duas análises são preparadas independentemente da exibição. Não há mudança nas faixas sob telhados.
+
+Restaurados `src/models/stair-access.js`, `src/views/stair-access.js`, as regiões em `derivedZones` e o parâmetro raiz `stair_access_depth` (padrão 1.2 m). A geração continua genérica por partes/extremidades/pavimentos, sem IDs específicos. Os acessos são requeridos, com `available: null`; não foram recortados por paredes/obstáculos. Permanecem as limitações anteriormente registradas para patamares terminais, contatos parciais e rotações. A visualização exige uma origem presente na vista: não presume que uma escada definida em outro piso esteja desenhada no piso selecionado.
+
+Validação: 296 testes aprovados, build e distribuível atualizados. Novos testes verificam geometria genérica dos acessos, profundidade, sentido, múltiplas origens, exclusão de extremidades conectadas e alternância entre acessos da origem visível e altura sob a origem oculta. No navegador em 1280 × 720, com Todas: escada interna e acesso visíveis, altura sob ela oculta; com Camada 0: acesso interno oculto e altura visível. O acesso externo continua visível porque a escada externa está na camada 0. Sem erros JavaScript; conferidos contorno e orientação do rótulo “Acesso”.
