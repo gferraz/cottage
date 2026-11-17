@@ -11,6 +11,8 @@ const FloorPlanHtmlExport = {
       plan.multiFloorMode = false;
       return floors.map((floor, activeFloor) => {
         plan.renderView({ activeFloor, showAllFloors: false });
+        plan.layerCutoff = original.layerCutoff;
+        plan.updateLayerVisibility();
         return capture(floor, activeFloor);
       });
     } finally {

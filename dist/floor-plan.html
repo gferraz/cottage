@@ -872,6 +872,19 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 }
 
 
+.plan-item.stair-headroom-zone {
+  z-index: 6;
+  opacity: 1;
+  pointer-events: none;
+  border: none;
+  background: transparent;
+}
+.stair-headroom-zone > svg {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 .plan-item.plan-opening {
   z-index: 15;
   opacity: 1 !important;
@@ -2120,6 +2133,29 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   pointer-events: none;
 }
 
+
+.plan-item.stair-headroom-zone {
+  z-index: 6;
+  opacity: 1;
+  pointer-events: none;
+  border: none;
+  background: transparent;
+}
+.headroom-height-label {
+  font-size: 0.14px;
+  font-weight: normal;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  fill: var(--theme-text);
+  stroke: var(--theme-surface, #fff);
+  stroke-width: 0.025px;
+  paint-order: stroke;
+}
+.stair-headroom-zone > svg {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
 
 .plan-item.plan-opening {
   z-index: 15;
@@ -8845,9 +8881,33 @@ window.FloorPlanHeadroomAnalysis = FloorPlanHeadroomAnalysis;
 
 // Render precomputed regions; visibility affects presentation only.
 const FloorPlanHeadroomView = {
+  appendBands(plan, svg, result, { colors, label, allLabels = false }) {
+    result.bands.forEach(({ height, polygons: band, area: bandArea, labelPosition }, index) => {
+      const area = index === 0 ? bandArea : result.areas[index - 1].area;
+      const path = document.createElementNS(svg.namespaceURI, "path");
+      path.setAttribute("d", band.map(polygon => `M${polygon.map(p => `${p[0]},${p[1]}`).join("L")}Z`).join(" "));
+      path.setAttribute("fill", index === 0 ? "rgba(210, 110, 25, 0.24)" : colors[index - 1]);
+      const title = document.createElementNS(svg.namespaceURI, "title");
+      title.textContent = index === 0
+        ? `${label}: altura < 1,30 m — ${plan.formatMeters(bandArea)} m²`
+        : `${label}: altura ≥ ${plan.formatMeters(height)} m — ${plan.formatMeters(area)} m²`;
+      path.append(title);
+      svg.append(path);
+      if (labelPosition && (allLabels || height < 3)) {
+        const annotation = document.createElementNS(svg.namespaceURI, "text");
+        annotation.setAttribute("class", "headroom-height-label");
+        annotation.setAttribute("x", labelPosition[0]);
+        annotation.setAttribute("y", labelPosition[1]);
+        annotation.textContent = allLabels && height === 0 ? "1,3−" : `${height.toLocaleString("pt-BR")}+`;
+        svg.append(annotation);
+      }
+    });
+  },
+
   render(plan, { results, enabled, colors }) {
     const legend = document.querySelector("#comfort-legend");
-    if (legend) legend.hidden = !plan.roomElements.some((room) => enabled(room.dataset.id));
+    if (legend) legend.hidden = !plan.roomElements.some((room) => enabled(room.dataset.id))
+      && !plan.root.querySelector(".stair-headroom-zone:not(.layer-hidden)");
     for (const room of plan.roomElements) {
       room.querySelectorAll(":scope > .headroom-zone").forEach((element) => element.remove());
       const result = results?.get(room.dataset.id);
@@ -8860,26 +8920,7 @@ const FloorPlanHeadroomView = {
       svg.setAttribute("viewBox", `${room.x0()} ${room.y0()} ${room.w()} ${room.l()}`);
       svg.setAttribute("preserveAspectRatio", "none");
       svg.setAttribute("overflow", "hidden");
-      result.bands.forEach(({ height, polygons: band, area: bandArea, labelPosition }, index) => {
-        const area = index === 0 ? bandArea : result.areas[index - 1].area;
-        const path = document.createElementNS(svg.namespaceURI, "path");
-        path.setAttribute("d", band.map(polygon => `M${polygon.map(p => `${p[0]},${p[1]}`).join("L")}Z`).join(" "));
-        path.setAttribute("fill", index === 0 ? "rgba(210, 110, 25, 0.24)" : colors[index - 1]);
-        const title = document.createElementNS(svg.namespaceURI, "title");
-        title.textContent = index === 0
-          ? `${room.dataset.label}: altura < 1,30 m — ${plan.formatMeters(bandArea)} m²`
-          : `${room.dataset.label}: altura ≥ ${plan.formatMeters(height)} m — ${plan.formatMeters(area)} m²`;
-        path.append(title);
-        svg.append(path);
-        if (labelPosition && height < 3) {
-          const label = document.createElementNS(svg.namespaceURI, "text");
-          label.setAttribute("class", "headroom-height-label");
-          label.setAttribute("x", labelPosition[0]);
-          label.setAttribute("y", labelPosition[1]);
-          label.textContent = `${height.toLocaleString("pt-BR")}+`;
-          svg.append(label);
-        }
-      });
+      this.appendBands(plan, svg, result, { colors, label: room.dataset.label });
       room.append(svg);
     }
   },
@@ -11332,6 +11373,7 @@ const FloorPlanLayers = {
           !this.isLayerVisible(layer, cutoff),
         );
       });
+    window.FloorPlanStairHeadroomView?.updateVisibility(plan);
     if (plan.layerOptions) {
       const visible = Boolean(plan.currentConfig && plan.maxLayer > 0);
       const container = plan.layerOptions.closest(".layer-selector");
@@ -13582,6 +13624,8 @@ const FloorPlanHtmlExport = {
       plan.multiFloorMode = false;
       return floors.map((floor, activeFloor) => {
         plan.renderView({ activeFloor, showAllFloors: false });
+        plan.layerCutoff = original.layerCutoff;
+        plan.updateLayerVisibility();
         return capture(floor, activeFloor);
       });
     } finally {
@@ -13755,6 +13799,232 @@ const FloorPlanHtmlExport = {
 window.FloorPlanHtmlExport = FloorPlanHtmlExport;
 
 
+// Nominal contacts are candidates for access, not proof of obstacle-free passage.
+const FloorPlanStairConnectivity = {
+  analyze(parts, floors, epsilon = 1e-7) {
+    const nodes = [], diagnostics = [];
+    for (const part of parts) {
+      const classes = (part.classes ?? "").split(/\s+/);
+      const kind = classes.includes("stair-flight") ? "flight"
+        : classes.includes("stair-landing") ? "landing" : null;
+      if (!kind) continue;
+      const key = JSON.stringify([part.ownerId, part.id]);
+      if (![part.x, part.y, part.w, part.l, part.z0, part.z1].every(Number.isFinite)
+        || part.w <= 0 || part.l <= 0 || part.z1 < part.z0
+        || (part.rotation ?? 0) !== 0
+        || (kind === "flight" && (part.z1 <= part.z0
+          || !["horizontal", "vertical"].includes(part.stairAxis)))
+        || (kind === "landing" && Math.abs(part.z1 - part.z0) > epsilon)) {
+        diagnostics.push({ key, reason: "unsupported-geometry" });
+        continue;
+      }
+      if (nodes.some((node) => node.key === key)) {
+        diagnostics.push({ key, reason: "duplicate-part" });
+        continue;
+      }
+      const node = { key, ownerId: part.ownerId, partId: part.id, floorId: part.floorId,
+        kind, bounds: { x: part.x, y: part.y, w: part.w, l: part.l, z: part.z0 }, ends: [] };
+      if (kind === "flight") {
+        const horizontal = part.stairAxis === "horizontal";
+        const increasing = (part.stairDirection !== "reverse") === (part.stairRise !== "down");
+        node.ends = ["lower", "upper"].map((role) => {
+          const high = (role === "upper") === increasing;
+          const z = role === "lower" ? part.z0 : part.z1;
+          const x = part.x + (horizontal && high ? part.w : 0);
+          const y = part.y + (!horizontal && high ? part.l : 0);
+          return { role, z, axis: horizontal ? "y" : "x",
+            start: { x, y, z }, end: { x: x + (horizontal ? 0 : part.w),
+              y: y + (horizontal ? part.l : 0), z },
+            floorIds: floors.filter((floor) => Math.abs(Number(floor.z0 ?? 0) - z) <= epsilon)
+              .map((floor) => floor.id ?? null) };
+        });
+      }
+      nodes.push(node);
+    }
+    const edges = [];
+    const overlap = (a, b, c, d) => Math.min(b, d) - Math.max(a, c) > epsilon;
+    const touches = (end, landing) => {
+      const b = landing.bounds;
+      if (Math.abs(end.z - b.z) > epsilon) return false;
+      return end.axis === "y"
+        ? (Math.abs(end.start.x - b.x) <= epsilon || Math.abs(end.start.x - b.x - b.w) <= epsilon)
+          && overlap(end.start.y, end.end.y, b.y, b.y + b.l)
+        : (Math.abs(end.start.y - b.y) <= epsilon || Math.abs(end.start.y - b.y - b.l) <= epsilon)
+          && overlap(end.start.x, end.end.x, b.x, b.x + b.w);
+    };
+    nodes.forEach((a, index) => nodes.slice(index + 1).forEach((b) => {
+      for (const end of a.ends) {
+        if (b.kind === "landing" && touches(end, b)) edges.push({ a: a.key, aEnd: end.role, b: b.key });
+        for (const other of b.ends) {
+          const fixed = end.axis === "y" ? "x" : "y";
+          const axis = end.axis;
+          if (end.role !== other.role && end.axis === other.axis
+            && Math.abs(end.z - other.z) <= epsilon
+            && Math.abs(end.start[fixed] - other.start[fixed]) <= epsilon
+            && overlap(end.start[axis], end.end[axis], other.start[axis], other.end[axis]))
+            edges.push({ a: a.key, aEnd: end.role, b: b.key, bEnd: other.role });
+        }
+      }
+      if (a.kind === "landing") for (const end of b.ends)
+        if (touches(end, a)) edges.push({ a: a.key, b: b.key, bEnd: end.role });
+      if (a.kind === "landing" && b.kind === "landing") {
+        const p = a.bounds, q = b.bounds;
+        if (Math.abs(p.z - q.z) <= epsilon && (
+          ((Math.abs(p.x + p.w - q.x) <= epsilon || Math.abs(q.x + q.w - p.x) <= epsilon)
+            && overlap(p.y, p.y + p.l, q.y, q.y + q.l)) ||
+          ((Math.abs(p.y + p.l - q.y) <= epsilon || Math.abs(q.y + q.l - p.y) <= epsilon)
+            && overlap(p.x, p.x + p.w, q.x, q.x + q.w)))) edges.push({ a: a.key, b: b.key });
+      }
+    }));
+    return { nodes, edges, diagnostics };
+  },
+};
+window.FloorPlanStairConnectivity = FloorPlanStairConnectivity;
+
+
+// Required regions remain intact; null availability means restrictions have not been analyzed.
+const FloorPlanDerivedZones = {
+  collect(definitions) {
+    const zones = [], keys = new Set();
+    for (const definition of definitions) {
+      const { ownerId, ruleId, floorId, category, required } = definition;
+      const validPolygon = (polygon) => Array.isArray(polygon) && polygon.length >= 3
+        && polygon.every((point) => point && [point.x, point.y, point.z].every(Number.isFinite)
+          && Math.abs(point.z - polygon[0].z) <= 1e-7)
+        && Math.abs(polygon.reduce((area, point, index) => {
+          const next = polygon[(index + 1) % polygon.length];
+          return area + point.x * next.y - next.x * point.y;
+        }, 0)) > 1e-10;
+      if (typeof ownerId !== "string" || !ownerId.trim()
+        || typeof ruleId !== "string" || !ruleId.trim() || !["comfort", "circulation", "safety"].includes(category)
+        || !Array.isArray(required) || !required.length || !required.every(validPolygon))
+        throw new Error("Zona derivada precisa de origem, regra, categoria e polígonos XYZ válidos");
+      const id = JSON.stringify([ownerId, ruleId, floorId ?? null]);
+      if (keys.has(id)) throw new Error(`Zona derivada duplicada: ${id}`);
+      keys.add(id);
+      zones.push({ id, ownerId, ruleId, floorId: floorId ?? null, category,
+        required: structuredClone(required), available: null, interferences: [] });
+    }
+    return zones;
+  },
+};
+window.FloorPlanDerivedZones = FloorPlanDerivedZones;
+
+
+// Clearance uses the same inclined underside as walls and the 3D stair solids.
+const FloorPlanStairHeadroom = {
+  analyze(parts, floors, roofs = []) {
+    const groups = new Map();
+    for (const part of parts) {
+      const classes = (part.classes ?? "").split(/\s+/);
+      const flight = classes.includes("stair-flight");
+      if (!flight && !classes.includes("stair-landing")) continue;
+      if ((part.rotation ?? 0) !== 0 || !(part.w > 0 && part.l > 0)
+        || ![part.x, part.y, part.z0, part.z1].every(Number.isFinite)) continue;
+      if (flight && (!(part.h > 0) || !["horizontal", "vertical"].includes(part.stairAxis))) continue;
+      if (!flight && Math.abs(part.z1 - part.z0) > 1e-7) continue;
+      let plane;
+      try {
+        plane = flight ? FloorPlanWalls.stairUndersidePlane(part) : [0, 0, 1, -part.z0];
+      } catch {
+        // Invalid risers are reported by the existing stair validation path.
+        continue;
+      }
+      if (!plane.every(Number.isFinite)) continue;
+      const polygon = FloorPlanHeadroomAnalysis.rectangle(part).map(([x, y]) =>
+        [x, y, -(plane[0] * x + plane[1] * y + plane[3]) / plane[2]]);
+      if (!groups.has(part.ownerId)) groups.set(part.ownerId, []);
+      groups.get(part.ownerId).push({ part, polygon });
+    }
+    const results = [];
+    for (const [ownerId, entries] of groups) for (const floor of floors) {
+      const z0 = Number(floor.z0 ?? 0);
+      const overhead = entries.filter(({ polygon }) => polygon.some((point) => point[2] > z0 + 1e-8));
+      if (!overhead.length) continue;
+      const analysis = FloorPlanHeadroomAnalysis.analyzeRoom({ z0,
+        parts: overhead.map(({ part }) => part) },
+      [...overhead.map(({ polygon }) => ({ polygons: [polygon] })), ...roofs], []);
+      if (analysis.covered.area <= 1e-10) continue;
+      results.push({ ownerId, floorId: floor.id ?? null, floorZ: z0,
+        parts: overhead.map(({ part }) => part), ...analysis });
+    }
+    return results;
+  },
+
+  sourceLayers(plan) {
+    const targets = (value) => plan.normalizeOverlapTargets(value);
+    const rooms = plan.allRooms.filter((room) => !plan.invalidRoomIds.has(room.id)).map((room) => {
+      const definition = plan.roomDefinitions.get(room.id);
+      return { id: room.id, floorId: room.floorId,
+        parts: plan.getRoomGeometry(room.id).normalizedParts.map((part) => ({ ...part,
+          overlapTargets: targets(part.overlaps ?? definition.overlaps),
+          overlayTargets: targets(part.overlays ?? definition.overlays) })) };
+    });
+    return FloorPlanOverlapAnalysis.analyze({ rooms,
+      items: plan.allItems.map((item) => ({ id: item.id, overlayTargets: targets(item.overlays) })) }).layers;
+  },
+};
+window.FloorPlanStairHeadroom = FloorPlanStairHeadroom;
+
+
+const FloorPlanStairHeadroomView = {
+  render(plan) {
+    for (const result of plan.stairHeadroomResults ?? []) {
+      if (!plan.showAllFloors && result.floorId !== (plan.currentFloorId ?? null)) continue;
+      const sourceLayers = (plan.stairConnectivity?.nodes ?? [])
+        .filter((node) => node.ownerId === result.ownerId)
+        .map((node) => plan.stairSourceLayers?.get(
+          FloorPlanOverlapAnalysis.partKey(node.ownerId, node.partId)) ?? 0);
+      plan.maxLayer = Math.max(plan.maxLayer, ...sourceLayers);
+      const parts = result.parts;
+      const x = Math.min(...parts.map((p) => p.x)), y = Math.min(...parts.map((p) => p.y));
+      const w = Math.max(...parts.map((p) => p.x + p.w)) - x;
+      const l = Math.max(...parts.map((p) => p.y + p.l)) - y;
+      const element = plan.add({ pos: [x, y, result.floorZ], size: [w, l, 0],
+        classes: "stair-headroom-zone", showLabel: false });
+      element.dataset.stairHeadroomOwner = result.ownerId;
+      element.dataset.floorId = result.floorId ?? "";
+      element.setAttribute("aria-label", "Altura livre sob a escada");
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", `${x} ${y} ${w} ${l}`);
+      svg.setAttribute("preserveAspectRatio", "none");
+      FloorPlanHeadroomView.appendBands(plan, svg, result, {
+        colors: FloorPlanHeadroom.colors, label: "Sob a escada", allLabels: true,
+      });
+      element.append(svg);
+    }
+  },
+
+  isVisible(cutoff, sourceLayers) {
+    return cutoff === 0 && sourceLayers.length > 0 && sourceLayers.every((layer) => layer > 0);
+  },
+
+  updateVisibility(plan) {
+    const nodes = plan.stairConnectivity?.nodes ?? [];
+    let anyVisible = false;
+    plan.root.querySelectorAll(".stair-headroom-zone").forEach((element) => {
+      const ownerId = element.dataset.stairHeadroomOwner;
+      const sourceNodes = nodes.filter((node) => node.ownerId === ownerId);
+      const rooms = [...plan.roomElements, ...plan.stairElements]
+        .filter((room) => room.dataset.id === ownerId);
+      const layers = sourceNodes.map((node) => {
+        const renderedParts = rooms.flatMap((room) => room.geometryParts
+          .filter((part) => part.id === node.partId).map((part) => part.element ?? room));
+        // A source on another floor still uses its prepared layer policy.
+        return renderedParts.length ? Math.min(...renderedParts.map((part) => Number(part.dataset.layer ?? 0)))
+          : plan.stairSourceLayers?.get(FloorPlanOverlapAnalysis.partKey(ownerId, node.partId)) ?? 0;
+      });
+      const visible = this.isVisible(plan.layerCutoff, layers);
+      anyVisible ||= visible;
+      element.classList.toggle("layer-hidden", !visible);
+    });
+    const legend = plan.root.ownerDocument?.querySelector("#comfort-legend");
+    if (legend) legend.hidden = !anyVisible && !plan.root.querySelector(".headroom-zone");
+  },
+};
+window.FloorPlanStairHeadroomView = FloorPlanStairHeadroomView;
+
+
 // Prepare one project revision independently of any rendered view.
 const FloorPlanProject = {
   prepare(plan, source) {
@@ -13779,6 +14049,13 @@ const FloorPlanProject = {
     FloorPlanHeadroom.prepare(plan);
     FloorPlanCommunications.prepare(plan);
     plan.allSlabs = FloorPlanSlabs.collect(plan);
+    const stairParts = plan.allRooms.filter((room) => !plan.invalidRoomIds.has(room.id))
+      .flatMap((room) => plan.getRoomGeometry(room.id).normalizedParts);
+    plan.stairConnectivity = FloorPlanStairConnectivity.analyze(stairParts, model.floors);
+    plan.stairSourceLayers = FloorPlanStairHeadroom.sourceLayers(plan);
+    plan.derivedZones = [];
+    plan.stairHeadroomResults = FloorPlanStairHeadroom.analyze(stairParts, model.floors,
+      FloorPlanRoofGeometry.intersectingSurfaces(plan));
     plan.preparedProject = {
       model,
       references: new Map(plan.references),
@@ -14564,6 +14841,10 @@ class FloorPlan {
     this.allRoofs = [];
     this.headroomResults = new Map();
     this.communicationResults = null;
+    this.stairConnectivity = null;
+    this.stairSourceLayers = null;
+    this.stairHeadroomResults = [];
+    this.derivedZones = [];
     this.naturalCommunications = [];
     this.errors = [];
     this.warnings = [];
@@ -14689,6 +14970,7 @@ class FloorPlan {
       this.errors.push({ category: "presentation", message: error.message });
     }
     this.renderPlanFloors(config, floorConfig);
+    FloorPlanStairHeadroomView.render(this);
     this.updateLayerVisibility();
     this.renderMultiFloorUnderlay(floorConfig);
     try {

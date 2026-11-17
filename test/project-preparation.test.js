@@ -107,6 +107,15 @@ test("both cottage studies prepare all domain data and floor validation without 
     assert.deepEqual([...prepared.floorErrors.values()].flat(), [], file);
     assert.equal(plan.headroomResults.size, plan.roomDefinitions.size);
     assert.equal(plan.allSlabs.length, 2);
+    assert.equal(plan.stairConnectivity.nodes.filter((node) => node.ownerId === "stairs").length, 4);
+    assert.equal(plan.stairConnectivity.edges.length, 3);
+    assert.equal(plan.stairConnectivity.nodes.filter((node) => node.ownerId === "stairs")
+      .flatMap((node) => node.ends).filter((end) => end.floorIds.length).length, 2);
+    assert.deepEqual(plan.derivedZones, []);
+    const underStairs = plan.stairHeadroomResults.filter((result) => result.ownerId === "stairs");
+    assert.deepEqual(underStairs.map((result) => result.floorId), ["ground"]);
+    assert.ok(underStairs[0].covered.area > 0);
+    assert.equal(underStairs[0].bands.length, 4);
   }
 });
 
@@ -133,6 +142,7 @@ test("export captures individual floors and restores the original all-floors vie
   const snapshots = FloorPlanHtmlExport.captureFloorViews(plan, (floor) => {
     assert.equal(plan.showAllFloors, false);
     assert.equal(plan.multiFloorMode, false);
+    assert.equal(plan.layerCutoff, "above-zero");
     return floor.id;
   });
   assert.deepEqual(snapshots, ["ground", "upper"]);

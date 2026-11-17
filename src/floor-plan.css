@@ -814,6 +814,19 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 }
 
 
+.plan-item.stair-headroom-zone {
+  z-index: 6;
+  opacity: 1;
+  pointer-events: none;
+  border: none;
+  background: transparent;
+}
+.stair-headroom-zone > svg {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
 .plan-item.plan-opening {
   z-index: 15;
   opacity: 1 !important;

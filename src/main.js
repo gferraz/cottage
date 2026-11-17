@@ -752,6 +752,10 @@ class FloorPlan {
     this.allRoofs = [];
     this.headroomResults = new Map();
     this.communicationResults = null;
+    this.stairConnectivity = null;
+    this.stairSourceLayers = null;
+    this.stairHeadroomResults = [];
+    this.derivedZones = [];
     this.naturalCommunications = [];
     this.errors = [];
     this.warnings = [];
@@ -877,6 +881,7 @@ class FloorPlan {
       this.errors.push({ category: "presentation", message: error.message });
     }
     this.renderPlanFloors(config, floorConfig);
+    FloorPlanStairHeadroomView.render(this);
     this.updateLayerVisibility();
     this.renderMultiFloorUnderlay(floorConfig);
     try {

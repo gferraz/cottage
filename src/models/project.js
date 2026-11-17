@@ -22,6 +22,13 @@ const FloorPlanProject = {
     FloorPlanHeadroom.prepare(plan);
     FloorPlanCommunications.prepare(plan);
     plan.allSlabs = FloorPlanSlabs.collect(plan);
+    const stairParts = plan.allRooms.filter((room) => !plan.invalidRoomIds.has(room.id))
+      .flatMap((room) => plan.getRoomGeometry(room.id).normalizedParts);
+    plan.stairConnectivity = FloorPlanStairConnectivity.analyze(stairParts, model.floors);
+    plan.stairSourceLayers = FloorPlanStairHeadroom.sourceLayers(plan);
+    plan.derivedZones = [];
+    plan.stairHeadroomResults = FloorPlanStairHeadroom.analyze(stairParts, model.floors,
+      FloorPlanRoofGeometry.intersectingSurfaces(plan));
     plan.preparedProject = {
       model,
       references: new Map(plan.references),

@@ -83,6 +83,7 @@ const FloorPlanLayers = {
           !this.isLayerVisible(layer, cutoff),
         );
       });
+    window.FloorPlanStairHeadroomView?.updateVisibility(plan);
     if (plan.layerOptions) {
       const visible = Boolean(plan.currentConfig && plan.maxLayer > 0);
       const container = plan.layerOptions.closest(".layer-selector");
