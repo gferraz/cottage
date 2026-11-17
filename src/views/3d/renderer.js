@@ -100,24 +100,12 @@ const FloorPlanFacades3D = {
         const defaultHeight = Number.isFinite(nextZ0)
           ? Math.min(Math.max(0, nextZ0 - floorZ0), wallMaxHeight)
           : wallMaxHeight;
-        const partReferences = [...(reference.partReferences?.values() ?? [])];
-        const partValues = (method) =>
-          partReferences
-            .map((part) => Number(part[method]()))
-            .filter(Number.isFinite);
-        const partX0 = partValues("x0");
-        const partX1 = partValues("x1");
-        const partY0 = partValues("y0");
-        const partY1 = partValues("y1");
-        const partZ0 = partValues("z0");
-        const partZ1 = partValues("z1");
-        const x0 = partX0.length ? Math.min(...partX0) : Number(reference.x0());
-        const x1 = partX1.length ? Math.max(...partX1) : Number(reference.x1());
-        const y0 = partY0.length ? Math.min(...partY0) : Number(reference.y0());
-        const y1 = partY1.length ? Math.max(...partY1) : Number(reference.y1());
-        const hasPartElevation = partZ0.length > 0 && partZ1.length > 0;
-        const z0 = hasPartElevation ? Math.min(...partZ0) : floorZ0;
-        const z1 = hasPartElevation ? Math.max(...partZ1) : z0;
+        const nominal = reference.nominalGeometry;
+        const x0 = nominal.x, x1 = nominal.x + nominal.w;
+        const y0 = nominal.y, y1 = nominal.y + nominal.l;
+        // Keep the renderer's legacy floor-level fallback for simple rooms.
+        const z0 = definition?.parts?.length ? nominal.z0 : floorZ0;
+        const z1 = definition?.parts?.length ? nominal.z1 : z0;
         const facadeZ1 = z1 > z0 ? z1 : z0 + defaultHeight;
         return {
           ...reference,
@@ -136,29 +124,14 @@ const FloorPlanFacades3D = {
     const stairLandings = [];
     floors.filter((floor) => !plan.visibleFloor || floor === plan.visibleFloor).forEach((floor) => {
       (floor?.rooms ?? []).forEach((definition) => {
-        if (isStairFlight(definition)) {
-          const part = plan.normalizeGeometryAtFloor(definition, floor);
-          stairFlights.push({ ...part, stairGradient: FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), [part]) });
-        }
-        if (String(definition.classes || "").split(/\s+/).includes("stair-landing")) {
-          const part = plan.normalizeGeometryAtFloor(definition, floor);
-          stairLandings.push({ ...part, stairGradient: FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), [part]) });
-        }
-        if (!Array.isArray(definition.parts)) return;
-        const previousHeight = plan.currentFloorHeight;
-        plan.currentFloorHeight = Number(floor?.z0 ?? 0);
-        try {
-          const parts = plan.normalizeParts(definition.parts);
-          const stairParts = parts.filter((part) => isStairFlight(part) ||
-            String(part.classes || "").split(/\s+/).includes("stair-landing"));
-          const range = FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), stairParts);
-          stairFlights.push(...parts.filter(isStairFlight).map((part) => ({ ...part, stairGradient: range })));
-          stairLandings.push(...parts.filter((part) =>
-            String(part.classes || "").split(/\s+/).includes("stair-landing"),
-          ).map((part) => ({ ...part, stairGradient: range })));
-        } finally {
-          plan.currentFloorHeight = previousHeight;
-        }
+        const parts = plan.getRoomGeometry(definition.id).normalizedParts;
+        const stairParts = parts.filter((part) => isStairFlight(part) ||
+          String(part.classes || "").split(/\s+/).includes("stair-landing"));
+        const range = FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), stairParts);
+        stairFlights.push(...stairParts.filter(isStairFlight).map((part) => ({ ...part, stairGradient: range })));
+        stairLandings.push(...stairParts.filter((part) =>
+          String(part.classes || "").split(/\s+/).includes("stair-landing"),
+        ).map((part) => ({ ...part, stairGradient: range })));
       });
     });
 

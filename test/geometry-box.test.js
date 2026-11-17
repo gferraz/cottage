@@ -5,6 +5,29 @@ require("./helpers/load-modules");
 
 const { FloorPlanGeometryBox } = globalThis;
 
+test("nominal envelope spans separated parts and elevations without filling their occupied area", () => {
+  const parts = [
+    { x: -3, y: 2, w: 1, l: 2, z0: -1, z1: 0, h: 1, rotation: 45 },
+    { x: 2, y: 5, w: 2, l: 1, z0: 3, z1: 3, h: 0 },
+  ];
+  const original = structuredClone(parts);
+  assert.deepEqual(FloorPlanGeometryBox.envelope(parts), {
+    x: -3, y: 2, w: 7, l: 4, z0: -1, z1: 3, h: 4,
+  });
+  assert.deepEqual(parts, original);
+  assert.throws(() => FloorPlanGeometryBox.envelope([]), /pelo menos uma parte/);
+});
+
+test("geometry reference resolves lazily and retains compound exactness restrictions", () => {
+  let geometry;
+  const reference = FloorPlanGeometryBox.fromGeometry(() => geometry, { compound: true, label: "parts" });
+  geometry = { x: 1, y: 2, w: 3, l: 4, z0: 5, z1: 7, h: 2 };
+  assert.deepEqual([reference.xc(), reference.yc(), reference.zc(), reference.area()], [2.5, 4, 6, 12]);
+  geometry = { ...geometry, z1: 9, h: 4 };
+  assert.equal(reference.bounds().h(), 4);
+  assert.throws(() => reference.geometry(), /compound object/);
+});
+
 test("fromValues builds a box with the full accessor contract", () => {
   const box = FloorPlanGeometryBox.fromValues({
     x: 1,

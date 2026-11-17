@@ -5,6 +5,22 @@ const stairAxisFor = (data, width, length) => {
 };
 
 const FloorPlanGeometryDomain = {
+  normalizeRoomGeometry(plan, room) {
+    const compound = Boolean(room.parts?.length);
+    const parts = compound ? plan.normalizeParts(room.parts) : [plan.normalizeGeometry(room)];
+    const floor = plan.roomFloorConfigs?.get(room.id);
+    const normalizedParts = parts.map((part) => ({
+      ...part,
+      id: part.id ?? room.id,
+      ownerId: room.id,
+      floorId: floor?.id ?? plan.currentFloorId ?? null,
+    }));
+    return {
+      normalizedParts,
+      nominalGeometry: compound ? FloorPlanGeometryBox.envelope(normalizedParts) : normalizedParts[0],
+    };
+  },
+
   normalizeGeometryAtFloor(plan, data, floorConfig) {
     const previousHeight = plan.currentFloorHeight;
     plan.currentFloorHeight = Number(floorConfig?.z0 ?? 0);

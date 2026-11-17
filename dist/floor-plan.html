@@ -4899,6 +4899,42 @@ window.FloorPlanGeometry = FloorPlanGeometry;
  * available for objects that are actually one rectangle.
  */
 const FloorPlanGeometryBox = {
+  // Nominal envelope only: rotation is retained on the parts, not applied here.
+  envelope(parts) {
+    if (!parts.length) throw new Error("O envelope precisa de pelo menos uma parte");
+    const x = Math.min(...parts.map((part) => part.x));
+    const y = Math.min(...parts.map((part) => part.y));
+    const z0 = Math.min(...parts.map((part) => part.z0));
+    const z1 = Math.max(...parts.map((part) => part.z1));
+    return {
+      x, y, z0, z1,
+      w: Math.max(...parts.map((part) => part.x + part.w)) - x,
+      l: Math.max(...parts.map((part) => part.y + part.l)) - y,
+      h: z1 - z0,
+    };
+  },
+
+  // Lazy input supports forward/circular-reference detection in the resolver.
+  fromGeometry(geometry, options = {}) {
+    const values = typeof geometry === "function" ? geometry : () => geometry;
+    const reference = {
+      x0: () => values().x,
+      x1: () => values().x + values().w,
+      xc: () => values().x + values().w / 2,
+      y0: () => values().y,
+      y1: () => values().y + values().l,
+      yc: () => values().y + values().l / 2,
+      z0: () => values().z0,
+      z1: () => values().z1,
+      zc: () => (values().z0 + values().z1) / 2,
+      w: () => values().w,
+      l: () => values().l,
+      h: () => values().h,
+      area: () => values().w * values().l,
+    };
+    return this.attach(reference, options);
+  },
+
   attach(target, { compound = false, label = "object" } = {}) {
     const value = (name, fallback) => {
       if (typeof target[name] === "function") return target[name]();
@@ -5729,16 +5765,6 @@ const FloorPlanFacades = {
         getComputedStyle(plan.root).getPropertyValue("--m"),
       ) || 56;
     const floorConfigs = plan.currentConfig?.floors ?? [plan.currentConfig];
-    const previousFloorHeight = plan.currentFloorHeight;
-    const normalizePartsAtFloor = (parts, floorConfig) => {
-      const floorHeight = Number(floorConfig?.z0 ?? 0);
-      plan.currentFloorHeight = floorHeight;
-      try {
-        return plan.normalizeParts(parts);
-      } finally {
-        plan.currentFloorHeight = previousFloorHeight;
-      }
-    };
     const rooms = floorConfigs.flatMap((floorConfig) =>
       (floorConfig?.rooms ?? []).flatMap((definition) => {
         try {
@@ -5749,31 +5775,9 @@ const FloorPlanFacades = {
           const defaultWallHeight = Number.isFinite(nextFloorZ0)
             ? Math.min(Math.max(0, nextFloorZ0 - floorZ0), wallMaxHeight)
             : wallMaxHeight;
-          const parts = definition.parts?.length
-            ? normalizePartsAtFloor(definition.parts, floorConfig)
-            : null;
-          const geometry = parts?.length
-            ? {
-                x: Math.min(...parts.map((part) => part.x)),
-                y: Math.min(...parts.map((part) => part.y)),
-                w:
-                  Math.max(...parts.map((part) => part.x + part.w)) -
-                  Math.min(...parts.map((part) => part.x)),
-                l:
-                  Math.max(...parts.map((part) => part.y + part.l)) -
-                  Math.min(...parts.map((part) => part.y)),
-                z0: Math.min(...parts.map((part) => part.z0)),
-                z1: Math.max(...parts.map((part) => part.z1)),
-              }
-            : (() => {
-                const floorHeight = Number(floorConfig?.z0 ?? 0);
-                plan.currentFloorHeight = floorHeight;
-                try {
-                  return plan.normalizeGeometry(definition);
-                } finally {
-                  plan.currentFloorHeight = previousFloorHeight;
-                }
-              })();
+          const resolved = plan.getRoomGeometry(definition.id);
+          const parts = definition.parts?.length ? resolved.normalizedParts : null;
+          const geometry = resolved.nominalGeometry;
           const facadeGeometry =
             geometry.z1 > geometry.z0
               ? geometry
@@ -7663,24 +7667,12 @@ const FloorPlanFacades3D = {
         const defaultHeight = Number.isFinite(nextZ0)
           ? Math.min(Math.max(0, nextZ0 - floorZ0), wallMaxHeight)
           : wallMaxHeight;
-        const partReferences = [...(reference.partReferences?.values() ?? [])];
-        const partValues = (method) =>
-          partReferences
-            .map((part) => Number(part[method]()))
-            .filter(Number.isFinite);
-        const partX0 = partValues("x0");
-        const partX1 = partValues("x1");
-        const partY0 = partValues("y0");
-        const partY1 = partValues("y1");
-        const partZ0 = partValues("z0");
-        const partZ1 = partValues("z1");
-        const x0 = partX0.length ? Math.min(...partX0) : Number(reference.x0());
-        const x1 = partX1.length ? Math.max(...partX1) : Number(reference.x1());
-        const y0 = partY0.length ? Math.min(...partY0) : Number(reference.y0());
-        const y1 = partY1.length ? Math.max(...partY1) : Number(reference.y1());
-        const hasPartElevation = partZ0.length > 0 && partZ1.length > 0;
-        const z0 = hasPartElevation ? Math.min(...partZ0) : floorZ0;
-        const z1 = hasPartElevation ? Math.max(...partZ1) : z0;
+        const nominal = reference.nominalGeometry;
+        const x0 = nominal.x, x1 = nominal.x + nominal.w;
+        const y0 = nominal.y, y1 = nominal.y + nominal.l;
+        // Keep the renderer's legacy floor-level fallback for simple rooms.
+        const z0 = definition?.parts?.length ? nominal.z0 : floorZ0;
+        const z1 = definition?.parts?.length ? nominal.z1 : z0;
         const facadeZ1 = z1 > z0 ? z1 : z0 + defaultHeight;
         return {
           ...reference,
@@ -7699,29 +7691,14 @@ const FloorPlanFacades3D = {
     const stairLandings = [];
     floors.filter((floor) => !plan.visibleFloor || floor === plan.visibleFloor).forEach((floor) => {
       (floor?.rooms ?? []).forEach((definition) => {
-        if (isStairFlight(definition)) {
-          const part = plan.normalizeGeometryAtFloor(definition, floor);
-          stairFlights.push({ ...part, stairGradient: FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), [part]) });
-        }
-        if (String(definition.classes || "").split(/\s+/).includes("stair-landing")) {
-          const part = plan.normalizeGeometryAtFloor(definition, floor);
-          stairLandings.push({ ...part, stairGradient: FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), [part]) });
-        }
-        if (!Array.isArray(definition.parts)) return;
-        const previousHeight = plan.currentFloorHeight;
-        plan.currentFloorHeight = Number(floor?.z0 ?? 0);
-        try {
-          const parts = plan.normalizeParts(definition.parts);
-          const stairParts = parts.filter((part) => isStairFlight(part) ||
-            String(part.classes || "").split(/\s+/).includes("stair-landing"));
-          const range = FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), stairParts);
-          stairFlights.push(...parts.filter(isStairFlight).map((part) => ({ ...part, stairGradient: range })));
-          stairLandings.push(...parts.filter((part) =>
-            String(part.classes || "").split(/\s+/).includes("stair-landing"),
-          ).map((part) => ({ ...part, stairGradient: range })));
-        } finally {
-          plan.currentFloorHeight = previousHeight;
-        }
+        const parts = plan.getRoomGeometry(definition.id).normalizedParts;
+        const stairParts = parts.filter((part) => isStairFlight(part) ||
+          String(part.classes || "").split(/\s+/).includes("stair-landing"));
+        const range = FloorPlanGeometry.stairGradientRange(Number(floor.z0 ?? 0), stairParts);
+        stairFlights.push(...stairParts.filter(isStairFlight).map((part) => ({ ...part, stairGradient: range })));
+        stairLandings.push(...stairParts.filter((part) =>
+          String(part.classes || "").split(/\s+/).includes("stair-landing"),
+        ).map((part) => ({ ...part, stairGradient: range })));
       });
     });
 
@@ -10817,6 +10794,12 @@ const FloorPlanReferences = {
       area: () => plan.getRoomGeometry(id).area(),
       wallState: (side) => plan.getRoomGeometry(id).wallState(side),
       hasWall: (side) => plan.getRoomGeometry(id).hasWall(side),
+      get normalizedParts() {
+        return plan.getRoomGeometry(id).normalizedParts;
+      },
+      get nominalGeometry() {
+        return plan.getRoomGeometry(id).nominalGeometry;
+      },
       get geometryParts() {
         return plan.getRoomGeometry(id).geometryParts;
       },
@@ -10851,23 +10834,8 @@ const FloorPlanReferences = {
         }
       };
       parts.forEach((part, index) => {
-        const reference = {
-          x0: () => geometryAt(index).x,
-          x1: () => geometryAt(index).x + geometryAt(index).w,
-          xc: () => geometryAt(index).x + geometryAt(index).w / 2,
-          y0: () => geometryAt(index).y,
-          y1: () => geometryAt(index).y + geometryAt(index).l,
-          yc: () => geometryAt(index).y + geometryAt(index).l / 2,
-          z0: () => geometryAt(index).z0,
-          z1: () => geometryAt(index).z1,
-          zc: () => (geometryAt(index).z0 + geometryAt(index).z1) / 2,
-          h: () => geometryAt(index).h,
-          w: () => geometryAt(index).w,
-          l: () => geometryAt(index).l,
-          area: () => geometryAt(index).w * geometryAt(index).l,
-        };
         const id = part.id || `part-${index + 1}`;
-        FloorPlanGeometryBox.attach(reference, { label: id });
+        const reference = FloorPlanGeometryBox.fromGeometry(() => geometryAt(index), { label: id });
         localReferences.set(id, reference);
       });
       return parts.map((_, index) => geometryAt(index));
@@ -10899,69 +10867,21 @@ const FloorPlanReferences = {
       const room = plan.roomDefinitions.get(id);
       const owningFloor = plan.roomFloorConfigs?.get(id);
       if (owningFloor) plan.currentFloorHeight = Number(owningFloor.z0 ?? 0);
-      const parts = room.parts?.length
-        ? plan.normalizeParts(room.parts)
-        : undefined;
-      const geometry = parts?.length
-        ? {
-            x: Math.min(...parts.map((part) => part.x)),
-            y: Math.min(...parts.map((part) => part.y)),
-            w:
-              Math.max(...parts.map((part) => part.x + part.w)) -
-              Math.min(...parts.map((part) => part.x)),
-            l:
-              Math.max(...parts.map((part) => part.y + part.l)) -
-              Math.min(...parts.map((part) => part.y)),
-          }
-        : plan.normalizeGeometry(room);
+      const { normalizedParts, nominalGeometry } = FloorPlanGeometryDomain.normalizeRoomGeometry(plan, room);
+      const compound = Boolean(room.parts?.length);
       const walls = plan.normalizeWalls(room.walls);
-      const reference = {
-        x0: () => geometry.x,
-        x1: () => geometry.x + geometry.w,
-        xc: () => geometry.x + geometry.w / 2,
-        y0: () => geometry.y,
-        y1: () => geometry.y + geometry.l,
-        yc: () => geometry.y + geometry.l / 2,
-        z0: () => geometry.z0,
-        z1: () => geometry.z1,
-        zc: () => (geometry.z0 + geometry.z1) / 2,
-        h: () => geometry.h,
-        w: () => geometry.w,
-        l: () => geometry.l,
-        area: () =>
-          parts?.length
-            ? parts.reduce((total, part) => total + part.w * part.l, 0)
-            : geometry.w * geometry.l,
+      const reference = FloorPlanGeometryBox.fromGeometry(nominalGeometry, { compound, label: id });
+      Object.assign(reference, {
+        nominalGeometry,
+        normalizedParts,
+        // Compatibility projection: analyses still expect axis-aligned XY parts.
+        geometryParts: normalizedParts.map(({ x, y, w, l }) => ({ x, y, w, l })),
+        area: () => normalizedParts.reduce((total, part) => total + part.w * part.l, 0),
         wallState: (side) => walls[side],
         hasWall: (side) => walls[side] === "solid",
-        geometryParts: parts?.length
-          ? parts.map(({ x, y, w, l }) => ({ x, y, w, l }))
-          : [{ x: geometry.x, y: geometry.y, w: geometry.w, l: geometry.l }],
-        partReferences: new Map(
-          (parts ?? []).map((part) => {
-            const reference = {
-              x0: () => part.x,
-              x1: () => part.x + part.w,
-              xc: () => part.x + part.w / 2,
-              y0: () => part.y,
-              y1: () => part.y + part.l,
-              yc: () => part.y + part.l / 2,
-              z0: () => part.z0,
-              z1: () => part.z1,
-              zc: () => (part.z0 + part.z1) / 2,
-              h: () => part.h,
-              w: () => part.w,
-              l: () => part.l,
-              area: () => part.w * part.l,
-            };
-            FloorPlanGeometryBox.attach(reference, { label: part.id });
-            return [part.id, reference];
-          }),
-        ),
-      };
-      FloorPlanGeometryBox.attach(reference, {
-        compound: Boolean(parts?.length),
-        label: id,
+        partReferences: new Map(compound ? normalizedParts.map((part) => [part.id,
+          FloorPlanGeometryBox.fromGeometry(part, { label: part.id }),
+        ]) : []),
       });
       plan.roomGeometryCache.set(id, reference);
       return reference;
@@ -12737,6 +12657,22 @@ const stairAxisFor = (data, width, length) => {
 };
 
 const FloorPlanGeometryDomain = {
+  normalizeRoomGeometry(plan, room) {
+    const compound = Boolean(room.parts?.length);
+    const parts = compound ? plan.normalizeParts(room.parts) : [plan.normalizeGeometry(room)];
+    const floor = plan.roomFloorConfigs?.get(room.id);
+    const normalizedParts = parts.map((part) => ({
+      ...part,
+      id: part.id ?? room.id,
+      ownerId: room.id,
+      floorId: floor?.id ?? plan.currentFloorId ?? null,
+    }));
+    return {
+      normalizedParts,
+      nominalGeometry: compound ? FloorPlanGeometryBox.envelope(normalizedParts) : normalizedParts[0],
+    };
+  },
+
   normalizeGeometryAtFloor(plan, data, floorConfig) {
     const previousHeight = plan.currentFloorHeight;
     plan.currentFloorHeight = Number(floorConfig?.z0 ?? 0);
@@ -13331,34 +13267,26 @@ const FloorPlanDom = {
   addRoom(plan, room) {
     const derived = room.derived === true;
     const { container = plan.root } = room;
-    const parts = room.parts?.length
-      ? plan.normalizeParts(room.parts)
-      : undefined;
+    const resolved = !derived && plan.roomDefinitions?.get(room.id) === room
+      ? plan.getRoomGeometry(room.id)
+      : FloorPlanGeometryDomain.normalizeRoomGeometry(plan, room);
+    const parts = room.parts?.length ? resolved.normalizedParts : undefined;
     const stairParts = parts?.filter((part) => String(part.classes ?? "").split(/\s+/)
       .some((name) => ["stair-flight", "stair-landing"].includes(name))) ?? [];
     const sourceFloor = plan.roomFloorConfigs?.get(room.id);
     const stairGradient = stairParts.length ? FloorPlanGeometry.stairGradientRange(
       Number(sourceFloor?.z0 ?? plan.currentFloorHeight), stairParts) : null;
-    const geometry = parts?.length
-      ? {
-          x: Math.min(...parts.map((part) => part.x)),
-          y: Math.min(...parts.map((part) => part.y)),
-          w:
-            Math.max(...parts.map((part) => part.x + part.w)) -
-            Math.min(...parts.map((part) => part.x)),
-          l:
-            Math.max(...parts.map((part) => part.y + part.l)) -
-            Math.min(...parts.map((part) => part.y)),
-        }
-      : {};
+    const geometry = resolved.nominalGeometry;
     const roomData = parts?.length
       ? {
           ...room,
-          pos: [geometry.x, geometry.y],
-          size: [geometry.w, geometry.l],
+          pos: [geometry.x, geometry.y, geometry.z0],
+          size: [geometry.w, geometry.l, geometry.h],
         }
       : room;
     const element = plan.add({ ...roomData, room: true, container });
+    element.normalizedParts = resolved.normalizedParts;
+    element.nominalGeometry = resolved.nominalGeometry;
     if (derived) {
       element.dataset.derived = "true";
       if (room.classes?.split(/\s+/).includes("stair-flight"))
@@ -13397,29 +13325,9 @@ const FloorPlanDom = {
         compound: true,
         label: room.id || room.label || "room",
       });
-      element.partReferences = new Map(
-        parts.map((part) => [
-          part.id,
-          {
-            x0: () => part.x,
-            x1: () => part.x + part.w,
-            xc: () => part.x + part.w / 2,
-            y0: () => part.y,
-            y1: () => part.y + part.l,
-            yc: () => part.y + part.l / 2,
-            z0: () => part.z0,
-            z1: () => part.z1,
-            zc: () => (part.z0 + part.z1) / 2,
-            h: () => part.h,
-            w: () => part.w,
-            l: () => part.l,
-            area: () => part.w * part.l,
-          },
-        ]),
-      );
-      element.partReferences.forEach((reference, partId) =>
-        FloorPlanGeometryBox.attach(reference, { label: partId }),
-      );
+      element.partReferences = new Map(parts.map((part) => [part.id,
+        FloorPlanGeometryBox.fromGeometry(part, { label: part.id }),
+      ]));
       parts.forEach((part) => {
         const partElement = document.createElement("div");
         const partClasses = part.classes || room.classes || "";
@@ -13441,17 +13349,7 @@ const FloorPlanDom = {
         partElement.style.setProperty("--z0", part.z0);
         partElement.style.setProperty("--z1", part.z1);
         partElement.style.setProperty("--h", part.h);
-        partElement.x0 = () => Number(part.x);
-        partElement.x1 = () => Number(part.x) + Number(part.w);
-        partElement.y0 = () => Number(part.y);
-        partElement.y1 = () => Number(part.y) + Number(part.l);
-        partElement.z0 = () => Number(part.z0);
-        partElement.z1 = () => Number(part.z1);
-        partElement.w = () => Number(part.w);
-        partElement.l = () => Number(part.l);
-        partElement.h = () => Number(part.h);
-        partElement.area = () => Number(part.w) * Number(part.l);
-        FloorPlanGeometryBox.attach(partElement, { label: part.id });
+        Object.assign(partElement, FloorPlanGeometryBox.fromGeometry(part, { label: part.id }));
         const partColor = part.color ?? room.color;
         if (partColor)
           partElement.style.backgroundColor = plan.themeFillColor(partColor);

@@ -48,8 +48,8 @@ Análises futuras devem receber dados de domínio e retornar resultados sem alte
 
 ## Limitações conhecidas — não consolidar como contrato desejado
 
-1. `getRoomGeometry()` mantém x/y/w/l no envelope composto, mas não agrega sua elevação; seus acessores Z podem devolver `undefined`/`NaN`. As referências individuais das partes preservam cotas válidas. Não usar o Z desse envelope como volume físico.
-2. `geometryParts` de ambientes é frequentemente uma projeção com apenas x/y/w/l; outros consumidores acrescentam metadados diferentes. Ainda não existe um contrato único de partes físicas completas.
+1. **Resolvido na consolidação de partes:** `getRoomGeometry()` agora agrega cotas do envelope composto a partir das partes. Antes, seus acessores Z podiam devolver `undefined`/`NaN`. O envelope continua nominal e pode conter vazios; não equivale ao volume físico ocupado.
+2. `geometryParts` de ambientes permanece como projeção de compatibilidade com x/y/w/l; outros consumidores acrescentam metadados de apresentação. As partes nominais completas agora estão em `normalizedParts`, conforme a entrega descrita abaixo; ainda não representam sólidos físicos recortados ou transformados.
 3. `area()` de um composto soma áreas das partes; não garante união sem dupla contagem quando elas se sobrepõem. Não mudar esse significado durante uma extração sem identificar os consumidores.
 4. Rotação normalizada não produz automaticamente polígono físico ou envelope rotacionado. `bounds()` não garante essa transformação.
 5. Cálculo de `comfortAreas` ainda ocorre na renderização e pode ser pulado por configuração de exibição. Separar cálculo e desenho será uma entrega posterior.
@@ -102,3 +102,26 @@ Validação: 232 testes aprovados, incluindo cinco novos testes em `test/roof-ge
 Build executado e conteúdo do módulo confirmado no distribuível. Inspeção visual da versão modular e portátil no navegador integrado em viewport de 1280 × 720 pixels: carregamento com zero erros do projeto, seleção do pavimento superior e de todos os pisos, telhados, altura livre, perspectiva e elevações. Nenhum erro JavaScript registrado no console durante essas verificações.
 
 Próxima entrega: centralizar as partes e os limites dos objetos normalizados, preservando suas cotas e reduzindo reconstruções nos renderizadores.
+
+### Partes e limites dos ambientes consolidados
+
+`FloorPlanGeometryDomain.normalizeRoomGeometry()` centraliza as partes nominais completas dos ambientes. Cada parte preserva sua geometria resolvida, rotação, classes e parâmetros de escada, com `id`, `ownerId` e `floorId`. O resultado é armazenado em `getRoomGeometry()` como:
+
+- `normalizedParts`: partes completas; ambientes simples têm uma parte.
+- `nominalGeometry`: geometria simples ou envelope agregado de um composto.
+- `geometryParts`: projeção XY de compatibilidade, mantida com seu formato anterior.
+- `partReferences`: acessores das partes dos compostos, mantidos para fórmulas existentes.
+
+`FloorPlanGeometryBox.envelope()` calcula os extremos nominais XYZ; `fromGeometry()` concentra os acessores retangulares e permite entrada preguiçosa para referências adiantadas. A rotação permanece declarada na parte: o envelope não aplica transformação física.
+
+Referências de ambientes, planta, fachadas e perspectiva passam a consumir as partes do cache de domínio. O 3D utiliza as mesmas partes para lances e patamares, sem nova normalização. Objetos temporários/derivados na planta usam o mesmo normalizador sem substituir a definição original no cache. As projeções com elementos HTML continuam separadas dos dados completos de domínio.
+
+Correção funcional intencional: ambientes compostos agora devolvem `z0`, `z1` e `h` válidos, usando o mínimo e máximo das cotas das partes. Essa limitação estava registrada na auditoria. Os envoltórios compostos no DOM recebem essas mesmas cotas. A área continua sendo a soma das partes, e o pedido de geometria prismática exata de um composto continua sendo rejeitado. As alturas padrão usadas apenas para apresentação permanecem nos renderizadores.
+
+Validação: 237 testes aprovados. Cinco novos testes verificam envelope com cotas distintas/negativas, referências preguiçosas, metadados completos e projeção XY preservada, reutilização do cache e ambiente simples com altura nominal zero. O teste existente de composto passou a exigir cotas agregadas válidas. A comparação numérica dos projetos principal e transversal preservou superfícies de cobertura, limites de paredes e métricas de exportação com tolerância de 1e-9; os metadados internos das bases foram excluídos dessa comparação porque o contrato ganhou os novos campos.
+
+Build concluído e conteúdo dos módulos confirmado no distribuível. Verificação no navegador integrado em 1280 × 720 pixels: versões modular e portátil carregaram com zero erros do projeto; conferidos escada em planta, troca para o pavimento superior, todos os pisos, perspectiva e elevações, sem erros JavaScript no console. Não houve comparação automatizada de imagens.
+
+Escopo desta entrega: ambientes simples/compostos e suas partes. Móveis continuam usando a normalização existente; a geração de acessórios e coleta de lajes ainda serão separadas de seus módulos visuais. Não foi introduzida uma API geral de volumes físicos nem cache incremental por edição.
+
+Próxima entrega: explicitar o contexto da resolução geométrica, reduzindo as mudanças temporárias de pavimento e de política de referências sem alterar as fórmulas existentes.

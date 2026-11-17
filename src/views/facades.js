@@ -46,16 +46,6 @@ const FloorPlanFacades = {
         getComputedStyle(plan.root).getPropertyValue("--m"),
       ) || 56;
     const floorConfigs = plan.currentConfig?.floors ?? [plan.currentConfig];
-    const previousFloorHeight = plan.currentFloorHeight;
-    const normalizePartsAtFloor = (parts, floorConfig) => {
-      const floorHeight = Number(floorConfig?.z0 ?? 0);
-      plan.currentFloorHeight = floorHeight;
-      try {
-        return plan.normalizeParts(parts);
-      } finally {
-        plan.currentFloorHeight = previousFloorHeight;
-      }
-    };
     const rooms = floorConfigs.flatMap((floorConfig) =>
       (floorConfig?.rooms ?? []).flatMap((definition) => {
         try {
@@ -66,31 +56,9 @@ const FloorPlanFacades = {
           const defaultWallHeight = Number.isFinite(nextFloorZ0)
             ? Math.min(Math.max(0, nextFloorZ0 - floorZ0), wallMaxHeight)
             : wallMaxHeight;
-          const parts = definition.parts?.length
-            ? normalizePartsAtFloor(definition.parts, floorConfig)
-            : null;
-          const geometry = parts?.length
-            ? {
-                x: Math.min(...parts.map((part) => part.x)),
-                y: Math.min(...parts.map((part) => part.y)),
-                w:
-                  Math.max(...parts.map((part) => part.x + part.w)) -
-                  Math.min(...parts.map((part) => part.x)),
-                l:
-                  Math.max(...parts.map((part) => part.y + part.l)) -
-                  Math.min(...parts.map((part) => part.y)),
-                z0: Math.min(...parts.map((part) => part.z0)),
-                z1: Math.max(...parts.map((part) => part.z1)),
-              }
-            : (() => {
-                const floorHeight = Number(floorConfig?.z0 ?? 0);
-                plan.currentFloorHeight = floorHeight;
-                try {
-                  return plan.normalizeGeometry(definition);
-                } finally {
-                  plan.currentFloorHeight = previousFloorHeight;
-                }
-              })();
+          const resolved = plan.getRoomGeometry(definition.id);
+          const parts = definition.parts?.length ? resolved.normalizedParts : null;
+          const geometry = resolved.nominalGeometry;
           const facadeGeometry =
             geometry.z1 > geometry.z0
               ? geometry

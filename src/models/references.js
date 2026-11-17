@@ -627,6 +627,12 @@ const FloorPlanReferences = {
       area: () => plan.getRoomGeometry(id).area(),
       wallState: (side) => plan.getRoomGeometry(id).wallState(side),
       hasWall: (side) => plan.getRoomGeometry(id).hasWall(side),
+      get normalizedParts() {
+        return plan.getRoomGeometry(id).normalizedParts;
+      },
+      get nominalGeometry() {
+        return plan.getRoomGeometry(id).nominalGeometry;
+      },
       get geometryParts() {
         return plan.getRoomGeometry(id).geometryParts;
       },
@@ -661,23 +667,8 @@ const FloorPlanReferences = {
         }
       };
       parts.forEach((part, index) => {
-        const reference = {
-          x0: () => geometryAt(index).x,
-          x1: () => geometryAt(index).x + geometryAt(index).w,
-          xc: () => geometryAt(index).x + geometryAt(index).w / 2,
-          y0: () => geometryAt(index).y,
-          y1: () => geometryAt(index).y + geometryAt(index).l,
-          yc: () => geometryAt(index).y + geometryAt(index).l / 2,
-          z0: () => geometryAt(index).z0,
-          z1: () => geometryAt(index).z1,
-          zc: () => (geometryAt(index).z0 + geometryAt(index).z1) / 2,
-          h: () => geometryAt(index).h,
-          w: () => geometryAt(index).w,
-          l: () => geometryAt(index).l,
-          area: () => geometryAt(index).w * geometryAt(index).l,
-        };
         const id = part.id || `part-${index + 1}`;
-        FloorPlanGeometryBox.attach(reference, { label: id });
+        const reference = FloorPlanGeometryBox.fromGeometry(() => geometryAt(index), { label: id });
         localReferences.set(id, reference);
       });
       return parts.map((_, index) => geometryAt(index));
@@ -709,69 +700,21 @@ const FloorPlanReferences = {
       const room = plan.roomDefinitions.get(id);
       const owningFloor = plan.roomFloorConfigs?.get(id);
       if (owningFloor) plan.currentFloorHeight = Number(owningFloor.z0 ?? 0);
-      const parts = room.parts?.length
-        ? plan.normalizeParts(room.parts)
-        : undefined;
-      const geometry = parts?.length
-        ? {
-            x: Math.min(...parts.map((part) => part.x)),
-            y: Math.min(...parts.map((part) => part.y)),
-            w:
-              Math.max(...parts.map((part) => part.x + part.w)) -
-              Math.min(...parts.map((part) => part.x)),
-            l:
-              Math.max(...parts.map((part) => part.y + part.l)) -
-              Math.min(...parts.map((part) => part.y)),
-          }
-        : plan.normalizeGeometry(room);
+      const { normalizedParts, nominalGeometry } = FloorPlanGeometryDomain.normalizeRoomGeometry(plan, room);
+      const compound = Boolean(room.parts?.length);
       const walls = plan.normalizeWalls(room.walls);
-      const reference = {
-        x0: () => geometry.x,
-        x1: () => geometry.x + geometry.w,
-        xc: () => geometry.x + geometry.w / 2,
-        y0: () => geometry.y,
-        y1: () => geometry.y + geometry.l,
-        yc: () => geometry.y + geometry.l / 2,
-        z0: () => geometry.z0,
-        z1: () => geometry.z1,
-        zc: () => (geometry.z0 + geometry.z1) / 2,
-        h: () => geometry.h,
-        w: () => geometry.w,
-        l: () => geometry.l,
-        area: () =>
-          parts?.length
-            ? parts.reduce((total, part) => total + part.w * part.l, 0)
-            : geometry.w * geometry.l,
+      const reference = FloorPlanGeometryBox.fromGeometry(nominalGeometry, { compound, label: id });
+      Object.assign(reference, {
+        nominalGeometry,
+        normalizedParts,
+        // Compatibility projection: analyses still expect axis-aligned XY parts.
+        geometryParts: normalizedParts.map(({ x, y, w, l }) => ({ x, y, w, l })),
+        area: () => normalizedParts.reduce((total, part) => total + part.w * part.l, 0),
         wallState: (side) => walls[side],
         hasWall: (side) => walls[side] === "solid",
-        geometryParts: parts?.length
-          ? parts.map(({ x, y, w, l }) => ({ x, y, w, l }))
-          : [{ x: geometry.x, y: geometry.y, w: geometry.w, l: geometry.l }],
-        partReferences: new Map(
-          (parts ?? []).map((part) => {
-            const reference = {
-              x0: () => part.x,
-              x1: () => part.x + part.w,
-              xc: () => part.x + part.w / 2,
-              y0: () => part.y,
-              y1: () => part.y + part.l,
-              yc: () => part.y + part.l / 2,
-              z0: () => part.z0,
-              z1: () => part.z1,
-              zc: () => (part.z0 + part.z1) / 2,
-              h: () => part.h,
-              w: () => part.w,
-              l: () => part.l,
-              area: () => part.w * part.l,
-            };
-            FloorPlanGeometryBox.attach(reference, { label: part.id });
-            return [part.id, reference];
-          }),
-        ),
-      };
-      FloorPlanGeometryBox.attach(reference, {
-        compound: Boolean(parts?.length),
-        label: id,
+        partReferences: new Map(compound ? normalizedParts.map((part) => [part.id,
+          FloorPlanGeometryBox.fromGeometry(part, { label: part.id }),
+        ]) : []),
       });
       plan.roomGeometryCache.set(id, reference);
       return reference;

@@ -42,6 +42,7 @@ test("compound references preserve each part elevation and distinguish envelope 
   const room = plan.getRoomGeometry("compound");
   close(room.bounds().w(), 3);
   close(room.bounds().l(), 2);
+  assert.deepEqual([room.z0(), room.z1(), room.h(), room.bounds().zc()], [2, 5, 3, 3.5]);
   close(room.area(), 4);
   assert.throws(() => room.geometry(), /compound object/);
   const low = room.partReferences.get("low");
@@ -51,6 +52,50 @@ test("compound references preserve each part elevation and distinguish envelope 
   close(plan.resolve("compound.high.z0"), 5);
   close(plan.resolve("low.z1"), 3);
   assert.equal(plan.currentFloorHeight, 0);
+});
+
+test("canonical room parts retain ownership, elevation and orientation without changing the XY compatibility projection", () => {
+  const source = fixture();
+  Object.assign(source.floors[0].rooms[1].parts[0], {
+    rotation: 90, classes: "stair-flight", risers: 7,
+  });
+  const original = structuredClone(source);
+  const plan = prepare(source);
+  const room = plan.getRoomGeometry("compound");
+  const low = room.normalizedParts[0];
+  assert.deepEqual([low.id, low.ownerId, low.floorId, low.z0, low.z1, low.rotation,
+    low.classes, low.risers], ["low", "compound", "ground", 2, 3, 90, "stair-flight", 7]);
+  assert.deepEqual(room.geometryParts, [
+    { x: 0, y: 5, w: 2, l: 1 }, { x: 2, y: 5, w: 1, l: 2 },
+  ]);
+  const lazy = plan.roomReferences.get("compound");
+  assert.equal(lazy.normalizedParts, room.normalizedParts);
+  assert.equal(lazy.nominalGeometry, room.nominalGeometry);
+  assert.deepEqual(source, original);
+});
+
+test("cached room consumers reuse resolved parts without another normalization pass", () => {
+  const plan = prepare(fixture());
+  const expected = plan.getRoomGeometry("compound");
+  plan.normalizeParts = () => assert.fail("cached parts must not be normalized again");
+  plan.normalizeGeometry = () => assert.fail("cached geometry must not be normalized again");
+  const reference = plan.roomReferences.get("compound");
+  assert.equal(plan.getRoomGeometry("compound"), expected);
+  assert.equal(reference.normalizedParts, expected.normalizedParts);
+  close(reference.z1(), 5);
+  close(reference.partReferences.get("low").z1(), 3);
+});
+
+test("simple rooms retain their declared height and get a complete floor-scoped part", () => {
+  const plan = prepare(fixture());
+  const room = plan.getRoomGeometry("room");
+  assert.deepEqual([room.z0(), room.z1(), room.h()], [2, 2, 0]);
+  assert.equal(room.partReferences.size, 0);
+  assert.equal(room.normalizedParts.length, 1);
+  const [part] = room.normalizedParts;
+  assert.deepEqual([part.id, part.ownerId, part.floorId, part.z0, part.z1, part.h],
+    ["room", "room", "ground", 2, 2, 0]);
+  close(room.geometry().area(), 12);
 });
 
 test("rotation preserves nominal coordinates and dimensions instead of expanding their rectangle", () => {
