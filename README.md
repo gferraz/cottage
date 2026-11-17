@@ -1,5 +1,7 @@
 # Floor Plan
 
+[Abrir a aplicação](https://gferraz.github.io/cottage/)
+
 Aplicação estática para desenhar plantas baixas com HTML, CSS e JSON. Não exige banco de dados, servidor, Python ou processo de build.
 
 ## Abrir e carregar uma planta
