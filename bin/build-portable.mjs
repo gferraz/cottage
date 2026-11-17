@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const sourcePath = resolve(projectRoot, "floor-plan.html");
-const outputPath = resolve(projectRoot, "dist/floor-plan.html");
+const outputPath = resolve(projectRoot, "dist/index.html");
 const source = await readFile(sourcePath, "utf8");
 
 const localPath = (url) => url.split("?", 1)[0];
