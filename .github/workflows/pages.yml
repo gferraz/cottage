@@ -17,13 +17,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Obter código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Configurar Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
       - name: Executar testes
-        run: node --test test/
+        run: node --test test/*.test.js
       - name: Gerar distribuível
         run: bin/build
       - name: Configurar Pages
