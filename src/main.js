@@ -65,6 +65,7 @@ class FloorPlan {
     this.currentFloorId = null;
     this.showAllFloors = false;
     this.currentFloorHeight = 0;
+    this.resolutionContext = null;
     this.currentSourceText = null;
     this.model = null;
     this.itemTypes = {};

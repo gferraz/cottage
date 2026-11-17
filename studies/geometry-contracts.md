@@ -125,3 +125,21 @@ Build concluído e conteúdo dos módulos confirmado no distribuível. Verifica�
 Escopo desta entrega: ambientes simples/compostos e suas partes. Móveis continuam usando a normalização existente; a geração de acessórios e coleta de lajes ainda serão separadas de seus módulos visuais. Não foi introduzida uma API geral de volumes físicos nem cache incremental por edição.
 
 Próxima entrega: explicitar o contexto da resolução geométrica, reduzindo as mudanças temporárias de pavimento e de política de referências sem alterar as fórmulas existentes.
+
+### Contexto de resolução explícito introduzido
+
+`FloorPlanGeometry.context()` e `inContext()` estabelecem um contexto com cota/pavimento, política de referências dos itens, cache de limites internos e escopos locais de partes. Os contextos têm propriedades imutáveis; os mapas de cache permanecem mutáveis durante a resolução. As fachadas de resolução compartilham os mapas do modelo e apontam diretamente para o mesmo proprietário, evitando cadeias de protótipos proporcionais à profundidade do cálculo.
+
+Normalização por pavimento, normalização de itens, resolução de acessórios, resolução de ambientes, partes, validação de pavimentos inativos e preparação das listas globais passaram a usar contextos separados. Esses caminhos não atribuem temporariamente valores a `currentFloorHeight`, `itemReferenceContext` ou `itemRoomBoundsCache` do chamador, nem fazem push/pop na pilha de partes do chamador. Os nomes antigos ficam disponíveis como leituras de compatibilidade nas fachadas.
+
+Limite da migração: referências preguiçosas antigas ainda guardam o resolvedor original em closures. `withReferenceContext()` transmite o contexto por um único ponteiro durante a leitura/chamada dessas referências, restaurando o descritor/valor anterior em `finally`. A ponte é estritamente síncrona e restrita a essa fronteira; não deve envolver renderização ou trabalho assíncrono. A remoção completa dessa ponte exige migrar as fábricas de referências para receber o contexto diretamente. Caches, detecção de recursão e mensagens existentes continuam compartilhados com o modelo.
+
+As fachadas de contexto destinam-se somente à resolução. Não são cópias independentes do projeto e não devem ser usadas para executar `load()`, trocar preferências ou publicar estado de apresentação. O estado de piso da interface e os caminhos de projeção/renderização que ainda fazem alterações temporárias serão tratados nas entregas seguintes.
+
+Validação: 243 testes aprovados. Seis novos testes verificam campos antigos protegidos contra escrita, pilha congelada, aninhamento de pavimentos com sucesso/falha, referências preguiçosas adiantadas a partes locais, restauração de descritor após erro em getter, falha de coleta em listas globais e fachadas sem cadeias de protótipos aninhadas. Comparação dos projetos principal e transversal preservou itens/acessórios, aberturas/janelas, partes normalizadas, coberturas, limites de paredes e métricas de exportação.
+
+Uma cadeia profunda de fachadas foi detectada durante a verificação e corrigida nesta entrega. Uma execução local do diagnóstico dos dois projetos caiu de aproximadamente 0,8 s para 0,24 s depois de achatar essa cadeia; isso é uma observação pontual, não um benchmark de desempenho da aplicação.
+
+Build concluído e conteúdo dos módulos confirmado no distribuível. Versões modular e portátil carregaram com zero erros do projeto. Após a correção da cadeia de fachadas, seleção do pavimento superior e de todos os pisos funcionou sem exceder o tempo de espera da automação; planta inspecionada no navegador integrado em 1280 × 720 pixels, sem erros JavaScript no console.
+
+Próxima entrega: separar as análises de camadas/sobreposições, deduções, altura livre e comunicações de sua apresentação no DOM, em incrementos pequenos.

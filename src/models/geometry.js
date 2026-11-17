@@ -1,39 +1,81 @@
 const FloorPlanGeometry = {
   itemDefinition: Symbol("item-definition"),
 
+  context(plan) {
+    return plan.resolutionContext ?? Object.freeze({
+      floorZ: plan.currentFloorHeight,
+      floorId: plan.currentFloorId ?? null,
+      itemReferences: Boolean(plan.itemReferenceContext),
+      roomBoundsCache: plan.itemRoomBoundsCache,
+      partScopes: plan.partReferenceStack ?? [],
+    });
+  },
+
+  // A synchronous resolution facade shares model maps, but never changes the
+  // caller's floor, reference policy or local scopes. Legacy method names stay
+  // readable while consumers migrate to the explicit context contract.
+  inContext(plan, overrides) {
+    const context = Object.freeze({ ...this.context(plan), ...overrides });
+    return Object.create(plan.resolutionOwner ?? plan, {
+      resolutionContext: { value: context },
+      resolutionOwner: { value: plan.resolutionOwner ?? plan },
+      currentFloorHeight: { value: context.floorZ },
+      currentFloorId: { value: context.floorId },
+      itemReferenceContext: { value: context.itemReferences },
+      itemRoomBoundsCache: { value: context.roomBoundsCache },
+      partReferenceStack: { value: context.partScopes },
+    });
+  },
+
+  // Existing lazy references close over the original plan. Bridge that legacy
+  // boundary with one context pointer, rather than mutating individual fields.
+  // Do not use this synchronous bridge for presentation or asynchronous work.
+  withReferenceContext(plan, context, calculate) {
+    const owner = plan.resolutionOwner ?? plan;
+    if (owner.resolutionContext === context) return calculate();
+    const descriptor = Object.getOwnPropertyDescriptor(owner, "resolutionContext");
+    if (descriptor?.writable) {
+      owner.resolutionContext = context;
+      try {
+        return calculate();
+      } finally {
+        owner.resolutionContext = descriptor.value;
+      }
+    }
+    Object.defineProperty(owner, "resolutionContext", { value: context, writable: true, configurable: true });
+    try {
+      return calculate();
+    } finally {
+      if (descriptor) Object.defineProperty(owner, "resolutionContext", descriptor);
+      else delete owner.resolutionContext;
+    }
+  },
+
   // Reference definitions must resolve in their own context, never in the
   // context of the item that happens to be reading them.
   referenceFor(plan, id, reference) {
     if (!reference) return reference;
-    const itemContext = plan.itemReferenceContext;
+    const context = this.context(plan);
+    const nominalContext = context.itemReferences
+      ? Object.freeze({ ...context, itemReferences: false }) : context;
     return new Proxy(reference, {
       get(target, key) {
-        const previousContext = plan.itemReferenceContext;
-        plan.itemReferenceContext = false;
-        let value;
-        try {
-          value = Reflect.get(target, key, target);
-        } finally {
-          plan.itemReferenceContext = previousContext;
-        }
+        const value = FloorPlanGeometry.withReferenceContext(plan,
+          nominalContext, () => Reflect.get(target, key, target));
         if (typeof value !== "function") return value;
         return (...args) => {
-          const previous = plan.itemReferenceContext;
-          plan.itemReferenceContext = false;
-          try {
-            if (itemContext && plan.roomDefinitions?.has(id) &&
-                ["x0", "x1", "xc", "y0", "y1", "yc", "w", "l", "area"].includes(key)) {
-              let bounds = plan.itemRoomBoundsCache?.get(id);
-              if (!bounds) {
-                bounds = FloorPlanWalls.itemRoomBounds(plan, id);
-                plan.itemRoomBoundsCache?.set(id, bounds);
-              }
-              return bounds[key]();
+          if (context.itemReferences && plan.roomDefinitions?.has(id) &&
+              ["x0", "x1", "xc", "y0", "y1", "yc", "w", "l", "area"].includes(key)) {
+            let bounds = context.roomBoundsCache?.get(id);
+            if (!bounds) {
+              const nominalPlan = FloorPlanGeometry.inContext(plan, { itemReferences: false });
+              bounds = FloorPlanWalls.itemRoomBounds(nominalPlan, id);
+              context.roomBoundsCache?.set(id, bounds);
             }
-            return value.apply(target, args);
-          } finally {
-            plan.itemReferenceContext = previous;
+            return bounds[key]();
           }
+          return FloorPlanGeometry.withReferenceContext(plan,
+            nominalContext, () => value.apply(target, args));
         };
       },
     });
@@ -139,7 +181,7 @@ const FloorPlanGeometry = {
     if (partMatch) {
       const [, roomId, partId, method, operator, amount] = partMatch;
       const room = FloorPlanGeometry.referenceFor(this, roomId,
-        this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId));
+        FloorPlanGeometry.context(this).partScopes.at(-1)?.get(roomId) || this.references.get(roomId));
       if (!room) {
         throw new Error(
           `Unknown room reference: ${roomId} in geometric expression "${reference}"`,
@@ -159,7 +201,7 @@ const FloorPlanGeometry = {
 
     const [, roomId, method, operator, amount] = match;
     const room = FloorPlanGeometry.referenceFor(this, roomId,
-      this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId));
+      FloorPlanGeometry.context(this).partScopes.at(-1)?.get(roomId) || this.references.get(roomId));
     if (!room) {
       throw new Error(
         `Unknown room reference: ${roomId} in geometric expression "${reference}"`,

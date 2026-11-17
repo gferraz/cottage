@@ -4719,39 +4719,81 @@ window.FloorPlanExport = FloorPlanExport;
 const FloorPlanGeometry = {
   itemDefinition: Symbol("item-definition"),
 
+  context(plan) {
+    return plan.resolutionContext ?? Object.freeze({
+      floorZ: plan.currentFloorHeight,
+      floorId: plan.currentFloorId ?? null,
+      itemReferences: Boolean(plan.itemReferenceContext),
+      roomBoundsCache: plan.itemRoomBoundsCache,
+      partScopes: plan.partReferenceStack ?? [],
+    });
+  },
+
+  // A synchronous resolution facade shares model maps, but never changes the
+  // caller's floor, reference policy or local scopes. Legacy method names stay
+  // readable while consumers migrate to the explicit context contract.
+  inContext(plan, overrides) {
+    const context = Object.freeze({ ...this.context(plan), ...overrides });
+    return Object.create(plan.resolutionOwner ?? plan, {
+      resolutionContext: { value: context },
+      resolutionOwner: { value: plan.resolutionOwner ?? plan },
+      currentFloorHeight: { value: context.floorZ },
+      currentFloorId: { value: context.floorId },
+      itemReferenceContext: { value: context.itemReferences },
+      itemRoomBoundsCache: { value: context.roomBoundsCache },
+      partReferenceStack: { value: context.partScopes },
+    });
+  },
+
+  // Existing lazy references close over the original plan. Bridge that legacy
+  // boundary with one context pointer, rather than mutating individual fields.
+  // Do not use this synchronous bridge for presentation or asynchronous work.
+  withReferenceContext(plan, context, calculate) {
+    const owner = plan.resolutionOwner ?? plan;
+    if (owner.resolutionContext === context) return calculate();
+    const descriptor = Object.getOwnPropertyDescriptor(owner, "resolutionContext");
+    if (descriptor?.writable) {
+      owner.resolutionContext = context;
+      try {
+        return calculate();
+      } finally {
+        owner.resolutionContext = descriptor.value;
+      }
+    }
+    Object.defineProperty(owner, "resolutionContext", { value: context, writable: true, configurable: true });
+    try {
+      return calculate();
+    } finally {
+      if (descriptor) Object.defineProperty(owner, "resolutionContext", descriptor);
+      else delete owner.resolutionContext;
+    }
+  },
+
   // Reference definitions must resolve in their own context, never in the
   // context of the item that happens to be reading them.
   referenceFor(plan, id, reference) {
     if (!reference) return reference;
-    const itemContext = plan.itemReferenceContext;
+    const context = this.context(plan);
+    const nominalContext = context.itemReferences
+      ? Object.freeze({ ...context, itemReferences: false }) : context;
     return new Proxy(reference, {
       get(target, key) {
-        const previousContext = plan.itemReferenceContext;
-        plan.itemReferenceContext = false;
-        let value;
-        try {
-          value = Reflect.get(target, key, target);
-        } finally {
-          plan.itemReferenceContext = previousContext;
-        }
+        const value = FloorPlanGeometry.withReferenceContext(plan,
+          nominalContext, () => Reflect.get(target, key, target));
         if (typeof value !== "function") return value;
         return (...args) => {
-          const previous = plan.itemReferenceContext;
-          plan.itemReferenceContext = false;
-          try {
-            if (itemContext && plan.roomDefinitions?.has(id) &&
-                ["x0", "x1", "xc", "y0", "y1", "yc", "w", "l", "area"].includes(key)) {
-              let bounds = plan.itemRoomBoundsCache?.get(id);
-              if (!bounds) {
-                bounds = FloorPlanWalls.itemRoomBounds(plan, id);
-                plan.itemRoomBoundsCache?.set(id, bounds);
-              }
-              return bounds[key]();
+          if (context.itemReferences && plan.roomDefinitions?.has(id) &&
+              ["x0", "x1", "xc", "y0", "y1", "yc", "w", "l", "area"].includes(key)) {
+            let bounds = context.roomBoundsCache?.get(id);
+            if (!bounds) {
+              const nominalPlan = FloorPlanGeometry.inContext(plan, { itemReferences: false });
+              bounds = FloorPlanWalls.itemRoomBounds(nominalPlan, id);
+              context.roomBoundsCache?.set(id, bounds);
             }
-            return value.apply(target, args);
-          } finally {
-            plan.itemReferenceContext = previous;
+            return bounds[key]();
           }
+          return FloorPlanGeometry.withReferenceContext(plan,
+            nominalContext, () => value.apply(target, args));
         };
       },
     });
@@ -4857,7 +4899,7 @@ const FloorPlanGeometry = {
     if (partMatch) {
       const [, roomId, partId, method, operator, amount] = partMatch;
       const room = FloorPlanGeometry.referenceFor(this, roomId,
-        this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId));
+        FloorPlanGeometry.context(this).partScopes.at(-1)?.get(roomId) || this.references.get(roomId));
       if (!room) {
         throw new Error(
           `Unknown room reference: ${roomId} in geometric expression "${reference}"`,
@@ -4877,7 +4919,7 @@ const FloorPlanGeometry = {
 
     const [, roomId, method, operator, amount] = match;
     const room = FloorPlanGeometry.referenceFor(this, roomId,
-      this.partReferenceStack.at(-1)?.get(roomId) || this.references.get(roomId));
+      FloorPlanGeometry.context(this).partScopes.at(-1)?.get(roomId) || this.references.get(roomId));
     if (!room) {
       throw new Error(
         `Unknown room reference: ${roomId} in geometric expression "${reference}"`,
@@ -10039,13 +10081,11 @@ const FloorPlanElements = {
   },
 
   resolveItemType(plan, item) {
-    const previous = plan.itemReferenceContext;
-    plan.itemReferenceContext = true;
-    try {
-      return this.resolveItemDefinition(plan, item);
-    } finally {
-      plan.itemReferenceContext = previous;
-    }
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      itemReferences: true,
+      roomBoundsCache: new Map(),
+    });
+    return this.resolveItemDefinition(scoped, item);
   },
 
   resolveItemDefinition(plan, item) {
@@ -10202,10 +10242,8 @@ const FloorPlanReferences = {
       plan.references.set(id, reference);
     });
     const floors = config.floors ?? [config];
-    const roomFloors = new Map();
     floors.forEach((floor) => {
       (floor.rooms ?? []).forEach((room) => {
-        roomFloors.set(room.id, floor);
         plan.roomFloorConfigs.set(room.id, floor);
       });
     });
@@ -10216,10 +10254,7 @@ const FloorPlanReferences = {
     FloorPlanReferences.registerStaticItemReferences(plan, config);
     FloorPlanReferences.registerWallReferences(plan, config);
     plan.registerRoofReferences(config);
-    const previousFloorHeight = plan.currentFloorHeight;
     plan.roomDefinitions.forEach((_room, id) => {
-      const floor = roomFloors.get(id) ?? floors[0];
-      plan.currentFloorHeight = Number(floor?.z0 ?? 0);
       try {
         plan.getRoomGeometry(id);
       } catch (error) {
@@ -10230,8 +10265,6 @@ const FloorPlanReferences = {
           opening: plan.roomDefinitions.get(id),
           message: error.message,
         });
-      } finally {
-        plan.currentFloorHeight = previousFloorHeight;
       }
     });
     FloorPlanWalls.normalizeRoomWalls(plan, config);
@@ -10339,13 +10372,13 @@ const FloorPlanReferences = {
         plan.resolve(toXValue, {
           x0: startX(),
           y0: startY(),
-          z0: plan.currentFloorHeight,
+          z0: FloorPlanGeometry.context(plan).floorZ,
         });
       const endpointY = () =>
         plan.resolve(toYValue, {
           x0: startX(),
           y0: startY(),
-          z0: plan.currentFloorHeight,
+          z0: FloorPlanGeometry.context(plan).floorZ,
         });
       plan.references.set(guide.id, {
         x0: startX,
@@ -10656,51 +10689,48 @@ const FloorPlanReferences = {
   validateInactiveFloorFeatures(plan, config, activeFloorIndex) {
     (config.floors ?? []).forEach((floorConfig, floorIndex) => {
       if (floorIndex === activeFloorIndex) return;
-      const previousFloorHeight = plan.currentFloorHeight;
-      plan.currentFloorHeight = Number(floorConfig.z0 ?? 0);
-      try {
-        (floorConfig.zones ?? []).forEach((zone, index) => {
-          try {
-            plan.normalizeGeometry(zone);
-          } catch (error) {
-            plan.errors.push({
-              index,
-              opening: zone,
-              category: "zone",
-              message: error.message,
-            });
-          }
-        });
-        (window.FloorPlanElements?.items(plan, floorConfig) ?? floorConfig.items ?? []).forEach((item, index) => {
-          try {
-            plan.normalizeGeometry(plan.resolveItemType(item));
-          } catch (error) {
-            plan.errors.push({
-              index,
-              opening: item,
-              category: "item",
-              message: error.message,
-            });
-          }
-        });
-        [
-          ...FloorPlanOpenings.forFloor(plan, floorConfig),
-        ].forEach((opening, index) => {
-          if (plan.isVerticalOpening(opening)) return;
-          try {
-            plan.normalizeOpening(opening);
-          } catch (error) {
-            plan.errors.push({
-              index,
-              opening,
-              category: opening.type === "door" ? "door" : opening.type === "window" ? "window" : "opening",
-              message: error.message,
-            });
-          }
-        });
-      } finally {
-        plan.currentFloorHeight = previousFloorHeight;
-      }
+      const scoped = FloorPlanGeometry.inContext(plan, {
+        floorZ: Number(floorConfig.z0 ?? 0), floorId: floorConfig.id ?? null,
+      });
+      (floorConfig.zones ?? []).forEach((zone, index) => {
+        try {
+          scoped.normalizeGeometry(zone);
+        } catch (error) {
+          scoped.errors.push({
+            index,
+            opening: zone,
+            category: "zone",
+            message: error.message,
+          });
+        }
+      });
+      (window.FloorPlanElements?.items(scoped, floorConfig) ?? floorConfig.items ?? []).forEach((item, index) => {
+        try {
+          scoped.normalizeGeometry(scoped.resolveItemType(item));
+        } catch (error) {
+          scoped.errors.push({
+            index,
+            opening: item,
+            category: "item",
+            message: error.message,
+          });
+        }
+      });
+      [
+        ...FloorPlanOpenings.forFloor(scoped, floorConfig),
+      ].forEach((opening, index) => {
+        if (scoped.isVerticalOpening(opening)) return;
+        try {
+          scoped.normalizeOpening(opening);
+        } catch (error) {
+          scoped.errors.push({
+            index,
+            opening,
+            category: opening.type === "door" ? "door" : opening.type === "window" ? "window" : "opening",
+            message: error.message,
+          });
+        }
+      });
     });
   },
 
@@ -10734,8 +10764,9 @@ const FloorPlanReferences = {
       });
     });
     floors.forEach((floorConfig) => {
-      const previousFloorHeight = plan.currentFloorHeight;
-      plan.currentFloorHeight = Number(floorConfig.z0 ?? 0);
+      const scoped = FloorPlanGeometry.inContext(plan, {
+        floorZ: Number(floorConfig.z0 ?? 0), floorId: floorConfig.id ?? null,
+      });
       (floorConfig.roofs ?? []).forEach((roof) => {
         plan.allRoofs.push({
           ...roof,
@@ -10743,10 +10774,10 @@ const FloorPlanReferences = {
           floorLabel: floorConfig.label,
         });
       });
-      (window.FloorPlanElements?.items(plan, floorConfig) ?? floorConfig.items ?? []).forEach((item) => {
+      (window.FloorPlanElements?.items(scoped, floorConfig) ?? floorConfig.items ?? []).forEach((item) => {
         try {
-          const resolvedItem = plan.resolveItemType(item);
-          const geometry = plan.normalizeGeometry(resolvedItem);
+          const resolvedItem = scoped.resolveItemType(item);
+          const geometry = scoped.normalizeGeometry(resolvedItem);
           plan.allItems.push({
             ...resolvedItem,
             ...geometry,
@@ -10757,10 +10788,10 @@ const FloorPlanReferences = {
           // The active-floor render path records the detailed error.
         }
       });
-      FloorPlanOpenings.forFloor(plan, floorConfig).forEach((opening) => {
-        if (plan.isVerticalOpening(opening)) return;
+      FloorPlanOpenings.forFloor(scoped, floorConfig).forEach((opening) => {
+        if (scoped.isVerticalOpening(opening)) return;
         try {
-          const feature = plan.normalizeOpening(opening);
+          const feature = scoped.normalizeOpening(opening);
           const target =
             feature.type === "window" ? plan.allWindows : plan.allOpenings;
           target.push({
@@ -10772,7 +10803,6 @@ const FloorPlanReferences = {
           // Validation and rendering record the error with its source data.
         }
       });
-      plan.currentFloorHeight = previousFloorHeight;
     });
   },
 
@@ -10816,32 +10846,30 @@ const FloorPlanReferences = {
 
   normalizeParts(plan, parts) {
     const localReferences = new Map();
-    plan.partReferenceStack.push(localReferences);
-    try {
-      const geometries = new Map();
-      const pending = new Set();
-      const geometryAt = (index) => {
-        if (geometries.has(index)) return geometries.get(index);
-        const part = parts[index];
-        if (pending.has(index)) throw new Error(`Referência circular entre partes: ${part.id || index + 1}`);
-        pending.add(index);
-        try {
-          const geometry = { ...plan.normalizeGeometry(part), id: part.id || `part-${index + 1}` };
-          geometries.set(index, geometry);
-          return geometry;
-        } finally {
-          pending.delete(index);
-        }
-      };
-      parts.forEach((part, index) => {
-        const id = part.id || `part-${index + 1}`;
-        const reference = FloorPlanGeometryBox.fromGeometry(() => geometryAt(index), { label: id });
-        localReferences.set(id, reference);
-      });
-      return parts.map((_, index) => geometryAt(index));
-    } finally {
-      plan.partReferenceStack.pop();
-    }
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      partScopes: [...FloorPlanGeometry.context(plan).partScopes, localReferences],
+    });
+    const geometries = new Map();
+    const pending = new Set();
+    const geometryAt = (index) => {
+      if (geometries.has(index)) return geometries.get(index);
+      const part = parts[index];
+      if (pending.has(index)) throw new Error(`Referência circular entre partes: ${part.id || index + 1}`);
+      pending.add(index);
+      try {
+        const geometry = { ...scoped.normalizeGeometry(part), id: part.id || `part-${index + 1}` };
+        geometries.set(index, geometry);
+        return geometry;
+      } finally {
+        pending.delete(index);
+      }
+    };
+    parts.forEach((part, index) => {
+      const id = part.id || `part-${index + 1}`;
+      const reference = FloorPlanGeometryBox.fromGeometry(() => geometryAt(index), { label: id });
+      localReferences.set(id, reference);
+    });
+    return parts.map((_, index) => geometryAt(index));
   },
 
   getRoomGeometry(plan, id) {
@@ -10862,12 +10890,14 @@ const FloorPlanReferences = {
       throw new Error(`Circular room reference: ${id}`);
 
     plan.roomGeometryStack.add(id);
-    const previousFloorHeight = plan.currentFloorHeight;
     try {
       const room = plan.roomDefinitions.get(id);
       const owningFloor = plan.roomFloorConfigs?.get(id);
-      if (owningFloor) plan.currentFloorHeight = Number(owningFloor.z0 ?? 0);
-      const { normalizedParts, nominalGeometry } = FloorPlanGeometryDomain.normalizeRoomGeometry(plan, room);
+      const scoped = FloorPlanGeometry.inContext(plan, {
+        ...(owningFloor ? { floorZ: Number(owningFloor.z0 ?? 0), floorId: owningFloor.id ?? null } : {}),
+        itemReferences: false,
+      });
+      const { normalizedParts, nominalGeometry } = FloorPlanGeometryDomain.normalizeRoomGeometry(scoped, room);
       const compound = Boolean(room.parts?.length);
       const walls = plan.normalizeWalls(room.walls);
       const reference = FloorPlanGeometryBox.fromGeometry(nominalGeometry, { compound, label: id });
@@ -10886,7 +10916,6 @@ const FloorPlanReferences = {
       plan.roomGeometryCache.set(id, reference);
       return reference;
     } finally {
-      plan.currentFloorHeight = previousFloorHeight;
       plan.roomGeometryStack.delete(id);
     }
   },
@@ -12674,13 +12703,11 @@ const FloorPlanGeometryDomain = {
   },
 
   normalizeGeometryAtFloor(plan, data, floorConfig) {
-    const previousHeight = plan.currentFloorHeight;
-    plan.currentFloorHeight = Number(floorConfig?.z0 ?? 0);
-    try {
-      return plan.normalizeGeometry(data);
-    } finally {
-      plan.currentFloorHeight = previousHeight;
-    }
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      floorZ: Number(floorConfig?.z0 ?? 0),
+      floorId: floorConfig?.id ?? null,
+    });
+    return scoped.normalizeGeometry(data);
   },
 
   addSpanningStairs(plan, config, floorConfig) {
@@ -12732,16 +12759,11 @@ const FloorPlanGeometryDomain = {
   },
 
   normalizeGeometry(plan, data) {
-    const previous = plan.itemReferenceContext;
-    const previousCache = plan.itemRoomBoundsCache;
-    plan.itemRoomBoundsCache = new Map();
-    plan.itemReferenceContext = Boolean(data?.[FloorPlanGeometry.itemDefinition]);
-    try {
-      return this.normalizeGeometryDefinition(plan, data);
-    } finally {
-      plan.itemReferenceContext = previous;
-      plan.itemRoomBoundsCache = previousCache;
-    }
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      itemReferences: Boolean(data?.[FloorPlanGeometry.itemDefinition]),
+      roomBoundsCache: new Map(),
+    });
+    return this.normalizeGeometryDefinition(scoped, data);
   },
 
   normalizeGeometryDefinition(plan, data) {
@@ -13675,6 +13697,7 @@ class FloorPlan {
     this.currentFloorId = null;
     this.showAllFloors = false;
     this.currentFloorHeight = 0;
+    this.resolutionContext = null;
     this.currentSourceText = null;
     this.model = null;
     this.itemTypes = {};

@@ -22,13 +22,11 @@ const FloorPlanGeometryDomain = {
   },
 
   normalizeGeometryAtFloor(plan, data, floorConfig) {
-    const previousHeight = plan.currentFloorHeight;
-    plan.currentFloorHeight = Number(floorConfig?.z0 ?? 0);
-    try {
-      return plan.normalizeGeometry(data);
-    } finally {
-      plan.currentFloorHeight = previousHeight;
-    }
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      floorZ: Number(floorConfig?.z0 ?? 0),
+      floorId: floorConfig?.id ?? null,
+    });
+    return scoped.normalizeGeometry(data);
   },
 
   addSpanningStairs(plan, config, floorConfig) {
@@ -80,16 +78,11 @@ const FloorPlanGeometryDomain = {
   },
 
   normalizeGeometry(plan, data) {
-    const previous = plan.itemReferenceContext;
-    const previousCache = plan.itemRoomBoundsCache;
-    plan.itemRoomBoundsCache = new Map();
-    plan.itemReferenceContext = Boolean(data?.[FloorPlanGeometry.itemDefinition]);
-    try {
-      return this.normalizeGeometryDefinition(plan, data);
-    } finally {
-      plan.itemReferenceContext = previous;
-      plan.itemRoomBoundsCache = previousCache;
-    }
+    const scoped = FloorPlanGeometry.inContext(plan, {
+      itemReferences: Boolean(data?.[FloorPlanGeometry.itemDefinition]),
+      roomBoundsCache: new Map(),
+    });
+    return this.normalizeGeometryDefinition(scoped, data);
   },
 
   normalizeGeometryDefinition(plan, data) {

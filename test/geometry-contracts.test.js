@@ -120,6 +120,101 @@ test("floor-scoped normalization restores its caller elevation after success and
   close(plan.normalizeGeometry({ pos: [0, 0], size: [1, 1] }).z0, 17);
 });
 
+test("resolution contexts nest without writing the caller's legacy policy fields or part stack", () => {
+  const plan = prepare(fixture());
+  const cache = new Map([["sentinel", {}]]);
+  const stack = Object.freeze([]);
+  for (const [key, value] of Object.entries({ currentFloorHeight: 17,
+    itemReferenceContext: undefined, itemRoomBoundsCache: cache, partReferenceStack: stack })) {
+    Object.defineProperty(plan, key, { configurable: true, get: () => value,
+      set: () => assert.fail(`caller field changed: ${key}`) });
+  }
+  plan.roomGeometryCache.clear();
+  close(plan.getRoomGeometry("compound").z1(), 5);
+  const item = plan.resolveItemType({ pos: ["room.x0", 0], size: [1, 1] });
+  close(plan.normalizeGeometryAtFloor(item, { z0: 6 }).x, 0.06);
+  close(plan.normalizeGeometryAtFloor(item, { z0: 6 }).z0, 6);
+  assert.throws(() => plan.normalizeGeometryAtFloor({ pos: ["missing.x0", 0], size: [1, 1] },
+    { z0: 8 }), /Unknown room reference/);
+  assert.equal(plan.partReferenceStack, stack);
+  assert.equal(plan.itemRoomBoundsCache, cache);
+  assert.equal(Object.hasOwn(plan, "resolutionContext"), false);
+});
+
+test("nested resolution facades keep a flat owner and inherit only explicit context values", () => {
+  const plan = prepare(fixture());
+  const local = new Map();
+  const floor = FloorPlanGeometry.inContext(plan, { floorZ: 9, floorId: "upper" });
+  const item = FloorPlanGeometry.inContext(floor, { itemReferences: true });
+  const parts = FloorPlanGeometry.inContext(item, { partScopes: [local] });
+  assert.equal(Object.getPrototypeOf(parts), plan);
+  assert.equal(parts.resolutionOwner, plan);
+  assert.equal(parts.resolutionContext.floorZ, 9);
+  assert.equal(parts.resolutionContext.floorId, "upper");
+  assert.equal(parts.resolutionContext.itemReferences, true);
+  assert.equal(parts.resolutionContext.partScopes[0], local);
+  assert.equal(floor.resolutionContext.itemReferences, false);
+  assert.equal(Object.isFrozen(parts.resolutionContext), true);
+});
+
+test("a lazy reference sees its explicit floor context across nested successful and failed calculations", () => {
+  const plan = prepare(fixture());
+  plan.currentFloorHeight = 17;
+  plan.references.set("probe", { x0() {
+    const outer = FloorPlanGeometry.context(plan);
+    close(outer.floorZ, 6);
+    assert.equal(plan.currentFloorHeight, 17);
+    close(plan.normalizeGeometryAtFloor({ pos: [0, 0], size: [1, 1] }, { z0: 9 }).z0, 9);
+    assert.throws(() => plan.normalizeGeometryAtFloor({ pos: ["missing.x0", 0], size: [1, 1] },
+      { z0: 10 }), /Unknown room reference/);
+    assert.equal(FloorPlanGeometry.context(plan), outer);
+    return outer.floorZ;
+  } });
+  const geometry = plan.normalizeGeometryAtFloor({ pos: ["probe.x0", 0], size: [1, 1] }, { z0: 6 });
+  assert.deepEqual([geometry.x, geometry.z0], [6, 6]);
+  assert.equal(plan.currentFloorHeight, 17);
+  assert.equal(Object.hasOwn(plan, "resolutionContext"), false);
+});
+
+test("legacy lazy references retain forward local part scope without mutating the parent stack", () => {
+  const plan = prepare(fixture());
+  plan.references.set("offset", { x0: () => plan.resolve("later.x1") + 1 });
+  const parts = plan.normalizeParts([
+    { id: "first", pos: ["offset.x0", 0], size: [1, 1] },
+    { id: "later", pos: [2, 0], size: [3, 1] },
+  ]);
+  close(parts[0].x, 6);
+  assert.equal(plan.partReferenceStack.length, 0);
+  assert.throws(() => plan.resolve("later.x0"), /Unknown room reference/);
+  assert.equal(Object.hasOwn(plan, "resolutionContext"), false);
+});
+
+test("the synchronous legacy bridge restores an existing context descriptor even on getter failure", () => {
+  const plan = prepare(fixture());
+  const original = FloorPlanGeometry.context(plan);
+  Object.defineProperty(plan, "resolutionContext", { value: original, configurable: true, enumerable: true });
+  const descriptor = Object.getOwnPropertyDescriptor(plan, "resolutionContext");
+  plan.references.set("broken", Object.defineProperty({}, "x0", {
+    get() { throw new Error("broken reference getter"); },
+  }));
+  assert.throws(() => plan.normalizeGeometryAtFloor({ pos: ["broken.x0", 0], size: [1, 1] },
+    { z0: 9 }), /broken reference getter/);
+  assert.deepEqual(Object.getOwnPropertyDescriptor(plan, "resolutionContext"), descriptor);
+});
+
+test("global list preparation cannot leak a floor context when item collection throws", () => {
+  const plan = prepare(fixture());
+  plan.currentFloorHeight = 17;
+  const broken = Object.defineProperty({ id: "upper", z0: 9 }, "items", {
+    get() { throw new Error("broken item collection"); },
+  });
+  assert.throws(() => plan.prepareGlobalLists({ floors: [
+    { id: "ground", z0: 2, items: [] }, broken,
+  ] }), /broken item collection/);
+  assert.equal(plan.currentFloorHeight, 17);
+  assert.equal(Object.hasOwn(plan, "resolutionContext"), false);
+});
+
 test("failed item resolution restores reference policy and cache before subsequent nominal reads", () => {
   const plan = prepare(fixture());
   const cache = new Map([["sentinel", {}]]);
