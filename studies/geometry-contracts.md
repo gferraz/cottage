@@ -53,7 +53,7 @@ Análises futuras devem receber dados de domínio e retornar resultados sem alte
 3. `area()` de um composto soma áreas das partes; não garante união sem dupla contagem quando elas se sobrepõem. Não mudar esse significado durante uma extração sem identificar os consumidores.
 4. Rotação normalizada não produz automaticamente polígono físico ou envelope rotacionado. `bounds()` não garante essa transformação.
 5. **Resolvido na separação da altura livre:** os resultados são preparados para todos os ambientes antes da renderização. `comfort_zones` controla o desenho das faixas, e as tabelas consultam resultados independentes do pavimento selecionado.
-6. Comunicações naturais atuais retornam largura agregada, sem os intervalos livres. Não bastam para recortar ou propagar uma zona.
+6. **Intervalos preservados na extração de comunicações:** os resultados agora incluem os segmentos livres em XYZ, além da largura agregada. Continuam sendo comunicações nas fronteiras nominais; portas explícitas, obstáculos gerais e navegabilidade física exigem análises adicionais.
 
 Essas limitações ficam documentadas em vez de receber testes que exijam perpetuar resultados inválidos. Cada correção futura deve adicionar uma expectativa válida e explicar qualquer diferença numérica intencional.
 
@@ -186,3 +186,21 @@ Build concluído e módulos embutidos confirmados no distribuível. As versões 
 Limites mantidos: altura livre considera as coberturas modeladas e as deduções declaradas; ainda não é uma consulta geral a escadas, lajes e todos os sólidos superiores. A área líquida continua sendo a métrica declarativa existente, não uma área interna física universal. A normalização/preparação do projeto ainda é refeita quando a interface chama `load()`.
 
 Próxima entrega: extrair a análise de comunicações naturais para dados de domínio e preservar os segmentos livres com posição, orientação e pavimento, além da largura agregada usada na lista.
+
+### Comunicações naturais extraídas com segmentos livres
+
+`src/models/communications.js` contém a análise de fronteiras e recortes por paredes independentes. `analyze(rooms, walls)` recebe somente dados: lados com estado, coordenada e intervalo, pavimento/cota dos ambientes e trajetos/espessuras/cotas das paredes. Não consulta listas, elementos ou seleção de vista. `fromReferences()` adapta os acessores existentes ao formato de dados, sem consultar o DOM; `prepare()` usa as referências globais do modelo antes de desenhar.
+
+Cada comunicação mantém `id`, participantes, rótulos, orientação e `length` agregado. Acrescenta `floorId`, `z0`, coordenada da fronteira, lados de origem/destino e `segments`, com extremos `from`/`to` em XYZ e comprimento individual. Os segmentos percorrem o eixo tangente em ordem crescente; não descrevem um sentido de caminhada entre ambientes. Duas passagens de 1 m permanecem duas passagens, mesmo que a soma seja igual à de uma abertura contínua de 2 m.
+
+O método antigo em `FloorPlanLists` delega ao domínio. A lista e a exportação Markdown consultam os resultados preparados e filtram o pavimento sem recalcular a geometria. `FloorPlan.findNaturalCommunications()` preserva a consulta sobre os ambientes da vista atual; `communicationResults` e `naturalCommunications` preparados contêm o conjunto global. A preparação não depende da existência de um destino HTML para a lista.
+
+Regras mantidas: lados sólidos impedem comunicação natural; paredes independentes bloqueiam trechos alinhados quando alcançam o piso, respeitando escopo e meia espessura; paredes em cotas/pavimentos incompatíveis não bloqueiam o trecho. A análise preserva os critérios e tolerâncias existentes. Não foi adicionada nova interpretação de portas, janelas ou vãos verticais.
+
+Validação: 269 testes aprovados. Sete testes diretos verificam segmentos horizontais/verticais em XYZ, passagens separadas, trajetos invertidos/duplicados, escopo e elevação de paredes, espessura, lados sólidos/virtuais, dados sem pavimento e entrada congelada. Um teste adicional prepara os projetos principal e transversal sem renderização e verifica independência da seleção de piso: 13 + 5 comunicações no principal e 14 + 8 no transversal.
+
+Comparação temporária antes/depois preservou exatamente IDs, rótulos, ordem, orientações e comprimentos anteriores nos dois projetos. O preparo global reproduziu os resultados das consultas por piso, incluindo os novos segmentos. Build concluído e novo módulo embutido confirmado no distribuível. No navegador integrado em 1280 × 720 pixels, versões modular e portátil carregaram com zero erros do projeto e sem erros JavaScript; os mesmos 18 textos de comunicações do projeto principal permaneceram após selecionar o pavimento superior e todos os pisos.
+
+Limites: a análise continua usando os lados do envelope nominal dos ambientes compostos. Não resolve sua fronteira côncava exata, paredes diagonais, obstáculos de mobiliário, largura física de ombreiras, altura livre ou acesso por portas explícitas. Os segmentos são uma base geométrica para análises futuras, não uma prova de circulação utilizável ou de conformidade.
+
+Próxima entrega: separar a preparação do projeto da construção da vista, para reduzir recomputação e dependência da seleção de pavimento antes de introduzir as zonas automáticas.

@@ -522,10 +522,9 @@ const FloorPlanTextExport = {
 
       this.appendOpeningTables(plan, lines, [...floorOpenings, ...floorWindows], "###");
 
-      const floorCommunications = FloorPlanLists.findNaturalCommunications(
-        plan,
-        floorRooms.map((entry) => entry.reference || entry),
-      );
+      const floorCommunications = plan.communicationResults
+        ? plan.communicationResults.filter((entry) => (entry.floorId ?? null) === (floor.id ?? null))
+        : FloorPlanCommunications.fromReferences(plan, floorRooms.map((entry) => entry.reference || entry));
       lines.push("", "### Comunicações naturais", "");
       if (floorCommunications.length === 0) {
         lines.push("Nenhuma comunicação natural detectada neste piso.");

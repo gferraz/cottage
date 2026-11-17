@@ -575,94 +575,17 @@ const FloorPlanLists = {
   },
 
   findNaturalCommunications(plan, rooms = plan.roomElements) {
-    const communications = [];
-    const pairs = [
-      ["right", "left", "vertical"],
-      ["left", "right", "vertical"],
-      ["bottom", "top", "horizontal"],
-      ["top", "bottom", "horizontal"],
-    ];
-    for (let index = 0; index < rooms.length; index += 1) {
-      for (
-        let otherIndex = index + 1;
-        otherIndex < rooms.length;
-        otherIndex += 1
-      ) {
-        const first = rooms[index];
-        const second = rooms[otherIndex];
-        const firstFloor = plan.roomFloorConfigs?.get(first.dataset.id);
-        const secondFloor = plan.roomFloorConfigs?.get(second.dataset.id);
-        if (firstFloor && secondFloor && firstFloor.id !== secondFloor.id) continue;
-
-        for (const [firstSide, secondSide, orientation] of pairs) {
-          if (
-            first.wallState(firstSide) === "solid" ||
-            second.wallState(secondSide) === "solid"
-          )
-            continue;
-
-          const firstSegment = plan.wallSegment(first, firstSide);
-          const secondSegment = plan.wallSegment(second, secondSide);
-          if (
-            Math.abs(firstSegment.coordinate - secondSegment.coordinate) >= 1e-9
-          )
-            continue;
-
-          const start = Math.max(firstSegment.start, secondSegment.start);
-          const end = Math.min(firstSegment.end, secondSegment.end);
-          if (end <= start) continue;
-
-          const firstId = first.dataset.id || `room-${index + 1}`;
-          const secondId = second.dataset.id || `room-${otherIndex + 1}`;
-          let gaps = [[start, end]];
-          const epsilon = 1e-9;
-          const floorZ = Number(firstFloor?.z0 ?? first.z0?.() ?? 0);
-          for (const wall of plan.independentWalls?.values() ?? []) {
-            if (wall.scopeFloorId && firstFloor && wall.scopeFloorId !== firstFloor.id) continue;
-            // Somente paredes que alcançam o piso fecham a passagem em planta.
-            if (wall.z0 > floorZ + epsilon || wall.z1 <= floorZ + epsilon) continue;
-            const points = wall.path?.points ?? [];
-            for (let segment = 0; segment < points.length - 1; segment += 1) {
-              const from = points[segment];
-              const to = points[segment + 1];
-              const along = orientation === "vertical" ? 1 : 0;
-              const across = 1 - along;
-              if (Math.abs(from[across] - to[across]) > epsilon ||
-                Math.abs(from[across] - firstSegment.coordinate) > Math.max(epsilon, (wall.thickness ?? 0) / 2)) continue;
-              const wallStart = Math.min(from[along], to[along]);
-              const wallEnd = Math.max(from[along], to[along]);
-              gaps = gaps.flatMap(([a, b]) => {
-                if (wallEnd <= a + epsilon || wallStart >= b - epsilon) return [[a, b]];
-                return [[a, Math.min(b, wallStart)], [Math.max(a, wallEnd), b]]
-                  .filter(([left, right]) => right - left > epsilon);
-              });
-            }
-          }
-          const length = gaps.reduce((total, [a, b]) => total + b - a, 0);
-          if (length <= epsilon) continue;
-          communications.push({
-            id: `${firstId}-${secondId}`,
-            firstId,
-            secondId,
-            firstLabel: first.dataset.label || firstId,
-            secondLabel: second.dataset.label || secondId,
-            orientation,
-            length,
-          });
-        }
-      }
-    }
-
-    return communications;
+    return FloorPlanCommunications.fromReferences(plan, rooms);
   },
 
   updateNaturalList(plan, target = plan.naturalList, floor = null) {
     if (!target) return;
 
-    const rooms = floor
-      ? plan.allRooms.filter((room) => room.floorId === floor.id).map((room) => room.reference)
-      : plan.roomElements;
-    const communications = this.findNaturalCommunications(plan, rooms);
+    const communications = plan.communicationResults
+      ? plan.communicationResults.filter((entry) => !floor || (entry.floorId ?? null) === (floor.id ?? null))
+      : this.findNaturalCommunications(plan, floor
+          ? plan.allRooms.filter((room) => room.floorId === floor.id).map((room) => room.reference)
+          : plan.roomElements);
     if (!floor) plan.naturalCommunications = communications;
     target.replaceChildren();
     if (communications.length === 0) {

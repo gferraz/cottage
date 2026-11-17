@@ -345,3 +345,23 @@ test("headroom results are prepared for every floor regardless of selected floor
   assert.deepEqual(visible, hidden);
   assert.equal(FloorPlanHeadroom.enabled(plan, "upstairs"), true);
 });
+
+test("global communications are prepared without drawing and remain independent of selected floor", () => {
+  for (const [file, groundCount, upperCount] of [
+    ["cottage-ferraz-cesar.json5", 13, 5],
+    ["cottage-ferraz-cesar-garage-transverse.json5", 14, 8],
+  ]) {
+    const plan = prepare(FloorPlanParser.parse(fs.readFileSync(path.join(__dirname, "..", file), "utf8")));
+    plan.prepareGlobalLists(plan.currentConfig);
+    plan.currentFloorId = "ground";
+    const first = FloorPlanCommunications.prepare(plan);
+    assert.equal(first.filter((entry) => entry.floorId === "ground").length, groundCount);
+    assert.equal(first.filter((entry) => entry.floorId === "upper").length, upperCount);
+    for (const entry of first) {
+      close(entry.segments.reduce((sum, segment) => sum + segment.length, 0), entry.length);
+      assert.ok(entry.segments.every((segment) => segment.from[2] === entry.z0 && segment.to[2] === entry.z0));
+    }
+    plan.currentFloorId = "upper";
+    assert.deepEqual(FloorPlanCommunications.prepare(plan), first);
+  }
+});

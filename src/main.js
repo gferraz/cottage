@@ -757,6 +757,8 @@ class FloorPlan {
     this.windows = [];
     this.allRoofs = [];
     this.headroomResults = new Map();
+    this.communicationResults = null;
+    this.naturalCommunications = [];
     this.errors = [];
     this.warnings = [];
     this.roomArea = 0;
@@ -869,6 +871,7 @@ class FloorPlan {
     if (!this.showAllFloors) this.validateInactiveFloorFeatures(config, floorIndex);
     this.prepareGlobalLists(config);
     FloorPlanHeadroom.prepare(this);
+    FloorPlanCommunications.prepare(this);
     this.hiddenSlabs ??= new Set();
     this.allSlabs = FloorPlanSlabs.collect(this);
     FloorPlanSlabs.updateList(this);
@@ -1005,7 +1008,7 @@ class FloorPlan {
   }
 
   findNaturalCommunications() {
-    return FloorPlanLists.findNaturalCommunications(this);
+    return FloorPlanCommunications.fromReferences(this, this.roomElements);
   }
 
   updateNaturalList() {
