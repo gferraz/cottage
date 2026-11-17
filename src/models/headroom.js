@@ -9,46 +9,20 @@ const FloorPlanHeadroom = {
   colors: ["rgba(240, 140, 35, 0.14)", "rgba(245, 215, 75, 0.14)", "rgba(255, 255, 255, 0.35)"],
 
   area(polygon) {
-    return Math.abs(polygon.reduce((sum, [x, y], i) => {
-      const next = polygon[(i + 1) % polygon.length];
-      return sum + x * next[1] - next[0] * y;
-    }, 0)) / 2;
+    return FloorPlanGeometryOperations.area(polygon);
   },
 
   rectangle({ x, y, w, l }) {
-    return [[x, y, 0], [x + w, y, 0], [x + w, y + l, 0], [x, y + l, 0]];
+    return FloorPlanGeometryOperations.rectangle({ x, y, w, l });
   },
 
   // Subtract a convex footprint, preserving disjoint convex pieces.
   subtract(polygon, cutter) {
-    if (!cutter.length || this.area(cutter) < 1e-10) return [polygon];
-    const signed = cutter.reduce((sum, p, i) => {
-      const q = cutter[(i + 1) % cutter.length];
-      return sum + p[0] * q[1] - q[0] * p[1];
-    }, 0);
-    let inside = polygon;
-    const outside = [];
-    for (let i = 0; i < cutter.length && inside.length; i += 1) {
-      const p = cutter[i], q = cutter[(i + 1) % cutter.length];
-      const sign = signed > 0 ? 1 : -1;
-      const a = sign * (q[1] - p[1]), b = sign * (p[0] - q[0]);
-      const plane = [a, b, 0, -a * p[0] - b * p[1]];
-      const next = FloorPlanRoofs.clipPolygon(inside, plane);
-      const remainder = FloorPlanRoofs.clipPolygon(inside, plane.map(v => -v));
-      if (remainder.length && this.area(remainder) > 1e-10 && remainder !== next) outside.push(remainder);
-      inside = next;
-    }
-    return outside;
+    return FloorPlanGeometryOperations.subtract(polygon, cutter);
   },
 
   union(polygons) {
-    const result = [];
-    for (const polygon of polygons) {
-      let pieces = [polygon];
-      for (const previous of result) pieces = pieces.flatMap(piece => this.subtract(piece, previous));
-      result.push(...pieces.filter(piece => this.area(piece) > 1e-10));
-    }
-    return result;
+    return FloorPlanGeometryOperations.union(polygons);
   },
 
   calculate(parts, surfaces, floorZ, deductions = [], thresholds = this.thresholds) {

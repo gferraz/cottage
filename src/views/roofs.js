@@ -122,20 +122,7 @@ const FloorPlanRoofs = {
   },
 
   clipPolygon(points, plane) {
-    if (!points.length) return [];
-    const distances = points.map((point) => plane.slice(0, 3).reduce((sum, value, i) => sum + value * point[i], plane[3]));
-    if (distances.every((value) => value <= 1e-8)) return points;
-    if (distances.every((value) => value >= -1e-8)) return [];
-    const result = [];
-    points.forEach((point, i) => {
-      const next = points[(i + 1) % points.length];
-      const a = distances[i], b = distances[(i + 1) % points.length];
-      if (a <= 1e-8) result.push(point);
-      if ((a < -1e-8 && b > 1e-8) || (a > 1e-8 && b < -1e-8)) {
-        result.push(point.map((value, axis) => value + (next[axis] - value) * a / (a - b)));
-      }
-    });
-    return result.length >= 3 ? result : [];
+    return FloorPlanGeometryOperations.clipPolygon(points, plane);
   },
 
   intersectingSurfaces(plan, roofs = plan.allRoofs ?? []) {

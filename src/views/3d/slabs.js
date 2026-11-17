@@ -9,18 +9,7 @@ const FloorPlanSlabs = {
         return plan.getRoomGeometry(room.id)?.geometryParts ?? [];
       }).filter(({ x, y, w, l }) => [x, y, w, l].every(Number.isFinite) && w > 0 && l > 0);
       // Partition the union so adjacent/overlapping rooms never stack concrete.
-      const xs = [...new Set(rectangles.flatMap((r) => [r.x, r.x + r.w]))].sort((a, b) => a - b);
-      const ys = [...new Set(rectangles.flatMap((r) => [r.y, r.y + r.l]))].sort((a, b) => a - b);
-      const parts = [];
-      for (let x = 0; x < xs.length - 1; x += 1) {
-        for (let y = 0; y < ys.length - 1; y += 1) {
-          const cx = (xs[x] + xs[x + 1]) / 2;
-          const cy = (ys[y] + ys[y + 1]) / 2;
-          if (rectangles.some((r) => cx > r.x && cx < r.x + r.w && cy > r.y && cy < r.y + r.l)) {
-            parts.push({ x: xs[x], y: ys[y], w: xs[x + 1] - xs[x], l: ys[y + 1] - ys[y] });
-          }
-        }
-      }
+      const parts = FloorPlanGeometryOperations.partitionRectangles(rectangles);
       return (floor.slabs ?? [{ id: `slab-${floor.id ?? index}`, label: `Laje — ${floor.label || floor.id || "Piso"}`, thickness: 0.15 }]).map((definition) => {
         const thickness = Number(definition.thickness ?? 0.15);
         if (!Number.isFinite(thickness) || thickness <= 0) throw new Error("A espessura da laje deve ser positiva.");

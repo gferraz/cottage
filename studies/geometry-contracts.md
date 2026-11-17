@@ -72,3 +72,13 @@ Essas limitações ficam documentadas em vez de receber testes que exijam perpet
 Os testes existentes continuam cobrindo referências internas, interseções de coberturas, lajes, planos inferiores, mudanças de eixo e patamares. O novo arquivo complementa essa cobertura, sem substituí-la.
 
 Próxima entrega: extrair operações puras de polígonos/sólidos e particionamento retangular, preservando as APIs e resultados atuais. Consolidar geometria de coberturas em seguida. Toda mudança de aplicação deverá executar `bin/build`, incluir o distribuível e verificar visualmente as saídas afetadas.
+
+### Extração das operações compartilhadas concluída
+
+`src/models/geometry-operations.js` concentra recorte por plano de polígonos e sólidos convexos, faces de caixa, área projetada XY, retângulos, subtração/união de polígonos convexos e particionamento da união de retângulos alinhados aos eixos. As funções antigas em telhados, paredes e altura livre delegam ao módulo. Áreas e lajes compartilham o particionamento; a seleção de ambientes e exclusão de escadas das lajes permanece no consumidor.
+
+O módulo não acessa DOM, estado da planta ou renderizadores. Mantém a convenção de semiespaço `a*x + b*y + c*z + d <= 0` e as tolerâncias particulares dos algoritmos extraídos. Resultados podem reutilizar vértices da entrada: consumidores não devem modificá-los. Não há suporte novo a polígonos côncavos como cortadores ou sólidos não convexos.
+
+Validação: 227 testes aprovados, incluindo quatro novos testes diretos de união sem dupla contagem, recorte com interpolação de Z, independência do sentido do cortador e fechamento/volume de sólido recortado. Build executado e módulo embutido verificado em `dist/floor-plan.html`. Planta ativa carregada na versão modular e no distribuível, com zero erros do projeto; conferidos pavimento superior e todos os pisos com telhados. Console sem erros JavaScript; observado aviso de compatibilidade do Three.js sobre `PCFSoftShadowMap`, fora do escopo desta extração. Inspeção visual no navegador integrado, viewport aproximado de 663 × 886 pixels, sem comparação automatizada de imagens.
+
+Próxima entrega: consolidar a construção geométrica das coberturas para seus diferentes consumidores, sem modificar suas convenções físicas.

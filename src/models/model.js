@@ -242,34 +242,8 @@ const FloorPlanModel = {
   },
 
   calculateUnionArea(rectangles) {
-    if (rectangles.length === 0) return 0;
-
-    const xs = [...new Set(rectangles.flatMap(({ x, w }) => [x, x + w]))].sort(
-      (a, b) => a - b,
-    );
-    const ys = [...new Set(rectangles.flatMap(({ y, l }) => [y, y + l]))].sort(
-      (a, b) => a - b,
-    );
-    let area = 0;
-
-    for (let xIndex = 0; xIndex < xs.length - 1; xIndex += 1) {
-      for (let yIndex = 0; yIndex < ys.length - 1; yIndex += 1) {
-        const x0 = xs[xIndex];
-        const x1 = xs[xIndex + 1];
-        const y0 = ys[yIndex];
-        const y1 = ys[yIndex + 1];
-        const covered = rectangles.some(
-          (rectangle) =>
-            rectangle.x <= x0 &&
-            rectangle.x + rectangle.w >= x1 &&
-            rectangle.y <= y0 &&
-            rectangle.y + rectangle.l >= y1,
-        );
-        if (covered) area += (x1 - x0) * (y1 - y0);
-      }
-    }
-
-    return area;
+    return FloorPlanGeometryOperations.partitionRectangles(rectangles)
+      .reduce((area, part) => area + part.w * part.l, 0);
   },
 
   calculateNetRoomArea(room, rooms, items) {
