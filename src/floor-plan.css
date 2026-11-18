@@ -1756,3 +1756,5 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
 .slab-option input { flex-shrink: 0; margin: 2px 0 0; accent-color: var(--theme-accent); }
 .slab-option span { min-width: 0; overflow-wrap: anywhere; }
 .slab-option small { display: block; margin-top: 4px; font-size: 10px; color: var(--theme-muted, #666); }
+
+.comfort-legend .comfort-blue { background: rgba(45, 125, 220, 0.28); }

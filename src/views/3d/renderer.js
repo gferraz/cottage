@@ -3,16 +3,37 @@
  * element group to a focused renderer in this directory.
  */
 const FloorPlanFacades3D = {
+  nextFloorAbove(plan, floor) {
+    const floors = plan.currentConfig?.floors ?? [];
+    const candidates = floors.slice(floors.indexOf(floor) + 1);
+    return candidates.find((candidate) => FloorPlanMetrics.floorsOverlap(plan, floor.id, candidate.id));
+  },
+
   floorView(plan) {
     const floors = plan.currentConfig?.floors;
+    if (floors?.length && plan.selectedFloorIds && plan.selectedFloorIds.size !== 1 && plan.selectedFloorIds.size !== floors.length) {
+      const views = floors.filter((floor) => plan.selectedFloorIds.has(floor.id)).map((floor) =>
+        this.floorView(Object.assign(Object.create(plan), {
+          selectedFloorIds: null, showAllFloors: false, currentFloorId: floor.id,
+        })));
+      const view = Object.create(plan);
+      for (const key of ["allRooms", "allItems", "allOpenings", "allWindows", "wallRenderParts"])
+        view[key] = views.flatMap((part) => part[key] ?? []);
+      view.independentWalls = new Map(views.flatMap((part) => [...(part.independentWalls ?? [])]));
+      view.allRoofs = (plan.allRoofs ?? []).filter((roof) => plan.selectedFloorIds.size &&
+        (!roof.floorId || plan.selectedFloorIds.has(roof.floorId)));
+      return view;
+    }
     if (!floors?.length || plan.showAllFloors) return plan;
     const index = Math.max(0, floors.findIndex((floor) => floor.id === plan.currentFloorId));
     const floor = floors[index];
     const z0 = Number(floor.z0);
-    const z1 = index + 1 < floors.length ? Number(floors[index + 1].z0) : Infinity;
+    const nextFloor = this.nextFloorAbove(plan, floor);
+    const z1 = nextFloor ? Number(nextFloor.z0) : Infinity;
     const inFloor = (entry) => entry.floorId === floor.id;
     const clipWall = (wall) => {
       if (wall.scopeFloorId && wall.scopeFloorId !== floor.id) return [];
+      if (!FloorPlanMetrics.wallOverlapsFloor(plan, wall, floor.id)) return [];
       const bottom = wall.base === "terrain" && index === 0 ? Number(wall.z0) : Math.max(Number(wall.z0), z0);
       const top = Math.min(Number(wall.z1), z1);
       if (top - bottom <= 1e-9) return [];
@@ -95,7 +116,7 @@ const FloorPlanFacades3D = {
         );
         const floor = floors[floorIndex] || floors[0] || {};
         const floorZ0 = Number(floor.z0 ?? 0);
-        const nextZ0 = Number(floors[floorIndex + 1]?.z0);
+        const nextZ0 = Number(this.nextFloorAbove(plan, floor)?.z0);
         const wallMaxHeight = Number(floor.ceiling_height ?? floor.wall_max_height ?? 0);
         const defaultHeight = Number.isFinite(nextZ0)
           ? Math.min(Math.max(0, nextZ0 - floorZ0), wallMaxHeight)
@@ -122,7 +143,8 @@ const FloorPlanFacades3D = {
 
     const stairFlights = [];
     const stairLandings = [];
-    floors.filter((floor) => !plan.visibleFloor || floor === plan.visibleFloor).forEach((floor) => {
+    floors.filter((floor) => (!plan.visibleFloor || floor === plan.visibleFloor) &&
+      (!plan.selectedFloorIds || plan.selectedFloorIds.has(floor.id))).forEach((floor) => {
       (floor?.rooms ?? []).forEach((definition) => {
         const parts = plan.getRoomGeometry(definition.id).normalizedParts;
         const stairParts = parts.filter((part) => isStairFlight(part) ||
@@ -146,7 +168,8 @@ const FloorPlanFacades3D = {
     }
 
     if (!rooms.length) {
-      container.textContent = "Nenhum cômodo disponível para este piso.";
+      container.textContent = plan.selectedFloorIds?.size === 0
+        ? "Selecione um ou mais pisos." : "Nenhum cômodo disponível para este piso.";
       return;
     }
 

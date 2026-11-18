@@ -1,4 +1,24 @@
 const FloorPlanMetrics = {
+  floorsOverlap(plan, firstId, secondId) {
+    if (firstId === secondId) return true;
+    const footprint = (id) => (plan.allSlabs ?? []).filter((slab) => slab.floorId === id)
+      .flatMap((slab) => slab.parts);
+    const first = footprint(firstId), second = footprint(secondId);
+    if (!first.length || !second.length) return true;
+    return first.some((a) => second.some((b) =>
+      Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 1e-8 &&
+      Math.min(a.y + a.l, b.y + b.l) - Math.max(a.y, b.y) > 1e-8));
+  },
+
+  wallOverlapsFloor(plan, wall, floorId) {
+    if (!wall.sourceRoomIds?.length) return true;
+    return wall.sourceRoomIds.some((id) => {
+      const sourceId = plan.roomFloorConfigs?.get(id)?.id
+        ?? plan.allRooms?.find((room) => room.id === id)?.floorId;
+      return !sourceId || this.floorsOverlap(plan, sourceId, floorId);
+    });
+  },
+
   bounds(plan, { includeItems = false } = {}) {
     const elements = includeItems
       ? [...plan.roomElements, ...plan.itemElements]
@@ -13,7 +33,7 @@ const FloorPlanMetrics = {
   },
 
   buildingReferenceBounds(plan) {
-    const referenceRooms = plan.model?.floors?.[0]?.rooms ?? [];
+    const referenceRooms = plan.model?.floors?.flatMap((floor) => floor.rooms ?? []) ?? [];
     const geometries = referenceRooms
       .map((room) =>
         room.id && plan.roomDefinitions?.has(room.id)

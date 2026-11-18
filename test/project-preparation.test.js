@@ -164,3 +164,10 @@ test("export restores view state even when snapshot capture fails", () => {
   assert.equal(plan.multiFloorMode, true);
   assert.equal(plan.layerCutoff, "above-zero");
 });
+
+test("export restores an independent floor selection", () => {
+  const { plan, calls } = capturePlan();
+  plan.selectedFloorIds = new Set(["ground"]);
+  FloorPlanHtmlExport.captureFloorViews(plan, floor => floor.id);
+  assert.deepEqual(calls.at(-3).selectedFloorIds, ["ground"]);
+});

@@ -1,6 +1,7 @@
 const FloorPlanStairHeadroomView = {
   render(plan) {
     for (const result of plan.stairHeadroomResults ?? []) {
+      if (plan.selectedFloorIds && !plan.selectedFloorIds.has(result.floorId)) continue;
       if (!plan.showAllFloors && result.floorId !== (plan.currentFloorId ?? null)) continue;
       const sourceLayers = (plan.stairConnectivity?.nodes ?? [])
         .filter((node) => node.ownerId === result.ownerId)

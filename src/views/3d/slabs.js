@@ -24,6 +24,7 @@ const FloorPlanSlabs = {
     if (!target) return;
     target.replaceChildren();
     for (const slab of plan.allSlabs ?? []) {
+      if (plan.selectedFloorIds && !plan.selectedFloorIds.has(slab.floorId)) continue;
       const label = document.createElement("label");
       label.className = "slab-option";
       const input = document.createElement("input");
@@ -47,6 +48,7 @@ const FloorPlanSlabs = {
   render({ plan, THREE, scene }) {
     const material = new THREE.MeshLambertMaterial({ color: "#c9c5ba" });
     for (const slab of plan.allSlabs ?? []) {
+      if (plan.selectedFloorIds && !plan.selectedFloorIds.has(slab.floorId)) continue;
       if (plan.hiddenSlabs?.has(slab.key) || (plan.visibleFloor && slab.floorId !== plan.visibleFloor.id)) continue;
       const group = new THREE.Group();
       group.name = slab.label;

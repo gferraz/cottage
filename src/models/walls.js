@@ -649,6 +649,7 @@ const FloorPlanWalls = {
   renderIndependentWalls(plan) {
     plan.wallElements = [];
     plan.independentWalls.forEach((wall) => {
+      if (plan.selectedFloorIds && wall.scopeFloorId && !plan.selectedFloorIds.has(wall.scopeFloorId)) return;
       if (!plan.showAllFloors && wall.scopeFloorId && wall.scopeFloorId !== plan.currentFloorId) return;
       const floors = plan.currentConfig?.floors ?? (plan.currentConfig ? [plan.currentConfig] : []);
       const visibleFloors = floors.filter((floor) => wall.scopeFloorId
@@ -685,6 +686,26 @@ const FloorPlanWalls = {
     });
   },
 
+  overheadSlabLimits(plan, floors, floorZ, padding = 0) {
+    return floors.filter(floor => Number(floor.z0) > floorZ + 1e-8).flatMap(floor => {
+      const slabs = floor.slabs ?? [{ thickness: 0.15 }];
+      return slabs.flatMap(slab => {
+        const z = Number(floor.z0) - Number(slab.thickness ?? 0.15);
+        if (z <= floorZ + 1e-8) return [];
+        return (floor.rooms ?? []).flatMap(room => {
+          const isStair = part => /\bstair-(flight|landing)\b/.test(part.classes ?? "");
+          if (isStair(room) || (room.parts?.length && room.parts.every(isStair))) return [];
+          return (plan.getRoomGeometry(room.id)?.geometryParts ?? []).map(({ x, y, w, l }) => ({
+            peakZ: z,
+            bounds: [[-1, 0, 0, x - padding], [1, 0, 0, -x - w - padding],
+              [0, -1, 0, y - padding], [0, 1, 0, -y - l - padding]],
+            slopes: [[0, 0, 1, -z]],
+          }));
+        });
+      });
+    });
+  },
+
   normalizeRoomWalls(plan, config) {
     plan.walls = new Map();
     plan.independentWalls = new Map();
@@ -710,16 +731,14 @@ const FloorPlanWalls = {
       try {
         const geometry = plan.getRoomGeometry(roomId);
         const floorZ0 = Number(floor.z0 ?? 0);
-        const nextFloorIndex = floors.indexOf(floor) + 1;
-        const nextFloorZ0 = Number(floors[nextFloorIndex]?.z0);
         const configuredMaxHeight = Number(floor.ceiling_height ?? floor.wall_max_height);
-        const floorHeight = Number.isFinite(nextFloorZ0)
-          ? Math.min(nextFloorZ0 - floorZ0, configuredMaxHeight)
-          : configuredMaxHeight;
+        const floorHeight = configuredMaxHeight;
         const explicitHeight = Number(geometry.h());
         let height = explicitHeight > 0 ? explicitHeight : floorHeight;
         const undersideLimits = this.undersideLimits(plan, definition.top, thickness / 2);
         if (undersideLimits.length) height = Math.max(height, ...undersideLimits.map((limit) => limit.peakZ - floorZ0));
+        if (definition.top === undefined && !(explicitHeight > 0))
+          undersideLimits.push(...this.overheadSlabLimits(plan, floors, floorZ0, thickness / 2));
         const roofOnly = definition.top === "roof";
         if (roofOnly) {
           const limits = this.roofLimits(plan, config);

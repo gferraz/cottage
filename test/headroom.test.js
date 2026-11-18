@@ -18,10 +18,10 @@ test('prepared headroom bands partition coverage and retain cumulative threshold
   const input = { parts: [{ x: 0, y: 0, w: 4, l: 2 }], z0: 0 };
   const surfaces = [{ polygons: [[[0, 0, 1], [4, 0, 3], [4, 2, 3], [0, 2, 1]]] }];
   const result = FloorPlanHeadroomAnalysis.analyzeRoom(input, surfaces, []);
-  [6.8, 3.6, 0].forEach((expected, i) => close(result.areas[i].area, expected));
-  [1.2, 3.2, 3.6, 0].forEach((expected, i) => close(result.bands[i].area, expected));
+  [6.8, 3.6, 0.6, 0].forEach((expected, i) => close(result.areas[i].area, expected));
+  [1.2, 3.2, 3, 0.6, 0].forEach((expected, i) => close(result.bands[i].area, expected));
   close(result.bands.reduce((sum, band) => sum + band.area, 0), result.covered.area);
-  assert.equal(result.bands[3].labelPosition, null);
+  assert.equal(result.bands[4].labelPosition, null);
   close(result.bands[0].labelPosition[0], 0.3);
 });
 
@@ -47,7 +47,7 @@ test('single gable produces exact threshold areas relative to room floor', () =>
   const result = comfort.calculate([room], surfaces([roof('single')]), 0);
   close(result[0].area, 13.6);
   close(result[1].area, 7.2);
-  close(result[2].area, 0);
+  close(result[2].area, 1.2);
   const raised = comfort.calculate([room], surfaces([roof('single')]), 1);
   close(raised[0].area, 5.6);
   close(raised[1].area, 0);
@@ -85,7 +85,7 @@ test('shed, flat threshold equality and partially uncovered rooms are handled', 
   const result = comfort.calculate([room], surfaces([roof('shed', 'transverse', { type: 'shed' })]), 0);
   close(result[1].area, 11.6);
   const flat = [{ polygons: [[[0, 0, 3], [2, 0, 3], [2, 4, 3], [0, 4, 3]]] }];
-  comfort.calculate([room], flat, 0).forEach(entry => close(entry.area, 8));
+  comfort.calculate([room], flat, 0).forEach(entry => close(entry.area, entry.height <= 3 ? 8 : 0));
 });
 
 
@@ -109,4 +109,19 @@ test('below 1.3 m band covers only roof-covered floor and excludes the higher ba
   for (const cutter of higher.polygons) band = band.flatMap(polygon => comfort.subtract(polygon, cutter));
   close(band.reduce((sum, polygon) => sum + comfort.area(polygon), 0), 2.4);
   close(comfort.calculate([room], [], 0, [], [0])[0].area, 0);
+});
+
+
+test('slab underside limits clearance while openings retain roof clearance', () => {
+  const slabs = [{ z: 3, thickness: 0.15, parts: [{ x: 0, y: 0, w: 2, l: 4 }] },
+    { z: 0, thickness: 0.15, parts: [room] }];
+  const overhead = [{ polygons: [[[0, 0, 5], [4, 0, 5], [4, 4, 5], [0, 4, 5]]] },
+    ...FloorPlanHeadroomAnalysis.slabSurfaces(slabs)];
+  const result = FloorPlanHeadroomAnalysis.analyzeRoom({ parts: [room], z0: 0 }, overhead, []);
+  close(result.covered.area, 16);
+  close(result.areas.find(entry => entry.height === 2.1).area, 16);
+  close(result.areas.find(entry => entry.height === 2.85).area, 16);
+  close(result.areas.find(entry => entry.height === 3.1).area, 8);
+  close(FloorPlanHeadroomAnalysis.calculate([room], overhead, 0, [], [2.85])[0].area, 16);
+  close(FloorPlanHeadroomAnalysis.calculate([room], overhead, 0, [], [2.86])[0].area, 8);
 });

@@ -19,9 +19,9 @@ const FloorPlanProject = {
     const floorErrors = new Map(model.floors.map((floor) =>
       [floor, FloorPlanReferences.collectFloorFeatureErrors(plan, floor)]));
     plan.prepareGlobalLists(config);
+    plan.allSlabs = FloorPlanSlabs.collect(plan);
     FloorPlanHeadroom.prepare(plan);
     FloorPlanCommunications.prepare(plan);
-    plan.allSlabs = FloorPlanSlabs.collect(plan);
     const stairParts = plan.allRooms.filter((room) => !plan.invalidRoomIds.has(room.id))
       .flatMap((room) => plan.getRoomGeometry(room.id).normalizedParts);
     plan.stairConnectivity = FloorPlanStairConnectivity.analyze(stairParts, model.floors);
@@ -29,7 +29,8 @@ const FloorPlanProject = {
     plan.derivedZones = FloorPlanStairAccess.generate(plan.stairConnectivity,
       { depth: config.stair_access_depth ?? 1.2 });
     plan.stairHeadroomResults = FloorPlanStairHeadroom.analyze(stairParts, model.floors,
-      FloorPlanRoofGeometry.intersectingSurfaces(plan));
+      [...FloorPlanRoofGeometry.intersectingSurfaces(plan),
+        ...FloorPlanHeadroomAnalysis.slabSurfaces(plan.allSlabs)]);
     plan.preparedProject = {
       model,
       references: new Map(plan.references),

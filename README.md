@@ -19,7 +19,7 @@ Arquivos `.json5` e `.jsonc` também são aceitos. Eles usam a mesma estrutura d
 
 O parser é embutido na aplicação; não é necessário instalar biblioteca ou servidor.
 
-O seletor de piso muda apenas o desenho. **Todos os pisos** sobrepõe os pavimentos na planta baixa e mostra o conjunto na perspectiva 3D; escolher um piso restaura a vista individual. As listas, totais e erros são consolidados entre todos os pisos.
+As caixas de seleção dos pisos mudam apenas o desenho: marque um ou mais pisos para combinar a planta baixa e a perspectiva 3D. **Todos os pisos** marca ou desmarca o conjunto; também é possível desmarcar todos. As listas, totais e erros são consolidados entre todos os pisos.
 
 ## Editar a planta
 
@@ -171,7 +171,7 @@ Também é possível criar cômodos diretamente no console do navegador: `const 
 
 A opção **Somente telhado (3D)** isola as coberturas, ocultando terreno, paredes, escadas e móveis da perspectiva. Ao ativá-la, **Telhados** também é marcado; desmarcar **Telhados** encerra o isolamento.
 
-A opção **Todos os pisos** no controle **Piso** reúne o edifício completo na perspectiva 3D; a planta baixa permanece no último piso individual selecionado. Ao escolher um piso individual, a perspectiva 3D acompanha a seleção: cômodos, itens, aberturas e escadas são filtrados, e paredes que atravessam pavimentos são recortadas nas cotas do piso. No último piso, o topo continua limitado pelos telhados. O terreno e as coberturas continuam como contexto, com os telhados controlados pela opção **Telhados**.
+No controle **Piso**, cada caixa pode ser marcada independentemente. A planta baixa e a perspectiva 3D mostram a combinação selecionada de cômodos, itens, aberturas, escadas e lajes. Paredes que atravessam pavimentos são recortadas nas cotas dos pisos selecionados; no último piso, o topo continua limitado pelos telhados. O terreno permanece como contexto, com os telhados controlados pela opção **Telhados**.
 
 Na perspectiva 3D, os itens são representados por volumes esquemáticos, respeitando posição, piso, dimensões, cor e rotação. Camas, carro, mesa, sofás, poltronas, lavadoras e lareira têm formas próprias; outros itens usam um volume genérico. A terceira dimensão de `size` define a altura. Sem altura positiva, usam-se valores de visualização: carro 1,45 m, mesa 0,75 m, lareira 1,80 m e demais itens 0,60 m.
 

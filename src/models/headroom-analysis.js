@@ -1,6 +1,13 @@
 // Pure height-band analysis. All regions use the supplied physical roof underside.
 const FloorPlanHeadroomAnalysis = {
-  thresholds: [1.3, 2.1, 3],
+  thresholds: [1.3, 2.1, 2.85, 3.1],
+
+  slabSurfaces(slabs = []) {
+    return slabs.map((slab) => ({
+      polygons: slab.parts.map((part) => this.rectangle(part)
+        .map(([x, y]) => [x, y, slab.z - slab.thickness])),
+    }));
+  },
 
   area(polygon) {
     return FloorPlanGeometryOperations.area(polygon);
