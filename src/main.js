@@ -385,6 +385,7 @@ class FloorPlan {
     const roomIds = new Set((floorConfig.rooms ?? []).map((room) => room.id));
     const roofs = FloorPlanWalls.roofLimits(this, this.currentConfig);
     this.walls.forEach((wall) => {
+      if (!this.showAllFloors && !FloorPlanMetrics.wallOverlapsFloor(this, wall, floorConfig.id)) return;
       const ownFloor = wall.sourceRoomIds.some((roomId) => roomIds.has(roomId));
       const parts = ownFloor ? [wall] : this.showAllFloors ? []
         : FloorPlanWalls.spanningPlanParts(wall, Number(floorConfig.z0 ?? 0), roofs);
@@ -782,14 +783,12 @@ class FloorPlan {
     const floors = this.currentConfig?.floors ?? [];
     const selected = new Set(this.visibleFloors().map(floor => String(floor.id)));
     if (id === "__all_floors__") {
-      // Keep at least one floor visible when clearing the whole selection.
       selected.clear();
-      (checked ? floors : floors.slice(0, 1)).forEach(floor => selected.add(String(floor.id)));
+      (checked ? floors : []).forEach(floor => selected.add(String(floor.id)));
     } else if (checked) selected.add(String(id));
     else selected.delete(String(id));
-    if (!selected.size) selected.add(String(id));
     const activeFloor = Math.max(0, floors.findIndex(floor => selected.has(String(floor.id))));
-    return this.renderView({ activeFloor, selectedFloorIds: selected, showAllFloors: selected.size > 1 });
+    return this.renderView({ activeFloor, selectedFloorIds: selected, showAllFloors: selected.size !== 1 });
   }
 
   selectFloor(id) {
@@ -799,6 +798,14 @@ class FloorPlan {
     const index = floors.findIndex((floor) => String(floor.id) === String(all ? this.currentFloorId : id));
     if (!all && index < 0) return this;
     return this.renderView({ activeFloor: Math.max(0, index), showAllFloors: all });
+  }
+
+  selectFloors(ids) {
+    const floors = this.currentConfig?.floors;
+    if (!Array.isArray(floors)) return this;
+    const selected = floors.filter((floor) => ids.includes(floor.id));
+    const index = selected.length ? floors.indexOf(selected[0]) : 0;
+    return this.renderView({ activeFloor: index, selectedFloorIds: selected.map((floor) => floor.id) });
   }
 
   /**
@@ -852,7 +859,7 @@ class FloorPlan {
     const floorConfig = config.floors?.[floorIndex] || config;
     this.selectedFloorIds = selectedFloorIds ? new Set(selectedFloorIds)
       : new Set((this.showAllFloors ? (config.floors ?? [config]) : [floorConfig]).map(floor => String(floor.id)));
-    this.showAllFloors = this.selectedFloorIds.size > 1;
+    this.showAllFloors = this.selectedFloorIds.size !== 1;
     this.currentFloorId = floorConfig.id || null;
     this.currentFloorHeight = Number(floorConfig.z0 ?? 0);
     if (!Number.isFinite(this.currentFloorHeight)) {
@@ -886,7 +893,7 @@ class FloorPlan {
           input.value = "__all_floors__";
           input.id = "floor-option-all";
           input.checked = this.selectedFloorIds.size === config.floors.length;
-          input.indeterminate = this.selectedFloorIds.size < config.floors.length;
+          input.indeterminate = this.selectedFloorIds.size > 0 && this.selectedFloorIds.size < config.floors.length;
           const text = document.createElement("span");
           text.textContent = "Todos os pisos";
           label.append(input, text);
@@ -924,7 +931,7 @@ class FloorPlan {
       this.errors.push({ category: "presentation", message: error.message });
     }
     const visibleRoofs = this.showAllFloors && config.floors
-      ? [...(config.roofs ?? []), ...this.visibleFloors().flatMap((floor) => floor.roofs ?? [])]
+      ? this.allRoofs.filter(roof => this.selectedFloorIds.size && (!roof.floorId || this.selectedFloorIds.has(String(roof.floorId))))
       : this.visibleRoofs(config, floorConfig);
     this.renderRoofs(visibleRoofs);
     FloorPlanHeadroom.render(this);

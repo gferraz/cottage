@@ -71,3 +71,18 @@ test('first-class stairs render in their scoped floor without becoming rooms', (
   assert.equal(plan.roomElements.map(room => room.id).join(','), 'office,bedroom');
   assert.equal(plan.stairElements.map(stair => `${stair.id}:${stair.dataset.floorId}`).join(','), 'entry:ground,upper-flight:upper');
 });
+
+test('independent selections render exactly the requested floors, including none', () => {
+  const { plan, config } = fixture(true);
+  config.floors.push({ id: 'roof', z0: 6, rooms: [{ id: 'attic' }], items: [] });
+  plan.roomDefinitions.set('attic', config.floors[2].rooms[0]);
+  plan.selectedFloorIds = new Set(['ground', 'roof']);
+  plan.renderPlanFloors(config, config.floors[0]);
+  assert.equal(plan.roomElements.map(room => room.id).join(','), 'office,attic');
+  assert.equal(plan.itemElements.map(item => item.id).join(','), 'bed');
+  plan.selectedFloorIds.clear();
+  plan.renderPlanFloors(config, config.floors[0]);
+  assert.equal(plan.roomElements.length, 0);
+  assert.equal(plan.itemElements.length, 0);
+  assert.equal(plan.openings.length, 0);
+});

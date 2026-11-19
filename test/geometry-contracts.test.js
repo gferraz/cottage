@@ -337,7 +337,9 @@ test("headroom results are prepared for every floor regardless of selected floor
   plan.currentFloorId = "ground";
   const hidden = FloorPlanHeadroom.prepare(plan);
   assert.equal(hidden.size, 3);
-  assert.ok(hidden.get("upstairs").areas.every((entry) => entry.area === 12));
+  assert.ok(hidden.get("upstairs").areas.filter((entry) => entry.height <= 3)
+    .every((entry) => entry.area === 12));
+  assert.ok(hidden.get("upstairs").areas.find((entry) => entry.height === 3.1).area < 12);
   assert.equal(FloorPlanHeadroom.enabled(plan, "upstairs"), false);
   plan.currentFloorId = "upper";
   plan.currentConfig.comfort_zones = true;

@@ -3,10 +3,16 @@
  * element group to a focused renderer in this directory.
  */
 const FloorPlanFacades3D = {
+  nextFloorAbove(plan, floor) {
+    const floors = plan.currentConfig?.floors ?? [];
+    const candidates = floors.slice(floors.indexOf(floor) + 1);
+    return candidates.find((candidate) => FloorPlanMetrics.floorsOverlap(plan, floor.id, candidate.id));
+  },
+
   floorView(plan) {
     const floors = plan.currentConfig?.floors;
     if (!floors?.length) return plan;
-    if (plan.selectedFloorIds && plan.selectedFloorIds.size > 1 && plan.selectedFloorIds.size < floors.length) {
+    if (plan.selectedFloorIds && plan.selectedFloorIds.size !== 1 && plan.selectedFloorIds.size < floors.length) {
       const selected = floors.filter(floor => plan.selectedFloorIds.has(String(floor.id)));
       const views = selected.map(floor => this.floorView(Object.assign(Object.create(plan), {
         selectedFloorIds: null, showAllFloors: false, currentFloorId: floor.id,
@@ -16,6 +22,7 @@ const FloorPlanFacades3D = {
         view[key] = views.flatMap(entry => entry[key]);
       view.independentWalls = new Map(views.flatMap((entry, index) =>
         [...entry.independentWalls].map(([id, wall]) => [`${id}-floor-${index}`, wall])));
+      view.allRoofs = (plan.allRoofs ?? []).filter(roof => !roof.floorId || plan.selectedFloorIds.has(String(roof.floorId)));
       view.visibleFloorConfigs = selected;
       view.visibleFloorRanges = views.map(entry => entry.visibleFloorRange);
       return view;
@@ -24,10 +31,12 @@ const FloorPlanFacades3D = {
     const index = Math.max(0, floors.findIndex((floor) => floor.id === plan.currentFloorId));
     const floor = floors[index];
     const z0 = Number(floor.z0);
-    const z1 = index + 1 < floors.length ? Number(floors[index + 1].z0) : Infinity;
+    const nextFloor = this.nextFloorAbove(plan, floor);
+    const z1 = nextFloor ? Number(nextFloor.z0) : Infinity;
     const inFloor = (entry) => entry.floorId === floor.id;
     const clipWall = (wall) => {
       if (wall.scopeFloorId && wall.scopeFloorId !== floor.id) return [];
+      if (!FloorPlanMetrics.wallOverlapsFloor(plan, wall, floor.id)) return [];
       const bottom = wall.base === "terrain" && index === 0 ? Number(wall.z0) : Math.max(Number(wall.z0), z0);
       const top = Math.min(Number(wall.z1), z1);
       if (top - bottom <= 1e-9) return [];
@@ -110,7 +119,7 @@ const FloorPlanFacades3D = {
         );
         const floor = floors[floorIndex] || floors[0] || {};
         const floorZ0 = Number(floor.z0 ?? 0);
-        const nextZ0 = Number(floors[floorIndex + 1]?.z0);
+        const nextZ0 = Number(this.nextFloorAbove(plan, floor)?.z0);
         const wallMaxHeight = Number(floor.ceiling_height ?? floor.wall_max_height ?? 0);
         const defaultHeight = Number.isFinite(nextZ0)
           ? Math.min(Math.max(0, nextZ0 - floorZ0), wallMaxHeight)

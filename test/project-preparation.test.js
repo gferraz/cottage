@@ -165,7 +165,7 @@ test("export restores view state even when snapshot capture fails", () => {
   assert.equal(plan.layerCutoff, "above-zero");
 });
 
-test("floor checkboxes preserve arbitrary selections and keep at least one floor visible", () => {
+test("floor checkboxes preserve arbitrary selections and allow clearing all floors", () => {
   const plan = newPlan();
   plan.currentConfig = { floors: [{ id: 'ground' }, { id: 'upper' }, { id: 'attic' }] };
   plan.showAllFloors = true;
@@ -179,7 +179,14 @@ test("floor checkboxes preserve arbitrary selections and keep at least one floor
   assert.deepEqual(plan.visibleFloors().map(floor => floor.id), ['ground', 'attic']);
   plan.toggleFloor('attic', false);
   plan.toggleFloor('ground', false);
-  assert.deepEqual([...plan.selectedFloorIds], ['ground']);
+  assert.deepEqual([...plan.selectedFloorIds], []);
   plan.toggleFloor('__all_floors__', true);
   assert.equal(plan.selectedFloorIds.size, 3);
+});
+
+test("export restores an independent floor selection", () => {
+  const { plan, calls } = capturePlan();
+  plan.selectedFloorIds = new Set(["ground"]);
+  FloorPlanHtmlExport.captureFloorViews(plan, floor => floor.id);
+  assert.deepEqual([...calls.at(-3).selectedFloorIds], ["ground"]);
 });

@@ -46,6 +46,7 @@ const FloorPlanGeometryDomain = {
       .filter((room) => room.classes?.split(/\s+/).includes("stair-flight"))
       .map((room) => plan.normalizeGeometry(room));
     const currentHeight = plan.currentFloorHeight;
+    const floorBounds = (floorConfig.rooms ?? []).map((room) => plan.getRoomGeometry(room.id));
 
     floors.forEach((sourceFloor) => {
       (sourceFloor.rooms ?? [])
@@ -58,6 +59,10 @@ const FloorPlanGeometryDomain = {
             currentHeight > geometry.z1
           )
             return;
+          const touchesFloor = floorBounds.some((bounds) => bounds &&
+            geometry.x <= bounds.x1() + 1e-9 && geometry.x + geometry.w >= bounds.x0() - 1e-9 &&
+            geometry.y <= bounds.y1() + 1e-9 && geometry.y + geometry.l >= bounds.y0() - 1e-9);
+          if (!touchesFloor) return;
           const alreadyVisible = existingStairs.some((existing) => {
             const overlapWidth = Math.max(
               0,

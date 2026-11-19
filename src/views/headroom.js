@@ -12,7 +12,7 @@ const FloorPlanHeadroomView = {
         : `${label}: altura ≥ ${plan.formatMeters(height)} m — ${plan.formatMeters(area)} m²`;
       path.append(title);
       svg.append(path);
-      if (labelPosition && (allLabels || height < 3)) {
+      if (labelPosition && (allLabels || height < 2.85)) {
         const annotation = document.createElementNS(svg.namespaceURI, "text");
         annotation.setAttribute("class", "headroom-height-label");
         annotation.setAttribute("x", labelPosition[0]);

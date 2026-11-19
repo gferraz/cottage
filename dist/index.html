@@ -1817,6 +1817,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
 
 /* Nested solid tiers have their own front and side edges in plan. */
 .stair-flight[data-stair-type="solid-flared"]::after { content: none; }
+.comfort-legend .comfort-blue { background: rgba(45, 125, 220, 0.28); }
 
 </style>
   </head>
@@ -2844,8 +2845,9 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
       <p id="comfort-legend" class="comfort-legend" hidden>
         Altura livre: <span><i class="comfort-below"></i>&lt; 1,30 m</span>
         <span><i class="comfort-low"></i>1,30–2,10 m</span>
-        <span><i class="comfort-medium"></i>2,10–3,00 m</span>
-        <span><i class="comfort-high"></i>≥ 3,00 m</span>
+        <span><i class="comfort-medium"></i>2,10–2,85 m</span>
+        <span><i class="comfort-high"></i>2,85–3,10 m</span>
+        <span><i class="comfort-blue"></i>≥ 3,10 m</span>
       </p>
       <div class="site" id="floor-plan">
         <svg class="terrain-layer" id="terrain-layer" aria-label="Limite do terreno"></svg>
@@ -3470,9 +3472,9 @@ const FloorPlanOpenings = {
         ? floorZ0 + plan.resolve(openingDefaults.z0 ?? 0)
         : plan.resolve(opening.z0);
     const height = plan.resolve(opening.h ?? openingDefaults.h ?? 2.1);
-    if (![z0, height].every(Number.isFinite) || z0 < 0 || height <= 0) {
+    if (![z0, height].every(Number.isFinite) || height <= 0) {
       throw new Error(
-        "Opening z0 must be non-negative and h must be greater than zero",
+        "Opening z0 must be finite and h must be greater than zero",
       );
     }
     const normalized = {
@@ -5275,6 +5277,26 @@ window.FloorPlanGeometryBox = FloorPlanGeometryBox;
 
 
 const FloorPlanMetrics = {
+  floorsOverlap(plan, firstId, secondId) {
+    if (firstId === secondId) return true;
+    const footprint = (id) => (plan.allSlabs ?? []).filter((slab) => slab.floorId === id)
+      .flatMap((slab) => slab.parts);
+    const first = footprint(firstId), second = footprint(secondId);
+    if (!first.length || !second.length) return true;
+    return first.some((a) => second.some((b) =>
+      Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x) > 1e-8 &&
+      Math.min(a.y + a.l, b.y + b.l) - Math.max(a.y, b.y) > 1e-8));
+  },
+
+  wallOverlapsFloor(plan, wall, floorId) {
+    if (!wall.sourceRoomIds?.length) return true;
+    return wall.sourceRoomIds.some((id) => {
+      const sourceId = plan.roomFloorConfigs?.get(id)?.id
+        ?? plan.allRooms?.find((room) => room.id === id)?.floorId;
+      return !sourceId || this.floorsOverlap(plan, sourceId, floorId);
+    });
+  },
+
   bounds(plan, { includeItems = false } = {}) {
     const elements = includeItems
       ? [...plan.roomElements, ...plan.itemElements]
@@ -5297,7 +5319,7 @@ const FloorPlanMetrics = {
       const x1 = reference.x1(), y1 = reference.y1();
       return { x0, y0, x1, y1, width: x1 - x0, height: y1 - y0 };
     }
-    const referenceRooms = plan.model?.floors?.[0]?.rooms ?? [];
+    const referenceRooms = plan.model?.floors?.flatMap((floor) => floor.rooms ?? []) ?? [];
     const geometries = referenceRooms
       .map((room) =>
         room.id && plan.roomDefinitions?.has(room.id)
@@ -7270,6 +7292,7 @@ const FloorPlanSlabs = {
     if (!target) return;
     target.replaceChildren();
     for (const slab of plan.allSlabs ?? []) {
+      if (plan.selectedFloorIds && !plan.selectedFloorIds.has(slab.floorId)) continue;
       const label = document.createElement("label");
       label.className = "slab-option";
       const input = document.createElement("input");
@@ -7293,6 +7316,7 @@ const FloorPlanSlabs = {
   render({ plan, THREE, scene }) {
     const material = new THREE.MeshLambertMaterial({ color: "#c9c5ba" });
     for (const slab of plan.allSlabs ?? []) {
+      if (plan.selectedFloorIds && !plan.selectedFloorIds.has(String(slab.floorId))) continue;
       if (plan.hiddenSlabs?.has(slab.key) || (plan.visibleFloorConfigs ? !plan.visibleFloorConfigs.some(floor => floor.id === slab.floorId)
         : plan.visibleFloor && slab.floorId !== plan.visibleFloor.id)) continue;
       const group = new THREE.Group();
@@ -7950,10 +7974,16 @@ window.FloorPlan3DSun = FloorPlan3DSun;
  * element group to a focused renderer in this directory.
  */
 const FloorPlanFacades3D = {
+  nextFloorAbove(plan, floor) {
+    const floors = plan.currentConfig?.floors ?? [];
+    const candidates = floors.slice(floors.indexOf(floor) + 1);
+    return candidates.find((candidate) => FloorPlanMetrics.floorsOverlap(plan, floor.id, candidate.id));
+  },
+
   floorView(plan) {
     const floors = plan.currentConfig?.floors;
     if (!floors?.length) return plan;
-    if (plan.selectedFloorIds && plan.selectedFloorIds.size > 1 && plan.selectedFloorIds.size < floors.length) {
+    if (plan.selectedFloorIds && plan.selectedFloorIds.size !== 1 && plan.selectedFloorIds.size < floors.length) {
       const selected = floors.filter(floor => plan.selectedFloorIds.has(String(floor.id)));
       const views = selected.map(floor => this.floorView(Object.assign(Object.create(plan), {
         selectedFloorIds: null, showAllFloors: false, currentFloorId: floor.id,
@@ -7963,6 +7993,7 @@ const FloorPlanFacades3D = {
         view[key] = views.flatMap(entry => entry[key]);
       view.independentWalls = new Map(views.flatMap((entry, index) =>
         [...entry.independentWalls].map(([id, wall]) => [`${id}-floor-${index}`, wall])));
+      view.allRoofs = (plan.allRoofs ?? []).filter(roof => !roof.floorId || plan.selectedFloorIds.has(String(roof.floorId)));
       view.visibleFloorConfigs = selected;
       view.visibleFloorRanges = views.map(entry => entry.visibleFloorRange);
       return view;
@@ -7971,10 +8002,12 @@ const FloorPlanFacades3D = {
     const index = Math.max(0, floors.findIndex((floor) => floor.id === plan.currentFloorId));
     const floor = floors[index];
     const z0 = Number(floor.z0);
-    const z1 = index + 1 < floors.length ? Number(floors[index + 1].z0) : Infinity;
+    const nextFloor = this.nextFloorAbove(plan, floor);
+    const z1 = nextFloor ? Number(nextFloor.z0) : Infinity;
     const inFloor = (entry) => entry.floorId === floor.id;
     const clipWall = (wall) => {
       if (wall.scopeFloorId && wall.scopeFloorId !== floor.id) return [];
+      if (!FloorPlanMetrics.wallOverlapsFloor(plan, wall, floor.id)) return [];
       const bottom = wall.base === "terrain" && index === 0 ? Number(wall.z0) : Math.max(Number(wall.z0), z0);
       const top = Math.min(Number(wall.z1), z1);
       if (top - bottom <= 1e-9) return [];
@@ -8057,7 +8090,7 @@ const FloorPlanFacades3D = {
         );
         const floor = floors[floorIndex] || floors[0] || {};
         const floorZ0 = Number(floor.z0 ?? 0);
-        const nextZ0 = Number(floors[floorIndex + 1]?.z0);
+        const nextZ0 = Number(this.nextFloorAbove(plan, floor)?.z0);
         const wallMaxHeight = Number(floor.ceiling_height ?? floor.wall_max_height ?? 0);
         const defaultHeight = Number.isFinite(nextZ0)
           ? Math.min(Math.max(0, nextZ0 - floorZ0), wallMaxHeight)
@@ -9122,7 +9155,14 @@ window.FloorPlanRoofs = FloorPlanRoofs;
 
 // Pure height-band analysis. All regions use the supplied physical roof underside.
 const FloorPlanHeadroomAnalysis = {
-  thresholds: [1.3, 2.1, 3],
+  thresholds: [1.3, 2.1, 2.85, 3.1],
+
+  slabSurfaces(slabs = []) {
+    return slabs.map((slab) => ({
+      polygons: slab.parts.map((part) => this.rectangle(part)
+        .map(([x, y]) => [x, y, slab.z - slab.thickness])),
+    }));
+  },
 
   area(polygon) {
     return FloorPlanGeometryOperations.area(polygon);
@@ -9207,7 +9247,7 @@ const FloorPlanHeadroomView = {
         : `${label}: altura ≥ ${plan.formatMeters(height)} m — ${plan.formatMeters(area)} m²`;
       path.append(title);
       svg.append(path);
-      if (labelPosition && (allLabels || height < 3)) {
+      if (labelPosition && (allLabels || height < 2.85)) {
         const annotation = document.createElementNS(svg.namespaceURI, "text");
         annotation.setAttribute("class", "headroom-height-label");
         annotation.setAttribute("x", labelPosition[0]);
@@ -9244,14 +9284,14 @@ window.FloorPlanHeadroomView = FloorPlanHeadroomView;
 
 
 const FloorPlanHeadroom = {
-  thresholds: [1.3, 2.1, 3],
+  thresholds: [1.3, 2.1, 2.85, 3.1],
 
   enabled(plan, roomId) {
     return plan.roomDefinitions.get(roomId)?.comfort_zones
       ?? plan.roomFloorConfigs.get(roomId)?.comfort_zones
       ?? plan.currentConfig?.comfort_zones ?? true;
   },
-  colors: ["rgba(240, 140, 35, 0.14)", "rgba(245, 215, 75, 0.14)", "rgba(255, 255, 255, 0.35)"],
+  colors: ["rgba(240, 140, 35, 0.14)", "rgba(245, 215, 75, 0.14)", "rgba(255, 255, 255, 0.35)", "rgba(45, 125, 220, 0.28)"],
 
   area(polygon) {
     return FloorPlanGeometryOperations.area(polygon);
@@ -9294,7 +9334,10 @@ const FloorPlanHeadroom = {
       x: item.x, y: item.y, w: item.w, l: item.l, floorId: item.floorId,
       overlapTargets: plan.normalizeOverlapTargets(item.overlaps),
     }));
-    const surfaces = FloorPlanRoofGeometry.intersectingSurfaces(plan);
+    const surfaces = [
+      ...FloorPlanRoofGeometry.intersectingSurfaces(plan),
+      ...FloorPlanHeadroomAnalysis.slabSurfaces(plan.allSlabs),
+    ];
     plan.headroomResults = new Map(rooms.map((room) => {
       const deductions = FloorPlanRoomArea.deductionsFor(room, rooms, items, { sameFloor: true });
       return [room.id, FloorPlanHeadroomAnalysis.analyzeRoom(room, surfaces, deductions, this.thresholds)];
@@ -9970,6 +10013,7 @@ const FloorPlanWalls = {
 
   renderIndependentWalls(plan) {
     plan.wallElements = [];
+    if (plan.selectedFloorIds?.size === 0) return;
     plan.independentWalls.forEach((wall) => {
       if (wall.scopeFloorId && (plan.selectedFloorIds ? !plan.selectedFloorIds.has(String(wall.scopeFloorId))
         : !plan.showAllFloors && wall.scopeFloorId !== plan.currentFloorId)) return;
@@ -10009,6 +10053,26 @@ const FloorPlanWalls = {
     });
   },
 
+  overheadSlabLimits(plan, floors, floorZ, padding = 0) {
+    return floors.filter(floor => Number(floor.z0) > floorZ + 1e-8).flatMap(floor => {
+      const slabs = floor.slabs ?? [{ thickness: 0.15 }];
+      return slabs.flatMap(slab => {
+        const z = Number(floor.z0) - Number(slab.thickness ?? 0.15);
+        if (z <= floorZ + 1e-8) return [];
+        return (floor.rooms ?? []).flatMap(room => {
+          const isStair = part => /\bstair-(flight|landing)\b/.test(part.classes ?? "");
+          if (isStair(room) || (room.parts?.length && room.parts.every(isStair))) return [];
+          return (plan.getRoomGeometry(room.id)?.geometryParts ?? []).map(({ x, y, w, l }) => ({
+            peakZ: z,
+            bounds: [[-1, 0, 0, x - padding], [1, 0, 0, -x - w - padding],
+              [0, -1, 0, y - padding], [0, 1, 0, -y - l - padding]],
+            slopes: [[0, 0, 1, -z]],
+          }));
+        });
+      });
+    });
+  },
+
   normalizeRoomWalls(plan, config) {
     plan.walls = new Map();
     plan.independentWalls = new Map();
@@ -10034,16 +10098,14 @@ const FloorPlanWalls = {
       try {
         const geometry = plan.getRoomGeometry(roomId);
         const floorZ0 = Number(floor.z0 ?? 0);
-        const nextFloorIndex = floors.indexOf(floor) + 1;
-        const nextFloorZ0 = Number(floors[nextFloorIndex]?.z0);
         const configuredMaxHeight = Number(floor.ceiling_height ?? floor.wall_max_height);
-        const floorHeight = Number.isFinite(nextFloorZ0)
-          ? Math.min(nextFloorZ0 - floorZ0, configuredMaxHeight)
-          : configuredMaxHeight;
+        const floorHeight = configuredMaxHeight;
         const explicitHeight = Number(geometry.h());
         let height = explicitHeight > 0 ? explicitHeight : floorHeight;
         const undersideLimits = this.undersideLimits(plan, definition.top, thickness / 2);
         if (undersideLimits.length) height = Math.max(height, ...undersideLimits.map((limit) => limit.peakZ - floorZ0));
+        if (definition.top === undefined && !(explicitHeight > 0))
+          undersideLimits.push(...this.overheadSlabLimits(plan, floors, floorZ0, thickness / 2));
         const roofOnly = ["roofs", "roof"].includes(definition.top);
         if (roofOnly) {
           const limits = this.roofLimits(plan, config);
@@ -13302,6 +13364,7 @@ const FloorPlanGeometryDomain = {
       .filter((room) => room.classes?.split(/\s+/).includes("stair-flight"))
       .map((room) => plan.normalizeGeometry(room));
     const currentHeight = plan.currentFloorHeight;
+    const floorBounds = (floorConfig.rooms ?? []).map((room) => plan.getRoomGeometry(room.id));
 
     floors.forEach((sourceFloor) => {
       (sourceFloor.rooms ?? [])
@@ -13314,6 +13377,10 @@ const FloorPlanGeometryDomain = {
             currentHeight > geometry.z1
           )
             return;
+          const touchesFloor = floorBounds.some((bounds) => bounds &&
+            geometry.x <= bounds.x1() + 1e-9 && geometry.x + geometry.w >= bounds.x0() - 1e-9 &&
+            geometry.y <= bounds.y1() + 1e-9 && geometry.y + geometry.l >= bounds.y0() - 1e-9);
+          if (!touchesFloor) return;
           const alreadyVisible = existingStairs.some((existing) => {
             const overlapWidth = Math.max(
               0,
@@ -14566,9 +14633,9 @@ const FloorPlanProject = {
     const floorErrors = new Map(model.floors.map((floor) =>
       [floor, FloorPlanReferences.collectFloorFeatureErrors(plan, floor)]));
     plan.prepareGlobalLists(config);
+    plan.allSlabs = FloorPlanSlabs.collect(plan);
     FloorPlanHeadroom.prepare(plan);
     FloorPlanCommunications.prepare(plan);
-    plan.allSlabs = FloorPlanSlabs.collect(plan);
     const stairParts = [...plan.allRooms, ...(plan.allStairs ?? [])].filter((room) => !plan.invalidRoomIds.has(room.id))
       .flatMap((room) => plan.getRoomGeometry(room.id).normalizedParts);
     plan.stairConnectivity = FloorPlanStairConnectivity.analyze(stairParts, model.floors);
@@ -14576,7 +14643,8 @@ const FloorPlanProject = {
     plan.derivedZones = FloorPlanStairAccess.generate(plan.stairConnectivity,
       { depth: config.stair_access_depth ?? 1.2 });
     plan.stairHeadroomResults = FloorPlanStairHeadroom.analyze(stairParts, model.floors,
-      FloorPlanRoofGeometry.intersectingSurfaces(plan));
+      [...FloorPlanRoofGeometry.intersectingSurfaces(plan),
+        ...FloorPlanHeadroomAnalysis.slabSurfaces(plan.allSlabs)]);
     plan.preparedProject = {
       model,
       references: new Map(plan.references),
@@ -14995,6 +15063,7 @@ class FloorPlan {
     const roomIds = new Set((floorConfig.rooms ?? []).map((room) => room.id));
     const roofs = FloorPlanWalls.roofLimits(this, this.currentConfig);
     this.walls.forEach((wall) => {
+      if (!this.showAllFloors && !FloorPlanMetrics.wallOverlapsFloor(this, wall, floorConfig.id)) return;
       const ownFloor = wall.sourceRoomIds.some((roomId) => roomIds.has(roomId));
       const parts = ownFloor ? [wall] : this.showAllFloors ? []
         : FloorPlanWalls.spanningPlanParts(wall, Number(floorConfig.z0 ?? 0), roofs);
@@ -15392,14 +15461,12 @@ class FloorPlan {
     const floors = this.currentConfig?.floors ?? [];
     const selected = new Set(this.visibleFloors().map(floor => String(floor.id)));
     if (id === "__all_floors__") {
-      // Keep at least one floor visible when clearing the whole selection.
       selected.clear();
-      (checked ? floors : floors.slice(0, 1)).forEach(floor => selected.add(String(floor.id)));
+      (checked ? floors : []).forEach(floor => selected.add(String(floor.id)));
     } else if (checked) selected.add(String(id));
     else selected.delete(String(id));
-    if (!selected.size) selected.add(String(id));
     const activeFloor = Math.max(0, floors.findIndex(floor => selected.has(String(floor.id))));
-    return this.renderView({ activeFloor, selectedFloorIds: selected, showAllFloors: selected.size > 1 });
+    return this.renderView({ activeFloor, selectedFloorIds: selected, showAllFloors: selected.size !== 1 });
   }
 
   selectFloor(id) {
@@ -15409,6 +15476,14 @@ class FloorPlan {
     const index = floors.findIndex((floor) => String(floor.id) === String(all ? this.currentFloorId : id));
     if (!all && index < 0) return this;
     return this.renderView({ activeFloor: Math.max(0, index), showAllFloors: all });
+  }
+
+  selectFloors(ids) {
+    const floors = this.currentConfig?.floors;
+    if (!Array.isArray(floors)) return this;
+    const selected = floors.filter((floor) => ids.includes(floor.id));
+    const index = selected.length ? floors.indexOf(selected[0]) : 0;
+    return this.renderView({ activeFloor: index, selectedFloorIds: selected.map((floor) => floor.id) });
   }
 
   /**
@@ -15462,7 +15537,7 @@ class FloorPlan {
     const floorConfig = config.floors?.[floorIndex] || config;
     this.selectedFloorIds = selectedFloorIds ? new Set(selectedFloorIds)
       : new Set((this.showAllFloors ? (config.floors ?? [config]) : [floorConfig]).map(floor => String(floor.id)));
-    this.showAllFloors = this.selectedFloorIds.size > 1;
+    this.showAllFloors = this.selectedFloorIds.size !== 1;
     this.currentFloorId = floorConfig.id || null;
     this.currentFloorHeight = Number(floorConfig.z0 ?? 0);
     if (!Number.isFinite(this.currentFloorHeight)) {
@@ -15496,7 +15571,7 @@ class FloorPlan {
           input.value = "__all_floors__";
           input.id = "floor-option-all";
           input.checked = this.selectedFloorIds.size === config.floors.length;
-          input.indeterminate = this.selectedFloorIds.size < config.floors.length;
+          input.indeterminate = this.selectedFloorIds.size > 0 && this.selectedFloorIds.size < config.floors.length;
           const text = document.createElement("span");
           text.textContent = "Todos os pisos";
           label.append(input, text);
@@ -15534,7 +15609,7 @@ class FloorPlan {
       this.errors.push({ category: "presentation", message: error.message });
     }
     const visibleRoofs = this.showAllFloors && config.floors
-      ? [...(config.roofs ?? []), ...this.visibleFloors().flatMap((floor) => floor.roofs ?? [])]
+      ? this.allRoofs.filter(roof => this.selectedFloorIds.size && (!roof.floorId || this.selectedFloorIds.has(String(roof.floorId))))
       : this.visibleRoofs(config, floorConfig);
     this.renderRoofs(visibleRoofs);
     FloorPlanHeadroom.render(this);

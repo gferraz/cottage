@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Planta térrea — separada por módulos</title>
     <link rel="stylesheet" href="src/config/theme.css" />
-  <link rel="stylesheet" href="src/floor-plan.css?v=stair-access-2" />
+  <link rel="stylesheet" href="src/floor-plan.css?v=merge-20261119" />
   </head>
   <body class="page-empty">
 <template id="portable-export-css"><style>
@@ -1031,8 +1031,9 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
       <p id="comfort-legend" class="comfort-legend" hidden>
         Altura livre: <span><i class="comfort-below"></i>&lt; 1,30 m</span>
         <span><i class="comfort-low"></i>1,30–2,10 m</span>
-        <span><i class="comfort-medium"></i>2,10–3,00 m</span>
-        <span><i class="comfort-high"></i>≥ 3,00 m</span>
+        <span><i class="comfort-medium"></i>2,10–2,85 m</span>
+        <span><i class="comfort-high"></i>2,85–3,10 m</span>
+        <span><i class="comfort-blue"></i>≥ 3,10 m</span>
       </p>
       <div class="site" id="floor-plan">
         <svg class="terrain-layer" id="terrain-layer" aria-label="Limite do terreno"></svg>
@@ -1059,57 +1060,57 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
       window.THREE = THREE;
       window.dispatchEvent(new Event("three-ready"));
     </script>
-    <script src="src/config/parser.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/openings.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/config/coordinates.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/expressions.js?v=expressions-20261118" defer></script>
-    <script src="src/models/geometry-operations.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/room-area.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/model.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/validation.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/renderer.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/legend.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/exports/dxf.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/geometry.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/geometry-box.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/metrics.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/viewport.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/terrain.js?v=local-flat-areas-1" defer></script>
-    <script src="src/views/terrain.js?v=local-flat-areas-1" defer></script>
-    <script src="src/views/guides.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/facades.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/3d/slabs.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/3d/site.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/3d/walls.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/3d/elements.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/3d/roofs.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/3d/sun.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/3d/renderer.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/roof-geometry.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/roofs.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/headroom-analysis.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/headroom.js?v=stair-headroom-1" defer></script>
-    <script src="src/models/headroom.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/walls.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/elements.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/references.js?v=project-view-1" defer></script>
-    <script src="src/models/communications.js?v=communications-1" defer></script>
-    <script src="src/models/overlap-analysis.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/models/layers.js?v=stair-access-2" defer></script>
-    <script src="src/views/lists.js?v=communications-1" defer></script>
-    <script src="src/exports/text.js?v=communications-1" defer></script>
-    <script src="src/models/geometry-domain.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/views/dom.js?v=solid-stair-outline-1" defer></script>
-    <script src="src/exports/html.js?v=stair-headroom-1" defer></script>
-    <script src="src/models/stair-connectivity.js?v=derived-zones-1" defer></script>
-    <script src="src/models/derived-zones.js?v=derived-zones-1" defer></script>
-    <script src="src/models/stair-headroom.js?v=stair-headroom-1" defer></script>
-    <script src="src/views/stair-headroom.js?v=stair-headroom-1" defer></script>
-    <script src="src/models/stair-access.js?v=stair-access-2" defer></script>
-    <script src="src/views/stair-access.js?v=stair-access-2" defer></script>
-    <script src="src/models/project.js?v=stair-access-2" defer></script>
-    <script src="src/main.js?v=stair-access-2" defer></script>
-    <script src="src/config/catalog.js?v=geometry-analysis-20261117" defer></script>
-    <script src="src/config/app.js?v=geometry-analysis-20261117" defer></script>
+    <script src="src/config/parser.js?v=merge-20261119" defer></script>
+    <script src="src/models/openings.js?v=merge-20261119" defer></script>
+    <script src="src/config/coordinates.js?v=merge-20261119" defer></script>
+    <script src="src/models/expressions.js?v=merge-20261119" defer></script>
+    <script src="src/models/geometry-operations.js?v=merge-20261119" defer></script>
+    <script src="src/models/room-area.js?v=merge-20261119" defer></script>
+    <script src="src/models/model.js?v=merge-20261119" defer></script>
+    <script src="src/models/validation.js?v=merge-20261119" defer></script>
+    <script src="src/views/renderer.js?v=merge-20261119" defer></script>
+    <script src="src/views/legend.js?v=merge-20261119" defer></script>
+    <script src="src/exports/dxf.js?v=merge-20261119" defer></script>
+    <script src="src/models/geometry.js?v=merge-20261119" defer></script>
+    <script src="src/models/geometry-box.js?v=merge-20261119" defer></script>
+    <script src="src/models/metrics.js?v=merge-20261119" defer></script>
+    <script src="src/views/viewport.js?v=merge-20261119" defer></script>
+    <script src="src/models/terrain.js?v=merge-20261119" defer></script>
+    <script src="src/views/terrain.js?v=merge-20261119" defer></script>
+    <script src="src/views/guides.js?v=merge-20261119" defer></script>
+    <script src="src/views/facades.js?v=merge-20261119" defer></script>
+    <script src="src/views/3d/slabs.js?v=merge-20261119" defer></script>
+    <script src="src/views/3d/site.js?v=merge-20261119" defer></script>
+    <script src="src/views/3d/walls.js?v=merge-20261119" defer></script>
+    <script src="src/views/3d/elements.js?v=merge-20261119" defer></script>
+    <script src="src/views/3d/roofs.js?v=merge-20261119" defer></script>
+    <script src="src/views/3d/sun.js?v=merge-20261119" defer></script>
+    <script src="src/views/3d/renderer.js?v=merge-20261119" defer></script>
+    <script src="src/models/roof-geometry.js?v=merge-20261119" defer></script>
+    <script src="src/views/roofs.js?v=merge-20261119" defer></script>
+    <script src="src/models/headroom-analysis.js?v=merge-20261119" defer></script>
+    <script src="src/views/headroom.js?v=merge-20261119" defer></script>
+    <script src="src/models/headroom.js?v=merge-20261119" defer></script>
+    <script src="src/models/walls.js?v=merge-20261119" defer></script>
+    <script src="src/views/elements.js?v=merge-20261119" defer></script>
+    <script src="src/models/references.js?v=merge-20261119" defer></script>
+    <script src="src/models/communications.js?v=merge-20261119" defer></script>
+    <script src="src/models/overlap-analysis.js?v=merge-20261119" defer></script>
+    <script src="src/models/layers.js?v=merge-20261119" defer></script>
+    <script src="src/views/lists.js?v=merge-20261119" defer></script>
+    <script src="src/exports/text.js?v=merge-20261119" defer></script>
+    <script src="src/models/geometry-domain.js?v=merge-20261119" defer></script>
+    <script src="src/views/dom.js?v=merge-20261119" defer></script>
+    <script src="src/exports/html.js?v=merge-20261119" defer></script>
+    <script src="src/models/stair-connectivity.js?v=merge-20261119" defer></script>
+    <script src="src/models/derived-zones.js?v=merge-20261119" defer></script>
+    <script src="src/models/stair-headroom.js?v=merge-20261119" defer></script>
+    <script src="src/views/stair-headroom.js?v=merge-20261119" defer></script>
+    <script src="src/models/stair-access.js?v=merge-20261119" defer></script>
+    <script src="src/views/stair-access.js?v=merge-20261119" defer></script>
+    <script src="src/models/project.js?v=merge-20261119" defer></script>
+    <script src="src/main.js?v=merge-20261119" defer></script>
+    <script src="src/config/catalog.js?v=merge-20261119" defer></script>
+    <script src="src/config/app.js?v=merge-20261119" defer></script>
   </body>
 </html>

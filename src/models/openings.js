@@ -428,9 +428,9 @@ const FloorPlanOpenings = {
         ? floorZ0 + plan.resolve(openingDefaults.z0 ?? 0)
         : plan.resolve(opening.z0);
     const height = plan.resolve(opening.h ?? openingDefaults.h ?? 2.1);
-    if (![z0, height].every(Number.isFinite) || z0 < 0 || height <= 0) {
+    if (![z0, height].every(Number.isFinite) || height <= 0) {
       throw new Error(
-        "Opening z0 must be non-negative and h must be greater than zero",
+        "Opening z0 must be finite and h must be greater than zero",
       );
     }
     const normalized = {
