@@ -71,3 +71,26 @@ test('rendered features retain categories and markdown separates doors, windows 
   assert.ok(text.indexOf('window-id') > text.indexOf('### Janelas'));
   assert.ok(text.indexOf('opening-id') > text.indexOf('### Vãos'));
 });
+
+test('independent windows preserve identity and geometry when moved out of rooms', (t) => {
+  t.mock.method(FloorPlanWalls, 'resolveRoomSide', () => ({ id: 'parede-sala' }));
+  const room = { id: 'sala', pos: [0, 0], size: [6, 4], walls: ['top', 'right', 'bottom', 'left'] };
+  const window = { id: 'janela-sala', from: 'sala.top', w: 1.5, dx: 2 };
+  const source = value => FloorPlanParser.parse(JSON.stringify({ z0: 0, ceiling_height: 3, ...value }), { filename: 'plan.json5' });
+  const independent = prepare(source({ rooms: [room], windows: [window] }));
+  const local = prepare(source({ rooms: [{ ...room, windows: [{ ...window, from: 'top' }] }] }));
+  assert.deepEqual(independent.entries, local.entries);
+  const normalized = independent.plan.normalizeOpening({ ...window, type: 'window' });
+  assert.equal(normalized.id, 'janela-sala');
+  assert.equal(normalized.element.type, 'window');
+  independent.plan.currentFloorHeight = 3;
+  const relative = independent.plan.normalizeOpening({ ...window, type: 'window',
+    dx: 'sala.w / 2 - 1', dz: '0.5 + 0.4', z0: 9 });
+  assert.deepEqual([relative.x, relative.y, relative.z0, relative.position], [2, 0, 3.9, 2]);
+  const vertical = independent.plan.normalizeOpening({ ...window, from: 'sala.left', type: 'window', dx: 1, dy: 0, dz: 0 });
+  assert.deepEqual([vertical.x, vertical.y, vertical.z0], [0, 1, 3]);
+  assert.throws(() => independent.plan.normalizeOpening({ ...window, type: 'window', dx: 6 }), /outside wall/);
+  assert.throws(() => independent.plan.normalizeOpening({ ...window, type: 'window', dz: NaN }), /z0 must be finite/);
+
+  assert.equal(independent.plan.normalizeOpening({ from: 'sala.top', type: 'window' }).id, 'sala-exterior-0');
+});

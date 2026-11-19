@@ -64,7 +64,7 @@
           id: "hall",
           label: "Hall",
           classes: "circulation",
-          walls: ["rear"],
+          walls: ["front", "rear"],
           from: ["office.x1", "main.y0"],
           to:   ["x0 + 1.4", "y0 + 2"],
           doors: [{from: "front", to: "porch", w: 1}, {from: "right", to: "office"}]
@@ -78,10 +78,10 @@
           windows: [
             // Janelas laterais com venezianas externas de abrir previstas.
             {id: "living-window-side-front", from: "right", to: "exterior", position: 0.3, w: 0.6, h: 1.5, z0: "ground.z0 + 0.9"},
-            {id: "living-window-side-rear", from: "right", to: "exterior", position: "living.l - 0.9", w: 0.6, h: 1.5, z0: "ground.z0 + 0.9"},
+            {id: "living-window-side-rear",  from: "right", to: "exterior", position: "living.l - 0.9", w: 0.6, h: 1.5, z0: "ground.z0 + 0.9"},
             // Conjunto frontal de 2 m, centralizado no sofá, sem parede entre módulos.
             // Módulos laterais de abrir e dois centrais fixos previstos na esquadria.
-            {id: "living-window-front-1", from: "front", to: "exterior", position: "living-sofa.xc - living.x0 - 1", w: 0.5, h: 1.5, z0: "ground.z0 + 1.1"},
+            {id: "living-window-front-1", from: "front", to: "exterior", position: "living-sofa.xc - living.x0 - 1", w: 0.5, h: 1.5, z0: "z0 + 1.1"},
             {id: "living-window-front-2", from: "front", to: "exterior", position: "living-sofa.xc - living.x0 - 0.5", w: 0.5, h: 1.5, z0: "ground.z0 + 1.1"},
             {id: "living-window-front-3", from: "front", to: "exterior", position: "living-sofa.xc - living.x0", w: 0.5, h: 1.5, z0: "ground.z0 + 1.1"},
             {id: "living-window-front-4", from: "front", to: "exterior", position: "living-sofa.xc - living.x0 + 0.5", w: 0.5, h: 1.5, z0: "ground.z0 + 1.1"}

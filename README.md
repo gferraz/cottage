@@ -272,7 +272,7 @@ Use as coleções `doors`, `windows` e `openings` na raiz de plantas com piso ú
 
 `openings` sem `type` significa vão livre, inclusive na largura padrão de 1 m; para uma porta, use `doors`. Aberturas entre pavimentos continuam em `openings`, com IDs dos pisos em `from/to` e geometria própria. As coleções das coberturas seguem as restrições existentes: fechamentos verticais não são criados automaticamente; uma superfície ausente gera erro e requer uma parede explícita. Aceitar a coleção no contrato não cria suporte a recortes nas águas inclinadas do telhado.
 
-`to` omitido significa exterior. Sem `dx`/`dy` e `w`, a aplicação encontra o segmento comum, centraliza a abertura e usa os padrões acima. Os campos explícitos do elemento prevalecem sobre os padrões de `config`, que prevalecem sobre o catálogo. Use `dx` para paredes horizontais e `dy` para verticais. O ID é gerado como `from-to-deslocamento-em-cm`. Portas e janelas são desenhadas com quatro bordas; vãos livres mostram apenas as bordas laterais.
+`to` omitido significa exterior. Sem `dx`/`dy` e `w`, a aplicação encontra o segmento comum, centraliza a abertura e usa os padrões acima. Os campos explícitos do elemento prevalecem sobre os padrões de `config`, que prevalecem sobre o catálogo. Use `dx` ao longo de qualquer parede; `dy` continua aceito nas verticais. O ID explícito é preservado; quando omitido, é gerado como `from-to-deslocamento-em-cm`. Para definir janelas como entidades independentes, declare-as em `windows` no pavimento (ou na raiz de uma planta de piso único), com ID próprio e `from` qualificado, por exemplo `{ id: "janela-sala", from: "sala.front", w: 1.5 }`. O formato local dentro do cômodo continua aceito. Portas e janelas são desenhadas com quatro bordas; vãos livres mostram apenas as bordas laterais.
 
 Por compatibilidade, `openings` com `type: "door"`, `"window"` ou `"opening"` continua interpretado pela categoria antiga e gera aviso de depreciação. Mova a entrada para a coleção correspondente e remova `type`. Em `doors` e `windows`, a coleção sempre tem prioridade sobre `type`; o schema exige que um `type` redundante corresponda à coleção. Os padrões antigos `config.openings.door/window/opening` também continuam aceitos com aviso. A prioridade é por propriedade: padrões novos → padrões antigos → catálogo.
 
@@ -444,3 +444,20 @@ A laje acompanha a união dos ambientes do piso, preservando recortes e excluind
 `top: "roofs"` considera o conjunto de telhados do projeto. O alias antigo `top: "roof"` continua aceito, com aviso de migração.
 
 O topo pode ser uma cota absoluta (`top: 2.66`) ou uma expressão (`top: "upper-rear.z0 - 0.15"`). Uma string com apenas um ID, como `top: "stairs"`, continua selecionando a face inferior do objeto; `top: "roofs"` seleciona o conjunto de telhados. A forma antiga `top: { level: ... }` continua aceita com aviso de migração.
+
+### Posição relativa de janelas
+
+Use `dx` para o deslocamento ao longo da parede e `dz` para o peitoril em relação à cota do piso. Ambos aceitam expressões do interpretador geral:
+
+```json5
+windows: [{
+  id: "janela-sala",
+  from: "sala.front",
+  dx: "sala.w / 2 - 0.75",
+  dz: 0.9,
+  w: 1.5,
+  h: 1.2,
+}]
+```
+
+`dx` mede a distância desde o início da parede, inclusive para paredes verticais (no sentido crescente de y). Sem deslocamento, a janela continua centralizada. `dz` é relativo ao piso, enquanto o campo antigo `z0` continua sendo absoluto; `dz` tem prioridade. `dy`, `position`, `x` e `y` continuam aceitos por compatibilidade, com prioridade para `dx`. Portas e vãos de parede compartilham essas regras.

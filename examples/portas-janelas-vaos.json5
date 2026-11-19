@@ -11,19 +11,20 @@
       rooms: [{
         id: "sala", label: "Sala", pos: [0, 0], size: [6, 4], walls: "solid",
         doors: [{ id: "entrada", from: "left", dx: 1 }],
-        windows: [{ id: "janela-frontal", from: "front", dx: 3 }],
         openings: [{ id: "vao-frontal", from: "front", dx: 0.5 }],
       }],
       doors: [{ id: "saida", from: "sala.right", dx: 1 }],
-      windows: [{ id: "janela-fundos", from: "sala.rear", dx: 2 }],
+      windows: [
+        { id: "janela-frontal", from: "sala.front", dx: 3 },
+        { id: "janela-fundos", from: "sala.rear", dx: 2 },
+      ],
       openings: [{ id: "vao-pisos", from: "ground", to: "upper", pos: [4, 2], size: [1, 1] }],
     },
     {
-      id: "upper", label: "Superior", z0: 3.2, ceiling_height: 3,
+      id: "upper", windows: [{ id: "janela-superior", from: "quarto.front", dx: 2 }], label: "Superior", z0: 3.2, ceiling_height: 3,
       rooms: [{
         id: "quarto", label: "Quarto", pos: [0, 0], size: [6, 4], walls: "solid",
         doors: [{ id: "porta-superior", from: "right", dx: 1, w: 0.8 }],
-        windows: [{ id: "janela-superior", from: "front", dx: 2 }],
       }],
     },
   ],

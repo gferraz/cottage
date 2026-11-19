@@ -3472,9 +3472,9 @@ const FloorPlanOpenings = {
         `Opening is wider than the shared wall segment ${opening.from}`,
       );
 
-    const relativePosition = horizontal
-      ? (opening.dx ?? opening.position ?? opening.x)
-      : (opening.dy ?? opening.position ?? opening.y);
+    const relativePosition = opening.dx ?? (horizontal
+      ? opening.position ?? opening.x
+      : opening.dy ?? opening.position ?? opening.y);
     const hasPosition = relativePosition !== undefined;
     const position = hasPosition
       ? plan.resolve(relativePosition)
@@ -3512,11 +3512,13 @@ const FloorPlanOpenings = {
     }
 
     const shift = hasPosition ? Math.round(position * 100) : 0;
-    const id = `${roomId}-${target}-${shift}`;
+    const id = opening.id || `${roomId}-${target}-${shift}`;
     const openingDefaults = verticalDefaults[type] || {};
     const floorZ0 = Number(plan.currentFloorHeight) || 0;
     const z0 =
-      opening.z0 === undefined
+      opening.dz !== undefined
+        ? floorZ0 + plan.resolve(opening.dz)
+        : opening.z0 === undefined
         ? floorZ0 + plan.resolve(openingDefaults.z0 ?? 0)
         : plan.resolve(opening.z0);
     const height = plan.resolve(opening.h ?? openingDefaults.h ?? 2.1);

@@ -3539,6 +3539,18 @@
         },
         "length": {
           "$ref": "#/definitions/wall-feature/properties/length"
+        },
+        "dz": {
+          "description": "Deslocamento do peitoril em relação à cota do piso. Tem prioridade sobre z0.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
         }
       },
       "required": [
@@ -3589,6 +3601,18 @@
         },
         "length": {
           "$ref": "#/definitions/wall-feature/properties/length"
+        },
+        "dz": {
+          "description": "Deslocamento do peitoril em relação à cota do piso. Tem prioridade sobre z0.",
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
         }
       },
       "required": [
@@ -3664,7 +3688,8 @@
               "minLength": 1,
               "description": "Número, referência geométrica ou expressão com params.nome."
             }
-          ]
+          ],
+          "description": "Deslocamento ao longo da parede, inclusive nas paredes verticais. Tem prioridade sobre dy e position."
         },
         "dy": {
           "anyOf": [
@@ -3719,6 +3744,18 @@
             {
               "type": "number",
               "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
+        },
+        "dz": {
+          "description": "Deslocamento do peitoril em relação à cota do piso. Tem prioridade sobre z0.",
+          "anyOf": [
+            {
+              "type": "number"
             },
             {
               "type": "string",
