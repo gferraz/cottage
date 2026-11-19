@@ -628,13 +628,44 @@
                   }
                 }
               ]
+            },
+            "flatAreas": {
+              "type": "array",
+              "description": "Áreas niveladas na cota inferior da referência, em coordenadas da edificação.",
+              "items": {
+                "type": "object",
+                "required": [
+                  "reference"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "reference": {
+                    "type": "string"
+                  },
+                  "margin": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "transition": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              }
             }
           }
         }
       }
     },
     "building": {
-      "type": "object"
+      "type": "object",
+      "properties": {
+        "reference": {
+          "type": "string",
+          "minLength": 1,
+          "description": "ID de uma geometria estável usada como envelope de implantação, independente da ordem dos pavimentos e das escadas externas."
+        }
+      }
     },
     "theme": {
       "type": "object"
@@ -1039,6 +1070,27 @@
           "type": "integer",
           "minimum": 2,
           "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
+        },
+        "stairType": {
+          "enum": [
+            "solid-flared"
+          ],
+          "description": "Blocos sólidos sobrepostos até a varanda; o inferior envolve os superiores. Inclui a pisada superior."
+        },
+        "stepWidths": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+        },
+        "treadColor": {
+          "type": "string"
+        },
+        "riserColor": {
+          "type": "string"
         }
       },
       "allOf": [
@@ -1464,6 +1516,27 @@
           "items": {
             "$ref": "#/definitions/window"
           }
+        },
+        "stairType": {
+          "enum": [
+            "solid-flared"
+          ],
+          "description": "Blocos sólidos sobrepostos até a varanda; o inferior envolve os superiores. Inclui a pisada superior."
+        },
+        "stepWidths": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+        },
+        "treadColor": {
+          "type": "string"
+        },
+        "riserColor": {
+          "type": "string"
         }
       },
       "required": [
@@ -1816,6 +1889,27 @@
           "type": "integer",
           "minimum": 2,
           "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
+        },
+        "stairType": {
+          "enum": [
+            "solid-flared"
+          ],
+          "description": "Blocos sólidos sobrepostos até a varanda; o inferior envolve os superiores. Inclui a pisada superior."
+        },
+        "stepWidths": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+        },
+        "treadColor": {
+          "type": "string"
+        },
+        "riserColor": {
+          "type": "string"
         }
       },
       "allOf": [
@@ -2641,6 +2735,27 @@
                   "type": "integer",
                   "minimum": 2,
                   "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
+                },
+                "stairType": {
+                  "enum": [
+                    "solid-flared"
+                  ],
+                  "description": "Blocos sólidos sobrepostos até a varanda; o inferior envolve os superiores. Inclui a pisada superior."
+                },
+                "stepWidths": {
+                  "type": "array",
+                  "minItems": 2,
+                  "items": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+                },
+                "treadColor": {
+                  "type": "string"
+                },
+                "riserColor": {
+                  "type": "string"
                 }
               },
               "allOf": [
@@ -2809,6 +2924,27 @@
           "items": {
             "$ref": "#/definitions/door"
           }
+        },
+        "stairType": {
+          "enum": [
+            "solid-flared"
+          ],
+          "description": "Blocos sólidos sobrepostos até a varanda; o inferior envolve os superiores. Inclui a pisada superior."
+        },
+        "stepWidths": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+        },
+        "treadColor": {
+          "type": "string"
+        },
+        "riserColor": {
+          "type": "string"
         }
       },
       "additionalProperties": false,

@@ -55,6 +55,28 @@ const FloorPlanDom = {
       background = `linear-gradient(to ${geometry.stairAxis === "horizontal" ? "right" : "bottom"}, ${stops.join(", ")})`;
       element.style.setProperty("--stair-step", (geometry.stairAxis === "horizontal" ? geometry.w : geometry.l) / count);
     }
+    if (geometry.stairType === "solid-flared") {
+      const horizontal = geometry.stairAxis === "horizontal";
+      const increasing = (geometry.stairDirection !== "reverse") === (geometry.stairRise !== "down");
+      const cross = horizontal ? geometry.l : geometry.w;
+      const layers = geometry.stepWidths.map((width, index) => {
+        const depth = 100 * (1 - index / geometry.stepWidths.length);
+        const size = 100 * width / cross;
+        const fill = color(geometry.z0 + geometry.h * (index + 1) / geometry.stepWidths.length);
+        return `linear-gradient(${fill}, ${fill}) ${horizontal ? (increasing ? "right center" : "left center") : (increasing ? "center bottom" : "center top")} / ${horizontal ? `${depth}% ${size}%` : `${size}% ${depth}%`} no-repeat`;
+      }).reverse();
+      const outlines = geometry.stepWidths.map((width, index) => {
+        const depth = 100 * (1 - index / geometry.stepWidths.length);
+        const size = 100 * width / cross;
+        const along = increasing ? 100 - depth : 0;
+        const across = (100 - size) / 2;
+        return `<rect x="${horizontal ? along : across}" y="${horizontal ? across : along}" width="${horizontal ? depth : size}" height="${horizontal ? size : depth}"/>`;
+      }).join("");
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><g fill="none" stroke="#28323c" stroke-opacity=".7" stroke-width="1" vector-effect="non-scaling-stroke">${outlines}</g></svg>`;
+      background = `url("data:image/svg+xml,${encodeURIComponent(svg)}") center / 100% 100% no-repeat, ${layers.join(", ")}`;
+      element.dataset.stairType = "solid-flared";
+      element.style.setProperty("clip-path", "none");
+    }
     element.dataset.stairGradient = "height";
     element.style.setProperty("background", background, "important");
   },

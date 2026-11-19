@@ -47,6 +47,22 @@ const FloorPlanTerrain = {
     if (!bounds) return;
     plan.root.style.setProperty("--building-offset-x", targetX - bounds.x0);
     plan.root.style.setProperty("--building-offset-y", targetY - bounds.y0);
+    if (plan.terrainReference) {
+      plan.terrainReference.flatAreas = (plan.model?.config?.terrain?.grading?.flatAreas ?? []).map((area) => {
+        const ref = plan.references.get(area.reference);
+        if (!ref) throw new Error(`Unknown terrain flat area reference: ${area.reference}`);
+        const margin = area.margin ?? 0;
+        const transition = area.transition ?? 0.5;
+        if (![margin, transition].every(v => Number.isFinite(v) && v >= 0)) {
+          throw new Error("As margens da área plana precisam ser numéricas e não negativas");
+        }
+        return { x0: ref.x0() + targetX - bounds.x0 - margin,
+          x1: ref.x1() + targetX - bounds.x0 + margin,
+          y0: ref.y0() + targetY - bounds.y0 - margin,
+          y1: ref.y1() + targetY - bounds.y0 + margin,
+          z: ref.z0(), transition };
+      });
+    }
   },
 
   render(plan, terrain) {

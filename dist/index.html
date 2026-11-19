@@ -1815,6 +1815,9 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
 .slab-option span { min-width: 0; overflow-wrap: anywhere; }
 .slab-option small { display: block; margin-top: 4px; font-size: 10px; color: var(--theme-muted, #666); }
 
+/* Nested solid tiers have their own front and side edges in plan. */
+.stair-flight[data-stair-type="solid-flared"]::after { content: none; }
+
 </style>
   </head>
   <body class="page-empty">
@@ -4883,6 +4886,16 @@ const FloorPlanGeometry = {
     });
   },
   stairSteps(stair) {
+    if (stair.stairType === "solid-flared") {
+      const widths = stair.stepWidths;
+      const cross = stair.stairAxis === "horizontal" ? stair.l : stair.w;
+      if (!Array.isArray(widths) || widths.length < 2 ||
+          widths.some((w, i) => !Number.isFinite(w) || w <= 0 || w > cross + 1e-8 || (i > 0 && w > widths[i - 1]))) {
+        throw new Error("Informe larguras positivas, da base ao topo, em ordem decrescente e dentro do lance");
+      }
+      const run = stair.stairAxis === "horizontal" ? stair.w : stair.l;
+      return { risers: widths.length, treads: widths.length, rise: stair.h / widths.length, run: run / widths.length };
+    }
     const risers = stair.risers ?? Math.max(1, Math.round(stair.h / 0.16));
     if (!Number.isInteger(risers) || risers < 2 && stair.risers !== undefined) {
       throw new Error("O número de espelhos precisa ser um inteiro maior ou igual a 2");
@@ -5150,6 +5163,14 @@ const FloorPlanMetrics = {
   },
 
   buildingReferenceBounds(plan) {
+    const referenceId = plan.model?.config?.building?.reference;
+    if (referenceId) {
+      const reference = plan.references?.get(referenceId);
+      if (!reference) throw new Error(`Unknown building placement reference: ${referenceId}`);
+      const x0 = reference.x0(), y0 = reference.y0();
+      const x1 = reference.x1(), y1 = reference.y1();
+      return { x0, y0, x1, y1, width: x1 - x0, height: y1 - y0 };
+    }
     const referenceRooms = plan.model?.floors?.[0]?.rooms ?? [];
     const geometries = referenceRooms
       .map((room) =>
@@ -5368,7 +5389,7 @@ const FloorPlanTerrainGeometry = {
     if (grading === undefined) return null;
     const points = grading?.profile;
     const fail = () => { throw new Error("terrain.grading.profile precisa de ao menos dois pontos numéricos, todos com x ou todos com y, em ordem estritamente crescente, e z"); };
-    if (!grading || Object.keys(grading).some((key) => key !== "profile") ||
+    if (!grading || Object.keys(grading).some((key) => !["profile", "flatAreas"].includes(key)) ||
       !Array.isArray(points) || points.length < 2) fail();
     const axis = Object.hasOwn(points[0] ?? {}, "x") ? "x" : "y";
     const ids = new Set();
@@ -5400,6 +5421,18 @@ const FloorPlanTerrainGeometry = {
   },
 
   elevationAt(reference, x, y) {
+    const original = this.profileElevationAt(reference, x, y);
+    if (original === null) return null;
+    let elevation = original;
+    for (const area of reference.flatAreas ?? []) {
+      const distance = Math.max(area.x0 - x, x - area.x1, area.y0 - y, y - area.y1, 0);
+      const weight = area.transition > 0 ? Math.max(0, 1 - distance / area.transition) : (distance === 0 ? 1 : 0);
+      elevation += (area.z - elevation) * weight;
+    }
+    return elevation;
+  },
+
+  profileElevationAt(reference, x, y) {
     if (!reference) return null;
     if (reference.grading) {
       const { axis, points } = reference.grading;
@@ -5414,6 +5447,15 @@ const FloorPlanTerrainGeometry = {
 
   // Exact mesh/polyline breaks, including the clamped ends of the legacy ramp.
   breaks(reference, axis) {
+    const levels = this.profileBreaks(reference, axis);
+    for (const area of reference?.flatAreas ?? []) {
+      const low = area[`${axis}0`], high = area[`${axis}1`];
+      levels.push(low - area.transition, low, high, high + area.transition);
+    }
+    return [...new Set(levels)].sort((a, b) => a - b);
+  },
+
+  profileBreaks(reference, axis) {
     if (!reference) return [];
     if (reference.grading) {
       if (reference.grading.axis !== axis) return [];
@@ -5495,6 +5537,22 @@ const FloorPlanTerrain = {
     if (!bounds) return;
     plan.root.style.setProperty("--building-offset-x", targetX - bounds.x0);
     plan.root.style.setProperty("--building-offset-y", targetY - bounds.y0);
+    if (plan.terrainReference) {
+      plan.terrainReference.flatAreas = (plan.model?.config?.terrain?.grading?.flatAreas ?? []).map((area) => {
+        const ref = plan.references.get(area.reference);
+        if (!ref) throw new Error(`Unknown terrain flat area reference: ${area.reference}`);
+        const margin = area.margin ?? 0;
+        const transition = area.transition ?? 0.5;
+        if (![margin, transition].every(v => Number.isFinite(v) && v >= 0)) {
+          throw new Error("As margens da área plana precisam ser numéricas e não negativas");
+        }
+        return { x0: ref.x0() + targetX - bounds.x0 - margin,
+          x1: ref.x1() + targetX - bounds.x0 + margin,
+          y0: ref.y0() + targetY - bounds.y0 - margin,
+          y1: ref.y1() + targetY - bounds.y0 + margin,
+          z: ref.z0(), transition };
+      });
+    }
   },
 
   render(plan, terrain) {
@@ -7400,12 +7458,17 @@ const FloorPlan3DElements = {
           ? index * stepRun
           : run - (index + 1) * stepRun;
         const stepHeight = (index + 1) * stepRise;
+        const solidStair = stair.stairType === "solid-flared";
+        const stepWidth = solidStair ? stair.stepWidths[index] : (axis === "horizontal" ? length : width);
+        // Each tier continues to the porch: the bottom tier encloses all others.
+        const depth = solidStair ? run - index * stepRun : stepRun;
+        const start = solidStair ? (ascendsWithIncreasingAxis ? index * stepRun : 0) : offset;
         const dimensions = axis === "horizontal"
-          ? [stepRun, length, stepHeight]
-          : [width, stepRun, stepHeight];
+          ? [depth, stepWidth, stepHeight]
+          : [stepWidth, depth, stepHeight];
         const center = axis === "horizontal"
-          ? [x + offset + stepRun / 2, y + length / 2, z0 + stepHeight / 2]
-          : [x + width / 2, y + offset + stepRun / 2, z0 + stepHeight / 2];
+          ? [x + start + depth / 2, y + length / 2, z0 + stepHeight / 2]
+          : [x + width / 2, y + start + depth / 2, z0 + stepHeight / 2];
         // Keep the space below the flight open. The underside follows the
         // same ideal inclined plane used to limit walls, without a guessed
         // structural thickness.
@@ -7413,7 +7476,7 @@ const FloorPlan3DElements = {
           center[0] - dimensions[0] / 2, center[1] - dimensions[1] / 2, z0,
           center[0] + dimensions[0] / 2, center[1] + dimensions[1] / 2, z0 + stepHeight,
         );
-        const solid = FloorPlanWalls.clipSolid(faces,
+        const solid = solidStair ? faces : FloorPlanWalls.clipSolid(faces,
           FloorPlanWalls.stairUndersidePlane(stair).map((value) => -value));
         const vertices = [];
         solid.forEach((face) => {
@@ -7422,7 +7485,21 @@ const FloorPlan3DElements = {
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
         geometry.computeVertexNormals();
-        const step = new THREE.Mesh(geometry, this.heightMaterial(plan, THREE, wallMaterial, stair, z0 + stepHeight));
+        let material = this.heightMaterial(plan, THREE, wallMaterial, stair, z0 + stepHeight);
+        if (solidStair) {
+          const riserMaterial = wallMaterial.clone();
+          riserMaterial.color.set(stair.riserColor || "#c5bba9");
+          const treadMaterial = wallMaterial.clone();
+          treadMaterial.color.set(stair.treadColor || "#928c7e");
+          let start = 0;
+          solid.forEach((face) => {
+            const count = (face.length - 2) * 3;
+            geometry.addGroup(start, count, face.every(p => Math.abs(p[2] - z0 - stepHeight) < 1e-8) ? 1 : 0);
+            start += count;
+          });
+          material = [riserMaterial, treadMaterial];
+        }
+        const step = new THREE.Mesh(geometry, material);
         step.castShadow = true;
         step.receiveShadow = true;
         step.userData.domainId = stair.id;
@@ -9118,6 +9195,7 @@ const FloorPlanWalls = {
     return bounds;
   },
   stairUndersidePlane(stair, offset = 0) {
+    if (stair.stairType === "solid-flared") return [0, 0, 1, -stair.z0 + offset];
     const alongX = stair.stairAxis === "horizontal";
     const increasing = (stair.stairDirection !== "reverse") === (stair.stairRise !== "down");
     // With explicit risers the last rise belongs to the destination floor.
@@ -13359,6 +13437,28 @@ const FloorPlanDom = {
       background = `linear-gradient(to ${geometry.stairAxis === "horizontal" ? "right" : "bottom"}, ${stops.join(", ")})`;
       element.style.setProperty("--stair-step", (geometry.stairAxis === "horizontal" ? geometry.w : geometry.l) / count);
     }
+    if (geometry.stairType === "solid-flared") {
+      const horizontal = geometry.stairAxis === "horizontal";
+      const increasing = (geometry.stairDirection !== "reverse") === (geometry.stairRise !== "down");
+      const cross = horizontal ? geometry.l : geometry.w;
+      const layers = geometry.stepWidths.map((width, index) => {
+        const depth = 100 * (1 - index / geometry.stepWidths.length);
+        const size = 100 * width / cross;
+        const fill = color(geometry.z0 + geometry.h * (index + 1) / geometry.stepWidths.length);
+        return `linear-gradient(${fill}, ${fill}) ${horizontal ? (increasing ? "right center" : "left center") : (increasing ? "center bottom" : "center top")} / ${horizontal ? `${depth}% ${size}%` : `${size}% ${depth}%`} no-repeat`;
+      }).reverse();
+      const outlines = geometry.stepWidths.map((width, index) => {
+        const depth = 100 * (1 - index / geometry.stepWidths.length);
+        const size = 100 * width / cross;
+        const along = increasing ? 100 - depth : 0;
+        const across = (100 - size) / 2;
+        return `<rect x="${horizontal ? along : across}" y="${horizontal ? across : along}" width="${horizontal ? depth : size}" height="${horizontal ? size : depth}"/>`;
+      }).join("");
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><g fill="none" stroke="#28323c" stroke-opacity=".7" stroke-width="1" vector-effect="non-scaling-stroke">${outlines}</g></svg>`;
+      background = `url("data:image/svg+xml,${encodeURIComponent(svg)}") center / 100% 100% no-repeat, ${layers.join(", ")}`;
+      element.dataset.stairType = "solid-flared";
+      element.style.setProperty("clip-path", "none");
+    }
     element.dataset.stairGradient = "height";
     element.style.setProperty("background", background, "important");
   },
@@ -13867,11 +13967,15 @@ const FloorPlanStairConnectivity = {
         node.ends = ["lower", "upper"].map((role) => {
           const high = (role === "upper") === increasing;
           const z = role === "lower" ? part.z0 : part.z1;
-          const x = part.x + (horizontal && high ? part.w : 0);
-          const y = part.y + (!horizontal && high ? part.l : 0);
+          const cross = horizontal ? part.l : part.w;
+          const width = part.stairType === "solid-flared"
+            ? part.stepWidths[role === "lower" ? 0 : part.stepWidths.length - 1] : cross;
+          const inset = (cross - width) / 2;
+          const x = part.x + (horizontal && high ? part.w : 0) + (horizontal ? 0 : inset);
+          const y = part.y + (!horizontal && high ? part.l : 0) + (horizontal ? inset : 0);
           return { role, z, axis: horizontal ? "y" : "x",
-            start: { x, y, z }, end: { x: x + (horizontal ? 0 : part.w),
-              y: y + (horizontal ? part.l : 0), z },
+            start: { x, y, z }, end: { x: x + (horizontal ? 0 : width),
+              y: y + (horizontal ? width : 0), z },
             floorIds: floors.filter((floor) => Math.abs(Number(floor.z0 ?? 0) - z) <= epsilon)
               .map((floor) => floor.id ?? null) };
         });

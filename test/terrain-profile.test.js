@@ -103,3 +103,19 @@ test("cottage study profile has editable IDs and preserves the declared study le
   assert.equal(terrain.interpolate(profile.points, "y", 23.8), -0.9);
   assert.equal(terrain.interpolate(profile.points, "y", 47.32), -6);
 });
+
+test('local flat areas expose the entire stair base and preserve the surrounding profile', () => {
+  const site = reference([{ y: 0, z: 0 }, { y: 3, z: -.45 }, { y: 12, z: -.45 }]);
+  site.flatAreas = [{ x0: 14, x1: 17, y0: 21.5, y1: 23, z: -.6, transition: .5 }];
+  for (const x of [14, 15.5, 17]) for (const y of [21.5, 22, 23]) {
+    assert.equal(terrain.elevationAt(site, x, y), -.6);
+  }
+  assert.equal(terrain.elevationAt(site, 13, 23), -.45);
+  assert.equal(terrain.elevationAt(site, 13.75, 23), -.525);
+  const mesh = terrain.surface(site, { x0: 10, x1: 20, y0: 20, y1: 25 });
+  for (let i = 0; i < mesh.vertices.length; i += 3) {
+    const [x,y,z] = mesh.vertices.slice(i,i+3);
+    if (x >= 14 && x <= 17 && y >= 21.5 && y <= 23) assert.equal(z, -.6);
+  }
+  assert.deepEqual(terrain.breaks(site, 'x'), [13.5,14,17,17.5]);
+});

@@ -29,11 +29,15 @@ const FloorPlanStairConnectivity = {
         node.ends = ["lower", "upper"].map((role) => {
           const high = (role === "upper") === increasing;
           const z = role === "lower" ? part.z0 : part.z1;
-          const x = part.x + (horizontal && high ? part.w : 0);
-          const y = part.y + (!horizontal && high ? part.l : 0);
+          const cross = horizontal ? part.l : part.w;
+          const width = part.stairType === "solid-flared"
+            ? part.stepWidths[role === "lower" ? 0 : part.stepWidths.length - 1] : cross;
+          const inset = (cross - width) / 2;
+          const x = part.x + (horizontal && high ? part.w : 0) + (horizontal ? 0 : inset);
+          const y = part.y + (!horizontal && high ? part.l : 0) + (horizontal ? inset : 0);
           return { role, z, axis: horizontal ? "y" : "x",
-            start: { x, y, z }, end: { x: x + (horizontal ? 0 : part.w),
-              y: y + (horizontal ? part.l : 0), z },
+            start: { x, y, z }, end: { x: x + (horizontal ? 0 : width),
+              y: y + (horizontal ? width : 0), z },
             floorIds: floors.filter((floor) => Math.abs(Number(floor.z0 ?? 0) - z) <= epsilon)
               .map((floor) => floor.id ?? null) };
         });

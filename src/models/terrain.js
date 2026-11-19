@@ -4,7 +4,7 @@ const FloorPlanTerrainGeometry = {
     if (grading === undefined) return null;
     const points = grading?.profile;
     const fail = () => { throw new Error("terrain.grading.profile precisa de ao menos dois pontos numéricos, todos com x ou todos com y, em ordem estritamente crescente, e z"); };
-    if (!grading || Object.keys(grading).some((key) => key !== "profile") ||
+    if (!grading || Object.keys(grading).some((key) => !["profile", "flatAreas"].includes(key)) ||
       !Array.isArray(points) || points.length < 2) fail();
     const axis = Object.hasOwn(points[0] ?? {}, "x") ? "x" : "y";
     const ids = new Set();
@@ -36,6 +36,18 @@ const FloorPlanTerrainGeometry = {
   },
 
   elevationAt(reference, x, y) {
+    const original = this.profileElevationAt(reference, x, y);
+    if (original === null) return null;
+    let elevation = original;
+    for (const area of reference.flatAreas ?? []) {
+      const distance = Math.max(area.x0 - x, x - area.x1, area.y0 - y, y - area.y1, 0);
+      const weight = area.transition > 0 ? Math.max(0, 1 - distance / area.transition) : (distance === 0 ? 1 : 0);
+      elevation += (area.z - elevation) * weight;
+    }
+    return elevation;
+  },
+
+  profileElevationAt(reference, x, y) {
     if (!reference) return null;
     if (reference.grading) {
       const { axis, points } = reference.grading;
@@ -50,6 +62,15 @@ const FloorPlanTerrainGeometry = {
 
   // Exact mesh/polyline breaks, including the clamped ends of the legacy ramp.
   breaks(reference, axis) {
+    const levels = this.profileBreaks(reference, axis);
+    for (const area of reference?.flatAreas ?? []) {
+      const low = area[`${axis}0`], high = area[`${axis}1`];
+      levels.push(low - area.transition, low, high, high + area.transition);
+    }
+    return [...new Set(levels)].sort((a, b) => a - b);
+  },
+
+  profileBreaks(reference, axis) {
     if (!reference) return [];
     if (reference.grading) {
       if (reference.grading.axis !== axis) return [];

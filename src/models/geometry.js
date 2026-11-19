@@ -81,6 +81,16 @@ const FloorPlanGeometry = {
     });
   },
   stairSteps(stair) {
+    if (stair.stairType === "solid-flared") {
+      const widths = stair.stepWidths;
+      const cross = stair.stairAxis === "horizontal" ? stair.l : stair.w;
+      if (!Array.isArray(widths) || widths.length < 2 ||
+          widths.some((w, i) => !Number.isFinite(w) || w <= 0 || w > cross + 1e-8 || (i > 0 && w > widths[i - 1]))) {
+        throw new Error("Informe larguras positivas, da base ao topo, em ordem decrescente e dentro do lance");
+      }
+      const run = stair.stairAxis === "horizontal" ? stair.w : stair.l;
+      return { risers: widths.length, treads: widths.length, rise: stair.h / widths.length, run: run / widths.length };
+    }
     const risers = stair.risers ?? Math.max(1, Math.round(stair.h / 0.16));
     if (!Number.isInteger(risers) || risers < 2 && stair.risers !== undefined) {
       throw new Error("O número de espelhos precisa ser um inteiro maior ou igual a 2");

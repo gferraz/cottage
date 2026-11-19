@@ -13,6 +13,14 @@ const FloorPlanMetrics = {
   },
 
   buildingReferenceBounds(plan) {
+    const referenceId = plan.model?.config?.building?.reference;
+    if (referenceId) {
+      const reference = plan.references?.get(referenceId);
+      if (!reference) throw new Error(`Unknown building placement reference: ${referenceId}`);
+      const x0 = reference.x0(), y0 = reference.y0();
+      const x1 = reference.x1(), y1 = reference.y1();
+      return { x0, y0, x1, y1, width: x1 - x0, height: y1 - y0 };
+    }
     const referenceRooms = plan.model?.floors?.[0]?.rooms ?? [];
     const geometries = referenceRooms
       .map((room) =>

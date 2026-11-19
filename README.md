@@ -163,6 +163,8 @@ Cômodos compostos usam `parts`; cada parte tem sua própria geometria e pode re
 
 Lances de escada aceitam `risers` (inteiro ≥ 2) para fixar o número de espelhos. A planta e o 3D desenham `risers - 1` pisadas: o último espelho termina no piso ou patamar de destino. A altura de cada espelho é `h / risers`, e a profundidade da pisada é a projeção do lance dividida por `risers - 1`. O plano inferior ideal acompanha as quinas inferiores dos espelhos, sem espessura estrutural presumida. Sem `risers`, permanece a representação automática anterior, estimada a partir de 16 cm de altura.
 
+Para escadarias externas em semi-pirâmide, use `stairType: "solid-flared"` e `stepWidths: [3, 2.6, 2.2, 1.8]` (larguras da base ao topo). Cada bloco sólido vai da base até sua cota e continua até a varanda; o bloco inferior envolve todos os demais. A largura fica centralizada e a borda posterior é comum a todos os blocos. O número de larguras determina o número de pisos e espelhos, incluindo o piso superior; `h: 0.6` e projeção de 1,36 m resultam em quatro espelhos de 15 cm e recuos frontais de 34 cm. `treadColor` e `riserColor` controlam as cores dos pisos e das faces verticais.
+
 Degraus e patamares de uma escada composta compartilham um gradiente de altura, do tom escuro de cobertura nas cotas baixas até a cor clara de circulação nas cotas altas. A escala usa o piso de origem e a maior cota de toda a escada, sem reiniciar por lance. A cor de cada degrau corresponde à sua cota superior; o patamar usa a própria cota. A planta e o 3D mantêm a mesma escala, inclusive ao visualizar a escada por outro piso.
 
 Portas, janelas e vãos aceitam `z0` e `h` para a projeção vertical: `z1 = z0 + h`. Quando omitidos, portas e vãos usam `z0: 0, h: 2.1`, e janelas usam `z0: 0.9, h: 1.2`. A largura continua sendo informada por `w` e a posição relativa por `dx` ou `dy`.
@@ -405,3 +407,5 @@ lajes ou obstáculos internos.
 
 Cada piso pode declarar `slabs: [{ id: "slab-ground", label: "Laje — Térreo", thickness: 0.15 }]`.
 A laje acompanha a união dos ambientes do piso, preservando recortes e excluindo ambientes compostos exclusivamente por lances ou patamares de escada. O topo fica em `floor.z0`, com a espessura desenvolvida para baixo. Sem `slabs`, é criada uma laje de 15 cm; `slabs: []` omite a laje. A lista na barra esquerda, junto às seleções de pisos e camadas, permite alternar cada laje independentemente e conserva a seleção ao trocar de piso durante a sessão. Esses controles afetam a perspectiva 3D.
+
+Áreas locais de terreno plano podem ser definidas em `terrain.grading.flatAreas`, por exemplo `[{ reference: "front-stairs", margin: 0.15, transition: 0.5 }]`. O terreno acompanha o retângulo da referência na sua cota inferior, com margem e transição em metros; a posição acompanha a implantação da casa. Fora da transição, permanece o perfil longitudinal.

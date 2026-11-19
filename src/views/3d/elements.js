@@ -135,12 +135,17 @@ const FloorPlan3DElements = {
           ? index * stepRun
           : run - (index + 1) * stepRun;
         const stepHeight = (index + 1) * stepRise;
+        const solidStair = stair.stairType === "solid-flared";
+        const stepWidth = solidStair ? stair.stepWidths[index] : (axis === "horizontal" ? length : width);
+        // Each tier continues to the porch: the bottom tier encloses all others.
+        const depth = solidStair ? run - index * stepRun : stepRun;
+        const start = solidStair ? (ascendsWithIncreasingAxis ? index * stepRun : 0) : offset;
         const dimensions = axis === "horizontal"
-          ? [stepRun, length, stepHeight]
-          : [width, stepRun, stepHeight];
+          ? [depth, stepWidth, stepHeight]
+          : [stepWidth, depth, stepHeight];
         const center = axis === "horizontal"
-          ? [x + offset + stepRun / 2, y + length / 2, z0 + stepHeight / 2]
-          : [x + width / 2, y + offset + stepRun / 2, z0 + stepHeight / 2];
+          ? [x + start + depth / 2, y + length / 2, z0 + stepHeight / 2]
+          : [x + width / 2, y + start + depth / 2, z0 + stepHeight / 2];
         // Keep the space below the flight open. The underside follows the
         // same ideal inclined plane used to limit walls, without a guessed
         // structural thickness.
@@ -148,7 +153,7 @@ const FloorPlan3DElements = {
           center[0] - dimensions[0] / 2, center[1] - dimensions[1] / 2, z0,
           center[0] + dimensions[0] / 2, center[1] + dimensions[1] / 2, z0 + stepHeight,
         );
-        const solid = FloorPlanWalls.clipSolid(faces,
+        const solid = solidStair ? faces : FloorPlanWalls.clipSolid(faces,
           FloorPlanWalls.stairUndersidePlane(stair).map((value) => -value));
         const vertices = [];
         solid.forEach((face) => {
@@ -157,7 +162,21 @@ const FloorPlan3DElements = {
         const geometry = new THREE.BufferGeometry();
         geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
         geometry.computeVertexNormals();
-        const step = new THREE.Mesh(geometry, this.heightMaterial(plan, THREE, wallMaterial, stair, z0 + stepHeight));
+        let material = this.heightMaterial(plan, THREE, wallMaterial, stair, z0 + stepHeight);
+        if (solidStair) {
+          const riserMaterial = wallMaterial.clone();
+          riserMaterial.color.set(stair.riserColor || "#c5bba9");
+          const treadMaterial = wallMaterial.clone();
+          treadMaterial.color.set(stair.treadColor || "#928c7e");
+          let start = 0;
+          solid.forEach((face) => {
+            const count = (face.length - 2) * 3;
+            geometry.addGroup(start, count, face.every(p => Math.abs(p[2] - z0 - stepHeight) < 1e-8) ? 1 : 0);
+            start += count;
+          });
+          material = [riserMaterial, treadMaterial];
+        }
+        const step = new THREE.Mesh(geometry, material);
         step.castShadow = true;
         step.receiveShadow = true;
         step.userData.domainId = stair.id;

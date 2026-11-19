@@ -1756,3 +1756,6 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
 .slab-option input { flex-shrink: 0; margin: 2px 0 0; accent-color: var(--theme-accent); }
 .slab-option span { min-width: 0; overflow-wrap: anywhere; }
 .slab-option small { display: block; margin-top: 4px; font-size: 10px; color: var(--theme-muted, #666); }
+
+/* Nested solid tiers have their own front and side edges in plan. */
+.stair-flight[data-stair-type="solid-flared"]::after { content: none; }

@@ -81,6 +81,7 @@ const FloorPlanWalls = {
     return bounds;
   },
   stairUndersidePlane(stair, offset = 0) {
+    if (stair.stairType === "solid-flared") return [0, 0, 1, -stair.z0 + offset];
     const alongX = stair.stairAxis === "horizontal";
     const increasing = (stair.stairDirection !== "reverse") === (stair.stairRise !== "down");
     // With explicit risers the last rise belongs to the destination floor.
