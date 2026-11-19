@@ -418,8 +418,8 @@
         {
           id: "unused-rear",
           label: "Disponível — fundos",
-          from: ["bathroom-west.x0", "main.y1", "upper-rear.z0"],
-          to: ["mudroom.x0", "kitchen.y1"],
+          from: ["bedroom-south.x1", "bedroom-south.y0"],
+          to: ["bathroom-west.x0", "bedroom-south.y1"],
           top: "roofs",
           unused: true
         },
@@ -450,26 +450,25 @@
         {
           id: "bedroom-south",
           label: "Quarto Sul",
-          from: ["garage.x0", "garage-knee-wall-front.y0", "upper-rear.z0"],
-          to: ["garage.x1", "garage-knee-wall-rear.y0"],
+          from: ["main.x0", "stairs.y1", "upper-rear.z0"],
+          to: ["x0 + 4.3", "garage-knee-wall-rear.y0"],
           top: "roofs",
           doors: [
-            { from: "right", to: "unused-rear", dy: "unused-rear.yc - bedroom-south.y0 - 0.4" }
+            { from: "front", to: "stair-arrival" }
           ],
-          walls: ["left"]
+          walls: ["front", "left", "right"]
         },
         {
           id: "stair-arrival",
-          label: "Circulação",
-          from: ["upper-corridor.x0", "stairs.y0"],
-          to: ["stairs.x1 - 1.2", "main.y1"],
-          walls: [],
-          classes: "circulation"
+          label: "C-2.1",
+          from: ["stairs.x1 - 1.2", "stairs.y0"],
+          to: ["bathroom-west.x0", "stairs.y1"],
+          walls: ["right"],
         },
         {
           id: "upper-corridor",
           label: "Disponível - Central",
-          from: ["playroom.x1", "unused-rear.y0"],
+          from: ["bedroom-south.x1", "stairs.y0"],
           to:   ["bedroom-north.x1", "bedroom-north.y1"],
           unused: true,
           walls: ["right"]
@@ -595,7 +594,6 @@
     // Fechamentos já atendidos pelas paredes existentes não são duplicados.
     {
       id: "garage-knee-wall-front",
-      // Ambiente em contato: Quarto Sul (bedroom-south).
       scope: "upper-rear",
       color: "blue",
       base: { level: "upper-rear.z0" },
@@ -605,7 +603,6 @@
     },
     {
       id: "garage-knee-wall-rear",
-      // Ambiente em contato: Quarto Sul (bedroom-south).
       scope: "upper-rear",
       color: "blue",
       base: { level: "upper-rear.z0" },
