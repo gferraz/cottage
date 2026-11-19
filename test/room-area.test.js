@@ -6,6 +6,24 @@ const target = () => ({ id: "room", floorId: "ground", parts: [
   { id: "left", x: 0, y: 0, w: 4, l: 4 },
 ] });
 
+test("unused rooms have zero net area while false and omitted keep the usual deductions", () => {
+  const room = target();
+  const deductions = [{ x: 0, y: 0, w: 1, l: 1 }];
+  assert.equal(area.netArea(room, deductions), 15);
+  assert.equal(area.netArea({ ...room, unused: false }, deductions), 15);
+  assert.equal(area.netArea({ ...room, unused: true }, deductions), 0);
+  assert.equal(room.parts.reduce((sum, part) => sum + part.w * part.l, 0), 16);
+});
+
+test("the room reference adapter carries unused into net area calculations", () => {
+  require("../src/models/model.js");
+  const room = { dataset: { id: "room", floorId: "ground" },
+    geometryParts: target().parts, allowedOverlaps: [], unused: true };
+  assert.equal(FloorPlanModel.calculateNetRoomArea(room, [room], []), 0);
+  room.unused = false;
+  assert.equal(FloorPlanModel.calculateNetRoomArea(room, [room], []), 16);
+});
+
 test("deductions match room and part IDs, respect overrides and exclude the target itself", () => {
   const room = target();
   room.overlapTargets = ["room"];
@@ -52,4 +70,28 @@ test("area analysis works on frozen domain data without adding state to the inpu
   const deductions = area.deductionsFor(room, [room], [item]);
   assert.equal(area.netArea(room, deductions), 15);
   assert.deepEqual(room, original);
+});
+
+test("prepared net areas include stair deductions and unused rooms independently of rendered floors", () => {
+  require("../src/models/metrics.js");
+  const definitions = new Map([
+    ["room", { overlaps: undefined }],
+    ["unused", { unused: true }],
+    ["stairs", { overlaps: ["room"] }],
+  ]);
+  const geometries = {
+    room: [{ id: "main", x: 0, y: 0, w: 4, l: 4 }],
+    unused: [{ x: 10, y: 0, w: 3, l: 3 }],
+    stairs: [{ x: 0, y: 0, w: 2, l: 2 }],
+  };
+  const plan = {
+    roomDefinitions: definitions, roomElements: [],
+    getRoomGeometry: id => ({ normalizedParts: geometries[id] }),
+    normalizeOverlapTargets: value => value ?? [],
+    allItems: [{ x: 1, y: 1, w: 2, l: 2, overlaps: ["room"] }],
+  };
+  FloorPlanRoomArea.prepareNetAreas(plan);
+  assert.equal(FloorPlanMetrics.netRoomArea(plan, "room", { area: () => 16 }), 9);
+  assert.equal(FloorPlanMetrics.netRoomArea(plan, "unused", { area: () => 9 }), 0);
+  assert.equal(FloorPlanMetrics.calculateNetRoomArea(plan, { dataset: { id: "room" } }), 9);
 });

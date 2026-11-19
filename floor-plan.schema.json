@@ -1338,6 +1338,11 @@
     "room": {
       "type": "object",
       "properties": {
+        "unused": {
+          "type": "boolean",
+          "default": false,
+          "description": "Quando true, exclui o cômodo da área líquida, preservando sua área bruta e geometria."
+        },
         "comfort_zones": {
           "type": "boolean",
           "description": "Gera faixas de altura livre por cômodo a partir das interseções das coberturas (1,30 / 2,10 / 3 m)."

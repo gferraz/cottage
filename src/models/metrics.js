@@ -1,4 +1,9 @@
 const FloorPlanMetrics = {
+  netRoomArea(plan, id, reference) {
+    return plan.netRoomAreas?.get(id) ?? reference.netArea
+      ?? (reference.unused === true ? 0 : reference.area());
+  },
+
   floorsOverlap(plan, firstId, secondId) {
     if (firstId === secondId) return true;
     const footprint = (id) => (plan.allSlabs ?? []).filter((slab) => slab.floorId === id)
@@ -69,9 +74,11 @@ const FloorPlanMetrics = {
   },
 
   calculateNetRoomArea(plan, room) {
+    const prepared = plan.netRoomAreas?.get(room.dataset.id);
+    if (prepared !== undefined) return prepared;
     return FloorPlanModel.calculateNetRoomArea(
       room,
-      plan.roomElements,
+      [...plan.roomElements, ...(plan.stairElements ?? [])],
       plan.itemElements,
     );
   },

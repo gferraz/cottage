@@ -230,6 +230,7 @@ const FloorPlanDom = {
       : room;
     const element = plan.add({ ...roomData, room: true, container });
     element.normalizedParts = resolved.normalizedParts;
+    element.unused = room.unused === true;
     element.nominalGeometry = resolved.nominalGeometry;
     if (derived) {
       element.dataset.derived = "true";

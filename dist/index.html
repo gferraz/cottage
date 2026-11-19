@@ -4024,6 +4024,27 @@ window.FloorPlanGeometryOperations = FloorPlanGeometryOperations;
 
 // Declarative XY deductions, independent of element visibility and rendering.
 const FloorPlanRoomArea = {
+  prepareNetAreas(plan) {
+    const rooms = [...plan.roomDefinitions.entries()]
+      .filter(([id]) => !plan.invalidRoomIds?.has(id))
+      .map(([id, definition]) => ({
+        id,
+        unused: definition.unused === true,
+        overlapTargets: plan.normalizeOverlapTargets(definition.overlaps),
+        parts: plan.getRoomGeometry(id).normalizedParts.map((part) => ({
+          ...part,
+          overlapTargets: plan.normalizeOverlapTargets(part.overlaps ?? definition.overlaps),
+        })),
+      }));
+    const items = plan.allItems.map((item) => ({
+      x: item.x, y: item.y, w: item.w, l: item.l,
+      overlapTargets: plan.normalizeOverlapTargets(item.overlaps),
+    }));
+    plan.netRoomAreas = new Map(rooms.map((room) => [room.id,
+      FloorPlanRoomArea.netArea(room, FloorPlanRoomArea.deductionsFor(room, rooms, items)),
+    ]));
+    return plan.netRoomAreas;
+  },
   deductionsFor(room, rooms, items, { sameFloor = false } = {}) {
     const targets = new Set([room.id]);
     room.parts.forEach((part) => {
@@ -4039,6 +4060,7 @@ const FloorPlanRoomArea = {
   },
 
   netArea(room, deductions) {
+    if (room.unused === true) return 0;
     const intersections = room.parts.flatMap((part) => deductions.flatMap((other) => {
       const x = Math.max(part.x, other.x), y = Math.max(part.y, other.y);
       const x1 = Math.min(part.x + part.w, other.x + other.w);
@@ -4350,6 +4372,7 @@ const FloorPlanModel = {
       id: value.dataset.id,
       floorId: value.dataset.floorId,
       parts: value.geometryParts,
+      unused: value.unused === true,
       overlapTargets: value.allowedOverlaps,
     });
     const target = describe(room);
@@ -5303,6 +5326,11 @@ window.FloorPlanGeometryBox = FloorPlanGeometryBox;
 
 
 const FloorPlanMetrics = {
+  netRoomArea(plan, id, reference) {
+    return plan.netRoomAreas?.get(id) ?? reference.netArea
+      ?? (reference.unused === true ? 0 : reference.area());
+  },
+
   floorsOverlap(plan, firstId, secondId) {
     if (firstId === secondId) return true;
     const footprint = (id) => (plan.allSlabs ?? []).filter((slab) => slab.floorId === id)
@@ -5373,9 +5401,11 @@ const FloorPlanMetrics = {
   },
 
   calculateNetRoomArea(plan, room) {
+    const prepared = plan.netRoomAreas?.get(room.dataset.id);
+    if (prepared !== undefined) return prepared;
     return FloorPlanModel.calculateNetRoomArea(
       room,
-      plan.roomElements,
+      [...plan.roomElements, ...(plan.stairElements ?? [])],
       plan.itemElements,
     );
   },
@@ -12475,7 +12505,7 @@ const FloorPlanLists = {
       const grossArea = document.createElement("span");
       const netArea = document.createElement("span");
       const roomGrossArea = room.area();
-      const roomNetArea = activeRoom?.netArea ?? roomGrossArea;
+      const roomNetArea = FloorPlanMetrics.netRoomArea(plan, roomEntry.id, activeRoom ?? room);
       grossTotal += roomGrossArea;
       netTotal += roomNetArea;
       grossArea.textContent = plan.formatFixed(roomGrossArea);
@@ -13150,7 +13180,7 @@ const FloorPlanTextExport = {
         (candidate) => candidate.dataset.id === roomEntry.id,
       );
       lines.push(
-        `| ${index + 1} | ${plan.markdownText(roomEntry.id || room.dataset?.id || "—")} | ${plan.markdownText(roomEntry.label || room.dataset?.label || "Cômodo")}${roomEntry.floorLabel ? ` (${plan.markdownText(roomEntry.floorLabel)})` : ""} | ${plan.formatMeters(room.x0())} | ${plan.formatMeters(room.y0())} | ${plan.formatMeters(room.w())} | ${plan.formatMeters(room.l())} | ${plan.formatMeters(room.area())} | ${plan.formatMeters(activeRoom?.netArea ?? room.area())} | ${walls} |`,
+        `| ${index + 1} | ${plan.markdownText(roomEntry.id || room.dataset?.id || "—")} | ${plan.markdownText(roomEntry.label || room.dataset?.label || "Cômodo")}${roomEntry.floorLabel ? ` (${plan.markdownText(roomEntry.floorLabel)})` : ""} | ${plan.formatMeters(room.x0())} | ${plan.formatMeters(room.y0())} | ${plan.formatMeters(room.w())} | ${plan.formatMeters(room.l())} | ${plan.formatMeters(room.area())} | ${plan.formatMeters(FloorPlanMetrics.netRoomArea(plan, roomEntry.id, activeRoom ?? room))} | ${walls} |`,
       );
     });
 
@@ -13367,7 +13397,7 @@ const FloorPlanTextExport = {
             (candidate) => candidate.dataset.id === entry.id,
           );
           const grossArea = room.area();
-          const netArea = activeRoom?.netArea ?? grossArea;
+          const netArea = FloorPlanMetrics.netRoomArea(plan, entry.id, activeRoom ?? room);
           grossTotal += grossArea;
           netTotal += netArea;
           lines.push(
@@ -14116,6 +14146,7 @@ const FloorPlanDom = {
       : room;
     const element = plan.add({ ...roomData, room: true, container });
     element.normalizedParts = resolved.normalizedParts;
+    element.unused = room.unused === true;
     element.nominalGeometry = resolved.nominalGeometry;
     if (derived) {
       element.dataset.derived = "true";
@@ -14765,6 +14796,7 @@ const FloorPlanProject = {
     const floorErrors = new Map(model.floors.map((floor) =>
       [floor, FloorPlanReferences.collectFloorFeatureErrors(plan, floor)]));
     plan.prepareGlobalLists(config);
+    FloorPlanRoomArea.prepareNetAreas(plan);
     plan.allSlabs = FloorPlanSlabs.collect(plan);
     FloorPlanHeadroom.prepare(plan);
     FloorPlanCommunications.prepare(plan);

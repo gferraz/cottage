@@ -420,7 +420,8 @@
           label: "Sem uso — fundos",
           from: ["kitchen.x1", "main.y1", "upper-rear.z0"],
           to: ["mudroom.x0", "kitchen.y1"],
-          top: "roofs"
+          top: "roofs",
+          unused: true
         },
         {
           id: "bedroom-rear",
@@ -442,7 +443,7 @@
         },
         {
           id: "upper-corridor",
-          label: "Corredor traseiro",
+          label: "Corredor superior",
           from: ["playroom.x1", "unused-rear.y0"],
           to:   ["bedroom-north.x1", "bedroom-north.y1"],
           walls: ["right"]
@@ -495,7 +496,7 @@
           to: ["knee-front-right.x1 - 3.3", "y0 + 3.6"],
           walls: [],
           doors: [
-            { from: "rear", to: "upper-corridor-front" }
+            { from: "rear", to: "upper-corridor" }
           ],
           windows: [
             { from: "front", h: 1.2, z0: "upper.z0 + 1", dx: "bedroom-north.w + main-roof.xc - bedroom-north.x1 + 0.75"}

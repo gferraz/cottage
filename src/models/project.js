@@ -19,6 +19,7 @@ const FloorPlanProject = {
     const floorErrors = new Map(model.floors.map((floor) =>
       [floor, FloorPlanReferences.collectFloorFeatureErrors(plan, floor)]));
     plan.prepareGlobalLists(config);
+    FloorPlanRoomArea.prepareNetAreas(plan);
     plan.allSlabs = FloorPlanSlabs.collect(plan);
     FloorPlanHeadroom.prepare(plan);
     FloorPlanCommunications.prepare(plan);

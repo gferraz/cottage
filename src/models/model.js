@@ -292,6 +292,7 @@ const FloorPlanModel = {
       id: value.dataset.id,
       floorId: value.dataset.floorId,
       parts: value.geometryParts,
+      unused: value.unused === true,
       overlapTargets: value.allowedOverlaps,
     });
     const target = describe(room);

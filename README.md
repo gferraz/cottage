@@ -234,6 +234,8 @@ A referência aceita IDs de telhados, cômodos, partes, itens ou outras referên
 
 Arquivos anteriores com `top: { under: ..., offset: ... }` continuam sendo lidos por compatibilidade. Sem deslocamento, prefira `top` diretamente com o ID ou a lista de IDs. A forma `top: ...` continua válida para cotas explícitas.
 
+Na definição de um cômodo, `"unused": true` exclui sua área da área líquida (inclusive nos totais e nas exportações). A área bruta, a geometria e as regras de sobreposição são preservadas. O padrão é `false` quando o parâmetro é omitido.
+
 O padrão é quatro paredes sólidas. Use `walls` com `solid`, `open` ou `virtual`:
 
 ```json

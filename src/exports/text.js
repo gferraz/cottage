@@ -305,7 +305,7 @@ const FloorPlanTextExport = {
         (candidate) => candidate.dataset.id === roomEntry.id,
       );
       lines.push(
-        `| ${index + 1} | ${plan.markdownText(roomEntry.id || room.dataset?.id || "—")} | ${plan.markdownText(roomEntry.label || room.dataset?.label || "Cômodo")}${roomEntry.floorLabel ? ` (${plan.markdownText(roomEntry.floorLabel)})` : ""} | ${plan.formatMeters(room.x0())} | ${plan.formatMeters(room.y0())} | ${plan.formatMeters(room.w())} | ${plan.formatMeters(room.l())} | ${plan.formatMeters(room.area())} | ${plan.formatMeters(activeRoom?.netArea ?? room.area())} | ${walls} |`,
+        `| ${index + 1} | ${plan.markdownText(roomEntry.id || room.dataset?.id || "—")} | ${plan.markdownText(roomEntry.label || room.dataset?.label || "Cômodo")}${roomEntry.floorLabel ? ` (${plan.markdownText(roomEntry.floorLabel)})` : ""} | ${plan.formatMeters(room.x0())} | ${plan.formatMeters(room.y0())} | ${plan.formatMeters(room.w())} | ${plan.formatMeters(room.l())} | ${plan.formatMeters(room.area())} | ${plan.formatMeters(FloorPlanMetrics.netRoomArea(plan, roomEntry.id, activeRoom ?? room))} | ${walls} |`,
       );
     });
 
@@ -522,7 +522,7 @@ const FloorPlanTextExport = {
             (candidate) => candidate.dataset.id === entry.id,
           );
           const grossArea = room.area();
-          const netArea = activeRoom?.netArea ?? grossArea;
+          const netArea = FloorPlanMetrics.netRoomArea(plan, entry.id, activeRoom ?? room);
           grossTotal += grossArea;
           netTotal += netArea;
           lines.push(
