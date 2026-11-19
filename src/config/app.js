@@ -39,6 +39,35 @@ const floor = new FloorPlan({
 
 window.floor = floor;
 
+const exampleButtons = [...document.querySelectorAll("[data-load-example]")];
+exampleButtons.forEach((button) => {
+  button.addEventListener("click", async () => {
+    const labels = exampleButtons.map((control) => control.textContent);
+    exampleButtons.forEach((control) => {
+      control.disabled = true;
+      control.textContent = "Carregando exemplo…";
+      control.setAttribute("aria-busy", "true");
+    });
+    try {
+      const filename = "cottage-ferraz-cesar-2-level-floors.json5";
+      const response = await fetch(
+        `https://raw.githubusercontent.com/gferraz/cottage/refs/heads/main/${filename}`,
+        { cache: "no-cache", signal: AbortSignal.timeout(30000) },
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      await floor.loadFile(new File([await response.text()], filename));
+    } catch (error) {
+      alert(`Não foi possível carregar a planta exemplo. Verifique sua conexão e tente novamente. (${error.message})`);
+    } finally {
+      exampleButtons.forEach((control, index) => {
+        control.disabled = false;
+        control.textContent = labels[index];
+        control.removeAttribute("aria-busy");
+      });
+    }
+  });
+});
+
 document.addEventListener("keydown", (event) => {
   if (
     !(event.metaKey || event.ctrlKey) ||

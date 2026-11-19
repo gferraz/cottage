@@ -1123,6 +1123,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .room-overlap .room-part { background: var(--theme-overlap) !important; }
 
 #load-json,
+#load-example,
 #download-html,
 #download-markdown,
 #download-dxf,
@@ -1140,6 +1141,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   text-align: left;
 }
 #load-json:hover,
+#load-example:hover,
 #download-html:hover,
 #download-markdown:hover,
 #download-dxf:hover,
@@ -1287,6 +1289,21 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 }
 #empty-load-json:hover { background: #5f3925; }
 #empty-load-json:focus-visible { outline: 3px solid #c9a58b; outline-offset: 3px; }
+#empty-load-example {
+  min-height: 46px;
+  margin: 8px 0 0 8px;
+  padding: 11px 18px;
+  border: 1px solid #71472f;
+  border-radius: 3px;
+  background: transparent;
+  color: #71472f;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+#empty-load-example:hover { background: #eeeae1; }
+#empty-load-example:focus-visible { outline: 3px solid #c9a58b; outline-offset: 3px; }
+[data-load-example]:disabled { cursor: wait; opacity: 0.65; }
 .empty-state-instructions {
   display: grid;
   gap: 10px;

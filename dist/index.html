@@ -1183,6 +1183,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .room-overlap .room-part { background: var(--theme-overlap) !important; }
 
 #load-json,
+#load-example,
 #download-html,
 #download-markdown,
 #download-dxf,
@@ -1200,6 +1201,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   text-align: left;
 }
 #load-json:hover,
+#load-example:hover,
 #download-html:hover,
 #download-markdown:hover,
 #download-dxf:hover,
@@ -1347,6 +1349,21 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 }
 #empty-load-json:hover { background: #5f3925; }
 #empty-load-json:focus-visible { outline: 3px solid #c9a58b; outline-offset: 3px; }
+#empty-load-example {
+  min-height: 46px;
+  margin: 8px 0 0 8px;
+  padding: 11px 18px;
+  border: 1px solid #71472f;
+  border-radius: 3px;
+  background: transparent;
+  color: #71472f;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+#empty-load-example:hover { background: #eeeae1; }
+#empty-load-example:focus-visible { outline: 3px solid #c9a58b; outline-offset: 3px; }
+[data-load-example]:disabled { cursor: wait; opacity: 0.65; }
 .empty-state-instructions {
   display: grid;
   gap: 10px;
@@ -2717,6 +2734,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
         <h1 id="empty-state-title">Sua planta começa aqui.</h1>
         <p class="empty-state-intro">Carregue o arquivo do projeto para visualizar a planta baixa, as fachadas e a perspectiva da edificação.</p>
         <button id="empty-load-json" type="button" title="Carregar planta (⌘/ / Ctrl+/)" aria-keyshortcuts="Meta+/ Control+/" onclick="document.querySelector('#json-file').click()">↑ Carregar planta</button>
+        <button id="empty-load-example" type="button" data-load-example>Carregar exemplo</button>
         <ol class="empty-state-instructions">
           <li>Selecione um arquivo <code>.json</code> ou <code>.json5</code>.</li>
           <li>Aguarde o desenho e os dados do projeto aparecerem.</li>
@@ -2800,6 +2818,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
     </header>
     <div class="plan-controls">
       <button id="load-json" type="button" title="Carregar planta (⌘/ / Ctrl+/)" aria-keyshortcuts="Meta+/ Control+/" onclick="document.querySelector('#json-file').click()">↑ Planta</button>
+      <button id="load-example" type="button" data-load-example>Carregar exemplo</button>
       <button id="download-html" type="button">↓ HTML</button>
       <button id="download-markdown" type="button">↓ Markdown</button>
       <button id="download-dxf" type="button">↓ DXF</button>
@@ -16087,6 +16106,35 @@ const floor = new FloorPlan({
 });
 
 window.floor = floor;
+
+const exampleButtons = [...document.querySelectorAll("[data-load-example]")];
+exampleButtons.forEach((button) => {
+  button.addEventListener("click", async () => {
+    const labels = exampleButtons.map((control) => control.textContent);
+    exampleButtons.forEach((control) => {
+      control.disabled = true;
+      control.textContent = "Carregando exemplo…";
+      control.setAttribute("aria-busy", "true");
+    });
+    try {
+      const filename = "cottage-ferraz-cesar-2-level-floors.json5";
+      const response = await fetch(
+        `https://raw.githubusercontent.com/gferraz/cottage/refs/heads/main/${filename}`,
+        { cache: "no-cache", signal: AbortSignal.timeout(30000) },
+      );
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      await floor.loadFile(new File([await response.text()], filename));
+    } catch (error) {
+      alert(`Não foi possível carregar a planta exemplo. Verifique sua conexão e tente novamente. (${error.message})`);
+    } finally {
+      exampleButtons.forEach((control, index) => {
+        control.disabled = false;
+        control.textContent = labels[index];
+        control.removeAttribute("aria-busy");
+      });
+    }
+  });
+});
 
 document.addEventListener("keydown", (event) => {
   if (

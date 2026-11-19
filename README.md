@@ -10,6 +10,8 @@ Os nomes dos cômodos, as medidas da planta e as legendas dos telhados usam Arch
 
 Abra [`floor-plan.html`](floor-plan.html) no navegador e clique em **Carregar JSON**. A página inicia vazia; o projeto só é carregado quando um arquivo é escolhido. Para trocar a planta, selecione outro arquivo JSON.
 
+O botão **Carregar exemplo**, na tela inicial e na barra lateral, busca `cottage-ferraz-cesar-2-level-floors.json5` diretamente do arquivo raw da branch `main` no GitHub (`gferraz/cottage`). Esse carregamento requer internet; arquivos locais continuam disponíveis pelo botão **Carregar planta**.
+
 Arquivos `.json5` e `.jsonc` também são aceitos. Eles usam a mesma estrutura do JSON, mas permitem comentários, chaves sem aspas e vírgulas finais:
 
 ```json5
