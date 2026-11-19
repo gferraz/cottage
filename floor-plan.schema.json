@@ -857,7 +857,7 @@
         {
           "type": "string",
           "minLength": 1,
-          "description": "Número, referência geométrica ou expressão com params.nome."
+          "description": "Número ou expressão com params.nome e ID-do-pavimento.z0. Referências entre pavimentos independem da ordem; ciclos não são permitidos."
         }
       ]
     },
@@ -2306,7 +2306,7 @@
             {
               "type": "string",
               "minLength": 1,
-              "description": "Número, referência geométrica ou expressão com params.nome."
+              "description": "Número ou expressão com params.nome e ID-do-pavimento.z0. Referências entre pavimentos independem da ordem; ciclos não são permitidos."
             }
           ]
         },

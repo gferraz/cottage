@@ -15,30 +15,25 @@
   viewport: { size: [24, 32], origin: [-25, 1] },
   // Configuração
   config: {
-    walls: { base: { level: "ground.z0" }, top: "roofs", thickness: "params.wall_thickness", color: "desejo-ambar" },
-    roofs: { type: "gable", pitch: 51, thickness: "params.roof_thickness_51", rake: 0.5, eaves: { pitch: 30 } },
+    walls: { base: { level: "ground.z0" }, top: "roofs", thickness: 0.12, color: "desejo-ambar" },
+    // Reserva preliminar de 30 cm perpendicular à água: estrutura com isolamento
+    // entre peças, canal ventilado livre de aproximadamente 5 cm e acabamentos.
+    // thickness é vertical: 0,30 / cos(51°), arredondado para cima.
+    // A superfície de referência representa o acabamento interno; volume acima dela.
+    roofs: { type: "gable", pitch: 51, thickness: 0.477, rake: 0.5, eaves: { pitch: 30 } },
     floors: { ceiling_height: "params.floor_height" }
   },
   // Parâmetros
   parameters: {
-    wall_thickness: 0.12,
-    // Reserva preliminar de 30 cm perpendicular à água: estrutura com isolamento
-    // entre peças, canal ventilado livre de aproximadamente 5 cm e acabamentos.
-    // thickness é vertical: 0,30 / cos(inclinação), arredondado para cima.
-    // A superfície de referência representa o acabamento interno; volume acima dela.
-    roof_thickness_51: 0.477,
+    // Mesma reserva de 30 cm, convertida à espessura vertical para 20°.
     roof_thickness_20: 0.320,
     floor_height: 3,
-    // Dois espelhos entre os níveis do térreo; piso de 30 cm no corredor.
-    ground_step_rise: 0.17,
+    // Piso de 30 cm nos degraus entre níveis.
     ground_step_run: 0.30,
-    ground_rear_level: "-2 * params.ground_step_rise",
-    upper_rear_level: "params.floor_height + params.ground_rear_level",
     roof_base_offset: 1,
     bed_knee_wall_clearance: 0.3,
     corridor_half_width: 0.7,
-    knee_setback: 1,
-    knee_height: 1.3
+    knee_setback: 1
   },
   // Terreno cadastral
   terrain: {
@@ -91,7 +86,8 @@
     {
       id: "ground-rear",
       label: "Térreo traseiro",
-      z0: "params.ground_rear_level",
+      // Dois espelhos de 17 cm abaixo da referência zero.
+      z0: -0.34,
       slabs: [{ id: "slab-ground-rear", label: "Laje — Térreo traseiro", thickness: 0.15 }],
       stairs: [
         {
@@ -412,7 +408,7 @@
     {
       id: "upper-rear",
       label: "Dormitórios — traseiro",
-      z0: "params.upper_rear_level",
+      z0: "ground-rear.z0 + params.floor_height",
       comfort_zones: true,
       slabs: [{ id: "slab-upper-rear", label: "Laje — Dormitórios traseiro", thickness: 0.15 }],
       stairs: [

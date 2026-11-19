@@ -4124,6 +4124,54 @@ const FloorPlanModel = {
     return visit(config);
   },
 
+  resolveFloorLevels(config) {
+    const floors = config.floors ?? [config];
+    const byId = new Map(floors.filter(floor => floor.id).map(floor => [floor.id, floor]));
+    const values = new Map();
+    const stack = new Set();
+    const evaluate = (floor) => {
+      if (values.has(floor)) return values.get(floor);
+      const label = floor.id ?? "pavimento";
+      try {
+        if (stack.has(floor)) throw new Error(`Referência circular na cota ${label}.z0`);
+        stack.add(floor);
+        const value = floor.z0 ?? 0;
+        const resolver = {
+          resolveExpression: FloorPlanGeometry.resolveExpression,
+          resolve(token) {
+            if (typeof token === "number") return token;
+            const text = String(token).trim();
+            if (text !== "" && Number.isFinite(Number(text))) return Number(text);
+            const match = text.match(/^([A-Za-z_][\w-]*)\.z0$/);
+            if (!match) throw new Error(`Referência inválida na cota ${label}.z0: ${text}. Use ID-do-pavimento.z0`);
+            const target = byId.get(match[1]);
+            if (!target) throw new Error(`Pavimento desconhecido na cota ${label}.z0: ${match[1]}`);
+            return evaluate(target);
+          },
+        };
+        const result = typeof value === "number" ? value
+          : resolver.resolveExpression(String(value).trim());
+        if (!Number.isFinite(result)) throw new Error(`A cota ${label}.z0 precisa ser numérica e finita`);
+        values.set(floor, result);
+        return result;
+      } catch (error) {
+        if (!error.location) {
+          error.location = window.FloorPlanParser?.location(floor, "z0") ?? window.FloorPlanParser?.location(floor);
+          if (error.location) error.message = `${FloorPlanParser.formatLocation(error.location)}: ${error.message}`;
+        }
+        throw error;
+      } finally {
+        stack.delete(floor);
+      }
+    };
+    const resolved = floors.map(floor => {
+      const result = { ...floor, ...(floor.z0 !== undefined ? { z0: evaluate(floor) } : {}) };
+      return window.FloorPlanParser?.copyLocation(floor, result) ?? result;
+    });
+    const result = config.floors ? { ...config, floors: resolved } : resolved[0];
+    return window.FloorPlanParser?.copyLocation(config, result) ?? result;
+  },
+
   applyDefaults(config) {
     config = this.resolveParameters(this.normalizeWallSides(config));
     const defaults = config.config ?? {};
@@ -4201,7 +4249,7 @@ const FloorPlanModel = {
       config = FloorPlanCoordinates.reflectX(config);
       delete config.coordinate_system;
     }
-    config = this.applyDefaults(config);
+    config = this.resolveFloorLevels(this.applyDefaults(config));
     if (warnings.length) config[this.deprecationWarningsKey] = warnings;
     if (config.terrain?.grading !== undefined) FloorPlanTerrainGeometry.profile(config.terrain.grading);
     const floors = config.floors ?? [config];

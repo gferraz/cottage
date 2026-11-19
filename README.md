@@ -84,6 +84,8 @@ Ao carregar um arquivo, os erros indicam nome, linha, coluna e caminho, por exem
 
 Cada piso deve informar `z0`, sua cota vertical, e `ceiling_height`, o pé-direito desse piso. Quando existe um piso acima, a altura efetiva das paredes é limitada pela diferença entre os `z0`; no último piso, usa-se `ceiling_height`. O antigo `h` do piso não é mais usado para definir sua posição.
 
+`floors[].z0` aceita números e expressões com parâmetros e cotas de outros pavimentos, como `"ground-rear.z0 + params.floor_height"`. São aceitas as operações `+`, `-`, `*`, `/` e parênteses. As cotas são resolvidas antes da geometria, independentemente da ordem dos pavimentos no arquivo; referências inexistentes, ciclos e resultados não finitos geram erro com a localização da definição. Nesse campo, as referências geométricas se limitam a `ID-do-pavimento.z0`: cômodos e outras propriedades ainda não estão disponíveis. Use parâmetros para medidas compartilhadas e defina cotas derivadas diretamente no pavimento.
+
 Os IDs dos cômodos são obrigatórios, globais e únicos. IDs de zonas, itens, janelas, passagens e guias também devem ser únicos quando informados. Objetos geométricos com ID podem ser referenciados globalmente quando o tipo oferece referências. `x0`, `y0` e `z0` são palavras reservadas e não podem ser usados como IDs.
 
 ## Catálogo compartilhado
