@@ -7487,7 +7487,6 @@ const FloorPlan3DSite = {
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
     const terrain = new THREE.Mesh(geometry, terrainMaterial);
-    terrain.position.z = -0.03;
     terrain.receiveShadow = true;
     terrain.renderOrder = -10;
     scene.add(terrain);
@@ -8144,7 +8143,7 @@ const FloorPlanFacades3D = {
     const clipWall = (wall) => {
       if (wall.scopeFloorId && wall.scopeFloorId !== floor.id) return [];
       if (!FloorPlanMetrics.wallOverlapsFloor(plan, wall, floor.id)) return [];
-      const bottom = wall.base === "terrain" && index === 0 ? Number(wall.z0) : Math.max(Number(wall.z0), z0);
+      const bottom = wall.base === "terrain" && (index === 0 || wall.scopeFloorId === floor.id) ? Number(wall.z0) : Math.max(Number(wall.z0), z0);
       const top = Math.min(Number(wall.z1), z1);
       if (top - bottom <= 1e-9) return [];
       return [{ ...wall, z0: bottom, z1: top, h: top - bottom,
@@ -8161,7 +8160,7 @@ const FloorPlanFacades3D = {
     view.wallRenderParts = (plan.wallRenderParts ?? []).flatMap(clipWall);
     view.independentWalls = new Map([...(plan.independentWalls ?? [])].flatMap(([id, wall]) => {
       if (wall.scopeFloorId && wall.scopeFloorId !== floor.id) return [];
-      const bottom = wall.base === "terrain" && index === 0 ? wall.z0 : Math.max(wall.z0, z0);
+      const bottom = wall.base === "terrain" && (index === 0 || wall.scopeFloorId === floor.id) ? wall.z0 : Math.max(wall.z0, z0);
       const top = Math.min(wall.topZ, z1);
       return top - bottom > 1e-9 ? [[id, { ...wall, z0: bottom, topZ: top }]] : [];
     }));
@@ -12995,8 +12994,18 @@ const FloorPlanTextExport = {
     return intersectingFloor >= 0 ? intersectingFloor : null;
   },
 
-  asciiLayout(plan) {
-    const bounds = plan.bounds();
+  asciiLayout(plan, { floorIds = null } = {}) {
+    const selectedFloors = floorIds && new Set(floorIds.map((id) => id ?? null));
+    const rooms = selectedFloors
+      ? plan.allRooms.filter((entry) => selectedFloors.has(entry.floorId ?? null))
+        .map((entry) => entry.reference || entry)
+      : plan.roomElements;
+    const bounds = rooms.length ? {
+      x0: Math.min(...rooms.map((room) => room.x0())),
+      y0: Math.min(...rooms.map((room) => room.y0())),
+      width: Math.max(...rooms.map((room) => room.x1())) - Math.min(...rooms.map((room) => room.x0())),
+      height: Math.max(...rooms.map((room) => room.y1())) - Math.min(...rooms.map((room) => room.y0())),
+    } : null;
     if (!bounds) return "(nenhum cômodo carregado)";
 
     const step = 0.25;
@@ -13054,12 +13063,14 @@ const FloorPlanTextExport = {
       15: "┼ ",
     };
 
-    plan.roomElements.forEach((room) => {
+    rooms.forEach((room) => {
       const left = column(room.x0());
       const right = column(room.x1());
       const top = row(room.y0());
       const bottom = row(room.y1());
-      const walls = room.walls || {};
+      const walls = room.walls || Object.fromEntries(
+        ["top", "right", "bottom", "left"].map((side) => [side, room.wallState?.(side)]),
+      );
       const horizontal = (y, state) => {
         for (let x = left; x <= right; x += 1) addHorizontal(x, y, state);
       };
@@ -13098,7 +13109,10 @@ const FloorPlanTextExport = {
       floors.findIndex((floor) => floor.id === plan.currentFloorId),
     );
     (plan.independentWalls?.values?.() ?? []).forEach((wall) => {
-      if (this.independentWallFloorIndex(plan, wall, floors) !== activeFloorIndex) return;
+      const wallFloorIndex = this.independentWallFloorIndex(plan, wall, floors);
+      if (selectedFloors
+        ? wallFloorIndex === null || !selectedFloors.has(floors[wallFloorIndex]?.id ?? null)
+        : wallFloorIndex !== activeFloorIndex) return;
       (wall.path?.points ?? []).slice(0, -1).forEach((from, index) => {
         const to = wall.path.points[index + 1];
         const x0 = column(from[0]);
@@ -13127,8 +13141,11 @@ const FloorPlanTextExport = {
       });
     });
 
-    FloorPlanOpenings.rendered(plan, { active: true }).filter((entry) => entry.type !== "window").forEach((opening) => {
-      const room = plan.rooms.get(opening.roomId);
+    const roomById = new Map(rooms.map((room) => [room.dataset.id, room]));
+    FloorPlanOpenings.rendered(plan, { active: !selectedFloors })
+      .filter((entry) => entry.type !== "window" &&
+        (!selectedFloors || selectedFloors.has(entry.floorId ?? null))).forEach((opening) => {
+      const room = roomById.get(opening.roomId);
       if (!room) return;
       const wall = opening.wall;
       const start = opening.position;
@@ -13304,9 +13321,7 @@ const FloorPlanTextExport = {
     }
 
     const lines = [`# ${plan.currentConfig.title || "Layout da planta"}`];
-    const floors = plan.model?.floors ?? [
-      { id: null, label: "Planta", rooms: [] },
-    ];
+    const floors = FloorPlanModel.presentationFloors(plan);
     const rooms = plan.allRooms.length
       ? plan.allRooms
       : plan.roomElements.map((reference) => ({
@@ -13322,30 +13337,36 @@ const FloorPlanTextExport = {
       plan.roomDefinitions,
       plan.roomReferences,
     );
-    const originalFloorIndex = Math.max(
-      0,
-      floors.findIndex((floor) => floor.id === plan.currentFloorId),
+    const config = plan.currentConfig;
+    const style = config.style ?? config.architectural_style ?? config.metadata?.style ?? config.project?.style;
+    const description = config.summary ?? config.description ?? config.metadata?.summary
+      ?? config.metadata?.description ?? config.project?.summary ?? config.project?.description;
+    const coordinates = Array.isArray(config.coordinates)
+      ? config.coordinates.filter(Boolean).join(" · ")
+      : typeof config.coordinates === "string" ? config.coordinates
+        : [config.coordinates?.latitude ?? config.coordinates?.lat,
+          config.coordinates?.longitude ?? config.coordinates?.lon].filter(Boolean).join(" · ");
+    lines.push("", "## Resumo do projeto", "");
+    if (description) lines.push(plan.markdownText(description), "");
+    if (style) lines.push(`- **Estilo:** ${plan.markdownText(style)}`);
+    if (coordinates) lines.push(`- **Coordenadas:** ${plan.markdownText(coordinates)}`);
+    if (plan.terrainArea > 0) lines.push(`- **Área do terreno:** ${plan.formatMeters(plan.terrainArea)} m²`);
+    lines.push(
+      `- **Área bruta somada:** ${plan.formatMeters(floorRows.reduce((total, row) => total + row.area, 0))} m²`,
+      `- **Área usada:** ${plan.formatMeters(rooms.reduce((total, entry) => total + FloorPlanMetrics.netRoomArea(plan, entry.id, entry.reference ?? entry), 0))} m²`,
+      `- **Pavimentos:** ${new Set(floors.map((floor) => floor.storey || floor)).size}`,
+      `- **Pisos:** ${floors.map((floor) => plan.markdownText(floor.label || floor.id)).join(" · ")}`,
     );
-    const originalMultiFloorMode = plan.multiFloorMode;
-    const asciiByFloor = [];
-    try {
-      plan.multiFloorMode = false;
-      floors.forEach((_floor, floorIndex) => {
-        plan.load({ ...plan.currentConfig, activeFloor: floorIndex });
-        asciiByFloor.push({
-          label:
-            floors[floorIndex].label ||
-            floors[floorIndex].id ||
-            `Piso ${floorIndex + 1}`,
-          layout: FloorPlanTextExport.asciiLayout(plan),
-        });
-      });
-    } finally {
-      plan.multiFloorMode = originalMultiFloorMode;
-      plan.load({ ...plan.currentConfig, activeFloor: originalFloorIndex });
-      plan.multiFloorMode = originalMultiFloorMode;
-      plan.renderMultiFloorUnderlay();
-    }
+    const storeys = new Map();
+    floors.forEach((floor) => {
+      const key = floor.storey || floor;
+      if (!storeys.has(key)) storeys.set(key, []);
+      storeys.get(key).push(floor);
+    });
+    const asciiByStorey = [...storeys.entries()].map(([key, levels], index) => ({
+      label: typeof key === "string" ? key : levels[0].label || levels[0].id || `Pavimento ${index + 1}`,
+      layout: FloorPlanTextExport.asciiLayout(plan, { floorIds: levels.map((floor) => floor.id) }),
+    }));
     const independentWalls = [...(plan.independentWalls?.values() ?? [])];
     const appendIndependentWalls = (floorWallEntries) => {
       lines.push(
@@ -13390,7 +13411,7 @@ const FloorPlanTextExport = {
           return;
         }
         lines.push(
-          `| ${plan.markdownText(roof.label || roof.id || "Telhado")} | ${plan.markdownText(plan.roofTypeLabel(roof.type))} | ${plan.markdownText(FloorPlanRoofs.axisLabel(plan, roof, metrics.ridgeLength))} | ${plan.formatMeters(metrics.roofWidth)} × ${plan.formatMeters(metrics.roofLength)} | ${plan.formatMeters(metrics.baseElevation)} | ${plan.formatMeters(metrics.rise)} | ${plan.formatMeters(metrics.surfaceArea)} | ${plan.formatMeters(metrics.pitch)}° | ${FloorPlanRoofs.formatOverhang(plan, metrics.eave)} | ${FloorPlanRoofs.formatOverhang(plan, metrics.rake)} |`,
+          `| ${plan.markdownText(roof.label || roof.id || "Telhado")} | ${plan.markdownText(plan.roofTypeLabel(roof.type))} | ${plan.markdownText(FloorPlanRoofs.axisLabel(plan, roof, metrics.ridgeLength))} | ${plan.formatMeters(metrics.roofWidth)} × ${plan.formatMeters(metrics.roofLength)} | ${plan.formatMeters(metrics.baseElevation)} | ${plan.formatMeters(metrics.rise)} | ${plan.formatMeters(metrics.surfaceArea)} | ${plan.formatMeters(metrics.pitch)}°${roof.eaves?.pitch !== undefined ? ` / beiral ${plan.formatMeters(FloorPlanRoofs.eavePitch(roof))}°` : ""} | ${FloorPlanRoofs.formatOverhang(plan, metrics.eave)} | ${FloorPlanRoofs.formatOverhang(plan, metrics.rake)} |`,
         );
       });
     };
@@ -13436,14 +13457,15 @@ const FloorPlanTextExport = {
         "",
         "### Cômodos",
         "",
-        "| # | ID | Nome | x | y | Largura | Comprimento | Área bruta | Área usada | Paredes |",
-        "|---:|---|---|---:|---:|---:|---:|---:|---:|---|",
+        "| # | ID | Nome | x | y | Largura | Comprimento | Área bruta | Área usada | Altura mín. → máx. (m) | Área ≥ 2,10 m (m²) | Paredes |",
+        "|---:|---|---|---:|---:|---:|---:|---:|---:|---|---:|---|",
       );
       if (floorRooms.length === 0) {
-        lines.push("| — | Nenhum cômodo definido |  |  |  |  |  |  |  |  |");
+        lines.push("| — | Nenhum cômodo definido |  |  |  |  |  |  |  |  |  |  |");
       } else {
         let grossTotal = 0;
         let netTotal = 0;
+        let usableHeightTotal = 0;
         floorRooms.forEach((entry, index) => {
           const room = entry.reference || entry;
           const walls =
@@ -13455,14 +13477,19 @@ const FloorPlanTextExport = {
           );
           const grossArea = room.area();
           const netArea = FloorPlanMetrics.netRoomArea(plan, entry.id, activeRoom ?? room);
+          const analysis = plan.headroomResults?.get(entry.id);
+          const heightRange = analysis?.heightRange
+            ? `${plan.formatMeters(analysis.heightRange.min)} → ${plan.formatMeters(analysis.heightRange.max)}` : "—";
+          const usableHeight = analysis?.areas.find((area) => Math.abs(area.height - 2.1) < 1e-9)?.area;
+          usableHeightTotal += usableHeight ?? 0;
           grossTotal += grossArea;
           netTotal += netArea;
           lines.push(
-            `| ${index + 1} | ${plan.markdownText(entry.id || room.dataset?.id || "—")} | ${plan.markdownText(entry.label || room.dataset?.label || "Cômodo")} | ${plan.formatMeters(room.x0())} | ${plan.formatMeters(room.y0())} | ${plan.formatMeters(room.w())} | ${plan.formatMeters(room.l())} | ${plan.formatMeters(grossArea)} | ${plan.formatMeters(netArea)} | ${walls} |`,
+            `| ${index + 1} | ${plan.markdownText(entry.id || room.dataset?.id || "—")} | ${plan.markdownText(entry.label || room.dataset?.label || "Cômodo")} | ${plan.formatMeters(room.x0())} | ${plan.formatMeters(room.y0())} | ${plan.formatMeters(room.w())} | ${plan.formatMeters(room.l())} | ${plan.formatMeters(grossArea)} | ${plan.formatMeters(netArea)} | ${heightRange} | ${usableHeight === undefined ? "—" : plan.formatMeters(usableHeight)} | ${walls} |`,
           );
         });
         lines.push(
-          `|  |  | **Total do piso** |  |  | — | — | **${plan.formatMeters(grossTotal)}** | **${plan.formatMeters(netTotal)}** |  |`,
+          `|  |  | **Total do piso** |  |  | — | — | **${plan.formatMeters(grossTotal)}** | **${plan.formatMeters(netTotal)}** | — | **${plan.formatMeters(usableHeightTotal)}** |  |`,
         );
       }
 
@@ -13489,6 +13516,14 @@ const FloorPlanTextExport = {
       }
     });
 
+    if (plan.warnings?.length) {
+      lines.push("", "## Avisos de depreciação", "");
+      plan.warnings.forEach((warning) => {
+        const source = warning.location ? FloorPlanParser.formatLocation(warning.location) : warning.path;
+        lines.push(`- ${plan.markdownText(warning.message)}${source ? ` (${plan.markdownText(source)})` : ""}`);
+      });
+    }
+
     if (plan.errors.length > 0) {
       lines.push(
         "",
@@ -13500,7 +13535,9 @@ const FloorPlanTextExport = {
             item: "Item",
             room: "Cômodo",
             presentation: "Apresentação",
-            opening: "Passagem",
+            opening: "Vão",
+            door: "Porta",
+            wall: "Parede",
             collision: "Colisão",
             overlap: "Sobreposição",
             zone: "Zona",
@@ -13519,7 +13556,7 @@ const FloorPlanTextExport = {
     }
 
     lines.push("", "## ASCII art");
-    asciiByFloor.forEach(({ label, layout }) => {
+    asciiByStorey.forEach(({ label, layout }) => {
       lines.push("", `### ${plan.markdownText(label)}`, "", "```text", layout, "```");
     });
     FloorPlanExport.downloadText(

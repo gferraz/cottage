@@ -37,7 +37,7 @@ const FloorPlanFacades3D = {
     const clipWall = (wall) => {
       if (wall.scopeFloorId && wall.scopeFloorId !== floor.id) return [];
       if (!FloorPlanMetrics.wallOverlapsFloor(plan, wall, floor.id)) return [];
-      const bottom = wall.base === "terrain" && index === 0 ? Number(wall.z0) : Math.max(Number(wall.z0), z0);
+      const bottom = wall.base === "terrain" && (index === 0 || wall.scopeFloorId === floor.id) ? Number(wall.z0) : Math.max(Number(wall.z0), z0);
       const top = Math.min(Number(wall.z1), z1);
       if (top - bottom <= 1e-9) return [];
       return [{ ...wall, z0: bottom, z1: top, h: top - bottom,
@@ -54,7 +54,7 @@ const FloorPlanFacades3D = {
     view.wallRenderParts = (plan.wallRenderParts ?? []).flatMap(clipWall);
     view.independentWalls = new Map([...(plan.independentWalls ?? [])].flatMap(([id, wall]) => {
       if (wall.scopeFloorId && wall.scopeFloorId !== floor.id) return [];
-      const bottom = wall.base === "terrain" && index === 0 ? wall.z0 : Math.max(wall.z0, z0);
+      const bottom = wall.base === "terrain" && (index === 0 || wall.scopeFloorId === floor.id) ? wall.z0 : Math.max(wall.z0, z0);
       const top = Math.min(wall.topZ, z1);
       return top - bottom > 1e-9 ? [[id, { ...wall, z0: bottom, topZ: top }]] : [];
     }));

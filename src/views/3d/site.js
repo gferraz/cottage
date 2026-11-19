@@ -15,7 +15,6 @@ const FloorPlan3DSite = {
     geometry.computeBoundingBox();
     geometry.computeBoundingSphere();
     const terrain = new THREE.Mesh(geometry, terrainMaterial);
-    terrain.position.z = -0.03;
     terrain.receiveShadow = true;
     terrain.renderOrder = -10;
     scene.add(terrain);

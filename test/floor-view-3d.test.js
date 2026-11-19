@@ -163,3 +163,28 @@ test('coplanar sectors do not clip walls to zero height', () => {
   const view = renderer.floorView(source);
   assert.equal(view.wallRenderParts[0].z1, 7);
 });
+
+test('scoped terrain plinth keeps its ground contact on the higher split ground floor', () => {
+  const source = plan();
+  source.currentConfig.floors = [
+    { id: 'rear', z0: -0.34 },
+    { id: 'ground', z0: 0.3 },
+    { id: 'upper', z0: 3 },
+  ];
+  source.wallRenderParts = [{
+    id: 'plinth', scopeFloorId: 'ground', base: 'terrain',
+    from: [0, 0, -6], to: [2, 0, -6], pos: [0, 0, -6],
+    size: [2, 0.12, 6.45], z0: -6, z1: 0.45, h: 6.45,
+  }];
+  source.independentWalls = new Map([['plinth', {
+    scopeFloorId: 'ground', base: 'terrain', z0: -6, topZ: 0.45,
+  }]]);
+  const view = renderer.floorView(source);
+  assert.equal(view.wallRenderParts[0].z0, -6);
+  assert.equal(view.wallRenderParts[0].pos[2], -6);
+  assert.equal(view.wallRenderParts[0].z1, 0.45);
+  assert.equal(view.independentWalls.get('plinth').z0, -6);
+  source.currentFloorId = 'upper';
+  assert.equal(renderer.floorView(source).wallRenderParts.length, 0);
+  assert.equal(renderer.floorView(source).independentWalls.size, 0);
+});
