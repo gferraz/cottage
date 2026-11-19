@@ -549,7 +549,7 @@
         {
           id: "playroom",
           label: "Sala de Estar",
-          from: ["bedroom-east.x1", "bedroom-east.y1"],
+          from: ["bedroom-south.x1", "bedroom-east.y1"],
           to: ["house-left.x0", "stairs.y0"],
           walls: [],
           windows: [
