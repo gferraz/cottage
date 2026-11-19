@@ -5451,12 +5451,17 @@ const FloorPlanViewport = {
   },
 
   resize(plan) {
+    const previousScale = plan.viewportScale;
     const [width] = plan.viewport.size;
     const availableWidth =
       plan.root.parentElement?.clientWidth || width * plan.viewportScale;
     plan.viewportScale = Math.max(1, availableWidth / width);
     plan.root.style.setProperty("--m", `${plan.viewportScale}px`);
     this.updateSummary(plan);
+    if (previousScale !== plan.viewportScale && plan.facadeDefinitions?.length
+        && plan.facadeLayer?.querySelector(".facade-view")) {
+      plan.renderFacades(plan.facadeDefinitions);
+    }
   },
 
   updateSummary(plan) {
@@ -6498,6 +6503,7 @@ const FloorPlanFacades = {
       const svg = document.createElementNS(svgNamespace, "svg");
       svg.classList.add("facade-view");
       svg.setAttribute("width", `${viewWidth}`);
+      if (frontAligned) svg.style.width = `${viewWidth}px`;
       svg.setAttribute("height", `${viewHeight}`);
       svg.setAttribute(
         "viewBox",
@@ -15172,6 +15178,7 @@ class FloorPlan {
   }
 
   renderFacades(facades = []) {
+    this.facadeDefinitions = facades;
     return FloorPlanFacades.render(this, facades);
   }
 

@@ -494,6 +494,7 @@ class FloorPlan {
   }
 
   renderFacades(facades = []) {
+    this.facadeDefinitions = facades;
     return FloorPlanFacades.render(this, facades);
   }
 

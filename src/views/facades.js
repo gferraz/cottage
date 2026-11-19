@@ -447,6 +447,7 @@ const FloorPlanFacades = {
       const svg = document.createElementNS(svgNamespace, "svg");
       svg.classList.add("facade-view");
       svg.setAttribute("width", `${viewWidth}`);
+      if (frontAligned) svg.style.width = `${viewWidth}px`;
       svg.setAttribute("height", `${viewHeight}`);
       svg.setAttribute(
         "viewBox",

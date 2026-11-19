@@ -24,12 +24,17 @@ const FloorPlanViewport = {
   },
 
   resize(plan) {
+    const previousScale = plan.viewportScale;
     const [width] = plan.viewport.size;
     const availableWidth =
       plan.root.parentElement?.clientWidth || width * plan.viewportScale;
     plan.viewportScale = Math.max(1, availableWidth / width);
     plan.root.style.setProperty("--m", `${plan.viewportScale}px`);
     this.updateSummary(plan);
+    if (previousScale !== plan.viewportScale && plan.facadeDefinitions?.length
+        && plan.facadeLayer?.querySelector(".facade-view")) {
+      plan.renderFacades(plan.facadeDefinitions);
+    }
   },
 
   updateSummary(plan) {
