@@ -68,7 +68,7 @@ const FloorPlanFacades3D = {
       console.warn(`Fachada 3D: geometria ignorada em ${kind}${id ? ` (${id})` : ""}.`);
     };
     const width = Math.max(container.clientWidth || 900, 480);
-    const height = 420;
+    const height = 840;
     const floors = plan.currentConfig?.floors ?? [plan.currentConfig];
     const terrainProfile = plan.terrainReference;
     const buildingOffsetX = Number.parseFloat(
