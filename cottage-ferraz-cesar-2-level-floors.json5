@@ -449,6 +449,21 @@
         },
       ],
       items: [
+        // Duas camas paralelas, com 80 cm entre elas e cabeceiras nos fundos.
+        {
+          id: "bed-south-1",
+          type: "twin-bed",
+          nightstand: { side: "none" },
+          pos: ["bedroom-rear.xc - 1.37", "bedroom-rear.y1 - 1.91 - 0.10"],
+          rotation: 180
+        },
+        {
+          id: "bed-south-2",
+          type: "twin-bed",
+          nightstand: { side: "none" },
+          pos: ["bedroom-rear.xc + 0.40", "bedroom-rear.y1 - 1.91 - 0.10"],
+          rotation: 180
+        },
         {
           id: "stair-arrival-railing",
           type: "railing",
@@ -723,7 +738,7 @@
       scope: "upper-rear",
       base: { level: "upper-rear.z0" },
       from: ["mudroom.x0", "kitchen.y1"],
-      to: ["x0", "stairs.y1"]
+      to: ["x0", "main.y1"]
     },
     {
       id: "upper-office-walls",

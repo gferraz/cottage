@@ -8185,12 +8185,26 @@ const FloorPlanFacades3D = {
       });
     });
 
+    const selectedFloors = floors.filter(floor => plan.selectedFloorIds
+      ? plan.selectedFloorIds.has(String(floor.id)) : !plan.visibleFloor || floor === plan.visibleFloor);
+    for (const entry of plan.allStairs ?? []) {
+      if (selectedFloors.some(floor => floor.id === entry.floorId) || plan.invalidRoomIds?.has(entry.id)) continue;
+      const geometry = plan.getRoomGeometry(entry.id);
+      if (!selectedFloors.some(floor => Number(floor.z0) >= geometry.z0() - 1e-9
+          && Number(floor.z0) <= geometry.z1() + 1e-9)) continue;
+      const parts = geometry.normalizedParts;
+      const range = FloorPlanGeometry.stairGradientRange(Number(entry.floor?.z0 ?? 0), parts);
+      const projected = parts.map(part => ({ ...part, stairGradient: range, projectedStair: true }));
+      stairFlights.push(...projected.filter(isStairFlight));
+      stairLandings.push(...projected.filter(part => String(part.classes || "").split(/\s+/).includes("stair-landing")));
+    }
+
     if (plan.visibleFloorRange || plan.visibleFloorRanges) {
       const ranges = plan.visibleFloorRanges ?? [plan.visibleFloorRange];
       for (const parts of [stairFlights, stairLandings]) {
         for (let i = parts.length - 1; i >= 0; i -= 1) {
           const part = parts[i];
-          if (!ranges.some(([bottom, top]) => part.z0 < top && part.z1 >= bottom)) parts.splice(i, 1);
+          if (!part.projectedStair && !ranges.some(([bottom, top]) => part.z0 < top && part.z1 >= bottom)) parts.splice(i, 1);
         }
       }
     }
@@ -13440,6 +13454,7 @@ const FloorPlanGeometryDomain = {
     // First-class compound stairs retain their source-floor context when projected.
     for (const entry of plan.allStairs ?? []) {
       if (entry.floor === floorConfig || plan.invalidRoomIds.has(entry.id)) continue;
+      if (plan.visibleStairOwnerIds?.has(entry.id) || plan.projectedStairIds?.has(entry.id)) continue;
       const geometry = plan.getRoomGeometry(entry.id);
       if (geometry.z1() <= geometry.z0() || plan.currentFloorHeight < geometry.z0() ||
           plan.currentFloorHeight > geometry.z1()) continue;
@@ -13447,6 +13462,7 @@ const FloorPlanGeometryDomain = {
         floorZ: Number(entry.floor?.z0 ?? 0), floorId: entry.floorId ?? null,
       });
       scoped.addRoom({ ...entry.stair, derived: true, firstClassStair: true });
+      plan.projectedStairIds?.add(entry.id);
     }
     const existingStairs = (floorConfig.rooms ?? [])
       .filter((room) => room.classes?.split(/\s+/).includes("stair-flight"))
@@ -15074,6 +15090,10 @@ class FloorPlan {
     const collisionErrors = [];
     const originalFloorId = this.currentFloorId;
     const originalHeight = this.currentFloorHeight;
+    this.projectedStairIds = new Set();
+    this.visibleStairOwnerIds = new Set((this.allStairs ?? [])
+      .filter(entry => floors.some(floor => (floor.id ?? null) === (entry.floorId ?? null)))
+      .map(entry => entry.id));
     try {
       for (const floorConfig of floors) {
         this.currentFloorId = floorConfig.id || null;
@@ -15087,7 +15107,8 @@ class FloorPlan {
         (this.allStairs ?? []).filter((entry) => (entry.floorId ?? null) === (floorConfig.id ?? null))
           .filter((entry) => !invalidRoomIds.has(entry.id))
           .forEach((entry) => this.addRoom({ ...entry.stair, firstClassStair: true }));
-        if (!this.showAllFloors) this.addSpanningStairs(config, floorConfig);
+        if (!this.showAllFloors || (this.allStairs ?? []).some(entry => !this.visibleStairOwnerIds.has(entry.id)))
+          this.addSpanningStairs(config, floorConfig);
         this.updateOverlaps();
         this.renderWallsForFloor(floorConfig);
         if (!this.showAllFloors) this.addVisibleVerticalOpenings(config, floorConfig);
@@ -15125,6 +15146,8 @@ class FloorPlan {
     } finally {
       this.currentFloorId = originalFloorId;
       this.currentFloorHeight = originalHeight;
+      delete this.projectedStairIds;
+      delete this.visibleStairOwnerIds;
     }
     FloorPlanWalls.renderIndependentWalls(this);
   }

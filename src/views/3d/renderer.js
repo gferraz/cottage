@@ -163,12 +163,26 @@ const FloorPlanFacades3D = {
       });
     });
 
+    const selectedFloors = floors.filter(floor => plan.selectedFloorIds
+      ? plan.selectedFloorIds.has(String(floor.id)) : !plan.visibleFloor || floor === plan.visibleFloor);
+    for (const entry of plan.allStairs ?? []) {
+      if (selectedFloors.some(floor => floor.id === entry.floorId) || plan.invalidRoomIds?.has(entry.id)) continue;
+      const geometry = plan.getRoomGeometry(entry.id);
+      if (!selectedFloors.some(floor => Number(floor.z0) >= geometry.z0() - 1e-9
+          && Number(floor.z0) <= geometry.z1() + 1e-9)) continue;
+      const parts = geometry.normalizedParts;
+      const range = FloorPlanGeometry.stairGradientRange(Number(entry.floor?.z0 ?? 0), parts);
+      const projected = parts.map(part => ({ ...part, stairGradient: range, projectedStair: true }));
+      stairFlights.push(...projected.filter(isStairFlight));
+      stairLandings.push(...projected.filter(part => String(part.classes || "").split(/\s+/).includes("stair-landing")));
+    }
+
     if (plan.visibleFloorRange || plan.visibleFloorRanges) {
       const ranges = plan.visibleFloorRanges ?? [plan.visibleFloorRange];
       for (const parts of [stairFlights, stairLandings]) {
         for (let i = parts.length - 1; i >= 0; i -= 1) {
           const part = parts[i];
-          if (!ranges.some(([bottom, top]) => part.z0 < top && part.z1 >= bottom)) parts.splice(i, 1);
+          if (!part.projectedStair && !ranges.some(([bottom, top]) => part.z0 < top && part.z1 >= bottom)) parts.splice(i, 1);
         }
       }
     }

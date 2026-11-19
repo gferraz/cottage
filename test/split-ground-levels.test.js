@@ -158,3 +158,31 @@ test("automatic wall tops follow only slabs above each wall portion", () => {
   for (const ordered of [floors, [...floors].reverse()])
     tops(ordered).forEach((top, index) => assert.ok(Math.abs(top - [2.85, 2.51, 3][index]) < 1e-9));
 });
+
+test('the main staircase projects onto either upper sector and only once when both are visible', () => {
+  const plan = Object.assign(Object.create(FloorPlan.prototype), { catalog: FloorPlanCatalog });
+  plan.prepareProject(FloorPlanParser.parse(fs.readFileSync('cottage-ferraz-cesar-2-level-floors.json5', 'utf8')));
+  const upper = plan.model.floors.filter(floor => floor.storey === 'upper');
+  const projected = [];
+  plan.addRoom = room => projected.push(room);
+  plan.visibleStairOwnerIds = new Set();
+  for (const floor of upper) {
+    plan.projectedStairIds = new Set();
+    plan.currentFloorHeight = floor.z0;
+    plan.addSpanningStairs(plan.currentConfig, floor);
+    assert.equal(projected.at(-1).id, 'stairs');
+    assert.equal(projected.at(-1).derived, true);
+  }
+  projected.length = 0;
+  plan.projectedStairIds = new Set();
+  for (const floor of upper) {
+    plan.currentFloorHeight = floor.z0;
+    plan.addSpanningStairs(plan.currentConfig, floor);
+  }
+  assert.equal(projected.filter(room => room.id === 'stairs').length, 1);
+  projected.length = 0;
+  plan.visibleStairOwnerIds.add('stairs');
+  plan.projectedStairIds.clear();
+  plan.addSpanningStairs(plan.currentConfig, upper[0]);
+  assert.equal(projected.length, 0);
+});

@@ -308,6 +308,10 @@ class FloorPlan {
     const collisionErrors = [];
     const originalFloorId = this.currentFloorId;
     const originalHeight = this.currentFloorHeight;
+    this.projectedStairIds = new Set();
+    this.visibleStairOwnerIds = new Set((this.allStairs ?? [])
+      .filter(entry => floors.some(floor => (floor.id ?? null) === (entry.floorId ?? null)))
+      .map(entry => entry.id));
     try {
       for (const floorConfig of floors) {
         this.currentFloorId = floorConfig.id || null;
@@ -321,7 +325,8 @@ class FloorPlan {
         (this.allStairs ?? []).filter((entry) => (entry.floorId ?? null) === (floorConfig.id ?? null))
           .filter((entry) => !invalidRoomIds.has(entry.id))
           .forEach((entry) => this.addRoom({ ...entry.stair, firstClassStair: true }));
-        if (!this.showAllFloors) this.addSpanningStairs(config, floorConfig);
+        if (!this.showAllFloors || (this.allStairs ?? []).some(entry => !this.visibleStairOwnerIds.has(entry.id)))
+          this.addSpanningStairs(config, floorConfig);
         this.updateOverlaps();
         this.renderWallsForFloor(floorConfig);
         if (!this.showAllFloors) this.addVisibleVerticalOpenings(config, floorConfig);
@@ -359,6 +364,8 @@ class FloorPlan {
     } finally {
       this.currentFloorId = originalFloorId;
       this.currentFloorHeight = originalHeight;
+      delete this.projectedStairIds;
+      delete this.visibleStairOwnerIds;
     }
     FloorPlanWalls.renderIndependentWalls(this);
   }

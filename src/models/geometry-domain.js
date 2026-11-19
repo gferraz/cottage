@@ -34,6 +34,7 @@ const FloorPlanGeometryDomain = {
     // First-class compound stairs retain their source-floor context when projected.
     for (const entry of plan.allStairs ?? []) {
       if (entry.floor === floorConfig || plan.invalidRoomIds.has(entry.id)) continue;
+      if (plan.visibleStairOwnerIds?.has(entry.id) || plan.projectedStairIds?.has(entry.id)) continue;
       const geometry = plan.getRoomGeometry(entry.id);
       if (geometry.z1() <= geometry.z0() || plan.currentFloorHeight < geometry.z0() ||
           plan.currentFloorHeight > geometry.z1()) continue;
@@ -41,6 +42,7 @@ const FloorPlanGeometryDomain = {
         floorZ: Number(entry.floor?.z0 ?? 0), floorId: entry.floorId ?? null,
       });
       scoped.addRoom({ ...entry.stair, derived: true, firstClassStair: true });
+      plan.projectedStairIds?.add(entry.id);
     }
     const existingStairs = (floorConfig.rooms ?? [])
       .filter((room) => room.classes?.split(/\s+/).includes("stair-flight"))
