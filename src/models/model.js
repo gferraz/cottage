@@ -105,41 +105,21 @@ const FloorPlanModel = {
 
   resolveParameters(config) {
     if (!config.parameters) return config;
-    const values = new Map();
-    const stack = new Set();
-    const evaluate = (name) => {
-      if (values.has(name)) return values.get(name);
-      if (!Object.hasOwn(config.parameters, name)) throw new Error(`Parâmetro desconhecido: params.${name}`);
-      if (stack.has(name)) throw new Error(`Referência circular no parâmetro params.${name}`);
-      stack.add(name);
-      try {
-        const value = resolver.resolve(config.parameters[name]);
-        if (!Number.isFinite(value)) throw new Error(`O parâmetro params.${name} precisa ser numérico`);
-        values.set(name, value);
-        return value;
-      } catch (error) {
-        if (!error.location) {
-          error.location = window.FloorPlanParser?.location(config.parameters, name);
-          if (error.location) error.message = `${FloorPlanParser.formatLocation(error.location)}: ${error.message}`;
-        }
-        throw error;
-      } finally {
-        stack.delete(name);
-      }
-    };
-    const resolver = {
-      resolveExpression: FloorPlanGeometry.resolveExpression,
-      resolve(value) {
-        if (typeof value === "number") return value;
-        const text = String(value).trim();
-        if (/^params\.[\w-]+$/.test(text)) return evaluate(text.slice(7));
-        if (text !== "" && Number.isFinite(Number(text))) return Number(text);
-        if (!/[()+*/]|\s[+-]\s|^[+-]/.test(text)) {
-          throw new Error(`Valor de parâmetro inválido: ${text}. Use números ou referências params.nome`);
-        }
-        return this.resolveExpression(text);
+    const evaluate = FloorPlanExpressions.dependencies({
+      label: name => `params.${name}`,
+      location: name => window.FloorPlanParser?.location(config.parameters, name),
+      cycleMessage: name => `Referência circular no parâmetro ${name}`,
+      invalidMessage: name => `O parâmetro ${name} precisa ser numérico`,
+      read(name, resolve) {
+        if (!Object.hasOwn(config.parameters, name)) throw new Error(`Parâmetro desconhecido: params.${name}`);
+        return FloorPlanExpressions.evaluate(config.parameters[name], reference => {
+          if (!/^params\.[\w-]+$/.test(reference)) {
+            throw new Error(`Valor de parâmetro inválido: ${reference}. Use números ou referências params.nome`);
+          }
+          return resolve(reference.slice(7));
+        });
       },
-    };
+    });
     for (const name of Object.keys(config.parameters)) evaluate(name);
     const visit = (value) => {
       if (typeof value === "string" && /\bparams\.[\w-]+/.test(value)) {
@@ -151,11 +131,8 @@ const FloorPlanModel = {
         try {
           return key === "parameters" ? child : visit(child);
         } catch (error) {
-          if (!error.location) {
-            error.location = window.FloorPlanParser?.location(value, key) ?? window.FloorPlanParser?.location(value);
-            if (error.location) error.message = `${FloorPlanParser.formatLocation(error.location)}: ${error.message}`;
-          }
-          throw error;
+          throw FloorPlanExpressions.withLocation(error,
+            window.FloorPlanParser?.location(value, key) ?? window.FloorPlanParser?.location(value));
         }
       };
       const result = Array.isArray(value) ? value.map(childValue)
@@ -168,43 +145,22 @@ const FloorPlanModel = {
   resolveFloorLevels(config) {
     const floors = config.floors ?? [config];
     const byId = new Map(floors.filter(floor => floor.id).map(floor => [floor.id, floor]));
-    const values = new Map();
-    const stack = new Set();
-    const evaluate = (floor) => {
-      if (values.has(floor)) return values.get(floor);
-      const label = floor.id ?? "pavimento";
-      try {
-        if (stack.has(floor)) throw new Error(`Referência circular na cota ${label}.z0`);
-        stack.add(floor);
-        const value = floor.z0 ?? 0;
-        const resolver = {
-          resolveExpression: FloorPlanGeometry.resolveExpression,
-          resolve(token) {
-            if (typeof token === "number") return token;
-            const text = String(token).trim();
-            if (text !== "" && Number.isFinite(Number(text))) return Number(text);
-            const match = text.match(/^([A-Za-z_][\w-]*)\.z0$/);
-            if (!match) throw new Error(`Referência inválida na cota ${label}.z0: ${text}. Use ID-do-pavimento.z0`);
-            const target = byId.get(match[1]);
-            if (!target) throw new Error(`Pavimento desconhecido na cota ${label}.z0: ${match[1]}`);
-            return evaluate(target);
-          },
-        };
-        const result = typeof value === "number" ? value
-          : resolver.resolveExpression(String(value).trim());
-        if (!Number.isFinite(result)) throw new Error(`A cota ${label}.z0 precisa ser numérica e finita`);
-        values.set(floor, result);
-        return result;
-      } catch (error) {
-        if (!error.location) {
-          error.location = window.FloorPlanParser?.location(floor, "z0") ?? window.FloorPlanParser?.location(floor);
-          if (error.location) error.message = `${FloorPlanParser.formatLocation(error.location)}: ${error.message}`;
-        }
-        throw error;
-      } finally {
-        stack.delete(floor);
-      }
-    };
+    const evaluate = FloorPlanExpressions.dependencies({
+      label: floor => `${floor.id ?? "pavimento"}.z0`,
+      location: floor => window.FloorPlanParser?.location(floor, "z0") ?? window.FloorPlanParser?.location(floor),
+      cycleMessage: name => `Referência circular na cota ${name}`,
+      invalidMessage: name => `A cota ${name} precisa ser numérica e finita`,
+      read(floor, resolve) {
+        return FloorPlanExpressions.evaluate(floor.z0 ?? 0, reference => {
+          const match = reference.match(/^([A-Za-z_][\w-]*)\.z0$/);
+          const label = `${floor.id ?? "pavimento"}.z0`;
+          if (!match) throw new Error(`Referência inválida na cota ${label}: ${reference}. Use ID-do-pavimento.z0`);
+          const target = byId.get(match[1]);
+          if (!target) throw new Error(`Pavimento desconhecido na cota ${label}: ${match[1]}`);
+          return resolve(target);
+        });
+      },
+    });
     const resolved = floors.map(floor => {
       const result = { ...floor, ...(floor.z0 !== undefined ? { z0: evaluate(floor) } : {}) };
       return window.FloorPlanParser?.copyLocation(floor, result) ?? result;

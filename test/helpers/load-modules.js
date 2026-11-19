@@ -11,6 +11,7 @@ const src = (module) =>
   require(path.resolve(__dirname, "../../src", `${module}.js`));
 
 // Keep this list in the same relative order as floor-plan.html.
+src("models/expressions");
 src("models/geometry-operations");
 src("models/room-area");
 src("models/geometry-box");
