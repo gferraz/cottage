@@ -33,9 +33,7 @@ const FloorPlanLists = {
     const root = document.querySelector("#technical-floor-sections");
     if (!root) return;
     root.replaceChildren();
-    const floors = plan.model?.floors ?? [
-      { id: null, label: plan.currentConfig?.label || "Planta", rooms: [] },
-    ];
+    const floors = FloorPlanModel.presentationFloors(plan);
     const floorRows = FloorPlanModel.floorRows(
       floors,
       plan.roomDefinitions,
@@ -43,9 +41,9 @@ const FloorPlanLists = {
     );
     const groups = [
       ["rooms", "Cômodos"],
-      ["stairs", "Escadas"],
       ["roofs", "Telhados"],
       ["doors", "Portas"],
+      ["stairs", "Escadas"],
       ["openings", "Vãos"],
       ["windows", "Janelas"],
       ["natural", "Comunicações naturais"],
@@ -132,9 +130,7 @@ const FloorPlanLists = {
 
   updateProjectOverview(plan) {
     const config = plan.currentConfig ?? {};
-    const floors = config.floors ?? [
-      { id: config.id, label: config.label, rooms: config.rooms ?? [] },
-    ];
+    const floors = FloorPlanModel.presentationFloors(plan);
     const floorRows = FloorPlanModel.floorRows(
       floors,
       plan.roomDefinitions,
@@ -282,7 +278,9 @@ const FloorPlanLists = {
       "Largura (m)",
       "Comprimento (m)",
       "Bruta (m²)",
-      "Útil (m²)",
+      "Líquida (m²)",
+      "Altura mín. → máx. (m)",
+      "Área ≥ 2,10 m (m²)",
     ].forEach((text) => {
       const cell = document.createElement("span");
       cell.textContent = text;
@@ -298,6 +296,7 @@ const FloorPlanLists = {
         }))).filter((entry) => !floor || entry.floorId === floor.id);
     let grossTotal = 0;
     let netTotal = 0;
+    let usableHeightTotal = 0;
     rooms.forEach((roomEntry, index) => {
       const room = roomEntry.reference || roomEntry;
       const activeRoom = plan.roomElements.find(
@@ -324,21 +323,21 @@ const FloorPlanLists = {
       const height = document.createElement("span");
       height.textContent = plan.formatFixed(room.l());
 
-      const comfortAreas = plan.headroomResults?.get(roomEntry.id)?.areas ?? activeRoom?.comfortAreas;
-      if (comfortAreas) {
-        const comfort = document.createElement("small");
-        comfort.className = "comfort-areas";
-        comfort.textContent = comfortAreas.map(({ height, area }) =>
-          `≥ ${plan.formatMeters(height)} m: ${plan.formatMeters(area)} m²`).join(" · ");
-        label.append(comfort);
-      }
-      item.append(label, width, height, grossArea, netArea);
+      const analysis = plan.headroomResults?.get(roomEntry.id);
+      const range = document.createElement("span");
+      range.textContent = analysis?.heightRange
+        ? `${plan.formatFixed(analysis.heightRange.min)} → ${plan.formatFixed(analysis.heightRange.max)}` : "—";
+      const usableHeight = document.createElement("span");
+      const areaAbove = analysis?.areas.find(entry => Math.abs(entry.height - 2.1) < 1e-9)?.area;
+      usableHeight.textContent = areaAbove === undefined ? "—" : plan.formatFixed(areaAbove);
+      usableHeightTotal += areaAbove ?? 0;
+      item.append(label, width, height, grossArea, netArea, range, usableHeight);
       target.append(item);
     });
     if (floor && rooms.length) {
       const total = document.createElement("div");
       total.className = "room-list-item room-list-total";
-      ["Total do piso", "—", "—", plan.formatFixed(grossTotal), plan.formatFixed(netTotal)].forEach((value) => {
+      ["Total do piso", "—", "—", plan.formatFixed(grossTotal), plan.formatFixed(netTotal), "—", plan.formatFixed(usableHeightTotal)].forEach((value) => {
         const cell = document.createElement("span");
         cell.textContent = value;
         total.append(cell);
@@ -349,9 +348,7 @@ const FloorPlanLists = {
 
   updateFloorSummary(plan) {
     if (!plan.floorSummary) return;
-    const floors = plan.model?.floors ?? [
-      { id: null, label: "Planta", rooms: [] },
-    ];
+    const floors = FloorPlanModel.presentationFloors(plan);
     const rows = FloorPlanModel.floorRows(
       floors,
       plan.roomDefinitions,
@@ -625,7 +622,7 @@ const FloorPlanLists = {
       title.textContent = communication.id;
 
       const details = document.createElement("span");
-      details.textContent = `abertura sem parede — ${communication.firstLabel} → ${communication.secondLabel} (${plan.formatMeters(communication.length)}m)`;
+      details.textContent = `${communication.firstLabel} → ${communication.secondLabel} (${plan.formatMeters(communication.length)}m)`;
 
       item.append(title, details);
       target.append(item);

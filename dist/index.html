@@ -461,7 +461,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   overflow-wrap: anywhere;
 }
 .facade-terrain-front { stroke-linecap: round; }
-.facade-room { fill: var(--theme-surface); fill-opacity: 0.45; stroke: var(--theme-wall); stroke-width: 1.5; }
+.facade-room { fill: var(--theme-wall-fill); fill-opacity: 1; stroke: var(--theme-wall); stroke-width: 1.5; }
 .facade-occluder { fill: var(--theme-wall-fill, #f7f7f4); fill-opacity: 1; stroke: none; }
 .facade-room-label { fill: var(--theme-label); font-size: 7px; font-weight: 400; }
 .facade-room-label-title { font-weight: 400; }
@@ -472,6 +472,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .facade-roof { fill: var(--theme-roof-surface, #b45c3d); fill-opacity: 0.55; stroke: var(--theme-roof-line); stroke-width: 1.5; }
 .facade-gable-wall { fill: var(--theme-wall-fill); fill-opacity: 1; stroke: var(--theme-wall); stroke-width: 1.5; }
 .facade-gable-wall.facade-wall-virtual { fill: none; stroke: var(--theme-wall-virtual); stroke-dasharray: 5 4; }
+.facade-roof-thickness { stroke: var(--theme-roof-line); stroke-width: 1; }
 .facade-roof-eave { fill: none; stroke: var(--theme-roof-line); stroke-width: 1.5; }
 .facade-roof-ridge { fill: none; stroke: var(--theme-roof-line); stroke-width: 1.5; }
 .facade-roof-label { fill: var(--theme-label); font-size: 10px; }
@@ -646,6 +647,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   background: var(--theme-background, #fff);
 }
 
+.technical-category-rooms,
 .technical-category-roofs {
   grid-column: 1 / -1;
 }
@@ -657,6 +659,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 
 .technical-category-list {
   min-width: 0;
+  overflow-x: auto;
   font-size: 12px;
   overflow-wrap: anywhere;
 }
@@ -699,13 +702,13 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 }
 
 .technical-category .room-list-header {
-  grid-template-columns: minmax(0, 1fr) repeat(4, 68px);
+  grid-template-columns: minmax(150px, 1fr) repeat(4, 68px) 120px 100px;
   gap: 5px;
   font-size: 9px;
 }
 
 .technical-category .room-list-item {
-  grid-template-columns: minmax(0, 1fr) repeat(4, 68px);
+  grid-template-columns: minmax(150px, 1fr) repeat(4, 68px) 120px 100px;
   gap: 5px;
   font-size: 11px;
 }
@@ -748,7 +751,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .room-list-item,
 .room-list-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 78px 92px 78px 78px;
+  grid-template-columns: minmax(150px, 1fr) 78px 92px 78px 78px 120px 100px;
   gap: 8px;
 }
 
@@ -4295,6 +4298,7 @@ const FloorPlanModel = {
   },
 
   fromConfig(config) {
+    const coordinateSystem = config.coordinate_system;
     const warnings = config[this.deprecationWarningsKey] ?? this.collectDeprecations(config);
     config = this.normalizeWallSides(config);
     if (config.coordinate_system === "cartesian") {
@@ -4311,6 +4315,7 @@ const FloorPlanModel = {
     };
     return {
       config,
+      coordinateSystem,
       warnings,
       floors,
       viewport,
@@ -4356,6 +4361,34 @@ const FloorPlanModel = {
     }));
     return FloorPlanRoomArea.netArea(target,
       FloorPlanRoomArea.deductionsFor(target, roomData, itemData));
+  },
+
+  presentationFloors(plan) {
+    const floors = plan.model?.floors ?? plan.currentConfig?.floors ?? [plan.currentConfig];
+    const storeyLevels = new Map();
+    for (const floor of floors.filter(Boolean)) {
+      if (floor.storey) storeyLevels.set(floor.storey,
+        Math.min(storeyLevels.get(floor.storey) ?? Infinity, Number(floor.z0 ?? 0)));
+    }
+    const positions = floors.filter(Boolean).map(floor => {
+      const references = (floor.rooms ?? []).map(room => plan.roomReferences?.get(room.id))
+        .filter(reference => reference && ["x0", "x1", "y0"].every(key => typeof reference[key] === "function"));
+      return {
+        floor,
+        z: floor.storey ? storeyLevels.get(floor.storey) : Number(floor.z0 ?? 0),
+        y: Math.min(...references.map(reference => reference.y0())),
+        x: Math.min(...references.map(reference => plan.model?.coordinateSystem === "cartesian"
+          ? -reference.x1() : reference.x0())),
+      };
+    });
+    const compare = (a, b) => {
+      for (const key of ["z", "y", "x"]) {
+        if (a[key] === b[key]) continue;
+        return a[key] < b[key] ? -1 : 1;
+      }
+      return 0;
+    };
+    return positions.sort(compare).map(entry => entry.floor);
   },
 
   floorRows(floors, roomDefinitions, roomReferences) {
@@ -6454,7 +6487,7 @@ const FloorPlanFacades = {
         if (!["gable", "shed"].includes(roof.type)) return highest;
         const geometry = roofGeometry(roof);
         return roofReachesFacade(geometry)
-          ? Math.max(highest, geometry?.peakZ ?? ((geometry?.z0 ?? 0) + (geometry?.rise ?? 0)))
+          ? Math.max(highest, (geometry?.peakZ ?? ((geometry?.z0 ?? 0) + (geometry?.rise ?? 0))) + Number(plan.resolve(roof.thickness ?? 0.12)))
           : highest;
       }, 0);
       // floorHeight is an absolute Z reference. The roof rise used by the
@@ -6670,9 +6703,25 @@ const FloorPlanFacades = {
         if (!roofReachesFacade(geometry)) return;
         const polygons = roofSurfaces.find((entry) => entry.roof === roof)?.polygons ?? [];
         if (!polygons.length) return;
+        const thickness = Number(plan.resolve(roof.thickness ?? 0.12));
+        const solid = FloorPlanRoofGeometry.solidSurface(polygons, Math.max(0, thickness));
+        const topPolygons = solid.faces.slice(0, polygons.length);
         const point = ([x, y, z]) => `${((side ? y : x) - min + padding) * scale},${(floorHeight - z + padding) * scale}`;
+        const boundaryFaces = solid.faces.slice(polygons.length * 2).filter(face => {
+          const [a, b] = face;
+          const normal = side ? b[1] - a[1] : a[0] - b[0];
+          return normal * (facadeEdge === "min" ? -1 : 1) > 1e-9;
+        });
+        for (const face of boundaryFaces) {
+          const edge = document.createElementNS(svgNamespace, "path");
+          edge.setAttribute("d", face.map((vertex, i) => `${i ? "L" : "M"}${point(vertex)}`).join(" ") + " Z");
+          edge.classList.add("facade-roof-thickness");
+          edge.style.fill = plan.themeFillColor("casca-de-pinus");
+          const depth = face.reduce((sum, vertex) => sum + vertex[side ? 0 : 1], 0) / face.length;
+          addFace(depth, [edge], true).classList.add("facade-roof-face");
+        }
         const surface = document.createElementNS(svgNamespace, "path");
-        surface.setAttribute("d", polygons.map((polygon) => {
+        surface.setAttribute("d", topPolygons.map((polygon) => {
           const projectedArea = polygon.reduce((sum, vertex, i) => {
             const next = polygon[(i + 1) % polygon.length];
             return sum + vertex[side ? 1 : 0] * next[2] - next[side ? 1 : 0] * vertex[2];
@@ -6685,7 +6734,7 @@ const FloorPlanFacades = {
         const inFront = String(roofIsInFrontAtBase(geometry));
         surface.dataset.roofInFront = inFront;
         svg.append(surface);
-        const edges = FloorPlanRoofs.surfaceEdges(polygons);
+        const edges = FloorPlanRoofs.surfaceEdges(topPolygons);
         const outline = document.createElementNS(svgNamespace, "path");
         outline.setAttribute("d", edges.map((vertex, i) => `${i % 2 ? "L" : "M"}${point(vertex)}`).join(" "));
         outline.classList.add("facade-roof-eave");
@@ -6697,7 +6746,7 @@ const FloorPlanFacades = {
         const roofFace = addFace(roofDepth, [surface, outline], true);
         roofFace.classList.add("facade-roof-face");
         if (roof.label || roof.id) {
-          const vertices = polygons.flat();
+          const vertices = topPolygons.flat();
           const peak = vertices.reduce((highest, vertex) => vertex[2] > highest[2] ? vertex : highest);
           const label = document.createElementNS(svgNamespace, "text");
           const labelX = ((side ? peak[1] : peak[0]) - min + padding) * scale;
@@ -7289,7 +7338,9 @@ const FloorPlanSlabs = {
     const target = document.querySelector("#slab-list");
     if (!target) return;
     target.replaceChildren();
-    for (const slab of plan.allSlabs ?? []) {
+    const order = new Map(FloorPlanModel.presentationFloors(plan).map((floor, index) => [floor.id, index]));
+    const slabs = [...(plan.allSlabs ?? [])].sort((a, b) => (order.get(a.floorId) ?? Infinity) - (order.get(b.floorId) ?? Infinity));
+    for (const slab of slabs) {
       if (plan.selectedFloorIds && !plan.selectedFloorIds.has(slab.floorId)) continue;
       const label = document.createElement("label");
       label.className = "slab-option";
@@ -9217,6 +9268,26 @@ const FloorPlanHeadroomAnalysis = {
     });
   },
 
+  heightRange(room, surfaces, deductions, covered) {
+    if (covered.area <= 1e-8) return null;
+    const ceiling = Math.max(0, ...surfaces.flatMap(entry => entry.polygons.flat())
+      .map(point => point[2] - room.z0));
+    const boundary = (predicate) => {
+      let low = 0, high = ceiling;
+      while (high - low > 0.0001) {
+        const middle = (low + high) / 2;
+        const area = this.calculate(room.parts, surfaces, room.z0, deductions, [middle])[0].area;
+        if (predicate(area)) low = middle;
+        else high = middle;
+      }
+      return (low + high) / 2;
+    };
+    return {
+      min: boundary(area => area >= covered.area - 1e-8),
+      max: boundary(area => area > 1e-8),
+    };
+  },
+
   analyzeRoom(room, surfaces, deductions, thresholds = this.thresholds) {
     const areas = this.calculate(room.parts, surfaces, room.z0, deductions, thresholds);
     const covered = this.calculate(room.parts, surfaces, room.z0, deductions, [0])[0];
@@ -9235,7 +9306,7 @@ const FloorPlanHeadroomAnalysis = {
           largest.reduce((sum, point) => sum + point[axis], 0) / largest.length) : null,
       };
     });
-    return { areas, covered, bands };
+    return { areas, covered, bands, heightRange: this.heightRange(room, surfaces, deductions, covered) };
   },
 };
 
@@ -12073,9 +12144,7 @@ const FloorPlanLists = {
     const root = document.querySelector("#technical-floor-sections");
     if (!root) return;
     root.replaceChildren();
-    const floors = plan.model?.floors ?? [
-      { id: null, label: plan.currentConfig?.label || "Planta", rooms: [] },
-    ];
+    const floors = FloorPlanModel.presentationFloors(plan);
     const floorRows = FloorPlanModel.floorRows(
       floors,
       plan.roomDefinitions,
@@ -12083,9 +12152,9 @@ const FloorPlanLists = {
     );
     const groups = [
       ["rooms", "Cômodos"],
-      ["stairs", "Escadas"],
       ["roofs", "Telhados"],
       ["doors", "Portas"],
+      ["stairs", "Escadas"],
       ["openings", "Vãos"],
       ["windows", "Janelas"],
       ["natural", "Comunicações naturais"],
@@ -12172,9 +12241,7 @@ const FloorPlanLists = {
 
   updateProjectOverview(plan) {
     const config = plan.currentConfig ?? {};
-    const floors = config.floors ?? [
-      { id: config.id, label: config.label, rooms: config.rooms ?? [] },
-    ];
+    const floors = FloorPlanModel.presentationFloors(plan);
     const floorRows = FloorPlanModel.floorRows(
       floors,
       plan.roomDefinitions,
@@ -12322,7 +12389,9 @@ const FloorPlanLists = {
       "Largura (m)",
       "Comprimento (m)",
       "Bruta (m²)",
-      "Útil (m²)",
+      "Líquida (m²)",
+      "Altura mín. → máx. (m)",
+      "Área ≥ 2,10 m (m²)",
     ].forEach((text) => {
       const cell = document.createElement("span");
       cell.textContent = text;
@@ -12338,6 +12407,7 @@ const FloorPlanLists = {
         }))).filter((entry) => !floor || entry.floorId === floor.id);
     let grossTotal = 0;
     let netTotal = 0;
+    let usableHeightTotal = 0;
     rooms.forEach((roomEntry, index) => {
       const room = roomEntry.reference || roomEntry;
       const activeRoom = plan.roomElements.find(
@@ -12364,21 +12434,21 @@ const FloorPlanLists = {
       const height = document.createElement("span");
       height.textContent = plan.formatFixed(room.l());
 
-      const comfortAreas = plan.headroomResults?.get(roomEntry.id)?.areas ?? activeRoom?.comfortAreas;
-      if (comfortAreas) {
-        const comfort = document.createElement("small");
-        comfort.className = "comfort-areas";
-        comfort.textContent = comfortAreas.map(({ height, area }) =>
-          `≥ ${plan.formatMeters(height)} m: ${plan.formatMeters(area)} m²`).join(" · ");
-        label.append(comfort);
-      }
-      item.append(label, width, height, grossArea, netArea);
+      const analysis = plan.headroomResults?.get(roomEntry.id);
+      const range = document.createElement("span");
+      range.textContent = analysis?.heightRange
+        ? `${plan.formatFixed(analysis.heightRange.min)} → ${plan.formatFixed(analysis.heightRange.max)}` : "—";
+      const usableHeight = document.createElement("span");
+      const areaAbove = analysis?.areas.find(entry => Math.abs(entry.height - 2.1) < 1e-9)?.area;
+      usableHeight.textContent = areaAbove === undefined ? "—" : plan.formatFixed(areaAbove);
+      usableHeightTotal += areaAbove ?? 0;
+      item.append(label, width, height, grossArea, netArea, range, usableHeight);
       target.append(item);
     });
     if (floor && rooms.length) {
       const total = document.createElement("div");
       total.className = "room-list-item room-list-total";
-      ["Total do piso", "—", "—", plan.formatFixed(grossTotal), plan.formatFixed(netTotal)].forEach((value) => {
+      ["Total do piso", "—", "—", plan.formatFixed(grossTotal), plan.formatFixed(netTotal), "—", plan.formatFixed(usableHeightTotal)].forEach((value) => {
         const cell = document.createElement("span");
         cell.textContent = value;
         total.append(cell);
@@ -12389,9 +12459,7 @@ const FloorPlanLists = {
 
   updateFloorSummary(plan) {
     if (!plan.floorSummary) return;
-    const floors = plan.model?.floors ?? [
-      { id: null, label: "Planta", rooms: [] },
-    ];
+    const floors = FloorPlanModel.presentationFloors(plan);
     const rows = FloorPlanModel.floorRows(
       floors,
       plan.roomDefinitions,
@@ -12665,7 +12733,7 @@ const FloorPlanLists = {
       title.textContent = communication.id;
 
       const details = document.createElement("span");
-      details.textContent = `abertura sem parede — ${communication.firstLabel} → ${communication.secondLabel} (${plan.formatMeters(communication.length)}m)`;
+      details.textContent = `${communication.firstLabel} → ${communication.secondLabel} (${plan.formatMeters(communication.length)}m)`;
 
       item.append(title, details);
       target.append(item);
@@ -15546,7 +15614,7 @@ class FloorPlan {
       this.floorOptions.closest(".floor-selector")?.querySelector("#floor-option-all")?.closest("label")?.remove();
       this.floorOptions.replaceChildren();
       if (config.floors?.length) {
-        config.floors.forEach((availableFloor, floorIndex) => {
+        FloorPlanModel.presentationFloors(this).forEach((availableFloor, floorIndex) => {
           const optionId = `floor-option-${availableFloor.id || floorIndex}`;
           const label = document.createElement("label");
           label.className = "floor-option";

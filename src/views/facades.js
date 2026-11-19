@@ -405,7 +405,7 @@ const FloorPlanFacades = {
         if (!["gable", "shed"].includes(roof.type)) return highest;
         const geometry = roofGeometry(roof);
         return roofReachesFacade(geometry)
-          ? Math.max(highest, geometry?.peakZ ?? ((geometry?.z0 ?? 0) + (geometry?.rise ?? 0)))
+          ? Math.max(highest, (geometry?.peakZ ?? ((geometry?.z0 ?? 0) + (geometry?.rise ?? 0))) + Number(plan.resolve(roof.thickness ?? 0.12)))
           : highest;
       }, 0);
       // floorHeight is an absolute Z reference. The roof rise used by the
@@ -621,9 +621,25 @@ const FloorPlanFacades = {
         if (!roofReachesFacade(geometry)) return;
         const polygons = roofSurfaces.find((entry) => entry.roof === roof)?.polygons ?? [];
         if (!polygons.length) return;
+        const thickness = Number(plan.resolve(roof.thickness ?? 0.12));
+        const solid = FloorPlanRoofGeometry.solidSurface(polygons, Math.max(0, thickness));
+        const topPolygons = solid.faces.slice(0, polygons.length);
         const point = ([x, y, z]) => `${((side ? y : x) - min + padding) * scale},${(floorHeight - z + padding) * scale}`;
+        const boundaryFaces = solid.faces.slice(polygons.length * 2).filter(face => {
+          const [a, b] = face;
+          const normal = side ? b[1] - a[1] : a[0] - b[0];
+          return normal * (facadeEdge === "min" ? -1 : 1) > 1e-9;
+        });
+        for (const face of boundaryFaces) {
+          const edge = document.createElementNS(svgNamespace, "path");
+          edge.setAttribute("d", face.map((vertex, i) => `${i ? "L" : "M"}${point(vertex)}`).join(" ") + " Z");
+          edge.classList.add("facade-roof-thickness");
+          edge.style.fill = plan.themeFillColor("casca-de-pinus");
+          const depth = face.reduce((sum, vertex) => sum + vertex[side ? 0 : 1], 0) / face.length;
+          addFace(depth, [edge], true).classList.add("facade-roof-face");
+        }
         const surface = document.createElementNS(svgNamespace, "path");
-        surface.setAttribute("d", polygons.map((polygon) => {
+        surface.setAttribute("d", topPolygons.map((polygon) => {
           const projectedArea = polygon.reduce((sum, vertex, i) => {
             const next = polygon[(i + 1) % polygon.length];
             return sum + vertex[side ? 1 : 0] * next[2] - next[side ? 1 : 0] * vertex[2];
@@ -636,7 +652,7 @@ const FloorPlanFacades = {
         const inFront = String(roofIsInFrontAtBase(geometry));
         surface.dataset.roofInFront = inFront;
         svg.append(surface);
-        const edges = FloorPlanRoofs.surfaceEdges(polygons);
+        const edges = FloorPlanRoofs.surfaceEdges(topPolygons);
         const outline = document.createElementNS(svgNamespace, "path");
         outline.setAttribute("d", edges.map((vertex, i) => `${i % 2 ? "L" : "M"}${point(vertex)}`).join(" "));
         outline.classList.add("facade-roof-eave");
@@ -648,7 +664,7 @@ const FloorPlanFacades = {
         const roofFace = addFace(roofDepth, [surface, outline], true);
         roofFace.classList.add("facade-roof-face");
         if (roof.label || roof.id) {
-          const vertices = polygons.flat();
+          const vertices = topPolygons.flat();
           const peak = vertices.reduce((highest, vertex) => vertex[2] > highest[2] ? vertex : highest);
           const label = document.createElementNS(svgNamespace, "text");
           const labelX = ((side ? peak[1] : peak[0]) - min + padding) * scale;

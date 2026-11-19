@@ -23,7 +23,9 @@ const FloorPlanSlabs = {
     const target = document.querySelector("#slab-list");
     if (!target) return;
     target.replaceChildren();
-    for (const slab of plan.allSlabs ?? []) {
+    const order = new Map(FloorPlanModel.presentationFloors(plan).map((floor, index) => [floor.id, index]));
+    const slabs = [...(plan.allSlabs ?? [])].sort((a, b) => (order.get(a.floorId) ?? Infinity) - (order.get(b.floorId) ?? Infinity));
+    for (const slab of slabs) {
       if (plan.selectedFloorIds && !plan.selectedFloorIds.has(slab.floorId)) continue;
       const label = document.createElement("label");
       label.className = "slab-option";

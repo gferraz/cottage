@@ -2288,6 +2288,11 @@
     "floor": {
       "type": "object",
       "properties": {
+        "storey": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Agrupa níveis do mesmo pavimento na apresentação. Grupos seguem sua menor cota Z; dentro deles, a ordem é Y e X crescentes. Não altera a geometria."
+        },
         "comfort_zones": {
           "type": "boolean",
           "description": "Gera faixas de altura livre por cômodo a partir das interseções das coberturas (1,30 / 2,10 / 3 m)."

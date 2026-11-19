@@ -85,6 +85,7 @@
   floors: [
     {
       id: "ground-rear",
+      storey: "ground",
       label: "Térreo traseiro",
       // Dois espelhos de 17 cm abaixo do térreo frontal.
       z0: -0.34,
@@ -249,6 +250,7 @@
     },
     {
       id: "ground",
+      storey: "ground",
       label: "Térreo frontal",
       z0: 0.3,
       slabs: [{ id: "slab-ground", label: "Laje — Térreo frontal", thickness: 0.15 }],
@@ -407,6 +409,7 @@
     },
     {
       id: "upper-rear",
+      storey: "upper",
       label: "Dormitórios — traseiro",
       z0: "ground-rear.z0 + params.floor_height",
       comfort_zones: true,
@@ -484,6 +487,7 @@
     },
     {
       id: "upper",
+      storey: "upper",
       slabs: [{ id: "slab-upper", label: "Laje — Dormitórios", thickness: 0.15 }],
       comfort_zones: true,
       label: "Dormitórios",

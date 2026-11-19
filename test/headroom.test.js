@@ -125,3 +125,14 @@ test('slab underside limits clearance while openings retain roof clearance', () 
   close(FloorPlanHeadroomAnalysis.calculate([room], overhead, 0, [], [2.85])[0].area, 16);
   close(FloorPlanHeadroomAnalysis.calculate([room], overhead, 0, [], [2.86])[0].area, 8);
 });
+
+test('height range reports the lowest overhead surface and the area above 2.10 m', () => {
+  const result = FloorPlanHeadroomAnalysis.analyzeRoom(
+    { z0: 0, parts: [{ x: 0, y: 0, w: 4, l: 4 }] },
+    [{ polygons: [[[0, 0, 1], [4, 0, 5], [4, 4, 5], [0, 4, 1]]] },
+      { polygons: [[[0, 0, 2.5], [4, 0, 2.5], [4, 4, 2.5], [0, 4, 2.5]]] }], [],
+  );
+  assert.ok(Math.abs(result.heightRange.min - 1) < 0.0001);
+  assert.ok(Math.abs(result.heightRange.max - 2.5) < 0.0001);
+  assert.ok(Math.abs(result.areas.find(entry => entry.height === 2.1).area - 11.6) < 1e-8);
+});

@@ -859,7 +859,7 @@ class FloorPlan {
       this.floorOptions.closest(".floor-selector")?.querySelector("#floor-option-all")?.closest("label")?.remove();
       this.floorOptions.replaceChildren();
       if (config.floors?.length) {
-        config.floors.forEach((availableFloor, floorIndex) => {
+        FloorPlanModel.presentationFloors(this).forEach((availableFloor, floorIndex) => {
           const optionId = `floor-option-${availableFloor.id || floorIndex}`;
           const label = document.createElement("label");
           label.className = "floor-option";

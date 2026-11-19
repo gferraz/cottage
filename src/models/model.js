@@ -240,6 +240,7 @@ const FloorPlanModel = {
   },
 
   fromConfig(config) {
+    const coordinateSystem = config.coordinate_system;
     const warnings = config[this.deprecationWarningsKey] ?? this.collectDeprecations(config);
     config = this.normalizeWallSides(config);
     if (config.coordinate_system === "cartesian") {
@@ -256,6 +257,7 @@ const FloorPlanModel = {
     };
     return {
       config,
+      coordinateSystem,
       warnings,
       floors,
       viewport,
@@ -301,6 +303,34 @@ const FloorPlanModel = {
     }));
     return FloorPlanRoomArea.netArea(target,
       FloorPlanRoomArea.deductionsFor(target, roomData, itemData));
+  },
+
+  presentationFloors(plan) {
+    const floors = plan.model?.floors ?? plan.currentConfig?.floors ?? [plan.currentConfig];
+    const storeyLevels = new Map();
+    for (const floor of floors.filter(Boolean)) {
+      if (floor.storey) storeyLevels.set(floor.storey,
+        Math.min(storeyLevels.get(floor.storey) ?? Infinity, Number(floor.z0 ?? 0)));
+    }
+    const positions = floors.filter(Boolean).map(floor => {
+      const references = (floor.rooms ?? []).map(room => plan.roomReferences?.get(room.id))
+        .filter(reference => reference && ["x0", "x1", "y0"].every(key => typeof reference[key] === "function"));
+      return {
+        floor,
+        z: floor.storey ? storeyLevels.get(floor.storey) : Number(floor.z0 ?? 0),
+        y: Math.min(...references.map(reference => reference.y0())),
+        x: Math.min(...references.map(reference => plan.model?.coordinateSystem === "cartesian"
+          ? -reference.x1() : reference.x0())),
+      };
+    });
+    const compare = (a, b) => {
+      for (const key of ["z", "y", "x"]) {
+        if (a[key] === b[key]) continue;
+        return a[key] < b[key] ? -1 : 1;
+      }
+      return 0;
+    };
+    return positions.sort(compare).map(entry => entry.floor);
   },
 
   floorRows(floors, roomDefinitions, roomReferences) {

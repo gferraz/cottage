@@ -53,6 +53,26 @@ const FloorPlanHeadroomAnalysis = {
     });
   },
 
+  heightRange(room, surfaces, deductions, covered) {
+    if (covered.area <= 1e-8) return null;
+    const ceiling = Math.max(0, ...surfaces.flatMap(entry => entry.polygons.flat())
+      .map(point => point[2] - room.z0));
+    const boundary = (predicate) => {
+      let low = 0, high = ceiling;
+      while (high - low > 0.0001) {
+        const middle = (low + high) / 2;
+        const area = this.calculate(room.parts, surfaces, room.z0, deductions, [middle])[0].area;
+        if (predicate(area)) low = middle;
+        else high = middle;
+      }
+      return (low + high) / 2;
+    };
+    return {
+      min: boundary(area => area >= covered.area - 1e-8),
+      max: boundary(area => area > 1e-8),
+    };
+  },
+
   analyzeRoom(room, surfaces, deductions, thresholds = this.thresholds) {
     const areas = this.calculate(room.parts, surfaces, room.z0, deductions, thresholds);
     const covered = this.calculate(room.parts, surfaces, room.z0, deductions, [0])[0];
@@ -71,7 +91,7 @@ const FloorPlanHeadroomAnalysis = {
           largest.reduce((sum, point) => sum + point[axis], 0) / largest.length) : null,
       };
     });
-    return { areas, covered, bands };
+    return { areas, covered, bands, heightRange: this.heightRange(room, surfaces, deductions, covered) };
   },
 };
 

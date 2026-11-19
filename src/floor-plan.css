@@ -402,7 +402,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   overflow-wrap: anywhere;
 }
 .facade-terrain-front { stroke-linecap: round; }
-.facade-room { fill: var(--theme-surface); fill-opacity: 0.45; stroke: var(--theme-wall); stroke-width: 1.5; }
+.facade-room { fill: var(--theme-wall-fill); fill-opacity: 1; stroke: var(--theme-wall); stroke-width: 1.5; }
 .facade-occluder { fill: var(--theme-wall-fill, #f7f7f4); fill-opacity: 1; stroke: none; }
 .facade-room-label { fill: var(--theme-label); font-size: 7px; font-weight: 400; }
 .facade-room-label-title { font-weight: 400; }
@@ -413,6 +413,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .facade-roof { fill: var(--theme-roof-surface, #b45c3d); fill-opacity: 0.55; stroke: var(--theme-roof-line); stroke-width: 1.5; }
 .facade-gable-wall { fill: var(--theme-wall-fill); fill-opacity: 1; stroke: var(--theme-wall); stroke-width: 1.5; }
 .facade-gable-wall.facade-wall-virtual { fill: none; stroke: var(--theme-wall-virtual); stroke-dasharray: 5 4; }
+.facade-roof-thickness { stroke: var(--theme-roof-line); stroke-width: 1; }
 .facade-roof-eave { fill: none; stroke: var(--theme-roof-line); stroke-width: 1.5; }
 .facade-roof-ridge { fill: none; stroke: var(--theme-roof-line); stroke-width: 1.5; }
 .facade-roof-label { fill: var(--theme-label); font-size: 10px; }
@@ -587,6 +588,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   background: var(--theme-background, #fff);
 }
 
+.technical-category-rooms,
 .technical-category-roofs {
   grid-column: 1 / -1;
 }
@@ -598,6 +600,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 
 .technical-category-list {
   min-width: 0;
+  overflow-x: auto;
   font-size: 12px;
   overflow-wrap: anywhere;
 }
@@ -640,13 +643,13 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 }
 
 .technical-category .room-list-header {
-  grid-template-columns: minmax(0, 1fr) repeat(4, 68px);
+  grid-template-columns: minmax(150px, 1fr) repeat(4, 68px) 120px 100px;
   gap: 5px;
   font-size: 9px;
 }
 
 .technical-category .room-list-item {
-  grid-template-columns: minmax(0, 1fr) repeat(4, 68px);
+  grid-template-columns: minmax(150px, 1fr) repeat(4, 68px) 120px 100px;
   gap: 5px;
   font-size: 11px;
 }
@@ -689,7 +692,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .room-list-item,
 .room-list-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 78px 92px 78px 78px;
+  grid-template-columns: minmax(150px, 1fr) 78px 92px 78px 78px 120px 100px;
   gap: 8px;
 }
 
