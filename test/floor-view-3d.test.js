@@ -139,3 +139,17 @@ test('multiple selected floors retain separate wall ranges and exclude unselecte
   assert.equal(view.visibleFloorConfigs.length, 2);
   assert.equal(source.wallRenderParts[0].z1, 7);
 });
+
+
+test('roof selection remains independent when all floors are unchecked', () => {
+  const source = plan();
+  source.selectedFloorIds = new Set();
+  source.showAllFloors = true;
+  source.showRoofs = true;
+  source.allRoofs = [{ id: 'rear-roof', floorId: 'ground' }, { id: 'upper-roof', floorId: 'upper' }];
+  const view = renderer.floorView(source);
+  assert.equal(view.allRooms.length, 0);
+  assert.equal(view.wallRenderParts.length, 0);
+  assert.equal(view.allRoofs, source.allRoofs);
+  assert.equal(view.showRoofs, true);
+});

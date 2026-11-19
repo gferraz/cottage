@@ -12,7 +12,7 @@
   title: "Cottage Ferraz-César",
   summary: "Residência de dois pavimentos em terreno cadastrado com diferença de cota de 6 m entre frente e fundos.",
   coordinates: ["25°45'06.7\"S", "49°15'29.1\"W"],
-  viewport: { size: [24, 32], origin: [-25, 1] },
+  viewport: { size: [24, 24], origin: [-25, 1] },
   // Configuração
   config: {
     walls: { base: { level: "ground.z0" }, top: "roofs", thickness: 0.12, color: "desejo-ambar" },
@@ -30,7 +30,9 @@
     floor_height: 3,
     // Piso de 30 cm nos degraus entre níveis.
     ground_step_run: 0.30,
+    roof_base_offset: 1,
     bed_knee_wall_clearance: 0.3,
+    corridor_half_width: 0.7,
     knee_setback: 1
   },
   // Terreno cadastral
@@ -73,8 +75,7 @@
     // Implantação estável do corpo térreo; escadas externas não deslocam a casa.
     { id: "building-placement", rectangle: ["garage.x0", "office.y0", "office.x1", "terrace.y1"], visible: false },
     { id: "rear", rectangle: ["main.x0", "main.y0 + main.l / 2", "main.x1", "main.y1"], visible: false },
-    // Corredor de 1,40 m, simétrico ao eixo do corpo principal.
-    { id: "central", from: ["main.xc + 0.7", "main.y0"], to: ["2 * main.xc - x0", "main.y1"], visible: false },
+    { id: "central", from: ["main.xc + params.corridor_half_width", "main.y0"], to: ["x0 - 2 * params.corridor_half_width", "main.y1"], visible: false },
     { id: "house-right", rectangle: ["central.x1", "main.y0", "main.x1", "central.y1"], visible: false },
     { id: "main", pos: [-10, 2.5], size: [10, 8.8], visible: false },
     { id: "house-left", rectangle: ["main.x0", "central.y0", "central.x0", "main.y1"], visible: false },
@@ -85,7 +86,7 @@
     {
       id: "ground-rear",
       label: "Térreo traseiro",
-      // Dois espelhos de 17 cm abaixo da referência zero.
+      // Dois espelhos de 17 cm abaixo do térreo frontal.
       z0: -0.34,
       slabs: [{ id: "slab-ground-rear", label: "Laje — Térreo traseiro", thickness: 0.15 }],
       stairs: [
@@ -831,23 +832,12 @@
   ],
   // Telhados
   roofs: [
-    // {
-    //   id: "garage-roof",
-    //   label: "Telhado da garagem",
-    //   from: ["garage.x0", "garage.y0"],
-    //   to: ["garage.x1", "garage.y1"],
-    //   z0: "upper.z0",
-    //   orientation: "transverse",
-    //   pitch: 51,
-    //   eaves: { left: 0.5, right: 0.5 },
-    //   rake: 0.5
-    // },
     {
       id: "rear-transverse-roof",
       label: "Telhado dos fundos",
       from: ["garage.x0", "garage.y0"],
       to: ["kitchen.x1", "garage.y1"],
-      z0: "upper-rear.z0",
+      z0: "upper-rear.z0 + params.roof_base_offset - 1",
       orientation: "transverse",
       pitch: 51,
       eaves: { left: 0.5, right: 0.5 },
@@ -884,7 +874,7 @@
     {
       id: "main-roof",
       label: "Telhado Principal",
-      z0: "upper.z0 + 1",
+      z0: "upper.z0 + params.roof_base_offset",
       rectangle: ["main.x0", "hall.y0", "office-main.x0 + 1.6", "kitchen.y1"],
       orientation: "longitudinal",
       eaves: { left: 0.5, right: 0 }
@@ -901,16 +891,16 @@
     {
       id: "main-transverse-roof",
       label: "Telhado Transversal",
-      from: ["front.x1", "office.y1", "main-roof.z0"],
-      to: ["front.x0", "rear.y1 - 1", "z0"],
+      from: ["front.x1", "office.y1", "upper.z0 + params.roof_base_offset"],
+      to: ["front.x0", "rear.y1", "z0"],
       orientation: "transverse",
       eaves: { left: 0, right: 0 }
     }
   ],
   // Guias de desenho
   guides: [
-    { id: "central-right", label: "central direita", pos: ["central.x1", -3.5], l: 20, color: "green" },
-    { id: "central-left", label: "central esquerda", pos: ["central.x0", -3.5], l: 20, color: "green" },
+    { id: "central-right", label: "central direita", pos: ["l-axis.x1 + params.corridor_half_width", -3.5], l: 20, color: "green" },
+    { id: "central-left", label: "central esquerda", pos: ["l-axis.x1 - params.corridor_half_width", -3.5], l: 20, color: "green" },
     {
       id: "knee-front-right",
       label: "meia parede direita frontal",

@@ -182,6 +182,10 @@ test("floor checkboxes preserve arbitrary selections and allow clearing all floo
   assert.deepEqual([...plan.selectedFloorIds], []);
   plan.toggleFloor('__all_floors__', true);
   assert.equal(plan.selectedFloorIds.size, 3);
+  assert.equal(plan.showRoofs, true);
+  plan.toggleFloor('__all_floors__', false);
+  assert.equal(plan.selectedFloorIds.size, 0);
+  assert.equal(plan.showRoofs, false);
 });
 
 test("export restores an independent floor selection", () => {

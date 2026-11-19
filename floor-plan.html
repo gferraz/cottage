@@ -960,8 +960,12 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
       <button id="download-markdown" type="button">↓ Markdown</button>
       <button id="download-dxf" type="button">↓ DXF</button>
       <fieldset class="floor-selector" id="floor-selector" hidden>
-        <legend>Piso:</legend>
+        <legend>Pisos e telhados:</legend>
         <div id="floor-options"></div>
+        <label class="floor-option visibility-switch" hidden>
+          <input id="show-roofs" type="checkbox" />
+          <span>Telhados</span>
+        </label>
       </fieldset>
       <fieldset class="layer-selector" id="layer-selector" hidden>
         <legend>Camadas:</legend>
@@ -972,14 +976,6 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
         <div id="slab-list"></div>
       </fieldset>
       <span class="visibility-heading" hidden>Mostrar:</span>
-      <label class="visibility-switch" hidden>
-        <input id="show-roofs" type="checkbox" />
-        <span>Telhados</span>
-      </label>
-      <label class="visibility-switch" hidden title="Isolar os telhados na perspectiva 3D">
-        <input id="show-only-roofs" type="checkbox" />
-        <span>Somente telhado (3D)</span>
-      </label>
       <label class="visibility-switch" hidden>
         <input id="show-multi-floor" type="checkbox" />
         <span>Multi-pisos</span>
@@ -1085,7 +1081,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
     <script src="src/views/3d/elements.js?v=merge-20261119" defer></script>
     <script src="src/views/3d/roofs.js?v=merge-20261119" defer></script>
     <script src="src/views/3d/sun.js?v=merge-20261119" defer></script>
-    <script src="src/views/3d/renderer.js?v=merge-20261119" defer></script>
+    <script src="src/views/3d/renderer.js?v=independent-roofs-20261119" defer></script>
     <script src="src/models/roof-geometry.js?v=merge-20261119" defer></script>
     <script src="src/views/roofs.js?v=merge-20261119" defer></script>
     <script src="src/models/headroom-analysis.js?v=merge-20261119" defer></script>
@@ -1109,8 +1105,8 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
     <script src="src/models/stair-access.js?v=merge-20261119" defer></script>
     <script src="src/views/stair-access.js?v=merge-20261119" defer></script>
     <script src="src/models/project.js?v=merge-20261119" defer></script>
-    <script src="src/main.js?v=facade-align-20261119" defer></script>
+    <script src="src/main.js?v=independent-roofs-20261119" defer></script>
     <script src="src/config/catalog.js?v=merge-20261119" defer></script>
-    <script src="src/config/app.js?v=merge-20261119" defer></script>
+    <script src="src/config/app.js?v=floor-roof-selector-20261119" defer></script>
   </body>
 </html>

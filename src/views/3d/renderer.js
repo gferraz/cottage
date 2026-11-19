@@ -22,7 +22,6 @@ const FloorPlanFacades3D = {
         view[key] = views.flatMap(entry => entry[key]);
       view.independentWalls = new Map(views.flatMap((entry, index) =>
         [...entry.independentWalls].map(([id, wall]) => [`${id}-floor-${index}`, wall])));
-      view.allRoofs = (plan.allRoofs ?? []).filter(roof => !roof.floorId || plan.selectedFloorIds.has(String(roof.floorId)));
       view.visibleFloorConfigs = selected;
       view.visibleFloorRanges = views.map(entry => entry.visibleFloorRange);
       return view;
@@ -178,6 +177,20 @@ const FloorPlanFacades3D = {
       y0: () => part.y, y1: () => part.y + part.l,
       z0: () => part.z0, z1: () => part.z1,
     }))];
+    if (!boundsSources.length && plan.showRoofs) {
+      for (const { polygons } of FloorPlanRoofGeometry.intersectingSurfaces(plan)) {
+        const points = polygons.flat();
+        if (!points.length) continue;
+        boundsSources.push({
+          x0: () => Math.min(...points.map(point => point[0])),
+          x1: () => Math.max(...points.map(point => point[0])),
+          y0: () => Math.min(...points.map(point => point[1])),
+          y1: () => Math.max(...points.map(point => point[1])),
+          z0: () => Math.min(...points.map(point => point[2])),
+          z1: () => Math.max(...points.map(point => point[2])),
+        });
+      }
+    }
     if (!boundsSources.length) {
       container.textContent = "Nenhum elemento disponível para este piso.";
       return;
@@ -426,14 +439,12 @@ const FloorPlanFacades3D = {
       finite,
       reportInvalid,
     };
-    if (!plan.showOnlyRoofs) {
-      FloorPlan3DSite.render(context);
-      FloorPlanSlabs.render(context);
-      FloorPlan3DWalls.render(context);
-      FloorPlan3DElements.render(context);
-      FloorPlan3DElements.renderItems(context);
-    }
-    if (plan.showRoofs || plan.showOnlyRoofs) FloorPlan3DRoofs.render(context);
+    if (plan.selectedFloorIds?.size !== 0) FloorPlan3DSite.render(context);
+    FloorPlanSlabs.render(context);
+    FloorPlan3DWalls.render(context);
+    FloorPlan3DElements.render(context);
+    FloorPlan3DElements.renderItems(context);
+    if (plan.showRoofs) FloorPlan3DRoofs.render(context);
 
     const updateCamera = () => {
       positionCamera();

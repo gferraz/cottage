@@ -6,7 +6,7 @@ class FloorPlan {
    * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
    * @param {number} [options.scale=56] Escala inicial em pixels por metro.
    */
-  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, facade3dCameraControls = null, solarSeasonSelect = null, solarTimeDisplay = null, solarTimePrevious = null, solarTimeNext = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, roofOnlySwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, facade3dCameraControls = null, solarSeasonSelect = null, solarTimeDisplay = null, solarTimePrevious = null, solarTimeNext = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
@@ -43,7 +43,6 @@ class FloorPlan {
     this.dxfButton = dxfButton;
     this.multiFloorSwitch = multiFloorSwitch;
     this.roofSwitch = roofSwitch;
-    this.roofOnlySwitch = roofOnlySwitch;
     this.visibilityHeading = visibilityHeading;
     this.jsonInput = jsonInput;
     this.layerOptions = layerOptions;
@@ -100,7 +99,6 @@ class FloorPlan {
     root.prepend(this.multiFloorLayer);
     this.multiFloorMode = false;
     this.showRoofs = true;
-    this.showOnlyRoofs = false;
 
     root.style.setProperty("--m", `${scale}px`);
     root.addEventListener("pointerdown", (event) => this.beginViewportPan(event));
@@ -136,23 +134,7 @@ class FloorPlan {
       roofSwitch.checked = false;
       roofSwitch.addEventListener("change", () => {
         this.showRoofs = roofSwitch.checked;
-        if (!this.showRoofs) {
-          this.showOnlyRoofs = false;
-          if (this.roofOnlySwitch) this.roofOnlySwitch.checked = false;
-        }
         this.updateRoofVisibility();
-        if (this.currentConfig) this.renderFacade3D();
-      });
-    }
-    if (roofOnlySwitch) {
-      roofOnlySwitch.checked = false;
-      roofOnlySwitch.addEventListener("change", () => {
-        this.showOnlyRoofs = roofOnlySwitch.checked;
-        if (this.showOnlyRoofs) {
-          this.showRoofs = true;
-          if (this.roofSwitch) this.roofSwitch.checked = true;
-          this.updateRoofVisibility();
-        }
         if (this.currentConfig) this.renderFacade3D();
       });
     }
@@ -589,11 +571,18 @@ class FloorPlan {
     });
     FloorPlanFacades.updateRoofVisibility(this);
     this.updateVisibilityHeading();
+    const all = this.floorOptions?.closest(".floor-selector")?.querySelector("#floor-option-all");
+    if (all) {
+      const floors = this.currentConfig?.floors ?? [];
+      const selected = this.selectedFloorIds?.size ?? 0;
+      const hasRoofs = (this.allRoofs?.length ?? 0) > 0;
+      all.checked = selected === floors.length && (!hasRoofs || this.showRoofs);
+      all.indeterminate = !all.checked && (selected > 0 || (hasRoofs && this.showRoofs));
+    }
   }
 
   updateVisibilityHeading() {
     const hasSwitch = Boolean(
-      (this.roofSwitch && !this.roofSwitch.hidden) ||
       (this.multiFloorSwitch && !this.multiFloorSwitch.hidden),
     );
     this.visibilityHeading?.toggleAttribute("hidden", !hasSwitch);
@@ -784,6 +773,7 @@ class FloorPlan {
     const floors = this.currentConfig?.floors ?? [];
     const selected = new Set(this.visibleFloors().map(floor => String(floor.id)));
     if (id === "__all_floors__") {
+      this.showRoofs = checked;
       selected.clear();
       (checked ? floors : []).forEach(floor => selected.add(String(floor.id)));
     } else if (checked) selected.add(String(id));
@@ -834,7 +824,6 @@ class FloorPlan {
       selectedFloorIds = null;
       this.showAllFloors = true;
       this.showRoofs = true;
-      this.showOnlyRoofs = false;
       this.facade3dCamera = { azimuthStep: 0, elevation: 30, zoom: 1 };
       this.solarSeason = config.solar?.season ?? "equinox";
       this.solarTime = config.solar?.time ?? "12:00";
@@ -867,6 +856,7 @@ class FloorPlan {
       throw new Error("floor.z0 precisa ser numérico");
     }
     if (this.floorOptions) {
+      this.floorOptions.closest(".floor-selector")?.querySelector("#floor-option-all")?.closest("label")?.remove();
       this.floorOptions.replaceChildren();
       if (config.floors?.length) {
         config.floors.forEach((availableFloor, floorIndex) => {
@@ -884,21 +874,20 @@ class FloorPlan {
           label.append(input, text);
           this.floorOptions.append(label);
         });
-        if (config.floors.length > 1) {
+        if (config.floors.length > 0) {
           const label = document.createElement("label");
           label.className = "floor-option";
-          label.title = "Mostrar todos os pisos na planta baixa e na perspectiva 3D";
+          label.title = "Mostrar todos os pisos e telhados";
           const input = document.createElement("input");
           input.type = "checkbox";
           input.name = "floor-selection";
           input.value = "__all_floors__";
           input.id = "floor-option-all";
-          input.checked = this.selectedFloorIds.size === config.floors.length;
-          input.indeterminate = this.selectedFloorIds.size > 0 && this.selectedFloorIds.size < config.floors.length;
+          input.addEventListener("change", () => this.toggleFloor("__all_floors__", input.checked));
           const text = document.createElement("span");
-          text.textContent = "Todos os pisos";
+          text.textContent = "Mostrar tudo";
           label.append(input, text);
-          this.floorOptions.append(label);
+          this.floorOptions.closest(".floor-selector")?.append(label);
         }
         this.floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", config.floors.length < 2);
       } else {
@@ -931,24 +920,17 @@ class FloorPlan {
     } catch (error) {
       this.errors.push({ category: "presentation", message: error.message });
     }
-    const visibleRoofs = this.showAllFloors && config.floors
-      ? this.allRoofs.filter(roof => this.selectedFloorIds.size && (!roof.floorId || this.selectedFloorIds.has(String(roof.floorId))))
-      : this.visibleRoofs(config, floorConfig);
+    const visibleRoofs = this.allRoofs;
     this.renderRoofs(visibleRoofs);
     FloorPlanHeadroom.render(this);
     if (this.roofSwitch) {
-      const hasRoofs = visibleRoofs.length > 0;
+      const hasRoofs = this.allRoofs.length > 0;
       this.roofSwitch.hidden = !hasRoofs;
+      this.floorOptions?.closest(".floor-selector")?.toggleAttribute("hidden", !hasRoofs && (config.floors?.length ?? 0) < 2);
       this.roofSwitch.checked = this.showRoofs;
       this.roofSwitch.closest(".visibility-switch")?.toggleAttribute("hidden", !hasRoofs);
     }
     this.updateRoofVisibility();
-    if (this.roofOnlySwitch) {
-      const hasRoofs = this.allRoofs.length > 0;
-      this.roofOnlySwitch.checked = this.showOnlyRoofs;
-      this.roofOnlySwitch.disabled = !hasRoofs;
-      this.roofOnlySwitch.closest(".visibility-switch")?.toggleAttribute("hidden", !hasRoofs);
-    }
     this.renderGuides(this.showAllFloors && config.floors
       ? [...(config.guides ?? []), ...this.visibleFloors().flatMap((floor) => floor.guides ?? [])]
       : this.visibleGuides(config, floorConfig));

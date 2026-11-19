@@ -19,7 +19,7 @@ Arquivos `.json5` e `.jsonc` também são aceitos. Eles usam a mesma estrutura d
 
 O parser é embutido na aplicação; não é necessário instalar biblioteca ou servidor.
 
-As caixas de seleção dos pisos mudam apenas o desenho: marque um ou mais pisos para combinar a planta baixa e a perspectiva 3D. **Todos os pisos** marca ou desmarca o conjunto; também é possível desmarcar todos. As listas, totais e erros são consolidados entre todos os pisos.
+As caixas de seleção dos pisos mudam apenas o desenho: marque um ou mais pisos para combinar a planta baixa e a perspectiva 3D. **Mostrar tudo** marca ou desmarca todos os pisos e telhados; também é possível desmarcar todos. As listas, totais e erros são consolidados entre todos os pisos.
 
 ## Editar a planta
 
@@ -194,7 +194,7 @@ Portas, janelas e vãos aceitam `z0` e `h` para a projeção vertical: `z1 = z0 
 
 Também é possível criar cômodos diretamente no console do navegador: `const porch = floor.addRoom({ pos: [3.4, 2], size: [4.3, 2.3], label: "Varanda" })`. O objeto retornado expõe `x0()`, `x1()`, `xc()`, `y0()`, `y1()`, `yc()`, `z0()`, `z1()`, `zc()`, `w()`, `l()`, `h()` e `area()`.
 
-A opção **Somente telhado (3D)** isola as coberturas, ocultando terreno, paredes, escadas e móveis da perspectiva. Ao ativá-la, **Telhados** também é marcado; desmarcar **Telhados** encerra o isolamento.
+O grupo **Pisos e telhados** reúne os checkboxes de pavimentos e **Telhados**, sem modos separados de isolamento. **Telhados** controla a visibilidade das coberturas na planta, nas elevações e no 3D.
 
 No controle **Piso**, cada caixa pode ser marcada independentemente. A planta baixa e a perspectiva 3D mostram a combinação selecionada de cômodos, itens, aberturas, escadas e lajes. Paredes que atravessam pavimentos são recortadas nas cotas dos pisos selecionados; no último piso, o topo continua limitado pelos telhados. O terreno permanece como contexto, com os telhados controlados pela opção **Telhados**.
 
