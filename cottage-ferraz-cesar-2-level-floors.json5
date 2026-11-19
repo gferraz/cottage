@@ -887,14 +887,14 @@
       orientation: "longitudinal",
       eaves: { left: 0.5, right: 0.5 }
     },
-    {
-      id: "main-transverse-roof",
-      label: "Telhado Transversal",
-      from: ["front.x1", "office.y1", "upper.z0 + params.roof_base_offset"],
-      to: ["front.x0", "rear.y1", "z0"],
-      orientation: "transverse",
-      eaves: { left: 0, right: 0 }
-    }
+    // {
+    //   id: "main-transverse-roof",
+    //   label: "Telhado Transversal",
+    //   from: ["front.x1", "office.y1", "upper.z0 + params.roof_base_offset"],
+    //   to: ["front.x0", "rear.y1", "z0"],
+    //   orientation: "transverse",
+    //   eaves: { left: 0, right: 0 }
+    // }
   ],
   // Guias de desenho
   guides: [

@@ -6,9 +6,11 @@ const FloorPlan3DWalls = {
       try {
         const sourceWallId = wall.sourceWallId || wall.id;
         const wallOpenings = openingsByWall.get(sourceWallId) || [];
-        const openings = wall.pathSegment === undefined
+        const ownedOpenings = wall.pathSegment === undefined
           ? wallOpenings
           : wallOpenings.filter((opening) => opening.wallSegment === wall.pathSegment);
+        const openings = [...ownedOpenings, ...FloorPlanWalls.coincidentOpeningCuts(wall,
+          FloorPlanOpenings.rendered(plan))];
         const material = wall.color
           ? new context.THREE.MeshLambertMaterial({
               color: plan.themeFillColor(wall.color),

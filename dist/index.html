@@ -7420,9 +7420,11 @@ const FloorPlan3DWalls = {
       try {
         const sourceWallId = wall.sourceWallId || wall.id;
         const wallOpenings = openingsByWall.get(sourceWallId) || [];
-        const openings = wall.pathSegment === undefined
+        const ownedOpenings = wall.pathSegment === undefined
           ? wallOpenings
           : wallOpenings.filter((opening) => opening.wallSegment === wall.pathSegment);
+        const openings = [...ownedOpenings, ...FloorPlanWalls.coincidentOpeningCuts(wall,
+          FloorPlanOpenings.rendered(plan))];
         const material = wall.color
           ? new context.THREE.MeshLambertMaterial({
               color: plan.themeFillColor(wall.color),
@@ -9454,6 +9456,32 @@ window.FloorPlanHeadroom = FloorPlanHeadroom;
 
 
 const FloorPlanWalls = {
+  coincidentOpeningCuts(wall, openings) {
+    const epsilon = 1e-8;
+    const horizontal = Math.abs(wall.to[1] - wall.from[1]) < epsilon;
+    const vertical = Math.abs(wall.to[0] - wall.from[0]) < epsilon;
+    if (!horizontal && !vertical) return [];
+    const axis = horizontal ? 0 : 1;
+    const start = Math.min(wall.from[axis], wall.to[axis]);
+    const end = Math.max(wall.from[axis], wall.to[axis]);
+    const sourceId = wall.sourceWallId || wall.id;
+    return openings.flatMap(opening => {
+      if (opening.wallId === sourceId) return [];
+      const part = opening.void || opening;
+      if (part.horizontal !== horizontal) return [];
+      if (Math.abs((horizontal ? part.y : part.x) - wall.from[1 - axis]) > epsilon) return [];
+      const from = Math.max(start, horizontal ? part.x : part.y);
+      const to = Math.min(end, (horizontal ? part.x : part.y) + part.w);
+      const z0 = Math.max(wall.z0, part.z0);
+      const z1 = Math.min(wall.z1, part.z1 ?? part.z0 + part.h);
+      if (to - from <= epsilon || z1 - z0 <= epsilon) return [];
+      // Borrow only the void; the door/window panel is drawn by its owner.
+      return [{ ...opening, element: null, void: { ...part,
+        x: horizontal ? from : part.x, y: horizontal ? part.y : from,
+        w: to - from, z0, z1, h: z1 - z0 } }];
+    });
+  },
+
   itemRoomBounds(plan, roomId) {
     const room = plan.getRoomGeometry(roomId);
     const floor = plan.roomFloorConfigs.get(roomId);
