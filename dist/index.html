@@ -14254,7 +14254,7 @@ class FloorPlan {
     this.warnings = [];
     this.currentConfig = null;
     this.currentFloorId = null;
-    this.showAllFloors = false;
+    this.showAllFloors = true;
     this.currentFloorHeight = 0;
     this.resolutionContext = null;
     this.currentSourceText = null;
@@ -14289,7 +14289,7 @@ class FloorPlan {
     this.multiFloorLayer.className = "multi-floor-layer";
     root.prepend(this.multiFloorLayer);
     this.multiFloorMode = false;
-    this.showRoofs = false;
+    this.showRoofs = true;
     this.showOnlyRoofs = false;
 
     root.style.setProperty("--m", `${scale}px`);
@@ -14988,7 +14988,8 @@ class FloorPlan {
     document.body?.classList.remove("page-empty");
     document.body?.classList.add("page-has-plan");
     if (!preservePresentation) {
-      this.showAllFloors = false;
+      this.showAllFloors = true;
+      this.showRoofs = true;
       this.showOnlyRoofs = false;
       this.facade3dCamera = { azimuthStep: 0, elevation: 30, zoom: 1 };
       this.solarSeason = config.solar?.season ?? "equinox";
