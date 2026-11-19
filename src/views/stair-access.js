@@ -1,7 +1,8 @@
 const FloorPlanStairAccessView = {
   render(plan) {
     for (const zone of plan.derivedZones ?? []) {
-      if (!plan.showAllFloors && zone.floorId !== (plan.currentFloorId ?? null)) continue;
+      if (plan.selectedFloorIds ? !plan.selectedFloorIds.has(String(zone.floorId))
+        : !plan.showAllFloors && zone.floorId !== (plan.currentFloorId ?? null)) continue;
       const points = zone.required.flat();
       const x = Math.min(...points.map((p) => p.x)), y = Math.min(...points.map((p) => p.y));
       const w = Math.max(...points.map((p) => p.x)) - x;

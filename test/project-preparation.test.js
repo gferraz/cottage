@@ -164,3 +164,22 @@ test("export restores view state even when snapshot capture fails", () => {
   assert.equal(plan.multiFloorMode, true);
   assert.equal(plan.layerCutoff, "above-zero");
 });
+
+test("floor checkboxes preserve arbitrary selections and keep at least one floor visible", () => {
+  const plan = newPlan();
+  plan.currentConfig = { floors: [{ id: 'ground' }, { id: 'upper' }, { id: 'attic' }] };
+  plan.showAllFloors = true;
+  plan.renderView = options => {
+    plan.selectedFloorIds = options.selectedFloorIds;
+    plan.showAllFloors = options.showAllFloors;
+    return plan;
+  };
+  plan.toggleFloor('upper', false);
+  assert.deepEqual([...plan.selectedFloorIds], ['ground', 'attic']);
+  assert.deepEqual(plan.visibleFloors().map(floor => floor.id), ['ground', 'attic']);
+  plan.toggleFloor('attic', false);
+  plan.toggleFloor('ground', false);
+  assert.deepEqual([...plan.selectedFloorIds], ['ground']);
+  plan.toggleFloor('__all_floors__', true);
+  assert.equal(plan.selectedFloorIds.size, 3);
+});

@@ -170,7 +170,7 @@ class FloorPlan {
       floorOptions.addEventListener("change", (event) => {
         const floors = this.currentConfig?.floors;
         if (!Array.isArray(floors)) return;
-        this.selectFloor(event.target.value);
+        this.toggleFloor(event.target.value, event.target.checked);
       });
     }
     if (solarSeasonSelect) {
@@ -319,7 +319,8 @@ class FloorPlan {
   }
 
   renderPlanFloors(config, selectedFloor) {
-    const floors = this.showAllFloors ? (config.floors ?? [config]) : [selectedFloor];
+    const floors = this.selectedFloorIds ? this.visibleFloors(config)
+      : this.showAllFloors ? (config.floors ?? [config]) : [selectedFloor];
     const keys = ["roomElements", "stairElements", "itemElements", "openings", "windows"];
     const combined = Object.fromEntries(keys.map((key) => [key, []]));
     const collisionErrors = [];
@@ -770,6 +771,27 @@ class FloorPlan {
     return FloorPlanProject.prepare(this, config);
   }
 
+  visibleFloors(config = this.currentConfig) {
+    const floors = config?.floors ?? [config];
+    return floors.filter(floor => this.selectedFloorIds
+      ? this.selectedFloorIds.has(String(floor.id))
+      : this.showAllFloors || floor.id === this.currentFloorId);
+  }
+
+  toggleFloor(id, checked) {
+    const floors = this.currentConfig?.floors ?? [];
+    const selected = new Set(this.visibleFloors().map(floor => String(floor.id)));
+    if (id === "__all_floors__") {
+      // Keep at least one floor visible when clearing the whole selection.
+      selected.clear();
+      (checked ? floors : floors.slice(0, 1)).forEach(floor => selected.add(String(floor.id)));
+    } else if (checked) selected.add(String(id));
+    else selected.delete(String(id));
+    if (!selected.size) selected.add(String(id));
+    const activeFloor = Math.max(0, floors.findIndex(floor => selected.has(String(floor.id))));
+    return this.renderView({ activeFloor, selectedFloorIds: selected, showAllFloors: selected.size > 1 });
+  }
+
   selectFloor(id) {
     const floors = this.currentConfig?.floors;
     if (!Array.isArray(floors)) return this;
@@ -792,7 +814,7 @@ class FloorPlan {
     return this.renderView({ preservePresentation });
   }
 
-  renderView({ activeFloor = null, showAllFloors = this.showAllFloors, preservePresentation = true } = {}) {
+  renderView({ activeFloor = null, showAllFloors = this.showAllFloors, selectedFloorIds = activeFloor === null && showAllFloors === this.showAllFloors ? this.selectedFloorIds : null, preservePresentation = true } = {}) {
     if (!this.preparedProject) throw new Error("Prepare um projeto antes de construir a vista");
     const config = this.currentConfig;
     this.showAllFloors = showAllFloors;
@@ -801,6 +823,7 @@ class FloorPlan {
     document.body?.classList.remove("page-empty");
     document.body?.classList.add("page-has-plan");
     if (!preservePresentation) {
+      selectedFloorIds = null;
       this.showAllFloors = true;
       this.showRoofs = true;
       this.showOnlyRoofs = false;
@@ -827,6 +850,9 @@ class FloorPlan {
       : config.floors?.findIndex((floorConfig) => floorConfig.id === this.currentFloorId);
     const floorIndex = configuredFloorIndex >= 0 ? configuredFloorIndex : 0;
     const floorConfig = config.floors?.[floorIndex] || config;
+    this.selectedFloorIds = selectedFloorIds ? new Set(selectedFloorIds)
+      : new Set((this.showAllFloors ? (config.floors ?? [config]) : [floorConfig]).map(floor => String(floor.id)));
+    this.showAllFloors = this.selectedFloorIds.size > 1;
     this.currentFloorId = floorConfig.id || null;
     this.currentFloorHeight = Number(floorConfig.z0 ?? 0);
     if (!Number.isFinite(this.currentFloorHeight)) {
@@ -840,11 +866,11 @@ class FloorPlan {
           const label = document.createElement("label");
           label.className = "floor-option";
           const input = document.createElement("input");
-          input.type = "radio";
+          input.type = "checkbox";
           input.name = "floor-selection";
           input.value = String(availableFloor.id || "");
           input.id = optionId;
-          input.checked = !this.showAllFloors && String(availableFloor.id) === String(this.currentFloorId);
+          input.checked = this.selectedFloorIds.has(String(availableFloor.id));
           const text = document.createElement("span");
           text.textContent = availableFloor.label || availableFloor.id || "Pavimento";
           label.append(input, text);
@@ -855,11 +881,12 @@ class FloorPlan {
           label.className = "floor-option";
           label.title = "Mostrar todos os pisos na planta baixa e na perspectiva 3D";
           const input = document.createElement("input");
-          input.type = "radio";
+          input.type = "checkbox";
           input.name = "floor-selection";
           input.value = "__all_floors__";
           input.id = "floor-option-all";
-          input.checked = this.showAllFloors;
+          input.checked = this.selectedFloorIds.size === config.floors.length;
+          input.indeterminate = this.selectedFloorIds.size < config.floors.length;
           const text = document.createElement("span");
           text.textContent = "Todos os pisos";
           label.append(input, text);
@@ -876,7 +903,8 @@ class FloorPlan {
     document.querySelector("#project-overview")?.removeAttribute("hidden");
     this.clearView();
     FloorPlanProject.restoreReferences(this);
-    this.errors = FloorPlanProject.viewErrors(this.preparedProject, floorConfig, this.showAllFloors);
+    this.errors = [...this.preparedProject.errors, ...this.visibleFloors().filter(floor => floor !== floorConfig)
+      .flatMap(floor => this.preparedProject.floorErrors.get(floor) ?? [])];
     this.warnings = this.preparedProject.warnings;
     this.hiddenSlabs ??= new Set();
     FloorPlanSlabs.updateList(this);
@@ -896,7 +924,7 @@ class FloorPlan {
       this.errors.push({ category: "presentation", message: error.message });
     }
     const visibleRoofs = this.showAllFloors && config.floors
-      ? [...(config.roofs ?? []), ...config.floors.flatMap((floor) => floor.roofs ?? [])]
+      ? [...(config.roofs ?? []), ...this.visibleFloors().flatMap((floor) => floor.roofs ?? [])]
       : this.visibleRoofs(config, floorConfig);
     this.renderRoofs(visibleRoofs);
     FloorPlanHeadroom.render(this);
@@ -914,7 +942,7 @@ class FloorPlan {
       this.roofOnlySwitch.closest(".visibility-switch")?.toggleAttribute("hidden", !hasRoofs);
     }
     this.renderGuides(this.showAllFloors && config.floors
-      ? [...(config.guides ?? []), ...config.floors.flatMap((floor) => floor.guides ?? [])]
+      ? [...(config.guides ?? []), ...this.visibleFloors().flatMap((floor) => floor.guides ?? [])]
       : this.visibleGuides(config, floorConfig));
     const defaultFacades = [
       { id: "front", label: "Fachada frontal", direction: "front" },

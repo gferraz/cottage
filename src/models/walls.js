@@ -656,11 +656,13 @@ const FloorPlanWalls = {
   renderIndependentWalls(plan) {
     plan.wallElements = [];
     plan.independentWalls.forEach((wall) => {
-      if (!plan.showAllFloors && wall.scopeFloorId && wall.scopeFloorId !== plan.currentFloorId) return;
+      if (wall.scopeFloorId && (plan.selectedFloorIds ? !plan.selectedFloorIds.has(String(wall.scopeFloorId))
+        : !plan.showAllFloors && wall.scopeFloorId !== plan.currentFloorId)) return;
       const floors = plan.currentConfig?.floors ?? (plan.currentConfig ? [plan.currentConfig] : []);
       const visibleFloors = floors.filter((floor) => wall.scopeFloorId
         ? floor.id === wall.scopeFloorId
-        : plan.showAllFloors || floor.id === plan.currentFloorId);
+        : plan.selectedFloorIds ? plan.selectedFloorIds.has(String(floor.id))
+          : plan.showAllFloors || floor.id === plan.currentFloorId);
       // Walls ending at the floor (such as the terrain plinth) are below
       // the plan cut and must not paint over the walls above that floor.
       if (visibleFloors.length && visibleFloors.every((floor) =>

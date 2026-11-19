@@ -81,3 +81,16 @@ test('ground view retains the terrain-to-floor plinth and hides it on upper floo
   assert.ok(!upper.wallRenderParts.some((wall) => wall.id === 'plinth'));
   assert.ok(!upper.independentWalls.has('plinth'));
 });
+
+test('multiple selected floors retain separate wall ranges and exclude unselected geometry', () => {
+  const source = plan();
+  source.currentConfig.floors.push({ id: 'attic', z0: 6 });
+  source.allRooms.push({ id: 'top', floorId: 'attic' });
+  source.selectedFloorIds = new Set(['ground', 'attic']);
+  source.showAllFloors = true;
+  const view = renderer.floorView(source);
+  assert.deepEqual(Array.from(view.allRooms, room => room.id), ['down', 'top']);
+  assert.deepEqual(Array.from(view.wallRenderParts, wall => [wall.z0, wall.z1]), [[0, 3], [6, 7]]);
+  assert.equal(view.visibleFloorConfigs.length, 2);
+  assert.equal(source.wallRenderParts[0].z1, 7);
+});

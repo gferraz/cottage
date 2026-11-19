@@ -47,7 +47,8 @@ const FloorPlanSlabs = {
   render({ plan, THREE, scene }) {
     const material = new THREE.MeshLambertMaterial({ color: "#c9c5ba" });
     for (const slab of plan.allSlabs ?? []) {
-      if (plan.hiddenSlabs?.has(slab.key) || (plan.visibleFloor && slab.floorId !== plan.visibleFloor.id)) continue;
+      if (plan.hiddenSlabs?.has(slab.key) || (plan.visibleFloorConfigs ? !plan.visibleFloorConfigs.some(floor => floor.id === slab.floorId)
+        : plan.visibleFloor && slab.floorId !== plan.visibleFloor.id)) continue;
       const group = new THREE.Group();
       group.name = slab.label;
       group.userData.domainId = slab.key;

@@ -5,7 +5,22 @@
 const FloorPlanFacades3D = {
   floorView(plan) {
     const floors = plan.currentConfig?.floors;
-    if (!floors?.length || plan.showAllFloors) return plan;
+    if (!floors?.length) return plan;
+    if (plan.selectedFloorIds && plan.selectedFloorIds.size > 1 && plan.selectedFloorIds.size < floors.length) {
+      const selected = floors.filter(floor => plan.selectedFloorIds.has(String(floor.id)));
+      const views = selected.map(floor => this.floorView(Object.assign(Object.create(plan), {
+        selectedFloorIds: null, showAllFloors: false, currentFloorId: floor.id,
+      })));
+      const view = Object.create(plan);
+      for (const key of ["allRooms", "allItems", "allOpenings", "allWindows", "wallRenderParts"])
+        view[key] = views.flatMap(entry => entry[key]);
+      view.independentWalls = new Map(views.flatMap((entry, index) =>
+        [...entry.independentWalls].map(([id, wall]) => [`${id}-floor-${index}`, wall])));
+      view.visibleFloorConfigs = selected;
+      view.visibleFloorRanges = views.map(entry => entry.visibleFloorRange);
+      return view;
+    }
+    if (plan.showAllFloors) return plan;
     const index = Math.max(0, floors.findIndex((floor) => floor.id === plan.currentFloorId));
     const floor = floors[index];
     const z0 = Number(floor.z0);
@@ -122,7 +137,8 @@ const FloorPlanFacades3D = {
 
     const stairFlights = [];
     const stairLandings = [];
-    floors.filter((floor) => !plan.visibleFloor || floor === plan.visibleFloor).forEach((floor) => {
+    floors.filter((floor) => plan.visibleFloorConfigs ? plan.visibleFloorConfigs.includes(floor)
+      : !plan.visibleFloor || floor === plan.visibleFloor).forEach((floor) => {
       [...(floor?.rooms ?? []), ...(plan.allStairs ?? [])
         .filter((entry) => (entry.floorId ?? null) === (floor?.id ?? null))
         .filter((entry) => !plan.invalidRoomIds?.has(entry.id))
@@ -138,12 +154,12 @@ const FloorPlanFacades3D = {
       });
     });
 
-    if (plan.visibleFloorRange) {
-      const [bottom, top] = plan.visibleFloorRange;
+    if (plan.visibleFloorRange || plan.visibleFloorRanges) {
+      const ranges = plan.visibleFloorRanges ?? [plan.visibleFloorRange];
       for (const parts of [stairFlights, stairLandings]) {
         for (let i = parts.length - 1; i >= 0; i -= 1) {
           const part = parts[i];
-          if (part.z0 >= top || part.z1 < bottom) parts.splice(i, 1);
+          if (!ranges.some(([bottom, top]) => part.z0 < top && part.z1 >= bottom)) parts.splice(i, 1);
         }
       }
     }

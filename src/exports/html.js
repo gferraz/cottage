@@ -4,6 +4,7 @@ const FloorPlanHtmlExport = {
     const original = {
       activeFloor: Math.max(0, floors.findIndex((floor) => floor.id === plan.currentFloorId)),
       showAllFloors: plan.showAllFloors,
+      ...(plan.selectedFloorIds ? { selectedFloorIds: new Set(plan.selectedFloorIds) } : {}),
       multiFloorMode: plan.multiFloorMode,
       layerCutoff: plan.layerCutoff,
     };
@@ -18,7 +19,8 @@ const FloorPlanHtmlExport = {
     } finally {
       plan.multiFloorMode = original.multiFloorMode;
       try {
-        plan.renderView({ activeFloor: original.activeFloor, showAllFloors: original.showAllFloors });
+        plan.renderView({ activeFloor: original.activeFloor, showAllFloors: original.showAllFloors,
+          ...(original.selectedFloorIds ? { selectedFloorIds: original.selectedFloorIds } : {}) });
       } finally {
         plan.multiFloorMode = original.multiFloorMode;
         plan.layerCutoff = original.layerCutoff;
