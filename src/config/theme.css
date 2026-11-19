@@ -18,6 +18,7 @@
   --theme-outdoor: rgba(230, 220, 190, 0.78);
   --theme-service: rgba(235, 240, 245, 0.95);
   --theme-roof-fill: rgba(177, 82, 46, 0.18);
+  --theme-roof-surface: #b45c3d;
   --theme-roof-line: rgba(112, 55, 35, 0.9);
   --theme-roof-gradient-dark: #a84f31;
   --theme-stair-gradient-dark: #b4afa3;

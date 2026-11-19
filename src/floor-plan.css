@@ -410,7 +410,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .facade-opening { fill: var(--theme-opening); stroke: var(--theme-opening-line); stroke-width: 2; }
 .facade-window { fill: var(--theme-window); stroke: var(--theme-window-line); stroke-width: 2; }
 .facade-railing { fill: #d8d8d8; fill-opacity: 0.9; stroke: #777; stroke-width: 1.5; }
-.facade-roof { fill: var(--theme-roof-fill); stroke: var(--theme-roof-line); stroke-width: 1.5; }
+.facade-roof { fill: var(--theme-roof-surface, #b45c3d); fill-opacity: 0.55; stroke: var(--theme-roof-line); stroke-width: 1.5; }
 .facade-gable-wall { fill: var(--theme-wall-fill); fill-opacity: 1; stroke: var(--theme-wall); stroke-width: 1.5; }
 .facade-gable-wall.facade-wall-virtual { fill: none; stroke: var(--theme-wall-virtual); stroke-dasharray: 5 4; }
 .facade-roof-eave { fill: none; stroke: var(--theme-roof-line); stroke-width: 1.5; }

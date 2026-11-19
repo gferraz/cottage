@@ -27,6 +27,7 @@
   --theme-outdoor: rgba(230, 220, 190, 0.78);
   --theme-service: rgba(235, 240, 245, 0.95);
   --theme-roof-fill: rgba(177, 82, 46, 0.18);
+  --theme-roof-surface: #b45c3d;
   --theme-roof-line: rgba(112, 55, 35, 0.9);
   --theme-roof-gradient-dark: #a84f31;
   --theme-stair-gradient-dark: #b4afa3;
@@ -468,7 +469,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .facade-opening { fill: var(--theme-opening); stroke: var(--theme-opening-line); stroke-width: 2; }
 .facade-window { fill: var(--theme-window); stroke: var(--theme-window-line); stroke-width: 2; }
 .facade-railing { fill: #d8d8d8; fill-opacity: 0.9; stroke: #777; stroke-width: 1.5; }
-.facade-roof { fill: var(--theme-roof-fill); stroke: var(--theme-roof-line); stroke-width: 1.5; }
+.facade-roof { fill: var(--theme-roof-surface, #b45c3d); fill-opacity: 0.55; stroke: var(--theme-roof-line); stroke-width: 1.5; }
 .facade-gable-wall { fill: var(--theme-wall-fill); fill-opacity: 1; stroke: var(--theme-wall); stroke-width: 1.5; }
 .facade-gable-wall.facade-wall-virtual { fill: none; stroke: var(--theme-wall-virtual); stroke-dasharray: 5 4; }
 .facade-roof-eave { fill: none; stroke: var(--theme-roof-line); stroke-width: 1.5; }
@@ -1841,6 +1842,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
   --theme-window: #eefaff;
   --theme-window-line: #a7adb3;
   --theme-roof-fill: rgba(177, 82, 46, 0.18);
+  --theme-roof-surface: #b45c3d;
   --theme-roof-line: rgba(112, 55, 35, 0.9);
   --theme-roof-gradient-dark: #a84f31;
   --theme-stair-gradient-dark: #b4afa3;
@@ -8314,7 +8316,7 @@ const FloorPlanFacades3D = {
     });
     const wallLineMaterial = new THREE.LineBasicMaterial({ color: "#30302d" });
     const roofMaterial = new THREE.MeshLambertMaterial({
-      color: "#b45c3d",
+      color: getComputedStyle(plan.root).getPropertyValue("--theme-roof-surface").trim() || "#b45c3d",
       transparent: true,
       opacity: 0.55,
       side: THREE.DoubleSide,

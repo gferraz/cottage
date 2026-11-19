@@ -347,7 +347,7 @@ const FloorPlanFacades3D = {
     });
     const wallLineMaterial = new THREE.LineBasicMaterial({ color: "#30302d" });
     const roofMaterial = new THREE.MeshLambertMaterial({
-      color: "#b45c3d",
+      color: getComputedStyle(plan.root).getPropertyValue("--theme-roof-surface").trim() || "#b45c3d",
       transparent: true,
       opacity: 0.55,
       side: THREE.DoubleSide,
