@@ -152,7 +152,8 @@ const FloorPlanOpenings = {
           passage,
         );
       });
-      plan.renderLowerFloorProjection(floors, fromFloor, fromHeight, passage);
+      if (!plan.showAllFloors)
+        plan.renderLowerFloorProjection(floors, fromFloor, fromHeight, passage);
     }
     return passage;
   },
@@ -256,9 +257,11 @@ const FloorPlanOpenings = {
     floors.forEach((sourceFloor) => {
       this.collect(sourceFloor).forEach((opening) => {
         if (!plan.isVerticalOpening(opening)) return;
-        const targetId = String(opening.to ?? "").trim();
         const sourceFloorId = String(opening.from ?? "").trim();
         const targetFloorId = String(opening.to ?? "").trim();
+        // In combined views draw the opening once, on its source floor.
+        // Single-floor views also retain the lower-floor projection.
+        if (plan.showAllFloors && currentFloorId !== sourceFloorId) return;
         if (
           currentFloorId !== sourceFloorId &&
           currentFloorId !== targetFloorId

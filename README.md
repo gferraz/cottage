@@ -4,6 +4,8 @@
 
 Aplicação estática para desenhar plantas baixas com HTML, CSS e JSON. Não exige banco de dados, servidor, Python ou processo de build.
 
+Os nomes dos cômodos, as medidas da planta e as legendas dos telhados usam Architects Daughter, de Kimberly Geswein, em negrito. Os nomes dos cômodos e os títulos dos telhados aparecem em maiúsculas. A fonte está incorporada em `src/fonts.css` para funcionar offline e nas exportações, sob a licença SIL OFL 1.1 disponível em `src/fonts/architects-daughter-OFL.txt`. Fonte original: [Google Fonts](https://github.com/google/fonts/tree/main/ofl/architectsdaughter).
+
 ## Abrir e carregar uma planta
 
 Abra [`floor-plan.html`](floor-plan.html) no navegador e clique em **Carregar JSON**. A página inicia vazia; o projeto só é carregado quando um arquivo é escolhido. Para trocar a planta, selecione outro arquivo JSON.

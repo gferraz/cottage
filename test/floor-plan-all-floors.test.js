@@ -41,7 +41,7 @@ test('all floors render rooms, furniture and openings while validating each floo
   assert.equal(plan.openings.map(opening => opening.id).join(','), 'door,window');
   assert.equal(plan.roomElements[0].dataset.floorId, 'ground');
   assert.equal(plan.errors.map(error => error.id).join(','), 'ground,upper');
-  assert.deepEqual(calls, ['ground', 'upper']);
+  assert.deepEqual(calls, ['ground', 'projection', 'upper', 'projection']);
   assert.equal(plan.currentFloorId, 'upper');
   assert.equal(plan.currentFloorHeight, 3);
   assert.equal(plan.independentRendered, true);
@@ -85,4 +85,37 @@ test('independent selections render exactly the requested floors, including none
   assert.equal(plan.roomElements.length, 0);
   assert.equal(plan.itemElements.length, 0);
   assert.equal(plan.openings.length, 0);
+});
+
+test('combined upper sectors draw a vertical opening once on its source floor', () => {
+  const opening = { from: 'upper-rear', to: 'ground', rectangle: [0, 0, 2, 3] };
+  const config = { floors: [
+    { id: 'ground' }, { id: 'upper-front' }, { id: 'upper-rear', openings: [opening] },
+  ] };
+  const rendered = [];
+  const plan = {
+    showAllFloors: true, errors: [], isVerticalOpening: () => true,
+    addVerticalOpening: (value, floor) => rendered.push([value, floor.id]),
+  };
+  for (const floor of config.floors)
+    FloorPlanOpenings.addVisibleVerticalOpenings(plan, config, floor);
+  assert.deepEqual(rendered, [[{ ...opening, type: 'opening' }, 'upper-rear']]);
+});
+
+test('combined floors clip projected stairs to the opening without adding lower-floor duplicates', () => {
+  const stair = { style: {}, x0: () => 0, y0: () => 0, w: () => 5, l: () => 2.4 };
+  let projections = 0;
+  const plan = {
+    currentConfig: { floors: [{ id: 'ground', z0: 0 }, { id: 'upper', z0: 3 }] },
+    showAllFloors: true,
+    normalizeGeometryAtFloor: () => ({ x: 0, y: 0, w: 3, l: 2.4 }),
+    add: () => ({ dataset: {} }),
+    root: { querySelectorAll: () => [stair] },
+    clipProjection: (...args) => FloorPlanOpenings.clipProjection(plan, ...args),
+    renderLowerFloorProjection: () => { projections++; },
+  };
+  FloorPlanOpenings.addVerticalOpening(plan,
+    { from: 'upper', to: 'ground' }, { id: 'upper' });
+  assert.equal(stair.style.clipPath, "inset(calc(0 * var(--m)) calc(2 * var(--m)) calc(0 * var(--m)) calc(0 * var(--m)))");
+  assert.equal(projections, 0);
 });
