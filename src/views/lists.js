@@ -593,7 +593,8 @@ const FloorPlanLists = {
         window.to === "exterior"
           ? "EXTERIOR"
           : plan.roomDefinitions.get(window.to)?.label || window.to;
-      details.textContent = `${from} → ${to} (${plan.formatMeters(window.w)}m)`;
+      const appearance = FloorPlanOpenings.windowAppearance(window);
+      details.textContent = `${from} → ${to} (${plan.formatMeters(window.w)}m) · ${FloorPlanOpenings.types[appearance.windowType]} · Vidros: ${appearance.glazing.columns} × ${appearance.glazing.rows}`;
       item.append(title, details);
       target.append(item);
     });

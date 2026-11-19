@@ -24,6 +24,42 @@ const FloorPlan3DWalls = {
     });
   },
 
+  renderWindowGrid({ THREE, scene, opening, part, wall, alongX }) {
+    const { glazing: { columns, rows } } = FloorPlanOpenings.windowAppearance(opening);
+    if (columns === 1 && rows === 1) return;
+    const framing = FloorPlanOpenings.windowAppearance(opening).framing;
+    const material = new THREE.MeshLambertMaterial({ color: framing.color });
+    const thickness = Math.min(framing.mullion, part.w / columns / 5, part.h / rows / 5);
+    const frameWidth = Math.min(framing.frame, part.w / 5, part.h / 5);
+    const bars = [
+      [0, part.h / 2, frameWidth, part.h],
+      [part.w, part.h / 2, frameWidth, part.h],
+      [part.w / 2, 0, part.w, frameWidth],
+      [part.w / 2, part.h, part.w, frameWidth],
+    ];
+    const add = (offset, elevation, width, height) => {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(
+        alongX ? width : 0.06, alongX ? 0.06 : width, height,
+      ), material);
+      bar.position.set(
+        alongX ? part.x + offset : wall.from[0],
+        alongX ? wall.from[1] : part.y + offset,
+        part.z0 + elevation,
+      );
+      bar.userData.domainId = opening.id;
+      bar.userData.windowGrid = true;
+      bar.castShadow = true;
+      scene.add(bar);
+    };
+    bars.forEach(([offset, elevation, width, height]) => add(offset, elevation, width, height));
+    for (let column = 1; column < columns; column += 1) {
+      add(part.w * column / columns, part.h / 2, thickness, part.h);
+    }
+    for (let row = 1; row < rows; row += 1) {
+      add(part.w / 2, part.h * row / rows, part.w, thickness);
+    }
+  },
+
   renderRoomWall({
     THREE, scene, wall, openings, material, wallLineMaterial,
     terrainProfile, buildingOffsetX, buildingOffsetY,
@@ -156,6 +192,7 @@ const FloorPlan3DWalls = {
       );
       feature.renderOrder = 9;
       scene.add(feature);
+      if (part.type === "window") this.renderWindowGrid({ THREE, scene, opening, part, wall, alongX });
     });
   },
 };

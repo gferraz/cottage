@@ -81,3 +81,18 @@ test('schema exposes the collections in each supported context and separate defa
     assert.deepEqual(Object.keys(schema.properties.config.properties[key].properties).filter(k => ['w','h','z0'].includes(k)), ['w', 'h', 'z0']);
   }
 });
+
+test('window types and glazing generate distinct facade symbols and validate subdivisions', () => {
+  assert.equal(FloorPlanOpenings.windowLines({}).filter(l => l.kind === 'grid').length, 6);
+  assert.deepEqual(FloorPlanOpenings.windowAppearance({ type: 'casement', framing: { frame: 0.05, mullion: 0.025, color: '#454545' } }).framing, { frame: 0.05, mullion: 0.025, color: '#454545' });
+  assert.deepEqual(FloorPlanOpenings.windowLines({ type: 'fixed', glazing: { columns: 1, rows: 1 } }), []);
+  const grid = { columns: 3, rows: 2 };
+  for (const type of Object.keys(FloorPlanOpenings.types)) {
+    const lines = FloorPlanOpenings.windowLines({ type: type, glazing: grid });
+    assert.equal(lines.filter(l => l.kind === 'grid').length, 3);
+    assert.equal(lines.some(l => l.kind === 'opening'), type !== 'fixed');
+    assert.ok(lines.every(l => l.points.every(n => n >= 0 && n <= 1)));
+  }
+  for (const columns of [0, -1, 1.5, 33, '2']) assert.throws(() => FloorPlanOpenings.windowAppearance({ glazing: { columns } }), /grade de vidros/);
+  assert.throws(() => FloorPlanOpenings.windowAppearance({ type: 'unknown' }), /Tipo de abertura de janela/);
+});

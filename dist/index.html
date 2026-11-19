@@ -3088,6 +3088,44 @@ window.FloorPlanParser = FloorPlanParser;
 
 
 const FloorPlanOpenings = {
+  types: { fixed: "Fixa", casement: "De abrir", sliding: "De correr", awning: "Maxim-ar", tilt: "Basculante" },
+
+  windowAppearance(opening) {
+    const type = opening.windowType ?? opening.type ?? "fixed";
+    if (!Object.hasOwn(this.types, type)) throw new Error(`Tipo de abertura de janela inválido: ${type}`);
+    const framing = opening.framing ?? {};
+    if (!framing || typeof framing !== "object" || Array.isArray(framing)) throw new Error("framing precisa ser um objeto");
+    const frameWidth = framing.frame ?? 0.04;
+    const mullionWidth = framing.mullion ?? frameWidth * 0.6;
+    if (![frameWidth, mullionWidth].every(value => Number.isFinite(value) && value >= 0 && value <= 0.2)) throw new Error("A largura da moldura e dos montantes deve estar entre 0 e 0,2 m");
+    const frameColor = framing.color ?? "#454545";
+    if (typeof frameColor !== "string" || !frameColor.trim()) throw new Error("A cor da moldura precisa ser um texto válido");
+    const glazing = opening.glazing ?? { columns: 4, rows: 4 };
+    if (!glazing || typeof glazing !== "object" || Array.isArray(glazing)) throw new Error("A grade de vidros precisa de columns e rows");
+    const columns = glazing.columns ?? 1;
+    const rows = glazing.rows ?? 1;
+    if (![columns, rows].every(value => Number.isInteger(value) && value >= 1 && value <= 32)) {
+      throw new Error("A grade de vidros precisa de 1 a 32 colunas e linhas");
+    }
+    return { windowType: type, glazing: { columns, rows }, framing: { frame: frameWidth, mullion: mullionWidth, color: frameColor } };
+  },
+
+  // Normalized coordinates keep facade symbols independent of scale and orientation.
+  windowLines(opening) {
+    const { windowType, glazing: { columns, rows } } = this.windowAppearance(opening);
+    const lines = [];
+    for (let i = 1; i < columns; i += 1) lines.push({ points: [i / columns, 0, i / columns, 1], kind: "grid" });
+    for (let i = 1; i < rows; i += 1) lines.push({ points: [0, i / rows, 1, i / rows], kind: "grid" });
+    const symbol = points => lines.push({ points, kind: "opening" });
+    if (windowType === "casement") { symbol([0.1, 0.1, 0.9, 0.5]); symbol([0.9, 0.5, 0.1, 0.9]); }
+    if (windowType === "awning") { symbol([0.1, 0.1, 0.5, 0.9]); symbol([0.5, 0.9, 0.9, 0.1]); }
+    if (windowType === "tilt") { symbol([0.1, 0.9, 0.5, 0.1]); symbol([0.5, 0.1, 0.9, 0.9]); }
+    if (windowType === "sliding") {
+      symbol([0.15, 0.5, 0.85, 0.5]); symbol([0.7, 0.4, 0.85, 0.5]); symbol([0.7, 0.6, 0.85, 0.5]);
+    }
+    return lines;
+  },
+
   collections: { openings: "opening", doors: "door", windows: "window" },
 
   visit(owner, callback) {
@@ -3101,12 +3139,14 @@ const FloorPlanOpenings = {
 
   collect(owner, { roomId } = {}) {
     const entries = [];
-    this.visit(owner, (entry, type) => {
+    this.visit(owner, (entry, type, key) => {
       const from = String(entry.from ?? "").trim();
       const localSide = { front: "top", rear: "bottom" }[from] ?? from;
       const relative = roomId && /^(top|right|bottom|left)$/.test(localSide);
       const result = {
-        ...entry, type,
+        ...entry,
+        ...(key === "windows" && entry.type !== undefined ? { windowType: entry.type } : {}),
+        type,
         from: relative ? `${roomId}.${localSide}` : from,
         ...(roomId ? { roomId } : {}),
       };
@@ -3527,8 +3567,10 @@ const FloorPlanOpenings = {
         "Opening z0 must be finite and h must be greater than zero",
       );
     }
+    const configDefaults = plan.currentConfig?.config?.windows ?? {};
     const normalized = {
       ...opening,
+      ...(type === "window" ? this.windowAppearance({ ...configDefaults, ...opening, windowType: opening.windowType ?? (opening.type === "window" ? undefined : opening.type) ?? configDefaults.type ?? "fixed" }) : {}),
       id,
       from: opening.from,
       to: target,
@@ -7235,32 +7277,21 @@ const FloorPlanFacades = {
             const windowY = (floorHeight - z0 - height + padding) * scale;
             const windowWidth = featureWidth * scale;
             const windowHeight = height * scale;
-            for (let division = 1; division < 4; division += 1) {
-              const vertical = document.createElementNS(svgNamespace, "line");
-              const verticalX = windowX + (windowWidth * division) / 4;
-              vertical.setAttribute("x1", `${verticalX}`);
-              vertical.setAttribute("x2", `${verticalX}`);
-              vertical.setAttribute("y1", `${windowY}`);
-              vertical.setAttribute("y2", `${windowY + windowHeight}`);
-              vertical.setAttribute(
-                "stroke",
-                getComputedStyle(plan.root).getPropertyValue("--theme-window-line").trim() || "#a7adb3",
-              );
-              vertical.setAttribute("stroke-width", "1");
-              featureGroup.append(vertical);
-
-              const horizontal = document.createElementNS(svgNamespace, "line");
-              const horizontalY = windowY + (windowHeight * division) / 4;
-              horizontal.setAttribute("x1", `${windowX}`);
-              horizontal.setAttribute("x2", `${windowX + windowWidth}`);
-              horizontal.setAttribute("y1", `${horizontalY}`);
-              horizontal.setAttribute("y2", `${horizontalY}`);
-              horizontal.setAttribute(
-                "stroke",
-                getComputedStyle(plan.root).getPropertyValue("--theme-window-line").trim() || "#a7adb3",
-              );
-              horizontal.setAttribute("stroke-width", "1");
-              featureGroup.append(horizontal);
+            featureGroup.dataset.windowType = opening.windowType ?? "fixed";
+            const framing = FloorPlanOpenings.windowAppearance(opening).framing;
+            rect.setAttribute("stroke", framing.color);
+            rect.setAttribute("stroke-width", `${Math.max(1, framing.frame * scale)}`);
+            for (const { points: [x1, y1, x2, y2], kind } of FloorPlanOpenings.windowLines(opening)) {
+              const line = document.createElementNS(svgNamespace, "line");
+              line.setAttribute("x1", `${windowX + x1 * windowWidth}`);
+              line.setAttribute("y1", `${windowY + y1 * windowHeight}`);
+              line.setAttribute("x2", `${windowX + x2 * windowWidth}`);
+              line.setAttribute("y2", `${windowY + y2 * windowHeight}`);
+              line.setAttribute("stroke", kind === "opening" ? "#454545" : framing.color);
+              line.setAttribute("stroke-width", kind === "opening" ? "1.5" : `${Math.max(1, framing.mullion * scale)}`);
+              if (kind === "opening") line.setAttribute("stroke-dasharray", "4 2");
+              line.setAttribute("pointer-events", "none");
+              featureGroup.append(line);
             }
           }
         });
@@ -7522,6 +7553,42 @@ const FloorPlan3DWalls = {
     });
   },
 
+  renderWindowGrid({ THREE, scene, opening, part, wall, alongX }) {
+    const { glazing: { columns, rows } } = FloorPlanOpenings.windowAppearance(opening);
+    if (columns === 1 && rows === 1) return;
+    const framing = FloorPlanOpenings.windowAppearance(opening).framing;
+    const material = new THREE.MeshLambertMaterial({ color: framing.color });
+    const thickness = Math.min(framing.mullion, part.w / columns / 5, part.h / rows / 5);
+    const frameWidth = Math.min(framing.frame, part.w / 5, part.h / 5);
+    const bars = [
+      [0, part.h / 2, frameWidth, part.h],
+      [part.w, part.h / 2, frameWidth, part.h],
+      [part.w / 2, 0, part.w, frameWidth],
+      [part.w / 2, part.h, part.w, frameWidth],
+    ];
+    const add = (offset, elevation, width, height) => {
+      const bar = new THREE.Mesh(new THREE.BoxGeometry(
+        alongX ? width : 0.06, alongX ? 0.06 : width, height,
+      ), material);
+      bar.position.set(
+        alongX ? part.x + offset : wall.from[0],
+        alongX ? wall.from[1] : part.y + offset,
+        part.z0 + elevation,
+      );
+      bar.userData.domainId = opening.id;
+      bar.userData.windowGrid = true;
+      bar.castShadow = true;
+      scene.add(bar);
+    };
+    bars.forEach(([offset, elevation, width, height]) => add(offset, elevation, width, height));
+    for (let column = 1; column < columns; column += 1) {
+      add(part.w * column / columns, part.h / 2, thickness, part.h);
+    }
+    for (let row = 1; row < rows; row += 1) {
+      add(part.w / 2, part.h * row / rows, part.w, thickness);
+    }
+  },
+
   renderRoomWall({
     THREE, scene, wall, openings, material, wallLineMaterial,
     terrainProfile, buildingOffsetX, buildingOffsetY,
@@ -7654,6 +7721,7 @@ const FloorPlan3DWalls = {
       );
       feature.renderOrder = 9;
       scene.add(feature);
+      if (part.type === "window") this.renderWindowGrid({ THREE, scene, opening, part, wall, alongX });
     });
   },
 };
@@ -12841,7 +12909,8 @@ const FloorPlanLists = {
         window.to === "exterior"
           ? "EXTERIOR"
           : plan.roomDefinitions.get(window.to)?.label || window.to;
-      details.textContent = `${from} → ${to} (${plan.formatMeters(window.w)}m)`;
+      const appearance = FloorPlanOpenings.windowAppearance(window);
+      details.textContent = `${from} → ${to} (${plan.formatMeters(window.w)}m) · ${FloorPlanOpenings.types[appearance.windowType]} · Vidros: ${appearance.glazing.columns} × ${appearance.glazing.rows}`;
       item.append(title, details);
       target.append(item);
     });

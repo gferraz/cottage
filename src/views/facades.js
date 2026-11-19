@@ -1067,32 +1067,21 @@ const FloorPlanFacades = {
             const windowY = (floorHeight - z0 - height + padding) * scale;
             const windowWidth = featureWidth * scale;
             const windowHeight = height * scale;
-            for (let division = 1; division < 4; division += 1) {
-              const vertical = document.createElementNS(svgNamespace, "line");
-              const verticalX = windowX + (windowWidth * division) / 4;
-              vertical.setAttribute("x1", `${verticalX}`);
-              vertical.setAttribute("x2", `${verticalX}`);
-              vertical.setAttribute("y1", `${windowY}`);
-              vertical.setAttribute("y2", `${windowY + windowHeight}`);
-              vertical.setAttribute(
-                "stroke",
-                getComputedStyle(plan.root).getPropertyValue("--theme-window-line").trim() || "#a7adb3",
-              );
-              vertical.setAttribute("stroke-width", "1");
-              featureGroup.append(vertical);
-
-              const horizontal = document.createElementNS(svgNamespace, "line");
-              const horizontalY = windowY + (windowHeight * division) / 4;
-              horizontal.setAttribute("x1", `${windowX}`);
-              horizontal.setAttribute("x2", `${windowX + windowWidth}`);
-              horizontal.setAttribute("y1", `${horizontalY}`);
-              horizontal.setAttribute("y2", `${horizontalY}`);
-              horizontal.setAttribute(
-                "stroke",
-                getComputedStyle(plan.root).getPropertyValue("--theme-window-line").trim() || "#a7adb3",
-              );
-              horizontal.setAttribute("stroke-width", "1");
-              featureGroup.append(horizontal);
+            featureGroup.dataset.windowType = opening.windowType ?? "fixed";
+            const framing = FloorPlanOpenings.windowAppearance(opening).framing;
+            rect.setAttribute("stroke", framing.color);
+            rect.setAttribute("stroke-width", `${Math.max(1, framing.frame * scale)}`);
+            for (const { points: [x1, y1, x2, y2], kind } of FloorPlanOpenings.windowLines(opening)) {
+              const line = document.createElementNS(svgNamespace, "line");
+              line.setAttribute("x1", `${windowX + x1 * windowWidth}`);
+              line.setAttribute("y1", `${windowY + y1 * windowHeight}`);
+              line.setAttribute("x2", `${windowX + x2 * windowWidth}`);
+              line.setAttribute("y2", `${windowY + y2 * windowHeight}`);
+              line.setAttribute("stroke", kind === "opening" ? "#454545" : framing.color);
+              line.setAttribute("stroke-width", kind === "opening" ? "1.5" : `${Math.max(1, framing.mullion * scale)}`);
+              if (kind === "opening") line.setAttribute("stroke-dasharray", "4 2");
+              line.setAttribute("pointer-events", "none");
+              featureGroup.append(line);
             }
           }
         });

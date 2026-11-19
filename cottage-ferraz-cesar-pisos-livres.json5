@@ -7,7 +7,10 @@
   summary: "Estudo baseado em cottage-ferraz-cesar-2-level-floors.json5: terreno, mureta perimetral e lajes preservados; apenas varanda, escritório e hall mantidos. Áreas de piso livre representam os contornos das lajes, sem divisórias.",
   coordinates: ["25°45'06.7\"S", "49°15'29.1\"W"],
   viewport: {size: [24, 24], origin: [-25, 1]},
-  config: {floors: {ceiling_height: "params.floor_height"}, walls: {thickness: 0.12, color: "desejo-ambar"}},
+  config: {
+    floors: {ceiling_height: "params.floor_height"}, 
+    walls: {thickness: 0.12, color: "desejo-ambar"}, 
+    windows: {w: 0.9, h: 1.5, z0: 0.9, framing: {frame: 0.05, mullion: 0.025, color: "#454545"}, glazing: {columns: 2, rows: 3}, type: "casement"}},
   parameters: {floor_height: 3},
   terrain: {
     front: {edge: ["P001", "P002"], position: "top", label: "RUA/FRENTE"},
@@ -77,14 +80,14 @@
           walls: ["front", "rear", "left", "right"],
           windows: [
             // Janelas laterais com venezianas externas de abrir previstas.
-            { from: "right", w: 0.6, h: 1.5, dx: 0.4, dz: 0.9},
-            { from: "right", w: 0.6, h: 1.5, dx: 2.6, dz: 0.9},
-            // Conjunto frontal de 2 m, centralizado no sofá, sem parede entre módulos.
+            { from: "right", w: 0.6, h: 1.5, dx: 0.4, dz: 0.9 },
+            { from: "right", w: 0.6, h: 1.5, dx: 2.6, dz: 0.9 },
+            // Conjunto frontal de 2,80 m, centralizado na parede da sala, sem parede entre módulos.
             // Módulos laterais de abrir e dois centrais fixos previstos na esquadria.
-            { from: "front", w: 0.5, h: 1.5, dx: 1.1, dz: 1.1 },
-            { from: "front", w: 0.5, h: 1.5, dx: 1.6, dz: 1.1 },
-            { from: "front", w: 0.5, h: 1.5, dx: 2.1, dz: 1.1 },
-            { from: "front", w: 0.5, h: 1.5, dx: 2.6, dz: 1.1 }
+            { from: "front", w: 0.7, h: 1.5, dx: 1.25, dz: 1.1, type: "casement", glazing: { columns: 3, rows: 4 } },
+            { from: "front", w: 0.7, h: 1.5, dx: 1.95, dz: 1.1, type: "fixed", glazing: { columns: 3, rows: 4 } },
+            { from: "front", w: 0.7, h: 1.5, dx: 2.65, dz: 1.1, type: "fixed", glazing: { columns: 3, rows: 4 } },
+            { from: "front", w: 0.7, h: 1.5, dx: 3.35, dz: 1.1, type: "casement", glazing: { columns: 3, rows: 4 } }
           ]
         },
         {

@@ -461,3 +461,21 @@ windows: [{
 ```
 
 `dx` mede a distância desde o início da parede, inclusive para paredes verticais (no sentido crescente de y). Sem deslocamento, a janela continua centralizada. `dz` é relativo ao piso, enquanto o campo antigo `z0` continua sendo absoluto; `dz` tem prioridade. `dy`, `position`, `x` e `y` continuam aceitos por compatibilidade, com prioridade para `dx`. Portas e vãos de parede compartilham essas regras.
+
+### Tipo de janela e grade de vidros
+
+Na coleção `windows`, `type` aceita `fixed` (fixa), `casement` (de abrir), `sliding` (de correr), `awning` (maxim-ar) e `tilt` (basculante). A fachada mostra a grade com linhas contínuas e o símbolo de abertura com linhas tracejadas; a janela fixa não tem símbolo de abertura. Os símbolos são esquemáticos e não definem lado de dobradiça ou quantidade de folhas.
+
+`glazing: { columns: 2, rows: 3 }` divide a janela em seis panos de vidro. Cada valor aceita inteiros de 1 a 32; `1 × 1` representa vidro inteiro. Sem `glazing`, a janela usa `config.windows.glazing` ou, na ausência desse valor, quatro colunas e quatro linhas; sem `type`, usa `config.windows.type` ou é fixa. A lista de janelas informa o tipo e a grade. As subdivisões de vidro aparecem nas fachadas e como montantes sólidos na perspectiva 3D. Os símbolos de abertura aparecem somente nas fachadas; a planta baixa mantém sua representação simplificada.
+
+```json5
+{ id: "janela-sala", from: "sala.front", dx: 1.25, dz: 1.1,
+  w: 0.7, h: 1.5, type: "casement", glazing: { columns: 1, rows: 3 } }
+```
+
+A grade representa subdivisões do vidro, não uma proteção metálica externa.
+
+
+### Moldura de janela
+
+`config.windows` define padrões de largura, altura, peitoril, tipo, grade e moldura para todas as janelas; valores informados em uma janela prevalecem. `framing` configura moldura e montantes em metros. Por padrão, a moldura externa tem 4 cm, os montantes 2,4 cm e a cor é `#454545`. Exemplo: `framing: { frame: 0.05, mullion: 0.025, color: "#454545" }`. A moldura aparece na fachada e na perspectiva 3D; a mesma cor e espessura são usadas nos montantes da grade.

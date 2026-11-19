@@ -1,4 +1,42 @@
 const FloorPlanOpenings = {
+  types: { fixed: "Fixa", casement: "De abrir", sliding: "De correr", awning: "Maxim-ar", tilt: "Basculante" },
+
+  windowAppearance(opening) {
+    const type = opening.windowType ?? opening.type ?? "fixed";
+    if (!Object.hasOwn(this.types, type)) throw new Error(`Tipo de abertura de janela inválido: ${type}`);
+    const framing = opening.framing ?? {};
+    if (!framing || typeof framing !== "object" || Array.isArray(framing)) throw new Error("framing precisa ser um objeto");
+    const frameWidth = framing.frame ?? 0.04;
+    const mullionWidth = framing.mullion ?? frameWidth * 0.6;
+    if (![frameWidth, mullionWidth].every(value => Number.isFinite(value) && value >= 0 && value <= 0.2)) throw new Error("A largura da moldura e dos montantes deve estar entre 0 e 0,2 m");
+    const frameColor = framing.color ?? "#454545";
+    if (typeof frameColor !== "string" || !frameColor.trim()) throw new Error("A cor da moldura precisa ser um texto válido");
+    const glazing = opening.glazing ?? { columns: 4, rows: 4 };
+    if (!glazing || typeof glazing !== "object" || Array.isArray(glazing)) throw new Error("A grade de vidros precisa de columns e rows");
+    const columns = glazing.columns ?? 1;
+    const rows = glazing.rows ?? 1;
+    if (![columns, rows].every(value => Number.isInteger(value) && value >= 1 && value <= 32)) {
+      throw new Error("A grade de vidros precisa de 1 a 32 colunas e linhas");
+    }
+    return { windowType: type, glazing: { columns, rows }, framing: { frame: frameWidth, mullion: mullionWidth, color: frameColor } };
+  },
+
+  // Normalized coordinates keep facade symbols independent of scale and orientation.
+  windowLines(opening) {
+    const { windowType, glazing: { columns, rows } } = this.windowAppearance(opening);
+    const lines = [];
+    for (let i = 1; i < columns; i += 1) lines.push({ points: [i / columns, 0, i / columns, 1], kind: "grid" });
+    for (let i = 1; i < rows; i += 1) lines.push({ points: [0, i / rows, 1, i / rows], kind: "grid" });
+    const symbol = points => lines.push({ points, kind: "opening" });
+    if (windowType === "casement") { symbol([0.1, 0.1, 0.9, 0.5]); symbol([0.9, 0.5, 0.1, 0.9]); }
+    if (windowType === "awning") { symbol([0.1, 0.1, 0.5, 0.9]); symbol([0.5, 0.9, 0.9, 0.1]); }
+    if (windowType === "tilt") { symbol([0.1, 0.9, 0.5, 0.1]); symbol([0.5, 0.1, 0.9, 0.9]); }
+    if (windowType === "sliding") {
+      symbol([0.15, 0.5, 0.85, 0.5]); symbol([0.7, 0.4, 0.85, 0.5]); symbol([0.7, 0.6, 0.85, 0.5]);
+    }
+    return lines;
+  },
+
   collections: { openings: "opening", doors: "door", windows: "window" },
 
   visit(owner, callback) {
@@ -12,12 +50,14 @@ const FloorPlanOpenings = {
 
   collect(owner, { roomId } = {}) {
     const entries = [];
-    this.visit(owner, (entry, type) => {
+    this.visit(owner, (entry, type, key) => {
       const from = String(entry.from ?? "").trim();
       const localSide = { front: "top", rear: "bottom" }[from] ?? from;
       const relative = roomId && /^(top|right|bottom|left)$/.test(localSide);
       const result = {
-        ...entry, type,
+        ...entry,
+        ...(key === "windows" && entry.type !== undefined ? { windowType: entry.type } : {}),
+        type,
         from: relative ? `${roomId}.${localSide}` : from,
         ...(roomId ? { roomId } : {}),
       };
@@ -438,8 +478,10 @@ const FloorPlanOpenings = {
         "Opening z0 must be finite and h must be greater than zero",
       );
     }
+    const configDefaults = plan.currentConfig?.config?.windows ?? {};
     const normalized = {
       ...opening,
+      ...(type === "window" ? this.windowAppearance({ ...configDefaults, ...opening, windowType: opening.windowType ?? (opening.type === "window" ? undefined : opening.type) ?? configDefaults.type ?? "fixed" }) : {}),
       id,
       from: opening.from,
       to: target,

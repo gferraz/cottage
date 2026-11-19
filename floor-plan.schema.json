@@ -559,6 +559,56 @@
                   "description": "Número, referência geométrica ou expressão com params.nome."
                 }
               ]
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "fixed",
+                "casement",
+                "sliding",
+                "awning",
+                "tilt"
+              ]
+            },
+            "framing": {
+              "type": "object",
+              "properties": {
+                "frame": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 0.2,
+                  "description": "Largura da moldura externa, em metros."
+                },
+                "mullion": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 0.2,
+                  "description": "Largura dos montantes da grade, em metros."
+                },
+                "color": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false,
+              "description": "Espessuras e cor da esquadria."
+            },
+            "glazing": {
+              "type": "object",
+              "properties": {
+                "columns": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 32
+                },
+                "rows": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 32
+                }
+              },
+              "additionalProperties": false,
+              "description": "Grade de vidros: colunas e linhas. Use 1 × 1 para vidro inteiro."
             }
           },
           "additionalProperties": false
@@ -3564,11 +3614,6 @@
         "id": {
           "$ref": "#/definitions/wall-feature/properties/id"
         },
-        "type": {
-          "const": "window",
-          "deprecated": true,
-          "description": "Redundante: a coleção determina a categoria."
-        },
         "from": {
           "$ref": "#/definitions/wall-feature/properties/from"
         },
@@ -3613,6 +3658,57 @@
               "minLength": 1
             }
           ]
+        },
+        "glazing": {
+          "type": "object",
+          "properties": {
+            "columns": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32
+            }
+          },
+          "additionalProperties": false,
+          "description": "Grade de vidros: colunas e linhas. Use 1 × 1 para vidro inteiro."
+        },
+        "framing": {
+          "type": "object",
+          "properties": {
+            "frame": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0.2,
+              "description": "Largura da moldura externa, em metros."
+            },
+            "mullion": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0.2,
+              "description": "Largura dos montantes da grade, em metros."
+            },
+            "color": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false,
+          "description": "Espessuras e cor da esquadria."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "fixed",
+            "casement",
+            "sliding",
+            "awning",
+            "tilt"
+          ],
+          "description": "Tipo de abertura. A categoria window é determinada pela coleção windows."
         }
       },
       "required": [
@@ -3625,14 +3721,6 @@
       "properties": {
         "id": {
           "type": "string"
-        },
-        "type": {
-          "enum": [
-            "door",
-            "window",
-            "opening"
-          ],
-          "deprecated": true
         },
         "from": {
           "type": "string",
@@ -3762,6 +3850,57 @@
               "minLength": 1
             }
           ]
+        },
+        "glazing": {
+          "type": "object",
+          "properties": {
+            "columns": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32
+            },
+            "rows": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 32
+            }
+          },
+          "additionalProperties": false,
+          "description": "Grade de vidros: colunas e linhas. Use 1 × 1 para vidro inteiro."
+        },
+        "framing": {
+          "type": "object",
+          "properties": {
+            "frame": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0.2,
+              "description": "Largura da moldura externa, em metros."
+            },
+            "mullion": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 0.2,
+              "description": "Largura dos montantes da grade, em metros."
+            },
+            "color": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false,
+          "description": "Espessuras e cor da esquadria."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "fixed",
+            "casement",
+            "sliding",
+            "awning",
+            "tilt"
+          ],
+          "description": "Tipo de abertura. Na coleção windows, a categoria já é determinada pela coleção."
         }
       },
       "required": [
