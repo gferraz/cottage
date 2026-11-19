@@ -197,6 +197,7 @@ const FloorPlanCoordinates = {
     };
     const floor = (entry) => {
       entry.rooms?.forEach(geometry);
+      entry.stairs?.forEach(geometry);
       entry.items?.forEach(geometry);
       entry.zones?.forEach(geometry);
       entry.guides?.forEach(geometry);

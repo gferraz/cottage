@@ -5,7 +5,7 @@ require('../src/models/geometry.js');
 require('../src/models/geometry-operations.js');
 require('../src/models/walls.js');
 require('../src/views/dom.js');
-const stair = { stairType: 'solid-flared', stepWidths: [3, 2.6, 2.2, 1.8], stairAxis: 'vertical', w: 3, l: 1.36, h: .6, z0: -.6 };
+const stair = { type: 'solid-flared', steps: { widths: [3, 2.6, 2.2, 1.8] }, stairAxis: 'vertical', w: 3, l: 1.36, h: .6, z0: -.6 };
 test('solid flared stairs include four full treads and uniform 15 cm rises', () => {
   const steps = FloorPlanGeometry.stairSteps(stair);
   assert.equal(steps.treads, 4);
@@ -13,7 +13,7 @@ test('solid flared stairs include four full treads and uniform 15 cm rises', () 
   assert.equal(steps.run, .34);
   assert.deepEqual(FloorPlanWalls.stairUndersidePlane(stair), [0, 0, 1, .6]);
   for (const stepWidths of [[3, 3.1], [3, 0], [3], [2, 3]]) {
-    assert.throws(() => FloorPlanGeometry.stairSteps({ ...stair, stepWidths }));
+    assert.throws(() => FloorPlanGeometry.stairSteps({ ...stair, steps: { widths: stepWidths } }));
   }
 });
 test('plan silhouette widens toward the lower end in either direction', () => {
@@ -37,17 +37,19 @@ test('3D blocks reach the base, keep centered widths and assign stone only to to
   }
   class Mesh { constructor(geometry, material) { this.geometry = geometry; this.material = material; this.userData = {}; } }
   class Attribute { constructor(values) { this.values = values; } }
-  const material = { clone: () => ({ color: { set() {} } }) };
+  const material = { clone: () => ({ color: { set(value) { this.value = value; } } }) };
   for (const axis of ['horizontal', 'vertical']) {
     for (const reverse of [false, true]) {
       const meshes = [];
       FloorPlan3DElements.render({ plan: {}, THREE: { BufferGeometry, Mesh, Float32BufferAttribute: Attribute },
-        scene: { add: m => meshes.push(m) }, stairFlights: [{ ...stair, x: 4, y: 5,
+        scene: { add: m => meshes.push(m) }, stairFlights: [{ ...stair, colors: { thread: '#123456', riser: '#abcdef' }, x: 4, y: 5,
           w: axis === 'horizontal' ? 1.36 : 3, l: axis === 'horizontal' ? 3 : 1.36,
           stairAxis: axis, stairDirection: reverse ? 'reverse' : 'forward' }],
         wallMaterial: material, finite: (...values) => values.every(Number.isFinite),
         reportInvalid: () => assert.fail('valid stair rejected') });
       assert.equal(meshes.length, 4);
+      assert.equal(meshes[0].material[0].color.value, '#abcdef');
+      assert.equal(meshes[0].material[1].color.value, '#123456');
       meshes.forEach((mesh, index) => {
         const values = mesh.geometry.vertices.values;
         const zs = values.filter((_, i) => i % 3 === 2);
@@ -56,7 +58,7 @@ test('3D blocks reach the base, keep centered widths and assign stone only to to
         const along = mesh.geometry.vertices.values.filter((_, i) => i % 3 === (axis === 'horizontal' ? 0 : 1));
         assert.ok(Math.abs(Math.max(...along) - Math.min(...along) - (1.36 - index * .34)) < 1e-8);
         assert.ok(Math.abs(Math.max(...zs) - (-.6 + (index + 1) * .15)) < 1e-8);
-        assert.ok(Math.abs(Math.max(...cross) - Math.min(...cross) - stair.stepWidths[index]) < 1e-8);
+        assert.ok(Math.abs(Math.max(...cross) - Math.min(...cross) - stair.steps.widths[index]) < 1e-8);
         assert.equal(mesh.geometry.groups.filter(g => g.material === 1).length, 1);
       });
     }

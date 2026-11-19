@@ -55,7 +55,7 @@ const FloorPlanWalls = {
           if (ids.some((id) => !(config.floors ?? [config]).some((entry) => entry.id === id))) return null;
           return plan.resolve(value);
         };
-        const top = floorLevel(definition.top?.level);
+        const top = floorLevel(this.topLevel(definition.top));
         const base = floorLevel(definition.base?.level);
         if (top !== null && top <= Number(floor?.z0 ?? 0) + epsilon) continue;
         if (base !== null && base >= Number(floor?.z0 ?? 0) + Number(floor?.ceiling_height ?? 3)) continue;
@@ -81,7 +81,7 @@ const FloorPlanWalls = {
     return bounds;
   },
   stairUndersidePlane(stair, offset = 0) {
-    if (stair.stairType === "solid-flared") return [0, 0, 1, -stair.z0 + offset];
+    if (stair.type === "solid-flared") return [0, 0, 1, -stair.z0 + offset];
     const alongX = stair.stairAxis === "horizontal";
     const increasing = (stair.stairDirection !== "reverse") === (stair.stairRise !== "down");
     // With explicit risers the last rise belongs to the destination floor.
@@ -96,10 +96,16 @@ const FloorPlanWalls = {
 
   // Rectangular footprints and planes describing the underside of overhead
   // objects. Stair direction is resolved before building its inclined plane.
+  topLevel(top) {
+    if (typeof top === "number") return top;
+    if (typeof top === "string" && !/^[A-Za-z_][\w-]*$/.test(top.trim())) return top;
+    return top && typeof top === "object" && !Array.isArray(top) ? top.level : undefined;
+  },
+
   undersideLimits(plan, top, padding = 0) {
     // IDs are the public format. Keep the former object form readable for
-    // previously saved plans; "roof" remains the existing roof-set alias.
-    if (top === "roof") return [];
+    // previously saved plans; "roofs" selects all roofs; "roof" is its legacy alias.
+    if (["roofs", "roof"].includes(top) || this.topLevel(top) !== undefined) return [];
     if (typeof top === "string" || Array.isArray(top)) top = { under: top };
     if (!top || top.under === undefined) return [];
     const ids = Array.isArray(top.under) ? top.under : [top.under];
@@ -126,7 +132,7 @@ const FloorPlanWalls = {
         return this.undersideLimits(plan, { under: room.parts.map((part) => part.id), offset }, padding);
       }
       const definition = owner ? room.parts.find((part) => part.id === id) : room;
-      const floor = floors.find((entry) => (entry.rooms ?? []).includes(room)) ?? floors[0];
+      const floor = plan.roomFloorConfigs?.get(owner ?? id) ?? floors.find((entry) => (entry.rooms ?? []).includes(room)) ?? floors[0];
       let geometry;
       if (definition) {
         geometry = plan.normalizeGeometryAtFloor(definition, floor);
@@ -707,7 +713,7 @@ const FloorPlanWalls = {
     const signatures = new Map();
     plan.roomDefinitions.forEach((definition, roomId) => {
       if (plan.invalidRoomIds.has(roomId)) return;
-      const floor = roomFloors.get(roomId) ?? floors[0] ?? {};
+      const floor = plan.roomFloorConfigs?.get(roomId) ?? roomFloors.get(roomId) ?? floors[0] ?? {};
       try {
         const geometry = plan.getRoomGeometry(roomId);
         const floorZ0 = Number(floor.z0 ?? 0);
@@ -721,13 +727,13 @@ const FloorPlanWalls = {
         let height = explicitHeight > 0 ? explicitHeight : floorHeight;
         const undersideLimits = this.undersideLimits(plan, definition.top, thickness / 2);
         if (undersideLimits.length) height = Math.max(height, ...undersideLimits.map((limit) => limit.peakZ - floorZ0));
-        const roofOnly = definition.top === "roof";
+        const roofOnly = ["roofs", "roof"].includes(definition.top);
         if (roofOnly) {
           const limits = this.roofLimits(plan, config);
-          if (!limits.length) throw new Error('A parede com top: "roof" precisa de um telhado válido');
+          if (!limits.length) throw new Error('A parede com top: "roofs" precisa de um telhado válido');
           height = Math.max(...limits.map((roof) => roof.peakZ)) - floorZ0;
-        } else if (definition.top?.level !== undefined) {
-          height = plan.resolve(definition.top.level) - floorZ0;
+        } else if (this.topLevel(definition.top) !== undefined) {
+          height = plan.resolve(this.topLevel(definition.top)) - floorZ0;
         }
         const roomBounds = [
           geometry.x0(),
@@ -961,14 +967,14 @@ const FloorPlanWalls = {
         const baseZ = base === "terrain"
           ? terrainMinimumZ
           : plan.resolve(baseDefinition?.level);
-        const roofOnly = definition.top === "roof";
+        const roofOnly = ["roofs", "roof"].includes(definition.top);
         const undersideLimits = this.undersideLimits(plan, definition.top, thickness / 2);
         if (roofOnly && !roofLimits.length) {
-          throw new Error('A parede com top: "roof" precisa de um telhado válido acima da base');
+          throw new Error('A parede com top: "roofs" precisa de um telhado válido acima da base');
         }
         const topZ = roofOnly
           ? Math.max(...roofLimits.map((roof) => roof.peakZ))
-          : plan.resolve(definition.top?.level ?? (undersideLimits.length ? Math.max(...undersideLimits.map((limit) => limit.peakZ), ...floors.map((floor) =>
+          : plan.resolve(this.topLevel(definition.top) ?? (undersideLimits.length ? Math.max(...undersideLimits.map((limit) => limit.peakZ), ...floors.map((floor) =>
             Number(floor.z0 ?? 0) + Number(floor.ceiling_height ?? floor.wall_max_height ?? 0))) : groundLevel));
         if (
           !Number.isFinite(thickness) || thickness <= 0 ||
@@ -1022,7 +1028,7 @@ const FloorPlanWalls = {
           const covered = resolvedPoints.slice(0, -1).some((from, i) =>
             this.roofSection([[0, baseZ], [1, baseZ], [1, topZ], [0, topZ]],
               from, resolvedPoints[i + 1], roofLimits, true).length > 0);
-          if (!covered) throw new Error('A parede com top: "roof" não encontra nenhum telhado acima da base ao longo do seu caminho');
+          if (!covered) throw new Error('A parede com top: "roofs" não encontra nenhum telhado acima da base ao longo do seu caminho');
         }
         FloorPlanGeometryBox.attach(wall, { compound: true, label: wall.id });
         plan.independentWalls.set(wall.id, wall);

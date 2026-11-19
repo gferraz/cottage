@@ -55,18 +55,18 @@ const FloorPlanDom = {
       background = `linear-gradient(to ${geometry.stairAxis === "horizontal" ? "right" : "bottom"}, ${stops.join(", ")})`;
       element.style.setProperty("--stair-step", (geometry.stairAxis === "horizontal" ? geometry.w : geometry.l) / count);
     }
-    if (geometry.stairType === "solid-flared") {
+    if (geometry.type === "solid-flared") {
       const horizontal = geometry.stairAxis === "horizontal";
       const increasing = (geometry.stairDirection !== "reverse") === (geometry.stairRise !== "down");
       const cross = horizontal ? geometry.l : geometry.w;
-      const layers = geometry.stepWidths.map((width, index) => {
-        const depth = 100 * (1 - index / geometry.stepWidths.length);
+      const layers = geometry.steps.widths.map((width, index) => {
+        const depth = 100 * (1 - index / geometry.steps.widths.length);
         const size = 100 * width / cross;
-        const fill = color(geometry.z0 + geometry.h * (index + 1) / geometry.stepWidths.length);
+        const fill = color(geometry.z0 + geometry.h * (index + 1) / geometry.steps.widths.length);
         return `linear-gradient(${fill}, ${fill}) ${horizontal ? (increasing ? "right center" : "left center") : (increasing ? "center bottom" : "center top")} / ${horizontal ? `${depth}% ${size}%` : `${size}% ${depth}%`} no-repeat`;
       }).reverse();
-      const outlines = geometry.stepWidths.map((width, index) => {
-        const depth = 100 * (1 - index / geometry.stepWidths.length);
+      const outlines = geometry.steps.widths.map((width, index) => {
+        const depth = 100 * (1 - index / geometry.steps.widths.length);
         const size = 100 * width / cross;
         const along = increasing ? 100 - depth : 0;
         const across = (100 - size) / 2;
@@ -209,6 +209,7 @@ const FloorPlanDom = {
 
   addRoom(plan, room) {
     const derived = room.derived === true;
+    const firstClassStair = room.firstClassStair === true;
     const { container = plan.root } = room;
     const resolved = !derived && plan.roomDefinitions?.get(room.id) === room
       ? plan.getRoomGeometry(room.id)
@@ -342,7 +343,12 @@ const FloorPlanDom = {
     element.title = `${room.label || room.id || "Cômodo"} — ${roomDimensions} — ${roomArea}`;
     const displayedArea = element.querySelector(":scope > .area");
     if (displayedArea) displayedArea.textContent = roomArea;
-    if (!derived) plan.roomElements.push(element);
+    if (firstClassStair && container === plan.root) {
+      element.dataset.kind = "stair";
+      element.querySelectorAll(":scope > .area").forEach((area) => area.remove());
+      element.title = `${room.label || room.id || "Escada"} — ${roomDimensions}`;
+      plan.stairElements.push(element);
+    } else if (!derived) plan.roomElements.push(element);
     else if (
       room.classes?.split(/\s+/).includes("stair-flight") &&
       container === plan.root
@@ -353,7 +359,7 @@ const FloorPlanDom = {
       plan.rooms.set(room.id, element);
       plan.references.set(room.id, element);
     }
-    if (!derived) {
+    if (!derived && !firstClassStair) {
       plan.updateOverlaps();
       plan.roomArea += element.area();
       plan.roomCount += 1;

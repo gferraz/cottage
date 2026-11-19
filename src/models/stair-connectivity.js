@@ -30,8 +30,8 @@ const FloorPlanStairConnectivity = {
           const high = (role === "upper") === increasing;
           const z = role === "lower" ? part.z0 : part.z1;
           const cross = horizontal ? part.l : part.w;
-          const width = part.stairType === "solid-flared"
-            ? part.stepWidths[role === "lower" ? 0 : part.stepWidths.length - 1] : cross;
+          const width = part.type === "solid-flared"
+            ? part.steps.widths[role === "lower" ? 0 : part.steps.widths.length - 1] : cross;
           const inset = (cross - width) / 2;
           const x = part.x + (horizontal && high ? part.w : 0) + (horizontal ? 0 : inset);
           const y = part.y + (!horizontal && high ? part.l : 0) + (horizontal ? inset : 0);

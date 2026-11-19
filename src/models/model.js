@@ -25,6 +25,16 @@ const FloorPlanModel = {
         emit(value, "eave", path, "roof-eave",
           "eave está depreciado. Use eaves: { left: valor, right: valor }; para arrays, use o primeiro e o segundo valores, respectivamente. eaves.left/right explícitos têm prioridade.");
       }
+      if (["rooms", "stairs", "parts", "walls"].includes(context) &&
+          value.top && typeof value.top === "object" && !Array.isArray(value.top) &&
+          Object.hasOwn(value.top, "level")) {
+        emit(value, "top", path, "top-level",
+          'top: { level: ... } está depreciado. Use top diretamente com o número ou a expressão de cota.');
+      }
+      if (["rooms", "stairs", "parts", "walls"].includes(context) && value.top === "roof") {
+        emit(value, "top", path, "top-roof",
+          'top: "roof" está depreciado. Use top: "roofs" para o conjunto de telhados.');
+      }
       if (["rooms", "parts", "walls"].includes(context) && value.top &&
           typeof value.top === "object" && !Array.isArray(value.top) &&
           Object.hasOwn(value.top, "under") &&
@@ -54,7 +64,7 @@ const FloorPlanModel = {
         }
       }
       // Only inspect structural collections, never user-defined IDs or parameter names.
-      for (const key of ["config", "floors", "rooms", "parts", "walls", "roofs"]) {
+      for (const key of ["config", "floors", "rooms", "stairs", "parts", "walls", "roofs"]) {
         if (value[key] && typeof value[key] === "object") {
           visit(value[key], `${path}.${key}`, key);
         }
@@ -188,6 +198,19 @@ const FloorPlanModel = {
       }
       return result;
     };
+    const { parts: _stairParts, ...stairDefaults } = defaults.stairs ?? {};
+    const stairWithDefaults = (entry) => {
+      const stair = { ...stairDefaults, ...entry,
+        ...(stairDefaults.steps || entry.steps ? { steps: { ...stairDefaults.steps, ...entry.steps } } : {}),
+        ...(stairDefaults.colors || entry.colors ? { colors: { ...stairDefaults.colors, ...entry.colors } } : {}),
+      };
+      const kind = stair.kind ?? (String(stair.classes ?? "").split(/\s+/).includes("stair-landing") ? "landing" : "flight");
+      const classes = new Set(String(stair.classes ?? "").split(/\s+/).filter(Boolean));
+      if (!stair.parts?.length) classes.add(kind === "landing" ? "stair-landing" : "stair-flight");
+      const result = { ...stair, walls: stair.walls ?? [], classes: [...classes].join(" ") };
+      if (stair.parts) result.parts = stair.parts.map(part => stairWithDefaults(part));
+      return window.FloorPlanParser?.copyLocation(entry, result) ?? result;
+    };
     const expand = (floor) => {
       const ceilingHeight = floor.ceiling_height ?? floor.wall_max_height ??
         defaults.floors?.ceiling_height ?? defaults.floors?.wall_max_height;
@@ -195,6 +218,7 @@ const FloorPlanModel = {
         ...floor,
         ...(useHouseSides && floor.rooms ? { rooms: floor.rooms.map(roomWithPlanWalls) } : {}),
         ...(ceilingHeight !== undefined ? { ceiling_height: ceilingHeight } : {}),
+        ...(floor.stairs ? { stairs: floor.stairs.map(stairWithDefaults).map(stair => useHouseSides ? roomWithPlanWalls(stair) : stair) } : {}),
         ...(floor.roofs ? { roofs: floor.roofs.map(roofWithDefaults) } : {}),
       };
       if (floor.roofs) result.roofs.forEach((roof, index) => window.FloorPlanParser?.copyLocation(floor.roofs[index], roof));
@@ -231,6 +255,15 @@ const FloorPlanModel = {
       warnings,
       floors,
       viewport,
+      stairs: [
+        ...(config.floors ? (config.stairs ?? []).map(stair => {
+          const floor = stair.scope ? floors.find(candidate => candidate.id === stair.scope) : floors[0];
+          return { stair, floor, floorId: floor?.id ?? null, floorLabel: floor?.label ?? null };
+        }) : []),
+        ...floors.flatMap(floor => (floor.stairs ?? []).map(stair => ({
+          stair, floor, floorId: floor.id ?? null, floorLabel: floor.label ?? null,
+        }))),
+      ],
       rooms: floors.flatMap((floor) =>
         (floor.rooms ?? []).map((room) => ({
           room,

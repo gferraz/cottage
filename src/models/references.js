@@ -27,6 +27,28 @@ const FloorPlanReferences = {
     );
     plan.roomDefinitions = collected.definitions;
     plan.errors.push(...collected.errors);
+    plan.stairDefinitions = new Map();
+    const owners = config.floors ? [config, ...config.floors] : [config];
+    const nonStairIds = new Set(owners.flatMap(owner => [
+      ...(owner === config && config.floors ? [] : [owner.id]),
+      ...["walls", "roofs", "items", "zones", "guides"].flatMap(key =>
+        (Array.isArray(owner[key]) ? owner[key] : []).map(object => object.id)),
+    ]).filter(Boolean));
+    for (const { stair, floor } of plan.model?.stairs ?? []) {
+      const fail = message => plan.errors.push({ category: "stair", id: stair.id, opening: stair, message });
+      if (stair.kind !== undefined && !["flight", "landing"].includes(stair.kind)) { fail(`Tipo de escada inválido: ${stair.kind}`); continue; }
+      if (!stair.id) { fail("Escada sem id global"); continue; }
+      if (FloorPlanValidation.isReservedId(stair.id)) { fail(`ID reservado: ${stair.id}`); continue; }
+      if (plan.roomDefinitions.has(stair.id) || nonStairIds.has(stair.id)) { fail(`ID global duplicado: ${stair.id}`); continue; }
+      if (!floor) { fail(`Piso de escada desconhecido: ${stair.scope}`); continue; }
+      const invalidKind = (stair.parts ?? []).find(part => part.kind !== undefined && !["flight", "landing"].includes(part.kind));
+      if (invalidKind) { fail(`Tipo de parte de escada inválido: ${invalidKind.kind}`); continue; }
+      const invalidPart = (stair.parts ?? []).find(part => part.id && FloorPlanValidation.isReservedId(part.id));
+      if (invalidPart) { fail(`Parte com ID reservado: ${invalidPart.id}`); continue; }
+      plan.stairDefinitions.set(stair.id, stair);
+      plan.roomDefinitions.set(stair.id, stair);
+      plan.roomFloorConfigs.set(stair.id, floor);
+    }
 
     plan.roomDefinitions.forEach((_room, id) => {
       const reference = plan.createRoomReference(id);
@@ -53,7 +75,7 @@ const FloorPlanReferences = {
       } catch (error) {
         plan.invalidRoomIds.add(id);
         plan.errors.push({
-          category: "room",
+          category: plan.stairDefinitions.has(id) ? "stair" : "room",
           id,
           opening: plan.roomDefinitions.get(id),
           message: error.message,
@@ -312,10 +334,10 @@ const FloorPlanReferences = {
           .map((corner) => Number(corner.z)).filter(Number.isFinite)) : plan.resolve(value.level);
       });
       const top = () => guarded("z1", () => {
-        if (definition.top === "roof") return Math.max(...FloorPlanWalls.roofLimits(plan, config).map((roof) => roof.peakZ));
+        if (["roofs", "roof"].includes(definition.top)) return Math.max(...FloorPlanWalls.roofLimits(plan, config).map((roof) => roof.peakZ));
         const limits = FloorPlanWalls.undersideLimits(plan, definition.top,
           Number(definition.thickness ?? plan.catalog.walls?.thickness ?? 0.12) / 2);
-        return plan.resolve(definition.top?.level ?? (limits.length
+        return plan.resolve(FloorPlanWalls.topLevel(definition.top) ?? (limits.length
           ? Math.max(...limits.map((limit) => limit.peakZ), ...floors.map((floor) =>
             Number(floor.z0 ?? 0) + Number(floor.ceiling_height ?? floor.wall_max_height ?? 0))) : ground));
       });
@@ -534,7 +556,12 @@ const FloorPlanReferences = {
 
   prepareGlobalLists(plan, config) {
     const floors = config.floors ?? [{ id: null, label: null, ...config }];
-    plan.allRooms = [...plan.roomDefinitions.entries()].map(([id, room]) => {
+    plan.allStairs = (plan.model?.stairs ?? []).filter(({ stair }) => plan.stairDefinitions?.get(stair.id) === stair)
+      .map(({ stair, floor, floorId, floorLabel }) => ({
+        id: stair.id, label: stair.label || stair.id, stair, floor, floorId, floorLabel,
+        reference: plan.roomReferences.get(stair.id),
+      }));
+    plan.allRooms = [...plan.roomDefinitions.entries()].filter(([id]) => !plan.stairDefinitions?.has(id)).map(([id, room]) => {
       const floor = floors.find((floorConfig) =>
         (floorConfig.rooms ?? []).includes(room),
       );
@@ -696,6 +723,17 @@ const FloorPlanReferences = {
         itemReferences: false,
       });
       const { normalizedParts, nominalGeometry } = FloorPlanGeometryDomain.normalizeRoomGeometry(scoped, room);
+      if (plan.stairDefinitions?.has(id)) {
+        for (const part of normalizedParts) {
+          const classes = String(part.classes ?? "").split(/\s+/);
+          if (classes.includes("stair-flight")) {
+            if (!(part.h > 0)) throw new Error("Lance de escada precisa ter altura positiva");
+            FloorPlanGeometry.stairSteps(part);
+          } else if (classes.includes("stair-landing") && part.h !== 0) {
+            throw new Error("Patamar de escada precisa ter altura zero");
+          }
+        }
+      }
       const compound = Boolean(room.parts?.length);
       const walls = plan.normalizeWalls(room.walls);
       const reference = FloorPlanGeometryBox.fromGeometry(nominalGeometry, { compound, label: id });

@@ -15,7 +15,7 @@
   viewport: { size: [24, 32], origin: [-25, 1] },
   // Configuração
   config: {
-    walls: { base: { level: "ground.z0" }, top: "roof", thickness: "params.wall_thickness", color: "desejo-ambar" },
+    walls: { base: { level: "ground.z0" }, top: "roofs", thickness: "params.wall_thickness", color: "desejo-ambar" },
     roofs: { type: "gable", pitch: 51, thickness: "params.roof_thickness_51", rake: 0.5, eaves: { pitch: 30 } },
     floors: { ceiling_height: "params.floor_height" }
   },
@@ -52,11 +52,8 @@
         { id: "tp-01-rua", y: 0, z: 0 },
         { id: "tp-02-entrada", y: 3.2, z: 0 },
         { id: "tp-03-inicio-descida", y: 12, z: -0.5 },
-        // Recuo de 3 m + envelope térreo de 20,8 m (inclui garagem).
         { id: "tp-04-fundos-casa", y: 23.8, z: -1.5 },
         { id: "tp-05-jardim", y: 29, z: -2 },
-        // Início aproximado da divisa oblíqua dos fundos em Y.
-        // A cota fica constante em -6 m depois deste ponto.
         { id: "tp-06-fundos-terreno", y: 44.32, z: -6 }
       ]
     },
@@ -96,21 +93,60 @@
       label: "Térreo traseiro",
       z0: "params.ground_rear_level",
       slabs: [{ id: "slab-ground-rear", label: "Laje — Térreo traseiro", thickness: 0.15 }],
-      rooms: [
+      stairs: [
         {
           id: "level-stairs",
-          top: { level: "upper-rear.z0" },
+          top: "upper-rear.z0",
           label: "Dois degraus — corredor",
           risers: 2,
           from: ["central.x0", "dining.y1", "ground.z0"],
           to: ["master.x0", "y0 + params.ground_step_run", "ground-rear.z0"],
           orientation: "longitudinal",
-          walls: [],
-          classes: "stair-flight"
+          walls: []
         },
         {
+          id: "stairs",
+          top: "upper-rear.z0",
+          label: "Escada",
+          parts: [
+            {
+              id: "lower-flight",
+              risers: 11,
+              from: ["lower-landing.x1", "lower-landing.y0", "lower-landing.z0"],
+              to: ["house-left.x1", "lower-landing.y1", "ground-rear.z0"],
+              walls: ["front", "rear"]
+            },
+            {
+              id: "lower-landing",
+              from: ["house-left.x0", "upper-landing.y1", "upper-landing.z0"],
+              to: ["x0 + 1.2", "y0 + upper-flight.l", "z0"],
+              walls: ["rear"],
+              kind: "landing",
+              color: "terracotta"
+            },
+            {
+              id: "upper-flight",
+              risers: 7,
+              from: ["house-left.x1 - 1.2", "dining.y1", "upper-rear.z0"],
+              to: ["x0 - 1.86", "y0 + 1.2", "ground-rear.z0 + (upper-rear.z0 - ground-rear.z0) * 11 / 18"]
+            },
+            {
+              id: "upper-landing",
+              from: ["upper-flight.x0", "upper-flight.y0", "upper-flight.z0"],
+              to: ["house-left.x0", "upper-flight.y1", "z0"],
+              kind: "landing",
+              color: "terracotta"
+            }
+          ],
+          walls: [],
+          overlaps: ["powder", "laundry"],
+          overlays: ["powder", "laundry"]
+        }
+      ],
+      rooms: [
+        {
           id: "circulation",
-          top: { level: "upper-rear.z0" },
+          top: "upper-rear.z0",
           label: "Circulação",
           rectangle: ["house-left.x1 - 2", "laundry.y1", "house-left.x1", "y0 + 1"],
           classes: "circulation"
@@ -130,7 +166,7 @@
         },
         {
           id: "kitchen",
-          top: { level: "upper-rear.z0" },
+          top: "upper-rear.z0",
           label: "Cozinha",
           from: ["office.x1", "master-bath.y1"],
           to: ["house-left.x1", "y0 + 3.9"],
@@ -153,7 +189,7 @@
         },
         {
           id: "mudroom",
-          top: { level: "upper-rear.z0" },
+          top: "upper-rear.z0",
           label: "Mudroom",
           rectangle: ["house-left.x0", "laundry.y1", "pantry.x0", "pantry.y1"],
           doors: [
@@ -163,7 +199,7 @@
         },
         {
           id: "pantry",
-          top: { level: "upper-rear.z0" },
+          top: "upper-rear.z0",
           label: "Despensa",
           rectangle: ["circulation.x0", "circulation.y1", "house-left.x1", "y0 + 1.8"],
           walls: ["front", "right", "left"],
@@ -186,55 +222,15 @@
         },
         {
           id: "rear-corridor",
-          top: { level: "upper-rear.z0" },
+          top: "upper-rear.z0",
           label: "C-2.",
           rectangle: ["central.x0", "level-stairs.y1", "master.x0", "kitchen.y0"],
           walls: [],
           classes: "circulation"
         },
         {
-          id: "stairs",
-          top: { level: "upper-rear.z0" },
-          label: "Escada",
-          parts: [
-            {
-              id: "lower-flight",
-              risers: 11,
-              from: ["lower-landing.x1", "lower-landing.y0", "lower-landing.z0"],
-              to: ["house-left.x1", "lower-landing.y1", "ground-rear.z0"],
-              walls: ["front", "rear"],
-              classes: "stair-flight"
-            },
-            {
-              id: "lower-landing",
-              from: ["house-left.x0", "upper-landing.y1", "upper-landing.z0"],
-              to: ["x0 + 1.2", "y0 + upper-flight.l", "z0"],
-              walls: ["rear"],
-              classes: "stair-landing",
-              color: "terracotta"
-            },
-            {
-              id: "upper-flight",
-              risers: 7,
-              from: ["house-left.x1 - 1.2", "dining.y1", "upper-rear.z0"],
-              to: ["x0 - 1.86", "y0 + 1.2", "ground-rear.z0 + (upper-rear.z0 - ground-rear.z0) * 11 / 18"],
-              classes: "stair-flight"
-            },
-            {
-              id: "upper-landing",
-              from: ["upper-flight.x0", "upper-flight.y0", "upper-flight.z0"],
-              to: ["house-left.x0", "upper-flight.y1", "z0"],
-              classes: "stair-landing",
-              color: "terracotta"
-            }
-          ],
-          walls: [],
-          overlaps: ["powder", "laundry"],
-          overlays: ["powder", "laundry"]
-        },
-        {
           id: "terrace",
-          top: { level: "upper-rear.z0" },
+          top: "upper-rear.z0",
           label: "Terraço Traseiro",
           from: ["kitchen.x1", "kitchen.y1"],
           to: ["kitchen.x0", "y0 +  3"],
@@ -261,6 +257,22 @@
       z0: 0.3,
       slabs: [{ id: "slab-ground", label: "Laje — Térreo frontal", thickness: 0.15 }],
       // Suíte, closet e banheiro permanecem na cota frontal: degraus só no corredor.
+      stairs: [
+        {
+          id: "front-stairs",
+          label: "Escada da varanda",
+          // Blocos completos até a base; larguras da base ao topo.
+          from: ["porch.x1 + 0.25", "porch.y0 - 0.68", "porch.z0 - 0.30"],
+          to: ["x0 - 3", "porch.y0", "porch.z0"],
+          type: "solid-flared",
+          steps: { widths: [3, 1.8] },
+          colors: {
+            thread: "#928c7e", // Pedra natural antiderrapante.
+            riser: "#c5bba9", // Alvenaria revestida.
+          },
+          orientation: "longitudinal"
+        }
+      ],
       rooms: [
         {
           id: "closet",
@@ -287,19 +299,6 @@
           rectangle: ["central.x0", "hall.y1", "master.x0", "dining.y0"],
           walls: ["right"],
           classes: "circulation"
-        },
-        {
-          id: "front-stairs",
-          label: "Escada da varanda",
-          // Blocos completos até a base; larguras da base ao topo.
-          from: ["porch.x1 + 0.25", "porch.y0 - 0.68", "porch.z0 - 0.30"],
-          to: ["x0 - 3", "porch.y0", "porch.z0"],
-          stairType: "solid-flared",
-          stepWidths: [3, 1.8],
-          treadColor: "#928c7e", // Pedra natural antiderrapante.
-          riserColor: "#c5bba9", // Alvenaria revestida.
-          orientation: "longitudinal",
-          classes: "stair-flight"
         },
         {
           id: "hall",
@@ -416,20 +415,40 @@
       z0: "params.upper_rear_level",
       comfort_zones: true,
       slabs: [{ id: "slab-upper-rear", label: "Laje — Dormitórios traseiro", thickness: 0.15 }],
+      stairs: [
+        {
+          id: "upper-corridor-steps",
+          label: "Dois degraus — piso superior",
+          risers: 2,
+          from: ["upper-corridor.x0", "stairs.y0 - 2 * params.ground_step_run", "upper.z0"],
+          to: ["upper-corridor.x1", "y0 + 2 * params.ground_step_run", "upper-rear.z0"],
+          orientation: "longitudinal",
+          walls: []
+        },
+        {
+          id: "upper-arrival-steps",
+          label: "Dois degraus — piso superior",
+          risers: 2,
+          from: ["stair-arrival.x0", "stairs.y0 - 2 * params.ground_step_run", "upper.z0"],
+          to: ["stair-arrival.x1", "y0 + 2 * params.ground_step_run", "upper-rear.z0"],
+          orientation: "longitudinal",
+          walls: []
+        }
+      ],
       rooms: [
         {
           id: "unused-rear",
           label: "Sem uso — fundos",
           from: ["kitchen.x1", "main.y1", "upper-rear.z0"],
           to: ["mudroom.x0", "kitchen.y1"],
-          top: "roof"
+          top: "roofs"
         },
         {
           id: "bedroom-rear",
           label: "Quarto Sul",
           from: ["garage.x0", "garage-knee-wall-front.y0", "upper-rear.z0"],
           to: ["garage.x1", "garage-knee-wall-rear.y0"],
-          top: "roof",
+          top: "roofs",
           doors: [
             { from: "right", to: "unused-rear", dy: "unused-rear.yc - bedroom-rear.y0 - 0.4" }
           ]
@@ -449,26 +468,6 @@
           to: ["playroom.x1", "stairs.y0"],
           walls: ["right", "left"]
         },
-        {
-          id: "upper-corridor-steps",
-          label: "Dois degraus — piso superior",
-          risers: 2,
-          from: ["upper-corridor.x0", "stairs.y0 - 2 * params.ground_step_run", "upper.z0"],
-          to: ["upper-corridor.x1", "y0 + 2 * params.ground_step_run", "upper-rear.z0"],
-          orientation: "longitudinal",
-          walls: [],
-          classes: "stair-flight"
-        },
-        {
-          id: "upper-arrival-steps",
-          label: "Dois degraus — piso superior",
-          risers: 2,
-          from: ["stair-arrival.x0", "stairs.y0 - 2 * params.ground_step_run", "upper.z0"],
-          to: ["stair-arrival.x1", "y0 + 2 * params.ground_step_run", "upper-rear.z0"],
-          orientation: "longitudinal",
-          walls: [],
-          classes: "stair-flight"
-        }
       ],
       items: [
         {
@@ -596,7 +595,7 @@
       scope: "upper-rear",
       color: "blue",
       base: { level: "upper-rear.z0" },
-      top: "roof",
+      top: "roofs",
       from: ["garage.x0", "main.y1"],
       to: ["garage.x1", "y0"]
     },
@@ -606,7 +605,7 @@
       scope: "upper-rear",
       color: "blue",
       base: { level: "upper-rear.z0" },
-      top: "roof",
+      top: "roofs",
       from: ["garage.x0", "kitchen.y1"],
       to: ["garage.x1", "y0"]
     },
@@ -616,7 +615,7 @@
       scope: "upper",
       color: "blue",
       base: { level: "upper.z0" },
-      top: "roof",
+      top: "roofs",
       // Vale entre as duas coberturas transversais: altura livre de ~1,37 m.
       // Fecha até o encontro com a água longitudinal, além do recorte de 1,30 m.
       from: ["house-right.x1", "(main-transverse-roof.y1 + rear-transverse-roof.y0) / 2"],
@@ -627,7 +626,7 @@
       color: "mate-amargo",
       scope: "ground",
       base: "terrain",
-      top: { level: "ground.z0" },
+      top: "ground.z0",
       path: { points: [
         ["house-left.x0", "dining.y1"],
         ["porch.x0", "porch.y0"],
@@ -640,7 +639,7 @@
       color: "mate-amargo",
       scope: "ground-rear",
       base: "terrain",
-      top: { level: "ground-rear.z0" },
+      top: "ground-rear.z0",
       path: { points: [
         ["house-left.x0", "dining.y1"],
         ["porch.x0", "garage.y0"],
@@ -657,13 +656,13 @@
     {
       id: "front-wall",
       scope: "ground",
-      top: { level: "upper.z0" },
+      top: "upper.z0",
       path: { points: [["hall.x1", "hall.y0"], ["hall.x0", "y0"], ["x0", "house-left.y0"], ["house-left.x0", "y0"]] }
     },
     {
       id: "office-walls",
       scope: "ground",
-      top: { level: "upper.z0" },
+      top: "upper.z0",
       path: {
         points: [
           ["office.x1", "office.y1"],
@@ -679,7 +678,7 @@
       id: "rear-wall",
       scope: "ground-rear",
       base: { level: "ground-rear.z0" },
-      top: { level: "upper-rear.z0" },
+      top: "upper-rear.z0",
       path: {
         points: [
           ["kitchen.x1", "kitchen.y1"],
@@ -692,7 +691,7 @@
     {
       id: "left-wall",
       scope: "ground",
-      top: { level: "upper.z0" },
+      top: "upper.z0",
       from: ["house-left.x0", "living.y0"],
       to: ["x0", "dining.y1"]
     },
@@ -700,7 +699,7 @@
       id: "left-wall-rear",
       scope: "ground-rear",
       base: { level: "ground-rear.z0" },
-      top: { level: "upper-rear.z0" },
+      top: "upper-rear.z0",
       from: ["house-left.x0", "dining.y1"],
       to: ["x0", "mudroom.y1"]
     },
@@ -717,7 +716,7 @@
       id: "bedroom-north-right",
       scope: "bedroom-north",
       base: { level: "upper.z0" },
-      top: { level: "upper.z0 + params.floor_height" },
+      top: "upper.z0 + params.floor_height",
       from: ["bedroom-north.x0", "bedroom-north.y0"],
       to: ["x0", "hall.y1"]
     },
@@ -726,7 +725,7 @@
       scope: "bedroom-north",
       color: "blue",
       base: { level: "upper.z0" },
-      top: { level: "upper.z0 + params.floor_height" },
+      top: "upper.z0 + params.floor_height",
       from: ["bedroom-north.x0", "hall.y1"],
       to: ["x0", "bedroom-north.y1"]
     },
@@ -735,7 +734,7 @@
       scope: "bedroom-north",
       color: "blue",
       base: { level: "upper.z0" },
-      top: { level: "upper.z0 + params.floor_height" },
+      top: "upper.z0 + params.floor_height",
       from: ["bedroom-north.x0", "bedroom-north.y1"],
       to: ["bedroom-north.x1", "y0"]
     },
@@ -791,7 +790,7 @@
       id: "knee-wall-kitchen-right",
       scope: "upper-rear",
       base: { level: "upper-rear.z0" },
-      top: "roof",
+      top: "roofs",
       path: {
         points: [
           ["kitchen.x1", "kitchen.y0"],
@@ -805,7 +804,7 @@
       scope: "upper-rear",
       color: "blue",
       base: { level: "upper-rear.z0" },
-      top: "roof",
+      top: "roofs",
       path: {
         points: [
           ["kitchen.x0", "kitchen.y1"],

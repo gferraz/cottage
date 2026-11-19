@@ -108,7 +108,7 @@ const FloorPlanExport = {
       );
 
     add(0, "SECTION", 2, "HEADER", 9, "$ACADVER", 1, "AC1009", 0, "ENDSEC");
-    add(0, "SECTION", 2, "TABLES", 0, "TABLE", 2, "LAYER", 70, 14);
+    add(0, "SECTION", 2, "TABLES", 0, "TABLE", 2, "LAYER", 70, 15);
     [
       ["WALLS", 7],
       ["WALLS_VIRTUAL", 8],
@@ -116,6 +116,7 @@ const FloorPlanExport = {
       ["WINDOWS", 4],
       ["OPENINGS", 3],
       ["ROOM_LABELS", 2],
+      ["STAIRS", 6],
       ["DIMENSIONS", 6],
       ["ITEMS", 5],
       ["ZONES", 8],
@@ -181,6 +182,21 @@ const FloorPlanExport = {
           );
         }
       });
+      (plan.allStairs ?? []).filter((entry) => (entry.floorId ?? null) === (floor.id ?? null))
+        .forEach((entry) => {
+          try {
+            plan.getRoomGeometry(entry.id).normalizedParts.forEach((part) => {
+              const flight = String(part.classes ?? "").split(/\s+/).includes("stair-flight");
+              const boxes = flight ? FloorPlanGeometry.stairBoxes(part) : [part];
+              boxes.forEach((box) => {
+                line("STAIRS", box.x, box.y, box.x + box.w, box.y);
+                line("STAIRS", box.x + box.w, box.y, box.x + box.w, box.y + box.l);
+                line("STAIRS", box.x + box.w, box.y + box.l, box.x, box.y + box.l);
+                line("STAIRS", box.x, box.y + box.l, box.x, box.y);
+              });
+            });
+          } catch { /* Invalid stair geometry is reported by project validation. */ }
+        });
       FloorPlanOpenings.forFloor(plan, floor).forEach((opening) => {
         if (plan.isVerticalOpening(opening)) return;
         try {

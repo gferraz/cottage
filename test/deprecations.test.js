@@ -26,7 +26,7 @@ test('keeps supported alternatives and arbitrary user names free of warnings', (
   assert.deepEqual(model.collectDeprecations({
     parameters: { wall_max_height: 3, eave: 1 },
     floors: [{ ceiling_height: 3, rooms: [
-      { top: { level: 3 }, doors: [{ from: 'left' }] },
+      { top: 3, doors: [{ from: 'left' }] },
       { top: { under: 'stairs', offset: 0.2 } },
     ], roofs: [{ eaves: { left: 0.4, right: 0.4 } }] }],
   }), []);
@@ -73,4 +73,22 @@ test('all old default categories warn even when new defaults override them', () 
     assert.equal(warnings[index].location.path, `config.openings.${category}`);
     assert.match(warnings[index].message, /têm prioridade por propriedade/);
   }
+});
+
+test('legacy top roof reports migration to roofs while explicit roof IDs remain supported', () => {
+  const warnings = model.collectDeprecations({ walls: [
+    { id: 'old', top: 'roof' }, { id: 'new', top: 'roofs' }, { id: 'specific', top: 'main-roof' },
+  ] });
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0].code, 'top-roof');
+  assert.equal(warnings[0].path, '$.walls[0].top');
+});
+
+
+test('top level wrapper warns while direct numeric and expression levels stay current', () => {
+  const warnings = model.collectDeprecations({ walls: [
+    { top: { level: 2.66 } }, { top: 2.66 }, { top: "upper-rear.z0 - 0.15" },
+  ] });
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0].code, 'top-level');
 });

@@ -81,8 +81,8 @@ const FloorPlanGeometry = {
     });
   },
   stairSteps(stair) {
-    if (stair.stairType === "solid-flared") {
-      const widths = stair.stepWidths;
+    if (stair.type === "solid-flared") {
+      const widths = stair.steps?.widths;
       const cross = stair.stairAxis === "horizontal" ? stair.l : stair.w;
       if (!Array.isArray(widths) || widths.length < 2 ||
           widths.some((w, i) => !Number.isFinite(w) || w <= 0 || w > cross + 1e-8 || (i > 0 && w > widths[i - 1]))) {
@@ -98,6 +98,25 @@ const FloorPlanGeometry = {
     const treads = stair.risers === undefined ? risers : risers - 1;
     const run = stair.stairAxis === "horizontal" ? stair.w : stair.l;
     return { risers, treads, rise: stair.h / risers, run: run / treads };
+  },
+
+  stairBoxes(stair) {
+    const { treads, run: treadRun, rise } = this.stairSteps(stair);
+    const horizontal = stair.stairAxis === "horizontal";
+    const run = horizontal ? stair.w : stair.l;
+    const cross = horizontal ? stair.l : stair.w;
+    const increasing = (stair.stairDirection !== "reverse") === (stair.stairRise !== "down");
+    return Array.from({ length: treads }, (_, index) => {
+      const solid = stair.type === "solid-flared";
+      const depth = solid ? run - index * treadRun : treadRun;
+      const width = solid ? stair.steps.widths[index] : cross;
+      const offset = increasing ? index * treadRun : solid ? 0 : run - (index + 1) * treadRun;
+      const x = stair.x + (horizontal ? offset : (cross - width) / 2);
+      const y = stair.y + (horizontal ? (cross - width) / 2 : offset);
+      const h = (index + 1) * rise;
+      return { x, y, w: horizontal ? depth : width, l: horizontal ? width : depth,
+        z0: stair.z0, z1: stair.z0 + h, h, index };
+    });
   },
 
   stairGradientRange(floorZ, parts) {

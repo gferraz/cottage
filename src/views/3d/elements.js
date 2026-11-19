@@ -135,8 +135,8 @@ const FloorPlan3DElements = {
           ? index * stepRun
           : run - (index + 1) * stepRun;
         const stepHeight = (index + 1) * stepRise;
-        const solidStair = stair.stairType === "solid-flared";
-        const stepWidth = solidStair ? stair.stepWidths[index] : (axis === "horizontal" ? length : width);
+        const solidStair = stair.type === "solid-flared";
+        const stepWidth = solidStair ? stair.steps.widths[index] : (axis === "horizontal" ? length : width);
         // Each tier continues to the porch: the bottom tier encloses all others.
         const depth = solidStair ? run - index * stepRun : stepRun;
         const start = solidStair ? (ascendsWithIncreasingAxis ? index * stepRun : 0) : offset;
@@ -165,9 +165,9 @@ const FloorPlan3DElements = {
         let material = this.heightMaterial(plan, THREE, wallMaterial, stair, z0 + stepHeight);
         if (solidStair) {
           const riserMaterial = wallMaterial.clone();
-          riserMaterial.color.set(stair.riserColor || "#c5bba9");
+          riserMaterial.color.set(stair.colors?.riser || "#c5bba9");
           const treadMaterial = wallMaterial.clone();
-          treadMaterial.color.set(stair.treadColor || "#928c7e");
+          treadMaterial.color.set(stair.colors?.thread || "#928c7e");
           let start = 0;
           solid.forEach((face) => {
             const count = (face.length - 2) * 3;

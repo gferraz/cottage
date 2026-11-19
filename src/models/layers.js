@@ -191,7 +191,10 @@ const FloorPlanLayers = {
         const previousHeight = plan.currentFloorHeight;
         plan.currentFloorHeight = Number(floor.z0 ?? 0);
         try {
-          (floor.rooms ?? []).forEach((definition) => {
+          [...(floor.rooms ?? []), ...(plan.allStairs ?? [])
+            .filter((entry) => (entry.floorId ?? null) === (floor.id ?? null))
+            .filter((entry) => !plan.invalidRoomIds?.has(entry.id))
+        .map((entry) => entry.stair)].forEach((definition) => {
             const geometries = definition.parts?.length
               ? plan.normalizeParts(definition.parts)
               : [plan.normalizeGeometry(definition)];

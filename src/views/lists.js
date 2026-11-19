@@ -43,6 +43,7 @@ const FloorPlanLists = {
     );
     const groups = [
       ["rooms", "Cômodos"],
+      ["stairs", "Escadas"],
       ["roofs", "Telhados"],
       ["doors", "Portas"],
       ["openings", "Vãos"],
@@ -51,6 +52,7 @@ const FloorPlanLists = {
     ];
     const renderers = {
       rooms: (target, floor) => this.updateRoomList(plan, target, floor),
+      stairs: (target, floor) => this.updateStairList(plan, target, floor),
       roofs: (target, floor) => this.updateRoofList(plan, target, floor),
       doors: (target, floor) => this.updateOpeningList(plan, target, floor, "door"),
       openings: (target, floor) => this.updateOpeningList(plan, target, floor, "opening"),
@@ -245,6 +247,28 @@ const FloorPlanLists = {
         item.append(label, value);
         roomTypes?.append(item);
       });
+  },
+
+  updateStairList(plan, target, floor = null) {
+    const entries = (plan.allStairs ?? []).filter((entry) => !floor ||
+      (entry.floorId ?? null) === (floor.id ?? null));
+    if (!entries.length) {
+      target.textContent = "Nenhuma escada definida.";
+      return;
+    }
+    for (const entry of entries) {
+      const row = document.createElement("div");
+      try {
+        const parts = plan.getRoomGeometry(entry.id).normalizedParts;
+        const flights = parts.filter(part => String(part.classes ?? "").split(/\s+/).includes("stair-flight"));
+        const risers = flights.reduce((total, part) => total + FloorPlanGeometry.stairSteps(part).risers, 0);
+        const landings = parts.length - flights.length;
+        row.textContent = `${entry.label || entry.id} — ${flights.length} lance(s) · ${risers} espelhos · ${landings} patamar(es)`;
+      } catch {
+        row.textContent = `${entry.label || entry.id} — geometria inválida`;
+      }
+      target.append(row);
+    }
   },
 
   updateRoomList(plan, target = plan.roomList, floor = null) {

@@ -118,7 +118,7 @@ const FloorPlanCommunications = {
   },
 
   prepare(plan) {
-    const references = plan.allRooms.filter((room) => !plan.invalidRoomIds?.has(room.id))
+    const references = [...plan.allRooms, ...(plan.allStairs ?? [])].filter((room) => !plan.invalidRoomIds?.has(room.id))
       .map((room) => room.reference);
     plan.communicationResults = this.fromReferences(plan, references);
     plan.naturalCommunications = plan.communicationResults;

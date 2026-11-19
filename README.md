@@ -135,7 +135,7 @@ Use `scope` com o ID de um pavimento ou cômodo:
   id: "knee-wall-front-left",
   scope: "unused-north", // Também pode ser "upper", o ID do pavimento.
   base: { level: "upper.z0" },
-  top: "roof",
+  top: "roofs",
   from: ["office.x0", "knee-top.y0"],
   to: ["left.x0", "knee-top.y0"]
 }
@@ -161,9 +161,30 @@ Expressões podem combinar referências e operações: `"living.x1 - 0.3"`, `"ro
 
 Cômodos compostos usam `parts`; cada parte tem sua própria geometria e pode referenciar outras partes, independentemente da ordem de declaração. Referências circulares geram erro. As partes também podem ser referenciadas globalmente por ID, por exemplo `flight-1.y0`, a partir de qualquer cômodo. A regra de não sobreposição também é aplicada às partes.
 
+Escadas são elementos independentes em `stairs`, no mesmo nível de `walls` e `roofs`, ou em `floors[].stairs`. A coleção determina a categoria; não é necessário usar `classes: "stair-flight"`. Um lance simples usa `kind: "flight"` (padrão), e um patamar plano usa `kind: "landing"`. Escadas compostas agrupam lances e patamares em `parts`, cada um com sua geometria e seu `kind`.
+
+```json5
+{
+  id: "ground",
+  z0: 0,
+  rooms: [/* cômodos */],
+  stairs: [{
+    id: "entry-stairs",
+    label: "Escada de entrada",
+    from: [0, 0, -0.30],
+    to: [3, 0.68, 0],
+    orientation: "longitudinal",
+    type: "solid-flared",
+    steps: { widths: [3, 1.8] },
+  }],
+}
+```
+
+`config.stairs` define padrões para escadas e partes; valores explícitos prevalecem. Escadas globais podem declarar `scope: "ground"` para o pavimento de origem. IDs de escadas e partes continuam disponíveis em expressões, como `entry-stairs.z0`, `stairs.y0` ou `upper-landing.z0`. As escadas participam das análises de acesso e altura livre e das vistas 2D/3D, sem aumentar a contagem ou a área dos cômodos. Paredes de fechamento continuam configuráveis em `walls` da escada ou de suas partes. Arquivos antigos com escadas em `rooms` e classes `stair-flight`/`stair-landing` permanecem compatíveis; para novas definições, use `stairs` e `kind`.
+
 Lances de escada aceitam `risers` (inteiro ≥ 2) para fixar o número de espelhos. A planta e o 3D desenham `risers - 1` pisadas: o último espelho termina no piso ou patamar de destino. A altura de cada espelho é `h / risers`, e a profundidade da pisada é a projeção do lance dividida por `risers - 1`. O plano inferior ideal acompanha as quinas inferiores dos espelhos, sem espessura estrutural presumida. Sem `risers`, permanece a representação automática anterior, estimada a partir de 16 cm de altura.
 
-Para escadarias externas em semi-pirâmide, use `stairType: "solid-flared"` e `stepWidths: [3, 2.6, 2.2, 1.8]` (larguras da base ao topo). Cada bloco sólido vai da base até sua cota e continua até a varanda; o bloco inferior envolve todos os demais. A largura fica centralizada e a borda posterior é comum a todos os blocos. O número de larguras determina o número de pisos e espelhos, incluindo o piso superior; `h: 0.6` e projeção de 1,36 m resultam em quatro espelhos de 15 cm e recuos frontais de 34 cm. `treadColor` e `riserColor` controlam as cores dos pisos e das faces verticais.
+Para escadarias externas em semi-pirâmide, use `type: "solid-flared"` e `steps: { widths: [3, 2.6, 2.2, 1.8] }` (larguras da base ao topo). Cada bloco sólido vai da base até sua cota e continua até a varanda; o bloco inferior envolve todos os demais. A largura fica centralizada e a borda posterior é comum a todos os blocos. O número de larguras determina o número de pisos e espelhos, incluindo o piso superior; `h: 0.6` e projeção de 1,36 m resultam em quatro espelhos de 15 cm e recuos frontais de 34 cm. `colors.thread` e `colors.riser` controlam as cores dos pisos e das faces verticais.
 
 Degraus e patamares de uma escada composta compartilham um gradiente de altura, do tom escuro de cobertura nas cotas baixas até a cor clara de circulação nas cotas altas. A escala usa o piso de origem e a maior cota de toda a escada, sem reiniciar por lance. A cor de cada degrau corresponde à sua cota superior; o patamar usa a própria cota. A planta e o 3D mantêm a mesma escala, inclusive ao visualizar a escada por outro piso.
 
@@ -183,19 +204,19 @@ No 3D e nas elevações, todas as paredes (inclusive independentes e diagonais) 
 
 Em `path.points` de paredes independentes, `x0` e `y0` representam as coordenadas do ponto anterior já resolvido. Por exemplo, `[[4, 2], ["x0", "y0 + 3"], [8, "y0"]]` resulta em `[[4, 2], [4, 5], [8, 5]]`. O primeiro ponto precisa usar coordenadas absolutas ou referências a outros objetos.
 
-Para paredes independentes, use `top: "roof"` para alcançar automaticamente a cobertura, tanto no 3D quanto nas elevações:
+Para paredes independentes, use `top: "roofs"` para alcançar automaticamente a cobertura, tanto no 3D quanto nas elevações:
 
 ```js
 {
   id: "front-wall",
   base: { level: "ground.z0" },
-  top: "roof",
+  top: "roofs",
   thickness: 0.12,
   path: { points: [["office.x0", "office.y0"], ["office.x1", "office.y0"]] }
 }
 ```
 
-Nesse modo, somente os trechos cobertos são desenhados; nos encontros prevalece o telhado mais alto. Se nenhum telhado válido cobrir o caminho acima da base, a parede aparece em **Itens com erro**. A forma `top: { level: ... }` continua disponível para limitar a parede a uma cota explícita.
+Nesse modo, somente os trechos cobertos são desenhados; nos encontros prevalece o telhado mais alto. Se nenhum telhado válido cobrir o caminho acima da base, a parede aparece em **Itens com erro**. A forma `top: ...` continua disponível para limitar a parede a uma cota explícita.
 
 Para limitar paredes por um objeto superior, use `top` com o ID, tanto no cômodo quanto na parede independente:
 
@@ -207,7 +228,7 @@ top: ["upper-flight", "upper-landing"]
 
 A referência aceita IDs de telhados, cômodos, partes, itens ou outras referências retangulares sem rotação. Um cômodo composto usa as suas partes. Lances seguem o plano inclinado ideal entre as cotas das extremidades; patamares e outros volumes usam sua cota inferior `z0`. Nenhuma espessura estrutural é presumida. Os lances no 3D deixam o volume sob esse plano livre. Nos encontros, prevalece a face inferior mais baixa; trechos fora das projeções mantêm o limite normal. O recorte considera a espessura das paredes e aparece no 3D e nas elevações. Referências inválidas geram erro de parede. O recorte não valida automaticamente a altura útil de portas ou equipamentos.
 
-Arquivos anteriores com `top: { under: ..., offset: ... }` continuam sendo lidos por compatibilidade. Sem deslocamento, prefira `top` diretamente com o ID ou a lista de IDs. A forma `top: { level: ... }` continua válida para cotas explícitas.
+Arquivos anteriores com `top: { under: ..., offset: ... }` continuam sendo lidos por compatibilidade. Sem deslocamento, prefira `top` diretamente com o ID ou a lista de IDs. A forma `top: ...` continua válida para cotas explícitas.
 
 O padrão é quatro paredes sólidas. Use `walls` com `solid`, `open` ou `virtual`:
 
@@ -279,7 +300,7 @@ Para uma cobertura de **uma água**, use `type: "shed"`. `z0` informa a cota abs
 }
 ```
 
-Nesse exemplo, a água desce da fachada para a frente da varanda. Em `eave`, os valores correspondem às bordas esquerda/direita para orientação longitudinal e frente/fundos para transversal; `rake` corresponde às outras duas bordas. Os beirais prolongam o mesmo plano inclinado, inclusive abaixo de `z0` na borda baixa. Na planta, uma seta indica o caimento; nas fachadas e no 3D, os encontros com outros telhados são recortados. Paredes com `top: "roof"` também seguem o plano de uma água, sem considerar `eave`, como nas coberturas de duas águas. A projeção, as cotas inclinadas no DXF e a área da superfície são exportadas; o shed não recebe linha de cumeeira. Pilares, vigas, calhas e fechamentos verticais precisam ser definidos separadamente.
+Nesse exemplo, a água desce da fachada para a frente da varanda. Em `eave`, os valores correspondem às bordas esquerda/direita para orientação longitudinal e frente/fundos para transversal; `rake` corresponde às outras duas bordas. Os beirais prolongam o mesmo plano inclinado, inclusive abaixo de `z0` na borda baixa. Na planta, uma seta indica o caimento; nas fachadas e no 3D, os encontros com outros telhados são recortados. Paredes com `top: "roofs"` também seguem o plano de uma água, sem considerar `eave`, como nas coberturas de duas águas. A projeção, as cotas inclinadas no DXF e a área da superfície são exportadas; o shed não recebe linha de cumeeira. Pilares, vigas, calhas e fechamentos verticais precisam ser definidos separadamente.
 
 Use `visible: false` em uma zona, item ou outro elemento visual para ocultá-lo sem removê-lo das referências geométricas:
 
@@ -371,13 +392,13 @@ São necessários pelo menos dois pontos numéricos, com coordenadas estritament
 
 Cada ponto aceita um `id` opcional, não vazio e único dentro do perfil, por exemplo `{ id: "tp-02-entrada", y: 3, z: -0.45 }`. O ID identifica o ponto para edição; ainda não funciona como referência em expressões geométricas. O arquivo `cottage-ferraz-cesar.json5` contém seis pontos longitudinais provisórios (`tp-01-rua` a `tp-06-fundos-terreno`), com patamar em −0,45 m e início da descida em Y = 12 m. A cota de estudo nos fundos do envelope térreo é −0,90 m em Y = 23,8 m. O perfil alcança −6 m em Y = 44,32 m e mantém essa cota até o restante da divisa oblíqua. As cotas intermediárias são hipóteses editáveis, não um projeto de terraplenagem.
 
-A mureta periférica do estudo é a parede independente `perimeter-plinth`, com `scope: "ground"`, `base: "terrain"` e `top: { level: "ground.z0" }`. Seu caminho fechado acompanha o contorno do térreo, incluindo varanda, terraço e garagem, sem incluir a escada frontal. A espessura usa `params.wall_thickness`. A base é recortada pelo perfil do terreno nas fachadas e no 3D, inclusive nas mudanças de inclinação; a mureta permanece visível na seleção do térreo. Trata-se do fechamento geométrico entre terreno e piso, sem dimensionamento estrutural de fundação ou contenção.
+A mureta periférica do estudo é a parede independente `perimeter-plinth`, com `scope: "ground"`, `base: "terrain"` e `top: "ground.z0"`. Seu caminho fechado acompanha o contorno do térreo, incluindo varanda, terraço e garagem, sem incluir a escada frontal. A espessura usa `params.wall_thickness`. A base é recortada pelo perfil do terreno nas fachadas e no 3D, inclusive nas mudanças de inclinação; a mureta permanece visível na seleção do térreo. Trata-se do fechamento geométrico entre terreno e piso, sem dimensionamento estrutural de fundação ou contenção.
 
 ### Avisos de depreciação
 
 O quadro técnico apresenta **Avisos de depreciação**, separados dos erros. A planta continua carregando com a sintaxe antiga; cada aviso informa a substituição recomendada e, quando o arquivo é lido pelo parser JSON5, arquivo, linha, coluna e caminho da propriedade. Para configurações criadas diretamente em JavaScript, apresenta o caminho no objeto.
 
-As regras atuais são `wall_max_height` → `ceiling_height`, `eave` → `eaves.left/right` e `top: { under: ... }` sem deslocamento → `top` com ID ou lista de IDs. `top.level`, `top.under` com deslocamento continuam válidos sem aviso. O campo `type` nas coleções de aberturas e os padrões antigos `config.openings.door/window/opening` agora geram avisos com a orientação de migração. Os aliases `front/rear` e os atalhos de geometria também continuam válidos.
+As regras atuais são `wall_max_height` → `ceiling_height`, `eave` → `eaves.left/right` e `top: { under: ... }` sem deslocamento → `top` com ID ou lista de IDs. `top: { level: ... }` gera aviso para usar a cota diretamente. `top.under` com deslocamento continua válido sem aviso. O campo `type` nas coleções de aberturas e os padrões antigos `config.openings.door/window/opening` agora geram avisos com a orientação de migração. Os aliases `front/rear` e os atalhos de geometria também continuam válidos.
 
 A coleta fica centralizada em `FloorPlanModel.collectDeprecations`, antes da normalização e da aplicação de padrões. Novas regras devem indicar código estável, propriedade e orientação de migração, inspecionando apenas os contextos estruturais correspondentes. Os avisos originais são preservados nas recargas internas para não repetir ocorrências nem atribuir avisos a valores herdados dos padrões; não são incluídos no JSON exportado.
 
@@ -409,3 +430,7 @@ Cada piso pode declarar `slabs: [{ id: "slab-ground", label: "Laje — Térreo",
 A laje acompanha a união dos ambientes do piso, preservando recortes e excluindo ambientes compostos exclusivamente por lances ou patamares de escada. O topo fica em `floor.z0`, com a espessura desenvolvida para baixo. Sem `slabs`, é criada uma laje de 15 cm; `slabs: []` omite a laje. A lista na barra esquerda, junto às seleções de pisos e camadas, permite alternar cada laje independentemente e conserva a seleção ao trocar de piso durante a sessão. Esses controles afetam a perspectiva 3D.
 
 Áreas locais de terreno plano podem ser definidas em `terrain.grading.flatAreas`, por exemplo `[{ reference: "front-stairs", margin: 0.15, transition: 0.5 }]`. O terreno acompanha o retângulo da referência na sua cota inferior, com margem e transição em metros; a posição acompanha a implantação da casa. Fora da transição, permanece o perfil longitudinal.
+
+`top: "roofs"` considera o conjunto de telhados do projeto. O alias antigo `top: "roof"` continua aceito, com aviso de migração.
+
+O topo pode ser uma cota absoluta (`top: 2.66`) ou uma expressão (`top: "upper-rear.z0 - 0.15"`). Uma string com apenas um ID, como `top: "stairs"`, continua selecionando a face inferior do objeto; `top: "roofs"` seleciona o conjunto de telhados. A forma antiga `top: { level: ... }` continua aceita com aviso de migração.

@@ -40,7 +40,7 @@ const FloorPlanStairHeadroom = {
 
   sourceLayers(plan) {
     const targets = (value) => plan.normalizeOverlapTargets(value);
-    const rooms = plan.allRooms.filter((room) => !plan.invalidRoomIds.has(room.id)).map((room) => {
+    const rooms = [...plan.allRooms, ...(plan.allStairs ?? [])].filter((room) => !plan.invalidRoomIds.has(room.id)).map((room) => {
       const definition = plan.roomDefinitions.get(room.id);
       return { id: room.id, floorId: room.floorId,
         parts: plan.getRoomGeometry(room.id).normalizedParts.map((part) => ({ ...part,

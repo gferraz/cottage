@@ -3768,6 +3768,7 @@ const FloorPlanCoordinates = {
     };
     const floor = (entry) => {
       entry.rooms?.forEach(geometry);
+      entry.stairs?.forEach(geometry);
       entry.items?.forEach(geometry);
       entry.zones?.forEach(geometry);
       entry.guides?.forEach(geometry);
@@ -3983,6 +3984,16 @@ const FloorPlanModel = {
         emit(value, "eave", path, "roof-eave",
           "eave está depreciado. Use eaves: { left: valor, right: valor }; para arrays, use o primeiro e o segundo valores, respectivamente. eaves.left/right explícitos têm prioridade.");
       }
+      if (["rooms", "stairs", "parts", "walls"].includes(context) &&
+          value.top && typeof value.top === "object" && !Array.isArray(value.top) &&
+          Object.hasOwn(value.top, "level")) {
+        emit(value, "top", path, "top-level",
+          'top: { level: ... } está depreciado. Use top diretamente com o número ou a expressão de cota.');
+      }
+      if (["rooms", "stairs", "parts", "walls"].includes(context) && value.top === "roof") {
+        emit(value, "top", path, "top-roof",
+          'top: "roof" está depreciado. Use top: "roofs" para o conjunto de telhados.');
+      }
       if (["rooms", "parts", "walls"].includes(context) && value.top &&
           typeof value.top === "object" && !Array.isArray(value.top) &&
           Object.hasOwn(value.top, "under") &&
@@ -4012,7 +4023,7 @@ const FloorPlanModel = {
         }
       }
       // Only inspect structural collections, never user-defined IDs or parameter names.
-      for (const key of ["config", "floors", "rooms", "parts", "walls", "roofs"]) {
+      for (const key of ["config", "floors", "rooms", "stairs", "parts", "walls", "roofs"]) {
         if (value[key] && typeof value[key] === "object") {
           visit(value[key], `${path}.${key}`, key);
         }
@@ -4146,6 +4157,19 @@ const FloorPlanModel = {
       }
       return result;
     };
+    const { parts: _stairParts, ...stairDefaults } = defaults.stairs ?? {};
+    const stairWithDefaults = (entry) => {
+      const stair = { ...stairDefaults, ...entry,
+        ...(stairDefaults.steps || entry.steps ? { steps: { ...stairDefaults.steps, ...entry.steps } } : {}),
+        ...(stairDefaults.colors || entry.colors ? { colors: { ...stairDefaults.colors, ...entry.colors } } : {}),
+      };
+      const kind = stair.kind ?? (String(stair.classes ?? "").split(/\s+/).includes("stair-landing") ? "landing" : "flight");
+      const classes = new Set(String(stair.classes ?? "").split(/\s+/).filter(Boolean));
+      if (!stair.parts?.length) classes.add(kind === "landing" ? "stair-landing" : "stair-flight");
+      const result = { ...stair, walls: stair.walls ?? [], classes: [...classes].join(" ") };
+      if (stair.parts) result.parts = stair.parts.map(part => stairWithDefaults(part));
+      return window.FloorPlanParser?.copyLocation(entry, result) ?? result;
+    };
     const expand = (floor) => {
       const ceilingHeight = floor.ceiling_height ?? floor.wall_max_height ??
         defaults.floors?.ceiling_height ?? defaults.floors?.wall_max_height;
@@ -4153,6 +4177,7 @@ const FloorPlanModel = {
         ...floor,
         ...(useHouseSides && floor.rooms ? { rooms: floor.rooms.map(roomWithPlanWalls) } : {}),
         ...(ceilingHeight !== undefined ? { ceiling_height: ceilingHeight } : {}),
+        ...(floor.stairs ? { stairs: floor.stairs.map(stairWithDefaults).map(stair => useHouseSides ? roomWithPlanWalls(stair) : stair) } : {}),
         ...(floor.roofs ? { roofs: floor.roofs.map(roofWithDefaults) } : {}),
       };
       if (floor.roofs) result.roofs.forEach((roof, index) => window.FloorPlanParser?.copyLocation(floor.roofs[index], roof));
@@ -4189,6 +4214,15 @@ const FloorPlanModel = {
       warnings,
       floors,
       viewport,
+      stairs: [
+        ...(config.floors ? (config.stairs ?? []).map(stair => {
+          const floor = stair.scope ? floors.find(candidate => candidate.id === stair.scope) : floors[0];
+          return { stair, floor, floorId: floor?.id ?? null, floorLabel: floor?.label ?? null };
+        }) : []),
+        ...floors.flatMap(floor => (floor.stairs ?? []).map(stair => ({
+          stair, floor, floorId: floor.id ?? null, floorLabel: floor.label ?? null,
+        }))),
+      ],
       rooms: floors.flatMap((floor) =>
         (floor.rooms ?? []).map((room) => ({
           room,
@@ -4537,7 +4571,7 @@ const FloorPlanExport = {
       );
 
     add(0, "SECTION", 2, "HEADER", 9, "$ACADVER", 1, "AC1009", 0, "ENDSEC");
-    add(0, "SECTION", 2, "TABLES", 0, "TABLE", 2, "LAYER", 70, 14);
+    add(0, "SECTION", 2, "TABLES", 0, "TABLE", 2, "LAYER", 70, 15);
     [
       ["WALLS", 7],
       ["WALLS_VIRTUAL", 8],
@@ -4545,6 +4579,7 @@ const FloorPlanExport = {
       ["WINDOWS", 4],
       ["OPENINGS", 3],
       ["ROOM_LABELS", 2],
+      ["STAIRS", 6],
       ["DIMENSIONS", 6],
       ["ITEMS", 5],
       ["ZONES", 8],
@@ -4610,6 +4645,21 @@ const FloorPlanExport = {
           );
         }
       });
+      (plan.allStairs ?? []).filter((entry) => (entry.floorId ?? null) === (floor.id ?? null))
+        .forEach((entry) => {
+          try {
+            plan.getRoomGeometry(entry.id).normalizedParts.forEach((part) => {
+              const flight = String(part.classes ?? "").split(/\s+/).includes("stair-flight");
+              const boxes = flight ? FloorPlanGeometry.stairBoxes(part) : [part];
+              boxes.forEach((box) => {
+                line("STAIRS", box.x, box.y, box.x + box.w, box.y);
+                line("STAIRS", box.x + box.w, box.y, box.x + box.w, box.y + box.l);
+                line("STAIRS", box.x + box.w, box.y + box.l, box.x, box.y + box.l);
+                line("STAIRS", box.x, box.y + box.l, box.x, box.y);
+              });
+            });
+          } catch { /* Invalid stair geometry is reported by project validation. */ }
+        });
       FloorPlanOpenings.forFloor(plan, floor).forEach((opening) => {
         if (plan.isVerticalOpening(opening)) return;
         try {
@@ -4886,8 +4936,8 @@ const FloorPlanGeometry = {
     });
   },
   stairSteps(stair) {
-    if (stair.stairType === "solid-flared") {
-      const widths = stair.stepWidths;
+    if (stair.type === "solid-flared") {
+      const widths = stair.steps?.widths;
       const cross = stair.stairAxis === "horizontal" ? stair.l : stair.w;
       if (!Array.isArray(widths) || widths.length < 2 ||
           widths.some((w, i) => !Number.isFinite(w) || w <= 0 || w > cross + 1e-8 || (i > 0 && w > widths[i - 1]))) {
@@ -4903,6 +4953,25 @@ const FloorPlanGeometry = {
     const treads = stair.risers === undefined ? risers : risers - 1;
     const run = stair.stairAxis === "horizontal" ? stair.w : stair.l;
     return { risers, treads, rise: stair.h / risers, run: run / treads };
+  },
+
+  stairBoxes(stair) {
+    const { treads, run: treadRun, rise } = this.stairSteps(stair);
+    const horizontal = stair.stairAxis === "horizontal";
+    const run = horizontal ? stair.w : stair.l;
+    const cross = horizontal ? stair.l : stair.w;
+    const increasing = (stair.stairDirection !== "reverse") === (stair.stairRise !== "down");
+    return Array.from({ length: treads }, (_, index) => {
+      const solid = stair.type === "solid-flared";
+      const depth = solid ? run - index * treadRun : treadRun;
+      const width = solid ? stair.steps.widths[index] : cross;
+      const offset = increasing ? index * treadRun : solid ? 0 : run - (index + 1) * treadRun;
+      const x = stair.x + (horizontal ? offset : (cross - width) / 2);
+      const y = stair.y + (horizontal ? (cross - width) / 2 : offset);
+      const h = (index + 1) * rise;
+      return { x, y, w: horizontal ? depth : width, l: horizontal ? width : depth,
+        z0: stair.z0, z1: stair.z0 + h, h, index };
+    });
   },
 
   stairGradientRange(floorZ, parts) {
@@ -5949,6 +6018,10 @@ const FloorPlanFacades = {
         getComputedStyle(plan.root).getPropertyValue("--m"),
       ) || 56;
     const floorConfigs = plan.currentConfig?.floors ?? [plan.currentConfig];
+    const stairs = (plan.allStairs ?? []).filter(entry => !plan.invalidRoomIds?.has(entry.id))
+      .flatMap((entry) => {
+        try { return plan.getRoomGeometry(entry.id).normalizedParts; } catch { return []; }
+      });
     const rooms = floorConfigs.flatMap((floorConfig) =>
       (floorConfig?.rooms ?? []).flatMap((definition) => {
         try {
@@ -6145,6 +6218,7 @@ const FloorPlanFacades = {
       const coordinates = projectedRooms.flatMap((room) =>
         side ? [room.y0(), room.y1()] : [room.x0(), room.x1()],
       );
+      stairs.forEach(part => coordinates.push(...(side ? [part.y, part.y + part.l] : [part.x, part.x + part.w])));
       if (coordinates.length === 0) return;
       const facadeMin = Math.min(...coordinates);
       const facadeMax = Math.max(...coordinates);
@@ -6883,7 +6957,7 @@ const FloorPlanFacades = {
             top: wall.topZ,
             terrainReference: wall.base === "terrain" ? plan.terrainReference : null,
             terrainOffset: { x: buildingOffsetX, y: buildingOffsetY },
-            roofOnly: wall.top === "roof",
+            roofOnly: ["roofs", "roof"].includes(wall.top),
             undersideLimits: wall.undersideLimits,
           }, roofLimits, side);
           if (!polygons.length) return;
@@ -6977,6 +7051,36 @@ const FloorPlanFacades = {
             }
           }
         });
+
+      // Stairs are architectural solids independent of room walls.
+      stairs.forEach((part) => {
+        try {
+          const flight = String(part.classes ?? "").split(/\s+/).includes("stair-flight");
+          const boxes = flight ? FloorPlanGeometry.stairBoxes(part) : [part];
+          boxes.forEach((box) => {
+            if (!(box.h > 0)) return;
+            const start = side ? box.y : box.x;
+            const end = start + (side ? box.l : box.w);
+            const depth = side
+              ? box.x + (facadeEdge === "min" ? 0 : box.w)
+              : box.y + (facadeEdge === "min" ? 0 : box.l);
+            const bottom = (coordinate) => {
+              if (!flight || part.type === "solid-flared") return box.z0;
+              const plane = FloorPlanWalls.stairUndersidePlane(part);
+              const x = side ? depth : coordinate, y = side ? coordinate : depth;
+              return Math.min(box.z1, Math.max(box.z0, -plane[0] * x - plane[1] * y - plane[3]));
+            };
+            const polygon = document.createElementNS(svgNamespace, "polygon");
+            polygon.classList.add("facade-stair");
+            polygon.setAttribute("points", [[start, bottom(start)], [end, bottom(end)], [end, box.z1], [start, box.z1]]
+              .map(([coordinate, z]) => `${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`).join(" "));
+            polygon.setAttribute("fill", part.colors?.riser || "#c5bba9");
+            polygon.setAttribute("stroke", "#665e52");
+            polygon.setAttribute("stroke-width", "0.75");
+            addFace(depth, [polygon], true);
+          });
+        } catch { /* Invalid stairs are reported during project preparation. */ }
+      });
 
       // Clip hidden edges and labels as well as fills. Painter ordering alone
       // allows rear annotations to leak through translucent surfaces.
@@ -7458,8 +7562,8 @@ const FloorPlan3DElements = {
           ? index * stepRun
           : run - (index + 1) * stepRun;
         const stepHeight = (index + 1) * stepRise;
-        const solidStair = stair.stairType === "solid-flared";
-        const stepWidth = solidStair ? stair.stepWidths[index] : (axis === "horizontal" ? length : width);
+        const solidStair = stair.type === "solid-flared";
+        const stepWidth = solidStair ? stair.steps.widths[index] : (axis === "horizontal" ? length : width);
         // Each tier continues to the porch: the bottom tier encloses all others.
         const depth = solidStair ? run - index * stepRun : stepRun;
         const start = solidStair ? (ascendsWithIncreasingAxis ? index * stepRun : 0) : offset;
@@ -7488,9 +7592,9 @@ const FloorPlan3DElements = {
         let material = this.heightMaterial(plan, THREE, wallMaterial, stair, z0 + stepHeight);
         if (solidStair) {
           const riserMaterial = wallMaterial.clone();
-          riserMaterial.color.set(stair.riserColor || "#c5bba9");
+          riserMaterial.color.set(stair.colors?.riser || "#c5bba9");
           const treadMaterial = wallMaterial.clone();
-          treadMaterial.color.set(stair.treadColor || "#928c7e");
+          treadMaterial.color.set(stair.colors?.thread || "#928c7e");
           let start = 0;
           solid.forEach((face) => {
             const count = (face.length - 2) * 3;
@@ -7893,7 +7997,10 @@ const FloorPlanFacades3D = {
     const stairFlights = [];
     const stairLandings = [];
     floors.filter((floor) => !plan.visibleFloor || floor === plan.visibleFloor).forEach((floor) => {
-      (floor?.rooms ?? []).forEach((definition) => {
+      [...(floor?.rooms ?? []), ...(plan.allStairs ?? [])
+        .filter((entry) => (entry.floorId ?? null) === (floor?.id ?? null))
+        .filter((entry) => !plan.invalidRoomIds?.has(entry.id))
+        .map((entry) => entry.stair)].forEach((definition) => {
         const parts = plan.getRoomGeometry(definition.id).normalizedParts;
         const stairParts = parts.filter((part) => isStairFlight(part) ||
           String(part.classes || "").split(/\s+/).includes("stair-landing"));
@@ -7915,12 +8022,17 @@ const FloorPlanFacades3D = {
       }
     }
 
-    if (!rooms.length) {
-      container.textContent = "Nenhum cômodo disponível para este piso.";
+    const boundsSources = [...rooms, ...[...stairFlights, ...stairLandings].map((part) => ({
+      x0: () => part.x, x1: () => part.x + part.w,
+      y0: () => part.y, y1: () => part.y + part.l,
+      z0: () => part.z0, z1: () => part.z1,
+    }))];
+    if (!boundsSources.length) {
+      container.textContent = "Nenhum elemento disponível para este piso.";
       return;
     }
 
-    const roomBounds = rooms.reduce(
+    const roomBounds = boundsSources.reduce(
       (bounds, room) => ({
         x0: Math.min(bounds.x0, room.x0()),
         x1: Math.max(bounds.x1, room.x1()),
@@ -8115,8 +8227,8 @@ const FloorPlanFacades3D = {
       bounds: {
         x0: roomBounds.x0,
         x1: roomBounds.x1,
-        y0: Math.min(...rooms.map((room) => room.y0())),
-        y1: Math.max(...rooms.map((room) => room.y1())),
+        y0: Math.min(...boundsSources.map((room) => room.y0())),
+        y1: Math.max(...boundsSources.map((room) => room.y1())),
         z0: drawingBounds.z0,
         z1: drawingBounds.z1,
       },
@@ -8144,7 +8256,7 @@ const FloorPlanFacades3D = {
       facadeSide,
       THREE,
       scene,
-      rooms,
+      rooms: boundsSources,
       stairFlights,
       stairLandings,
       terrainProfile: hasTerrainProfile ? terrainProfile : null,
@@ -9169,7 +9281,7 @@ const FloorPlanWalls = {
           if (ids.some((id) => !(config.floors ?? [config]).some((entry) => entry.id === id))) return null;
           return plan.resolve(value);
         };
-        const top = floorLevel(definition.top?.level);
+        const top = floorLevel(this.topLevel(definition.top));
         const base = floorLevel(definition.base?.level);
         if (top !== null && top <= Number(floor?.z0 ?? 0) + epsilon) continue;
         if (base !== null && base >= Number(floor?.z0 ?? 0) + Number(floor?.ceiling_height ?? 3)) continue;
@@ -9195,7 +9307,7 @@ const FloorPlanWalls = {
     return bounds;
   },
   stairUndersidePlane(stair, offset = 0) {
-    if (stair.stairType === "solid-flared") return [0, 0, 1, -stair.z0 + offset];
+    if (stair.type === "solid-flared") return [0, 0, 1, -stair.z0 + offset];
     const alongX = stair.stairAxis === "horizontal";
     const increasing = (stair.stairDirection !== "reverse") === (stair.stairRise !== "down");
     // With explicit risers the last rise belongs to the destination floor.
@@ -9210,10 +9322,16 @@ const FloorPlanWalls = {
 
   // Rectangular footprints and planes describing the underside of overhead
   // objects. Stair direction is resolved before building its inclined plane.
+  topLevel(top) {
+    if (typeof top === "number") return top;
+    if (typeof top === "string" && !/^[A-Za-z_][\w-]*$/.test(top.trim())) return top;
+    return top && typeof top === "object" && !Array.isArray(top) ? top.level : undefined;
+  },
+
   undersideLimits(plan, top, padding = 0) {
     // IDs are the public format. Keep the former object form readable for
-    // previously saved plans; "roof" remains the existing roof-set alias.
-    if (top === "roof") return [];
+    // previously saved plans; "roofs" selects all roofs; "roof" is its legacy alias.
+    if (["roofs", "roof"].includes(top) || this.topLevel(top) !== undefined) return [];
     if (typeof top === "string" || Array.isArray(top)) top = { under: top };
     if (!top || top.under === undefined) return [];
     const ids = Array.isArray(top.under) ? top.under : [top.under];
@@ -9240,7 +9358,7 @@ const FloorPlanWalls = {
         return this.undersideLimits(plan, { under: room.parts.map((part) => part.id), offset }, padding);
       }
       const definition = owner ? room.parts.find((part) => part.id === id) : room;
-      const floor = floors.find((entry) => (entry.rooms ?? []).includes(room)) ?? floors[0];
+      const floor = plan.roomFloorConfigs?.get(owner ?? id) ?? floors.find((entry) => (entry.rooms ?? []).includes(room)) ?? floors[0];
       let geometry;
       if (definition) {
         geometry = plan.normalizeGeometryAtFloor(definition, floor);
@@ -9821,7 +9939,7 @@ const FloorPlanWalls = {
     const signatures = new Map();
     plan.roomDefinitions.forEach((definition, roomId) => {
       if (plan.invalidRoomIds.has(roomId)) return;
-      const floor = roomFloors.get(roomId) ?? floors[0] ?? {};
+      const floor = plan.roomFloorConfigs?.get(roomId) ?? roomFloors.get(roomId) ?? floors[0] ?? {};
       try {
         const geometry = plan.getRoomGeometry(roomId);
         const floorZ0 = Number(floor.z0 ?? 0);
@@ -9835,13 +9953,13 @@ const FloorPlanWalls = {
         let height = explicitHeight > 0 ? explicitHeight : floorHeight;
         const undersideLimits = this.undersideLimits(plan, definition.top, thickness / 2);
         if (undersideLimits.length) height = Math.max(height, ...undersideLimits.map((limit) => limit.peakZ - floorZ0));
-        const roofOnly = definition.top === "roof";
+        const roofOnly = ["roofs", "roof"].includes(definition.top);
         if (roofOnly) {
           const limits = this.roofLimits(plan, config);
-          if (!limits.length) throw new Error('A parede com top: "roof" precisa de um telhado válido');
+          if (!limits.length) throw new Error('A parede com top: "roofs" precisa de um telhado válido');
           height = Math.max(...limits.map((roof) => roof.peakZ)) - floorZ0;
-        } else if (definition.top?.level !== undefined) {
-          height = plan.resolve(definition.top.level) - floorZ0;
+        } else if (this.topLevel(definition.top) !== undefined) {
+          height = plan.resolve(this.topLevel(definition.top)) - floorZ0;
         }
         const roomBounds = [
           geometry.x0(),
@@ -10075,14 +10193,14 @@ const FloorPlanWalls = {
         const baseZ = base === "terrain"
           ? terrainMinimumZ
           : plan.resolve(baseDefinition?.level);
-        const roofOnly = definition.top === "roof";
+        const roofOnly = ["roofs", "roof"].includes(definition.top);
         const undersideLimits = this.undersideLimits(plan, definition.top, thickness / 2);
         if (roofOnly && !roofLimits.length) {
-          throw new Error('A parede com top: "roof" precisa de um telhado válido acima da base');
+          throw new Error('A parede com top: "roofs" precisa de um telhado válido acima da base');
         }
         const topZ = roofOnly
           ? Math.max(...roofLimits.map((roof) => roof.peakZ))
-          : plan.resolve(definition.top?.level ?? (undersideLimits.length ? Math.max(...undersideLimits.map((limit) => limit.peakZ), ...floors.map((floor) =>
+          : plan.resolve(this.topLevel(definition.top) ?? (undersideLimits.length ? Math.max(...undersideLimits.map((limit) => limit.peakZ), ...floors.map((floor) =>
             Number(floor.z0 ?? 0) + Number(floor.ceiling_height ?? floor.wall_max_height ?? 0))) : groundLevel));
         if (
           !Number.isFinite(thickness) || thickness <= 0 ||
@@ -10136,7 +10254,7 @@ const FloorPlanWalls = {
           const covered = resolvedPoints.slice(0, -1).some((from, i) =>
             this.roofSection([[0, baseZ], [1, baseZ], [1, topZ], [0, topZ]],
               from, resolvedPoints[i + 1], roofLimits, true).length > 0);
-          if (!covered) throw new Error('A parede com top: "roof" não encontra nenhum telhado acima da base ao longo do seu caminho');
+          if (!covered) throw new Error('A parede com top: "roofs" não encontra nenhum telhado acima da base ao longo do seu caminho');
         }
         FloorPlanGeometryBox.attach(wall, { compound: true, label: wall.id });
         plan.independentWalls.set(wall.id, wall);
@@ -10479,6 +10597,28 @@ const FloorPlanReferences = {
     );
     plan.roomDefinitions = collected.definitions;
     plan.errors.push(...collected.errors);
+    plan.stairDefinitions = new Map();
+    const owners = config.floors ? [config, ...config.floors] : [config];
+    const nonStairIds = new Set(owners.flatMap(owner => [
+      ...(owner === config && config.floors ? [] : [owner.id]),
+      ...["walls", "roofs", "items", "zones", "guides"].flatMap(key =>
+        (Array.isArray(owner[key]) ? owner[key] : []).map(object => object.id)),
+    ]).filter(Boolean));
+    for (const { stair, floor } of plan.model?.stairs ?? []) {
+      const fail = message => plan.errors.push({ category: "stair", id: stair.id, opening: stair, message });
+      if (stair.kind !== undefined && !["flight", "landing"].includes(stair.kind)) { fail(`Tipo de escada inválido: ${stair.kind}`); continue; }
+      if (!stair.id) { fail("Escada sem id global"); continue; }
+      if (FloorPlanValidation.isReservedId(stair.id)) { fail(`ID reservado: ${stair.id}`); continue; }
+      if (plan.roomDefinitions.has(stair.id) || nonStairIds.has(stair.id)) { fail(`ID global duplicado: ${stair.id}`); continue; }
+      if (!floor) { fail(`Piso de escada desconhecido: ${stair.scope}`); continue; }
+      const invalidKind = (stair.parts ?? []).find(part => part.kind !== undefined && !["flight", "landing"].includes(part.kind));
+      if (invalidKind) { fail(`Tipo de parte de escada inválido: ${invalidKind.kind}`); continue; }
+      const invalidPart = (stair.parts ?? []).find(part => part.id && FloorPlanValidation.isReservedId(part.id));
+      if (invalidPart) { fail(`Parte com ID reservado: ${invalidPart.id}`); continue; }
+      plan.stairDefinitions.set(stair.id, stair);
+      plan.roomDefinitions.set(stair.id, stair);
+      plan.roomFloorConfigs.set(stair.id, floor);
+    }
 
     plan.roomDefinitions.forEach((_room, id) => {
       const reference = plan.createRoomReference(id);
@@ -10505,7 +10645,7 @@ const FloorPlanReferences = {
       } catch (error) {
         plan.invalidRoomIds.add(id);
         plan.errors.push({
-          category: "room",
+          category: plan.stairDefinitions.has(id) ? "stair" : "room",
           id,
           opening: plan.roomDefinitions.get(id),
           message: error.message,
@@ -10764,10 +10904,10 @@ const FloorPlanReferences = {
           .map((corner) => Number(corner.z)).filter(Number.isFinite)) : plan.resolve(value.level);
       });
       const top = () => guarded("z1", () => {
-        if (definition.top === "roof") return Math.max(...FloorPlanWalls.roofLimits(plan, config).map((roof) => roof.peakZ));
+        if (["roofs", "roof"].includes(definition.top)) return Math.max(...FloorPlanWalls.roofLimits(plan, config).map((roof) => roof.peakZ));
         const limits = FloorPlanWalls.undersideLimits(plan, definition.top,
           Number(definition.thickness ?? plan.catalog.walls?.thickness ?? 0.12) / 2);
-        return plan.resolve(definition.top?.level ?? (limits.length
+        return plan.resolve(FloorPlanWalls.topLevel(definition.top) ?? (limits.length
           ? Math.max(...limits.map((limit) => limit.peakZ), ...floors.map((floor) =>
             Number(floor.z0 ?? 0) + Number(floor.ceiling_height ?? floor.wall_max_height ?? 0))) : ground));
       });
@@ -10986,7 +11126,12 @@ const FloorPlanReferences = {
 
   prepareGlobalLists(plan, config) {
     const floors = config.floors ?? [{ id: null, label: null, ...config }];
-    plan.allRooms = [...plan.roomDefinitions.entries()].map(([id, room]) => {
+    plan.allStairs = (plan.model?.stairs ?? []).filter(({ stair }) => plan.stairDefinitions?.get(stair.id) === stair)
+      .map(({ stair, floor, floorId, floorLabel }) => ({
+        id: stair.id, label: stair.label || stair.id, stair, floor, floorId, floorLabel,
+        reference: plan.roomReferences.get(stair.id),
+      }));
+    plan.allRooms = [...plan.roomDefinitions.entries()].filter(([id]) => !plan.stairDefinitions?.has(id)).map(([id, room]) => {
       const floor = floors.find((floorConfig) =>
         (floorConfig.rooms ?? []).includes(room),
       );
@@ -11148,6 +11293,17 @@ const FloorPlanReferences = {
         itemReferences: false,
       });
       const { normalizedParts, nominalGeometry } = FloorPlanGeometryDomain.normalizeRoomGeometry(scoped, room);
+      if (plan.stairDefinitions?.has(id)) {
+        for (const part of normalizedParts) {
+          const classes = String(part.classes ?? "").split(/\s+/);
+          if (classes.includes("stair-flight")) {
+            if (!(part.h > 0)) throw new Error("Lance de escada precisa ter altura positiva");
+            FloorPlanGeometry.stairSteps(part);
+          } else if (classes.includes("stair-landing") && part.h !== 0) {
+            throw new Error("Patamar de escada precisa ter altura zero");
+          }
+        }
+      }
       const compound = Boolean(room.parts?.length);
       const walls = plan.normalizeWalls(room.walls);
       const reference = FloorPlanGeometryBox.fromGeometry(nominalGeometry, { compound, label: id });
@@ -11294,7 +11450,7 @@ const FloorPlanCommunications = {
   },
 
   prepare(plan) {
-    const references = plan.allRooms.filter((room) => !plan.invalidRoomIds?.has(room.id))
+    const references = [...plan.allRooms, ...(plan.allStairs ?? [])].filter((room) => !plan.invalidRoomIds?.has(room.id))
       .map((room) => room.reference);
     plan.communicationResults = this.fromReferences(plan, references);
     plan.naturalCommunications = plan.communicationResults;
@@ -11595,7 +11751,10 @@ const FloorPlanLayers = {
         const previousHeight = plan.currentFloorHeight;
         plan.currentFloorHeight = Number(floor.z0 ?? 0);
         try {
-          (floor.rooms ?? []).forEach((definition) => {
+          [...(floor.rooms ?? []), ...(plan.allStairs ?? [])
+            .filter((entry) => (entry.floorId ?? null) === (floor.id ?? null))
+            .filter((entry) => !plan.invalidRoomIds?.has(entry.id))
+        .map((entry) => entry.stair)].forEach((definition) => {
             const geometries = definition.parts?.length
               ? plan.normalizeParts(definition.parts)
               : [plan.normalizeGeometry(definition)];
@@ -11762,6 +11921,7 @@ const FloorPlanLists = {
     );
     const groups = [
       ["rooms", "Cômodos"],
+      ["stairs", "Escadas"],
       ["roofs", "Telhados"],
       ["doors", "Portas"],
       ["openings", "Vãos"],
@@ -11770,6 +11930,7 @@ const FloorPlanLists = {
     ];
     const renderers = {
       rooms: (target, floor) => this.updateRoomList(plan, target, floor),
+      stairs: (target, floor) => this.updateStairList(plan, target, floor),
       roofs: (target, floor) => this.updateRoofList(plan, target, floor),
       doors: (target, floor) => this.updateOpeningList(plan, target, floor, "door"),
       openings: (target, floor) => this.updateOpeningList(plan, target, floor, "opening"),
@@ -11964,6 +12125,28 @@ const FloorPlanLists = {
         item.append(label, value);
         roomTypes?.append(item);
       });
+  },
+
+  updateStairList(plan, target, floor = null) {
+    const entries = (plan.allStairs ?? []).filter((entry) => !floor ||
+      (entry.floorId ?? null) === (floor.id ?? null));
+    if (!entries.length) {
+      target.textContent = "Nenhuma escada definida.";
+      return;
+    }
+    for (const entry of entries) {
+      const row = document.createElement("div");
+      try {
+        const parts = plan.getRoomGeometry(entry.id).normalizedParts;
+        const flights = parts.filter(part => String(part.classes ?? "").split(/\s+/).includes("stair-flight"));
+        const risers = flights.reduce((total, part) => total + FloorPlanGeometry.stairSteps(part).risers, 0);
+        const landings = parts.length - flights.length;
+        row.textContent = `${entry.label || entry.id} — ${flights.length} lance(s) · ${risers} espelhos · ${landings} patamar(es)`;
+      } catch {
+        row.textContent = `${entry.label || entry.id} — geometria inválida`;
+      }
+      target.append(row);
+    }
   },
 
   updateRoomList(plan, target = plan.roomList, floor = null) {
@@ -12395,6 +12578,23 @@ const FloorPlanTextExport = {
     }
   },
 
+  appendStairTable(plan, lines, entries, level = "###") {
+    if (!entries.length) return;
+    lines.push("", `${level} Escadas`, "",
+      "| ID | Nome | Lances | Espelhos | Patamares | Cota inferior | Cota superior |",
+      "|---|---|---:|---:|---:|---:|---:|");
+    entries.forEach((entry) => {
+      try {
+        const geometry = plan.getRoomGeometry(entry.id);
+        const flights = geometry.normalizedParts.filter(part => String(part.classes ?? "").split(/\s+/).includes("stair-flight"));
+        const risers = flights.reduce((total, part) => total + FloorPlanGeometry.stairSteps(part).risers, 0);
+        lines.push(`| ${plan.markdownText(entry.id)} | ${plan.markdownText(entry.label || entry.id)} | ${flights.length} | ${risers} | ${geometry.normalizedParts.length - flights.length} | ${plan.formatMeters(geometry.nominalGeometry.z0)} | ${plan.formatMeters(geometry.nominalGeometry.z1)} |`);
+      } catch {
+        lines.push(`| ${plan.markdownText(entry.id)} | Geometria inválida | | | | | |`);
+      }
+    });
+  },
+
   independentWallFloorIndex(plan, wall, floors) {
     if (wall.base === "level") {
       const basedFloor = floors.findIndex(
@@ -12675,6 +12875,7 @@ const FloorPlanTextExport = {
       "",
       `**Total:** ${plan.roomCount} cômodos · ${plan.formatMeters(plan.roomArea)} m² (área líquida, com descontos de sobreposição)`,
     );
+    this.appendStairTable(plan, lines, plan.allStairs ?? [], "##");
     this.appendOpeningTables(plan, lines, FloorPlanOpenings.rendered(plan), "##");
 
     lines.push("", "## Comunicações naturais", "");
@@ -12895,6 +13096,8 @@ const FloorPlanTextExport = {
         );
       }
 
+      this.appendStairTable(plan, lines, (plan.allStairs ?? []).filter((entry) =>
+        (entry.floorId ?? null) === floorId));
       appendIndependentWalls(floorWalls);
 
       appendRoofSection("Telhados", floorRoofs);
@@ -12993,6 +13196,17 @@ const FloorPlanGeometryDomain = {
 
   addSpanningStairs(plan, config, floorConfig) {
     const floors = config.floors ?? [config];
+    // First-class compound stairs retain their source-floor context when projected.
+    for (const entry of plan.allStairs ?? []) {
+      if (entry.floor === floorConfig || plan.invalidRoomIds.has(entry.id)) continue;
+      const geometry = plan.getRoomGeometry(entry.id);
+      if (geometry.z1() <= geometry.z0() || plan.currentFloorHeight < geometry.z0() ||
+          plan.currentFloorHeight > geometry.z1()) continue;
+      const scoped = FloorPlanGeometry.inContext(plan, {
+        floorZ: Number(entry.floor?.z0 ?? 0), floorId: entry.floorId ?? null,
+      });
+      scoped.addRoom({ ...entry.stair, derived: true, firstClassStair: true });
+    }
     const existingStairs = (floorConfig.rooms ?? [])
       .filter((room) => room.classes?.split(/\s+/).includes("stair-flight"))
       .map((room) => plan.normalizeGeometry(room));
@@ -13437,18 +13651,18 @@ const FloorPlanDom = {
       background = `linear-gradient(to ${geometry.stairAxis === "horizontal" ? "right" : "bottom"}, ${stops.join(", ")})`;
       element.style.setProperty("--stair-step", (geometry.stairAxis === "horizontal" ? geometry.w : geometry.l) / count);
     }
-    if (geometry.stairType === "solid-flared") {
+    if (geometry.type === "solid-flared") {
       const horizontal = geometry.stairAxis === "horizontal";
       const increasing = (geometry.stairDirection !== "reverse") === (geometry.stairRise !== "down");
       const cross = horizontal ? geometry.l : geometry.w;
-      const layers = geometry.stepWidths.map((width, index) => {
-        const depth = 100 * (1 - index / geometry.stepWidths.length);
+      const layers = geometry.steps.widths.map((width, index) => {
+        const depth = 100 * (1 - index / geometry.steps.widths.length);
         const size = 100 * width / cross;
-        const fill = color(geometry.z0 + geometry.h * (index + 1) / geometry.stepWidths.length);
+        const fill = color(geometry.z0 + geometry.h * (index + 1) / geometry.steps.widths.length);
         return `linear-gradient(${fill}, ${fill}) ${horizontal ? (increasing ? "right center" : "left center") : (increasing ? "center bottom" : "center top")} / ${horizontal ? `${depth}% ${size}%` : `${size}% ${depth}%`} no-repeat`;
       }).reverse();
-      const outlines = geometry.stepWidths.map((width, index) => {
-        const depth = 100 * (1 - index / geometry.stepWidths.length);
+      const outlines = geometry.steps.widths.map((width, index) => {
+        const depth = 100 * (1 - index / geometry.steps.widths.length);
         const size = 100 * width / cross;
         const along = increasing ? 100 - depth : 0;
         const across = (100 - size) / 2;
@@ -13591,6 +13805,7 @@ const FloorPlanDom = {
 
   addRoom(plan, room) {
     const derived = room.derived === true;
+    const firstClassStair = room.firstClassStair === true;
     const { container = plan.root } = room;
     const resolved = !derived && plan.roomDefinitions?.get(room.id) === room
       ? plan.getRoomGeometry(room.id)
@@ -13724,7 +13939,12 @@ const FloorPlanDom = {
     element.title = `${room.label || room.id || "Cômodo"} — ${roomDimensions} — ${roomArea}`;
     const displayedArea = element.querySelector(":scope > .area");
     if (displayedArea) displayedArea.textContent = roomArea;
-    if (!derived) plan.roomElements.push(element);
+    if (firstClassStair && container === plan.root) {
+      element.dataset.kind = "stair";
+      element.querySelectorAll(":scope > .area").forEach((area) => area.remove());
+      element.title = `${room.label || room.id || "Escada"} — ${roomDimensions}`;
+      plan.stairElements.push(element);
+    } else if (!derived) plan.roomElements.push(element);
     else if (
       room.classes?.split(/\s+/).includes("stair-flight") &&
       container === plan.root
@@ -13735,7 +13955,7 @@ const FloorPlanDom = {
       plan.rooms.set(room.id, element);
       plan.references.set(room.id, element);
     }
-    if (!derived) {
+    if (!derived && !firstClassStair) {
       plan.updateOverlaps();
       plan.roomArea += element.area();
       plan.roomCount += 1;
@@ -13968,8 +14188,8 @@ const FloorPlanStairConnectivity = {
           const high = (role === "upper") === increasing;
           const z = role === "lower" ? part.z0 : part.z1;
           const cross = horizontal ? part.l : part.w;
-          const width = part.stairType === "solid-flared"
-            ? part.stepWidths[role === "lower" ? 0 : part.stepWidths.length - 1] : cross;
+          const width = part.type === "solid-flared"
+            ? part.steps.widths[role === "lower" ? 0 : part.steps.widths.length - 1] : cross;
           const inset = (cross - width) / 2;
           const x = part.x + (horizontal && high ? part.w : 0) + (horizontal ? 0 : inset);
           const y = part.y + (!horizontal && high ? part.l : 0) + (horizontal ? inset : 0);
@@ -14094,7 +14314,7 @@ const FloorPlanStairHeadroom = {
 
   sourceLayers(plan) {
     const targets = (value) => plan.normalizeOverlapTargets(value);
-    const rooms = plan.allRooms.filter((room) => !plan.invalidRoomIds.has(room.id)).map((room) => {
+    const rooms = [...plan.allRooms, ...(plan.allStairs ?? [])].filter((room) => !plan.invalidRoomIds.has(room.id)).map((room) => {
       const definition = plan.roomDefinitions.get(room.id);
       return { id: room.id, floorId: room.floorId,
         parts: plan.getRoomGeometry(room.id).normalizedParts.map((part) => ({ ...part,
@@ -14254,7 +14474,7 @@ const FloorPlanProject = {
     FloorPlanHeadroom.prepare(plan);
     FloorPlanCommunications.prepare(plan);
     plan.allSlabs = FloorPlanSlabs.collect(plan);
-    const stairParts = plan.allRooms.filter((room) => !plan.invalidRoomIds.has(room.id))
+    const stairParts = [...plan.allRooms, ...(plan.allStairs ?? [])].filter((room) => !plan.invalidRoomIds.has(room.id))
       .flatMap((room) => plan.getRoomGeometry(room.id).normalizedParts);
     plan.stairConnectivity = FloorPlanStairConnectivity.analyze(stairParts, model.floors);
     plan.stairSourceLayers = FloorPlanStairHeadroom.sourceLayers(plan);
@@ -14374,6 +14594,7 @@ class FloorPlan {
     this.validZoneIds = new Set();
     this.invalidRoomIds = new Set();
     this.allRooms = [];
+    this.allStairs = [];
     this.allItems = [];
     this.allOpenings = [];
     this.allWindows = [];
@@ -14629,6 +14850,9 @@ class FloorPlan {
           && this.roomDefinitions.get(room.id) === room
           && !invalidRoomIds.has(room.id));
         this.addRooms(validRooms);
+        (this.allStairs ?? []).filter((entry) => (entry.floorId ?? null) === (floorConfig.id ?? null))
+          .filter((entry) => !invalidRoomIds.has(entry.id))
+          .forEach((entry) => this.addRoom({ ...entry.stair, firstClassStair: true }));
         if (!this.showAllFloors) this.addSpanningStairs(config, floorConfig);
         this.updateOverlaps();
         this.renderWallsForFloor(floorConfig);

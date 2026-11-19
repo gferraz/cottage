@@ -16,6 +16,23 @@ const FloorPlanTextExport = {
     }
   },
 
+  appendStairTable(plan, lines, entries, level = "###") {
+    if (!entries.length) return;
+    lines.push("", `${level} Escadas`, "",
+      "| ID | Nome | Lances | Espelhos | Patamares | Cota inferior | Cota superior |",
+      "|---|---|---:|---:|---:|---:|---:|");
+    entries.forEach((entry) => {
+      try {
+        const geometry = plan.getRoomGeometry(entry.id);
+        const flights = geometry.normalizedParts.filter(part => String(part.classes ?? "").split(/\s+/).includes("stair-flight"));
+        const risers = flights.reduce((total, part) => total + FloorPlanGeometry.stairSteps(part).risers, 0);
+        lines.push(`| ${plan.markdownText(entry.id)} | ${plan.markdownText(entry.label || entry.id)} | ${flights.length} | ${risers} | ${geometry.normalizedParts.length - flights.length} | ${plan.formatMeters(geometry.nominalGeometry.z0)} | ${plan.formatMeters(geometry.nominalGeometry.z1)} |`);
+      } catch {
+        lines.push(`| ${plan.markdownText(entry.id)} | Geometria inválida | | | | | |`);
+      }
+    });
+  },
+
   independentWallFloorIndex(plan, wall, floors) {
     if (wall.base === "level") {
       const basedFloor = floors.findIndex(
@@ -296,6 +313,7 @@ const FloorPlanTextExport = {
       "",
       `**Total:** ${plan.roomCount} cômodos · ${plan.formatMeters(plan.roomArea)} m² (área líquida, com descontos de sobreposição)`,
     );
+    this.appendStairTable(plan, lines, plan.allStairs ?? [], "##");
     this.appendOpeningTables(plan, lines, FloorPlanOpenings.rendered(plan), "##");
 
     lines.push("", "## Comunicações naturais", "");
@@ -516,6 +534,8 @@ const FloorPlanTextExport = {
         );
       }
 
+      this.appendStairTable(plan, lines, (plan.allStairs ?? []).filter((entry) =>
+        (entry.floorId ?? null) === floorId));
       appendIndependentWalls(floorWalls);
 
       appendRoofSection("Telhados", floorRoofs);

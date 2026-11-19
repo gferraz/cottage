@@ -24,7 +24,7 @@ test('cottage placement remains tied to the full house footprint across split fl
   assert.ok(Math.abs(bounds.y1 - 18.2) < 1e-8);
   const changed = structuredClone(config);
   changed.floors.reverse();
-  const stair = changed.floors.flatMap(floor => floor.rooms).find(room => room.id === 'front-stairs');
+  const stair = changed.floors.flatMap(floor => floor.stairs ?? []).find(stair => stair.id === 'front-stairs');
   stair.from = [-30, -10, -.6];
   stair.to = [-20, 0, 0];
   assert.deepEqual(FloorPlanMetrics.buildingReferenceBounds(prepare(changed)), bounds);

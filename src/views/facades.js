@@ -46,6 +46,10 @@ const FloorPlanFacades = {
         getComputedStyle(plan.root).getPropertyValue("--m"),
       ) || 56;
     const floorConfigs = plan.currentConfig?.floors ?? [plan.currentConfig];
+    const stairs = (plan.allStairs ?? []).filter(entry => !plan.invalidRoomIds?.has(entry.id))
+      .flatMap((entry) => {
+        try { return plan.getRoomGeometry(entry.id).normalizedParts; } catch { return []; }
+      });
     const rooms = floorConfigs.flatMap((floorConfig) =>
       (floorConfig?.rooms ?? []).flatMap((definition) => {
         try {
@@ -242,6 +246,7 @@ const FloorPlanFacades = {
       const coordinates = projectedRooms.flatMap((room) =>
         side ? [room.y0(), room.y1()] : [room.x0(), room.x1()],
       );
+      stairs.forEach(part => coordinates.push(...(side ? [part.y, part.y + part.l] : [part.x, part.x + part.w])));
       if (coordinates.length === 0) return;
       const facadeMin = Math.min(...coordinates);
       const facadeMax = Math.max(...coordinates);
@@ -980,7 +985,7 @@ const FloorPlanFacades = {
             top: wall.topZ,
             terrainReference: wall.base === "terrain" ? plan.terrainReference : null,
             terrainOffset: { x: buildingOffsetX, y: buildingOffsetY },
-            roofOnly: wall.top === "roof",
+            roofOnly: ["roofs", "roof"].includes(wall.top),
             undersideLimits: wall.undersideLimits,
           }, roofLimits, side);
           if (!polygons.length) return;
@@ -1074,6 +1079,36 @@ const FloorPlanFacades = {
             }
           }
         });
+
+      // Stairs are architectural solids independent of room walls.
+      stairs.forEach((part) => {
+        try {
+          const flight = String(part.classes ?? "").split(/\s+/).includes("stair-flight");
+          const boxes = flight ? FloorPlanGeometry.stairBoxes(part) : [part];
+          boxes.forEach((box) => {
+            if (!(box.h > 0)) return;
+            const start = side ? box.y : box.x;
+            const end = start + (side ? box.l : box.w);
+            const depth = side
+              ? box.x + (facadeEdge === "min" ? 0 : box.w)
+              : box.y + (facadeEdge === "min" ? 0 : box.l);
+            const bottom = (coordinate) => {
+              if (!flight || part.type === "solid-flared") return box.z0;
+              const plane = FloorPlanWalls.stairUndersidePlane(part);
+              const x = side ? depth : coordinate, y = side ? coordinate : depth;
+              return Math.min(box.z1, Math.max(box.z0, -plane[0] * x - plane[1] * y - plane[3]));
+            };
+            const polygon = document.createElementNS(svgNamespace, "polygon");
+            polygon.classList.add("facade-stair");
+            polygon.setAttribute("points", [[start, bottom(start)], [end, bottom(end)], [end, box.z1], [start, box.z1]]
+              .map(([coordinate, z]) => `${(coordinate - min + padding) * scale},${(floorHeight - z + padding) * scale}`).join(" "));
+            polygon.setAttribute("fill", part.colors?.riser || "#c5bba9");
+            polygon.setAttribute("stroke", "#665e52");
+            polygon.setAttribute("stroke-width", "0.75");
+            addFace(depth, [polygon], true);
+          });
+        } catch { /* Invalid stairs are reported during project preparation. */ }
+      });
 
       // Clip hidden edges and labels as well as fills. Painter ordering alone
       // allows rear annotations to leak through translucent surfaces.

@@ -450,3 +450,24 @@ test('adjacent front-wall segments have no vertical seam below the gable ridge',
       'internal join below ridge must not be outlined');
   }
 });
+
+test('top roofs selects the complete roof set and keeps the legacy roof alias equivalent', () => {
+  const current = normalizeRoofWall(true, undefined, { from: [0, 0], to: [4, 0], top: 'roofs' });
+  const legacy = normalizeRoofWall(true, undefined, { from: [0, 0], to: [4, 0], top: 'roof' });
+  assert.deepEqual(current.errors, []);
+  assert.equal(current.independentWalls.get('front-wall').topZ, legacy.independentWalls.get('front-wall').topZ);
+  assert.deepEqual(walls.undersideLimits({}, 'roofs'), []);
+  assert.ok(normalizeRoofWall(false, undefined, { from: [0, 0], to: [4, 0], top: 'roofs' }).errors.length > 0);
+});
+
+test('direct top levels preserve zero, numeric expressions and legacy wrapper geometry', () => {
+  const resolve = value => value === 'upper-rear.z0 - 0.15' ? 2.51 : Number(value);
+  for (const [top, expected] of [[2.66, 2.66], ['upper-rear.z0 - 0.15', 2.51], [0, 0], [{ level: 2.66 }, 2.66]]) {
+    const plan = normalizeRoofWall(false, undefined, { from: [0, 0], to: [4, 0], base: { level: -1 }, top }, resolve);
+    assert.deepEqual(plan.errors, []);
+    assert.equal(plan.independentWalls.get('front-wall').topZ, expected);
+    assert.deepEqual(walls.undersideLimits(plan, top), []);
+  }
+  assert.equal(walls.topLevel('upper-flight'), undefined);
+  assert.equal(walls.topLevel('roofs'), undefined);
+});

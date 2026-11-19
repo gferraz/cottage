@@ -79,6 +79,7 @@ class FloorPlan {
     this.validZoneIds = new Set();
     this.invalidRoomIds = new Set();
     this.allRooms = [];
+    this.allStairs = [];
     this.allItems = [];
     this.allOpenings = [];
     this.allWindows = [];
@@ -334,6 +335,9 @@ class FloorPlan {
           && this.roomDefinitions.get(room.id) === room
           && !invalidRoomIds.has(room.id));
         this.addRooms(validRooms);
+        (this.allStairs ?? []).filter((entry) => (entry.floorId ?? null) === (floorConfig.id ?? null))
+          .filter((entry) => !invalidRoomIds.has(entry.id))
+          .forEach((entry) => this.addRoom({ ...entry.stair, firstClassStair: true }));
         if (!this.showAllFloors) this.addSpanningStairs(config, floorConfig);
         this.updateOverlaps();
         this.renderWallsForFloor(floorConfig);

@@ -96,9 +96,13 @@
             "top": {
               "anyOf": [
                 {
+                  "type": "number",
+                  "description": "Cota absoluta do topo em metros."
+                },
+                {
                   "type": "string",
                   "minLength": 1,
-                  "description": "ID do objeto superior, ou roof para o conjunto de telhados."
+                  "description": "Cota em expressão (ex.: upper-rear.z0 - 0.15), ID do objeto superior, ou roofs para o conjunto de telhados."
                 },
                 {
                   "type": "array",
@@ -558,6 +562,139 @@
             }
           },
           "additionalProperties": false
+        },
+        "stairs": {
+          "type": "object",
+          "description": "Padrões para escadas e suas partes. Valores explícitos prevalecem.",
+          "properties": {
+            "kind": {
+              "enum": [
+                "flight",
+                "landing"
+              ],
+              "default": "flight",
+              "description": "flight representa um lance; landing representa um patamar plano."
+            },
+            "risers": {
+              "type": "integer",
+              "minimum": 2,
+              "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
+            },
+            "orientation": {
+              "enum": [
+                "longitudinal",
+                "transverse"
+              ]
+            },
+            "color": {
+              "type": "string"
+            },
+            "classes": {
+              "type": "string"
+            },
+            "walls": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "top",
+                      "front",
+                      "right",
+                      "bottom",
+                      "rear",
+                      "left"
+                    ]
+                  }
+                },
+                {
+                  "type": "object"
+                }
+              ]
+            },
+            "top": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "description": "Cota absoluta do topo em metros."
+                },
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "description": "Cota em expressão (ex.: upper-rear.z0 - 0.15), ID do objeto superior, ou roofs para o conjunto de telhados."
+                },
+                {
+                  "type": "array",
+                  "minItems": 1,
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "level": {
+                      "anyOf": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Número, referência geométrica ou expressão com params.nome."
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "level"
+                  ],
+                  "additionalProperties": false,
+                  "deprecated": true
+                },
+                {
+                  "$ref": "#/definitions/undersideTop",
+                  "deprecated": true
+                }
+              ]
+            },
+            "type": {
+              "enum": [
+                "solid-flared"
+              ],
+              "description": "Blocos sólidos sobrepostos até a varanda; o inferior envolve os superiores. Inclui a pisada superior."
+            },
+            "steps": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "widths": {
+                  "type": "array",
+                  "minItems": 2,
+                  "items": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+                }
+              }
+            },
+            "colors": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "thread": {
+                  "type": "string"
+                },
+                "riser": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false
@@ -807,6 +944,13 @@
           }
         },
         "additionalProperties": false
+      }
+    },
+    "stairs": {
+      "type": "array",
+      "description": "Escadas independentes dos cômodos: lances, patamares ou conjuntos com parts.",
+      "items": {
+        "$ref": "#/definitions/stair"
       }
     }
   },
@@ -1071,26 +1215,38 @@
           "minimum": 2,
           "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
         },
-        "stairType": {
+        "type": {
           "enum": [
             "solid-flared"
           ],
           "description": "Blocos sólidos sobrepostos até a varanda; o inferior envolve os superiores. Inclui a pisada superior."
         },
-        "stepWidths": {
-          "type": "array",
-          "minItems": 2,
-          "items": {
-            "type": "number",
-            "exclusiveMinimum": 0
-          },
-          "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+        "steps": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "widths": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+            }
+          }
         },
-        "treadColor": {
-          "type": "string"
-        },
-        "riserColor": {
-          "type": "string"
+        "colors": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "thread": {
+              "type": "string"
+            },
+            "riser": {
+              "type": "string"
+            }
+          }
         }
       },
       "allOf": [
@@ -1457,9 +1613,13 @@
         "top": {
           "anyOf": [
             {
+              "type": "number",
+              "description": "Cota absoluta do topo em metros."
+            },
+            {
               "type": "string",
               "minLength": 1,
-              "description": "ID do objeto superior, ou roof para o conjunto de telhados."
+              "description": "Cota em expressão (ex.: upper-rear.z0 - 0.15), ID do objeto superior, ou roofs para o conjunto de telhados."
             },
             {
               "type": "array",
@@ -1517,26 +1677,38 @@
             "$ref": "#/definitions/window"
           }
         },
-        "stairType": {
+        "type": {
           "enum": [
             "solid-flared"
           ],
           "description": "Blocos sólidos sobrepostos até a varanda; o inferior envolve os superiores. Inclui a pisada superior."
         },
-        "stepWidths": {
-          "type": "array",
-          "minItems": 2,
-          "items": {
-            "type": "number",
-            "exclusiveMinimum": 0
-          },
-          "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+        "steps": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "widths": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+            }
+          }
         },
-        "treadColor": {
-          "type": "string"
-        },
-        "riserColor": {
-          "type": "string"
+        "colors": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "thread": {
+              "type": "string"
+            },
+            "riser": {
+              "type": "string"
+            }
+          }
         }
       },
       "required": [
@@ -1890,26 +2062,32 @@
           "minimum": 2,
           "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
         },
-        "stairType": {
-          "enum": [
-            "solid-flared"
-          ],
-          "description": "Blocos sólidos sobrepostos até a varanda; o inferior envolve os superiores. Inclui a pisada superior."
+        "steps": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "widths": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+            }
+          }
         },
-        "stepWidths": {
-          "type": "array",
-          "minItems": 2,
-          "items": {
-            "type": "number",
-            "exclusiveMinimum": 0
-          },
-          "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
-        },
-        "treadColor": {
-          "type": "string"
-        },
-        "riserColor": {
-          "type": "string"
+        "colors": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "thread": {
+              "type": "string"
+            },
+            "riser": {
+              "type": "string"
+            }
+          }
         }
       },
       "allOf": [
@@ -2229,6 +2407,13 @@
               }
             },
             "additionalProperties": false
+          }
+        },
+        "stairs": {
+          "type": "array",
+          "description": "Escadas independentes dos cômodos: lances, patamares ou conjuntos com parts.",
+          "items": {
+            "$ref": "#/definitions/stair"
           }
         }
       },
@@ -2736,26 +2921,38 @@
                   "minimum": 2,
                   "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
                 },
-                "stairType": {
+                "type": {
                   "enum": [
                     "solid-flared"
                   ],
                   "description": "Blocos sólidos sobrepostos até a varanda; o inferior envolve os superiores. Inclui a pisada superior."
                 },
-                "stepWidths": {
-                  "type": "array",
-                  "minItems": 2,
-                  "items": {
-                    "type": "number",
-                    "exclusiveMinimum": 0
-                  },
-                  "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+                "steps": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "widths": {
+                      "type": "array",
+                      "minItems": 2,
+                      "items": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+                    }
+                  }
                 },
-                "treadColor": {
-                  "type": "string"
-                },
-                "riserColor": {
-                  "type": "string"
+                "colors": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "thread": {
+                      "type": "string"
+                    },
+                    "riser": {
+                      "type": "string"
+                    }
+                  }
                 }
               },
               "allOf": [
@@ -2925,26 +3122,32 @@
             "$ref": "#/definitions/door"
           }
         },
-        "stairType": {
-          "enum": [
-            "solid-flared"
-          ],
-          "description": "Blocos sólidos sobrepostos até a varanda; o inferior envolve os superiores. Inclui a pisada superior."
+        "steps": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "widths": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+            }
+          }
         },
-        "stepWidths": {
-          "type": "array",
-          "minItems": 2,
-          "items": {
-            "type": "number",
-            "exclusiveMinimum": 0
-          },
-          "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
-        },
-        "treadColor": {
-          "type": "string"
-        },
-        "riserColor": {
-          "type": "string"
+        "colors": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "thread": {
+              "type": "string"
+            },
+            "riser": {
+              "type": "string"
+            }
+          }
         }
       },
       "additionalProperties": false,
@@ -3075,9 +3278,13 @@
         "top": {
           "anyOf": [
             {
+              "type": "number",
+              "description": "Cota absoluta do topo em metros."
+            },
+            {
               "type": "string",
               "minLength": 1,
-              "description": "ID do objeto superior, ou roof para o conjunto de telhados."
+              "description": "Cota em expressão (ex.: upper-rear.z0 - 0.15), ID do objeto superior, ou roofs para o conjunto de telhados."
             },
             {
               "type": "array",
@@ -3512,6 +3719,899 @@
       },
       "required": [
         "from"
+      ]
+    },
+    "stair": {
+      "type": "object",
+      "properties": {
+        "comfort_zones": {
+          "type": "boolean",
+          "description": "Gera faixas de altura livre por cômodo a partir das interseções das coberturas (1,30 / 2,10 / 3 m)."
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "from": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "to": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "pos": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "rectangle": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "x": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "y": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "w": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "l": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "h": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "z0": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "rotation": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "inset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "outset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "color": {
+          "type": "string"
+        },
+        "classes": {
+          "type": "string"
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "orientation": {
+          "enum": [
+            "longitudinal",
+            "transverse"
+          ]
+        },
+        "walls": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "top",
+                  "front",
+                  "right",
+                  "bottom",
+                  "rear",
+                  "left"
+                ]
+              }
+            },
+            {
+              "type": "object"
+            }
+          ]
+        },
+        "parts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/stair-part"
+          }
+        },
+        "openings": {
+          "type": "array",
+          "description": "Vãos livres, incluindo vãos entre pavimentos. type é aceito apenas por compatibilidade.",
+          "items": {
+            "$ref": "#/definitions/opening"
+          }
+        },
+        "overlaps": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "overlays": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          ]
+        },
+        "copy": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Reutiliza os limites retangulares e a extensão vertical do objeto referenciado. Não herda aparência nem aberturas."
+        },
+        "top": {
+          "anyOf": [
+            {
+              "type": "number",
+              "description": "Cota absoluta do topo em metros."
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Cota em expressão (ex.: upper-rear.z0 - 0.15), ID do objeto superior, ou roofs para o conjunto de telhados."
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "level"
+              ],
+              "additionalProperties": false,
+              "deprecated": true
+            },
+            {
+              "$ref": "#/definitions/undersideTop",
+              "deprecated": true
+            }
+          ]
+        },
+        "risers": {
+          "type": "integer",
+          "minimum": 2,
+          "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
+        },
+        "doors": {
+          "type": "array",
+          "description": "Portas; a coleção determina a categoria.",
+          "items": {
+            "$ref": "#/definitions/door"
+          }
+        },
+        "windows": {
+          "type": "array",
+          "description": "Janelas; a coleção determina a categoria.",
+          "items": {
+            "$ref": "#/definitions/window"
+          }
+        },
+        "kind": {
+          "enum": [
+            "flight",
+            "landing"
+          ],
+          "default": "flight",
+          "description": "flight representa um lance; landing representa um patamar plano."
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1,
+          "description": "ID do pavimento de origem da escada global. Define o contexto de elevação e o filtro de piso."
+        },
+        "type": {
+          "enum": [
+            "solid-flared"
+          ],
+          "description": "Blocos sólidos sobrepostos até a varanda; o inferior envolve os superiores. Inclui a pisada superior."
+        },
+        "steps": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "widths": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+            }
+          }
+        },
+        "colors": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "thread": {
+              "type": "string"
+            },
+            "riser": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "copy"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "from"
+                  ]
+                },
+                {
+                  "required": [
+                    "to"
+                  ]
+                },
+                {
+                  "required": [
+                    "pos"
+                  ]
+                },
+                {
+                  "required": [
+                    "size"
+                  ]
+                },
+                {
+                  "required": [
+                    "rectangle"
+                  ]
+                },
+                {
+                  "required": [
+                    "inset"
+                  ]
+                },
+                {
+                  "required": [
+                    "outset"
+                  ]
+                },
+                {
+                  "required": [
+                    "x"
+                  ]
+                },
+                {
+                  "required": [
+                    "y"
+                  ]
+                },
+                {
+                  "required": [
+                    "w"
+                  ]
+                },
+                {
+                  "required": [
+                    "l"
+                  ]
+                },
+                {
+                  "required": [
+                    "z0"
+                  ]
+                },
+                {
+                  "required": [
+                    "h"
+                  ]
+                },
+                {
+                  "required": [
+                    "parts"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "description": "Escada de primeira classe. kind padrão flight; parts reúne lances e patamares com IDs globais."
+    },
+    "stair-part": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "from": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "to": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "pos": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "rectangle": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "x": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "y": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "w": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "l": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "h": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "z0": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "rotation": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Número, referência geométrica ou expressão com params.nome."
+            }
+          ]
+        },
+        "inset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "outset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "color": {
+          "type": "string"
+        },
+        "classes": {
+          "type": "string"
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "orientation": {
+          "enum": [
+            "longitudinal",
+            "transverse"
+          ]
+        },
+        "copy": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Reutiliza os limites retangulares e a extensão vertical do objeto referenciado. Não herda aparência nem aberturas."
+        },
+        "risers": {
+          "type": "integer",
+          "minimum": 2,
+          "description": "Número de espelhos do lance. Desenha risers - 1 pisadas; a última subida termina no piso ou patamar."
+        },
+        "kind": {
+          "enum": [
+            "flight",
+            "landing"
+          ],
+          "default": "flight",
+          "description": "flight representa um lance; landing representa um patamar plano."
+        },
+        "walls": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "top",
+                  "front",
+                  "right",
+                  "bottom",
+                  "rear",
+                  "left"
+                ]
+              }
+            },
+            {
+              "type": "object"
+            }
+          ]
+        },
+        "top": {
+          "anyOf": [
+            {
+              "type": "number",
+              "description": "Cota absoluta do topo em metros."
+            },
+            {
+              "type": "string",
+              "minLength": 1,
+              "description": "Cota em expressão (ex.: upper-rear.z0 - 0.15), ID do objeto superior, ou roofs para o conjunto de telhados."
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "level"
+              ],
+              "additionalProperties": false,
+              "deprecated": true
+            },
+            {
+              "$ref": "#/definitions/undersideTop",
+              "deprecated": true
+            }
+          ]
+        },
+        "type": {
+          "enum": [
+            "solid-flared"
+          ],
+          "description": "Blocos sólidos sobrepostos até a varanda; o inferior envolve os superiores. Inclui a pisada superior."
+        },
+        "steps": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "widths": {
+              "type": "array",
+              "minItems": 2,
+              "items": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "description": "Larguras em metros da base ao topo, decrescentes e centralizadas no lance."
+            }
+          }
+        },
+        "colors": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "thread": {
+              "type": "string"
+            },
+            "riser": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "copy"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "from"
+                  ]
+                },
+                {
+                  "required": [
+                    "to"
+                  ]
+                },
+                {
+                  "required": [
+                    "pos"
+                  ]
+                },
+                {
+                  "required": [
+                    "size"
+                  ]
+                },
+                {
+                  "required": [
+                    "rectangle"
+                  ]
+                },
+                {
+                  "required": [
+                    "inset"
+                  ]
+                },
+                {
+                  "required": [
+                    "outset"
+                  ]
+                },
+                {
+                  "required": [
+                    "x"
+                  ]
+                },
+                {
+                  "required": [
+                    "y"
+                  ]
+                },
+                {
+                  "required": [
+                    "w"
+                  ]
+                },
+                {
+                  "required": [
+                    "l"
+                  ]
+                },
+                {
+                  "required": [
+                    "z0"
+                  ]
+                },
+                {
+                  "required": [
+                    "h"
+                  ]
+                },
+                {
+                  "required": [
+                    "parts"
+                  ]
+                }
+              ]
+            }
+          }
+        }
       ]
     }
   }

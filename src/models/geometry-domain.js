@@ -31,6 +31,17 @@ const FloorPlanGeometryDomain = {
 
   addSpanningStairs(plan, config, floorConfig) {
     const floors = config.floors ?? [config];
+    // First-class compound stairs retain their source-floor context when projected.
+    for (const entry of plan.allStairs ?? []) {
+      if (entry.floor === floorConfig || plan.invalidRoomIds.has(entry.id)) continue;
+      const geometry = plan.getRoomGeometry(entry.id);
+      if (geometry.z1() <= geometry.z0() || plan.currentFloorHeight < geometry.z0() ||
+          plan.currentFloorHeight > geometry.z1()) continue;
+      const scoped = FloorPlanGeometry.inContext(plan, {
+        floorZ: Number(entry.floor?.z0 ?? 0), floorId: entry.floorId ?? null,
+      });
+      scoped.addRoom({ ...entry.stair, derived: true, firstClassStair: true });
+    }
     const existingStairs = (floorConfig.rooms ?? [])
       .filter((room) => room.classes?.split(/\s+/).includes("stair-flight"))
       .map((room) => plan.normalizeGeometry(room));

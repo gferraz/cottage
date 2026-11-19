@@ -123,7 +123,10 @@ const FloorPlanFacades3D = {
     const stairFlights = [];
     const stairLandings = [];
     floors.filter((floor) => !plan.visibleFloor || floor === plan.visibleFloor).forEach((floor) => {
-      (floor?.rooms ?? []).forEach((definition) => {
+      [...(floor?.rooms ?? []), ...(plan.allStairs ?? [])
+        .filter((entry) => (entry.floorId ?? null) === (floor?.id ?? null))
+        .filter((entry) => !plan.invalidRoomIds?.has(entry.id))
+        .map((entry) => entry.stair)].forEach((definition) => {
         const parts = plan.getRoomGeometry(definition.id).normalizedParts;
         const stairParts = parts.filter((part) => isStairFlight(part) ||
           String(part.classes || "").split(/\s+/).includes("stair-landing"));
@@ -145,12 +148,17 @@ const FloorPlanFacades3D = {
       }
     }
 
-    if (!rooms.length) {
-      container.textContent = "Nenhum cômodo disponível para este piso.";
+    const boundsSources = [...rooms, ...[...stairFlights, ...stairLandings].map((part) => ({
+      x0: () => part.x, x1: () => part.x + part.w,
+      y0: () => part.y, y1: () => part.y + part.l,
+      z0: () => part.z0, z1: () => part.z1,
+    }))];
+    if (!boundsSources.length) {
+      container.textContent = "Nenhum elemento disponível para este piso.";
       return;
     }
 
-    const roomBounds = rooms.reduce(
+    const roomBounds = boundsSources.reduce(
       (bounds, room) => ({
         x0: Math.min(bounds.x0, room.x0()),
         x1: Math.max(bounds.x1, room.x1()),
@@ -345,8 +353,8 @@ const FloorPlanFacades3D = {
       bounds: {
         x0: roomBounds.x0,
         x1: roomBounds.x1,
-        y0: Math.min(...rooms.map((room) => room.y0())),
-        y1: Math.max(...rooms.map((room) => room.y1())),
+        y0: Math.min(...boundsSources.map((room) => room.y0())),
+        y1: Math.max(...boundsSources.map((room) => room.y1())),
         z0: drawingBounds.z0,
         z1: drawingBounds.z1,
       },
@@ -374,7 +382,7 @@ const FloorPlanFacades3D = {
       facadeSide,
       THREE,
       scene,
-      rooms,
+      rooms: boundsSources,
       stairFlights,
       stairLandings,
       terrainProfile: hasTerrainProfile ? terrainProfile : null,

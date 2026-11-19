@@ -54,3 +54,20 @@ test('single floor keeps its existing stairs and vertical opening projections', 
   assert.equal(plan.itemElements.map(item => item.id).join(','), 'desk');
   assert.deepEqual(calls, ['spanning', 'upper', 'projection']);
 });
+
+test('first-class stairs render in their scoped floor without becoming rooms', () => {
+  const { plan, config } = fixture(true);
+  plan.allStairs = [
+    { id: 'entry', floorId: 'ground', stair: { id: 'entry' } },
+    { id: 'upper-flight', floorId: 'upper', stair: { id: 'upper-flight' } },
+    { id: 'invalid', floorId: 'upper', stair: { id: 'invalid' } },
+  ];
+  plan.invalidRoomIds = new Set(['invalid']);
+  plan.addRoom = function (stair) {
+    assert.equal(stair.firstClassStair, true);
+    this.stairElements.push({ id: stair.id, dataset: {} });
+  };
+  plan.renderPlanFloors(config, config.floors[1]);
+  assert.equal(plan.roomElements.map(room => room.id).join(','), 'office,bedroom');
+  assert.equal(plan.stairElements.map(stair => `${stair.id}:${stair.dataset.floorId}`).join(','), 'entry:ground,upper-flight:upper');
+});
