@@ -5,8 +5,11 @@ const FloorPlanLayers = {
 
   updateOverlaps(plan) {
     const rooms = [...plan.roomElements, ...plan.stairElements];
+    // Projected stairs belong to another floor; their layer graph has already
+    // been resolved against the source rooms in the prepared project.
+    const localRooms = rooms.filter(room => room.dataset.spanningStair !== "true");
     const analysis = FloorPlanOverlapAnalysis.analyze({
-      rooms: rooms.map((room) => ({
+      rooms: localRooms.map((room) => ({
         id: room.dataset.id,
         label: room.dataset.label,
         floorId: room.dataset.floorId,
@@ -27,18 +30,23 @@ const FloorPlanLayers = {
       ...plan.errors.filter((error) => !["collision", "overlap"].includes(error.category)),
       ...analysis.errors,
     ];
-    rooms.forEach((room, index) => {
+    rooms.forEach((room) => {
+      const projected = room.dataset.spanningStair === "true";
+      const index = localRooms.indexOf(room);
       room.classList.remove("room-overlap", "room-overlap-above", "room-overlap-below");
       if (analysis.collidingRooms.has(index)) room.classList.add("room-overlap");
       room.geometryParts.forEach((part) => {
         const key = FloorPlanOverlapAnalysis.partKey(room.dataset.id, part.id);
         if (!key) return;
-        const layer = analysis.layers.get(key) ?? 0;
+        const layer = (projected ? plan.stairSourceLayers?.get(key) : analysis.layers.get(key)) ?? 0;
         const element = part.element || room;
         element.dataset.layer = String(layer);
         element.style.setProperty("--layer", layer);
       });
-      room.dataset.layer = String(analysis.roomLayers[index]);
+      room.dataset.layer = String(projected
+        ? Math.max(0, ...room.geometryParts.map(part => plan.stairSourceLayers?.get(
+          FloorPlanOverlapAnalysis.partKey(room.dataset.id, part.id)) ?? 0))
+        : analysis.roomLayers[index]);
     });
     plan.itemElements.forEach((item) => {
       if (!item.dataset.id) return;
@@ -46,7 +54,7 @@ const FloorPlanLayers = {
       item.dataset.layer = String(layer);
       item.style.setProperty("--layer", layer);
     });
-    plan.maxLayer = analysis.maxLayer;
+    plan.maxLayer = Math.max(analysis.maxLayer, ...rooms.map(room => Number(room.dataset.layer)));
     plan.updateLayerVisibility();
     return analysis;
   },

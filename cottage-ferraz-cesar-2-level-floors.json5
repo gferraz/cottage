@@ -411,29 +411,9 @@
       id: "upper-rear",
       storey: "upper",
       label: "Dormitórios — traseiro",
-      z0: "ground-rear.z0 + params.floor_height",
+      z0: "upper.z0",
       comfort_zones: true,
       slabs: [{ id: "slab-upper-rear", label: "Laje — Dormitórios traseiro", thickness: 0.15 }],
-      stairs: [
-        {
-          id: "upper-corridor-steps",
-          label: "Dois degraus — piso superior",
-          risers: 2,
-          from: ["upper-corridor.x0", "stairs.y0 - 2 * params.ground_step_run", "upper.z0"],
-          to: ["upper-corridor.x1", "y0 + 2 * params.ground_step_run", "upper-rear.z0"],
-          orientation: "longitudinal",
-          walls: []
-        },
-        {
-          id: "upper-arrival-steps",
-          label: "Dois degraus — piso superior",
-          risers: 2,
-          from: ["stair-arrival.x0", "stairs.y0 - 2 * params.ground_step_run", "upper.z0"],
-          to: ["stair-arrival.x1", "y0 + 2 * params.ground_step_run", "upper-rear.z0"],
-          orientation: "longitudinal",
-          walls: []
-        }
-      ],
       rooms: [
         {
           id: "unused-rear",
@@ -497,7 +477,7 @@
           id: "upper-corridor-front",
           label: "Corredor frontal",
           from: ["upper-corridor.x0", "bedroom-north.y1"],
-          to: ["upper-corridor.x1", "upper-corridor-steps.y0"],
+          to: ["upper-corridor.x1", "stairs.y0"],
           walls: ["right", "left"],
           classes: "circulation"
         },
@@ -537,7 +517,7 @@
           id: "playroom",
           label: "Sala de Estar",
           from: ["bedroom-east.x1", "bedroom-east.y1"],
-          to: ["house-left.x0", "stairs.y0 - 2 * params.ground_step_run"],
+          to: ["house-left.x0", "stairs.y0"],
           walls: [],
           windows: [
             { from: "left", dy: "main-transverse-roof.yc - playroom.y0 - 0.45" }

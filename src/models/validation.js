@@ -54,7 +54,8 @@ const FloorPlanValidation = {
       }
       if (index > 0 && Number.isFinite(z0)) {
         const previousZ0 = Number(floors[index - 1].z0);
-        if (Number.isFinite(previousZ0) && z0 <= previousZ0) {
+        const sameStorey = floor.storey && floor.storey === floors[index - 1].storey;
+        if (Number.isFinite(previousZ0) && (z0 < previousZ0 || (z0 === previousZ0 && !sameStorey))) {
           errors.push({ category: "floor", id: floor.id, opening: floor, message: `${label}: z0 precisa ser superior ao piso anterior` });
         }
       }

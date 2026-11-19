@@ -6,7 +6,8 @@ const FloorPlanFacades3D = {
   nextFloorAbove(plan, floor) {
     const floors = plan.currentConfig?.floors ?? [];
     const candidates = floors.slice(floors.indexOf(floor) + 1);
-    return candidates.find((candidate) => FloorPlanMetrics.floorsOverlap(plan, floor.id, candidate.id));
+    return candidates.find((candidate) => Number(candidate.z0) > Number(floor.z0)
+      && FloorPlanMetrics.floorsOverlap(plan, floor.id, candidate.id));
   },
 
   floorView(plan) {

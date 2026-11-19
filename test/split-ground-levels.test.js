@@ -55,25 +55,21 @@ test("split ground levels connect through two corridor risers and retain usable 
     for (const id of ["garage", "kitchen", "powder", "laundry", "rear-corridor"])
       assert.equal(plan.getRoomGeometry(id).z0(), -2 * rise, id);
     for (const id of ["unused-rear", "bedroom-rear", "upper-corridor", "stair-arrival"])
-      assert.equal(plan.getRoomGeometry(id).z0(), 3 - 2 * rise, id);
+      assert.equal(plan.getRoomGeometry(id).z0(), 3, id);
     for (const id of ["bedroom-north", "bedroom-east", "playroom"])
       assert.equal(plan.getRoomGeometry(id).z0(), 3, id);
-    assert.equal(plan.allSlabs.find(slab => slab.floorId === "upper-rear").z, 3 - 2 * rise);
-    for (const id of ["upper-corridor-steps", "upper-arrival-steps"]) {
-      const geometry = plan.getRoomGeometry(id);
-      assert.ok(Math.abs(geometry.h() - 2 * rise) < 1e-9);
-      assert.equal(FloorPlanGeometry.stairSteps(geometry.normalizedParts[0]).risers, 2);
-    }
-    assert.equal(plan.getRoomGeometry("stairs").normalizedParts.find(part => part.id === "upper-flight").z1, 3 - 2 * rise);
-    assert.equal(plan.getRoomGeometry("upper-arrival-steps").y1(), plan.getRoomGeometry("stair-arrival").y0());
-    assert.equal(plan.getRoomGeometry("upper-arrival-steps").y0(), plan.getRoomGeometry("playroom").y1());
+    assert.equal(plan.allSlabs.find(slab => slab.floorId === "upper-rear").z, 3);
+    for (const id of ["upper-corridor-steps", "upper-arrival-steps"])
+      assert.equal(plan.stairDefinitions.has(id), false);
+    assert.equal(plan.getRoomGeometry("stairs").normalizedParts.find(part => part.id === "upper-flight").z1, 3);
+    assert.equal(plan.getRoomGeometry("playroom").y1(), plan.getRoomGeometry("stair-arrival").y0());
     const frontCorridor = plan.getRoomGeometry("upper-corridor-front");
     const rearCorridor = plan.getRoomGeometry("upper-corridor");
-    const corridorSteps = plan.getRoomGeometry("upper-corridor-steps");
     assert.equal(frontCorridor.z0(), 3);
-    assert.equal(rearCorridor.z0(), 3 - 2 * rise);
-    assert.equal(frontCorridor.y1(), corridorSteps.y0());
-    assert.equal(corridorSteps.y1(), rearCorridor.y0());
+    assert.equal(rearCorridor.z0(), 3);
+    assert.equal(frontCorridor.y1(), rearCorridor.y0());
+    const roof = plan.allRoofs.find(roof => roof.id === "rear-transverse-roof");
+    assert.equal(plan.resolve(roof.z0), 3);
     assert.equal(rearCorridor.y0(), plan.getRoomGeometry("stairs").y0());
     assert.equal(rearCorridor.y0(), plan.getRoomGeometry("dining").y1());
     const steps = plan.getRoomGeometry("level-stairs");

@@ -233,7 +233,7 @@ const FloorPlanDom = {
     element.nominalGeometry = resolved.nominalGeometry;
     if (derived) {
       element.dataset.derived = "true";
-      if (room.classes?.split(/\s+/).includes("stair-flight"))
+      if (firstClassStair || room.classes?.split(/\s+/).includes("stair-flight"))
         element.dataset.spanningStair = "true";
     }
     element.allowedOverlaps = plan.normalizeOverlapTargets(room.overlaps);

@@ -153,3 +153,13 @@ test('roof selection remains independent when all floors are unchecked', () => {
   assert.equal(view.allRoofs, source.allRoofs);
   assert.equal(view.showRoofs, true);
 });
+
+test('coplanar sectors do not clip walls to zero height', () => {
+  const source = plan();
+  source.currentConfig.floors[0].storey = 'upper';
+  source.currentConfig.floors[1].storey = 'upper';
+  source.currentConfig.floors[1].z0 = 0;
+  assert.equal(renderer.nextFloorAbove(source, source.currentConfig.floors[0]), undefined);
+  const view = renderer.floorView(source);
+  assert.equal(view.wallRenderParts[0].z1, 7);
+});
