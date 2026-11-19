@@ -443,9 +443,9 @@
         {
           id: "upper-corridor",
           label: "Corredor traseiro",
-          from: ["unused-right.x0", "main.y1"],
-          to: ["playroom.x1", "stairs.y0"],
-          walls: ["right", "left"]
+          from: ["playroom.x1", "unused-rear.y0"],
+          to:   ["bedroom-north.x1", "bedroom-north.y1"],
+          walls: ["right"]
         },
       ],
       items: [
@@ -489,14 +489,6 @@
       z0: "params.floor_height",
       rooms: [
         {
-          id: "upper-corridor-front",
-          label: "Corredor frontal",
-          from: ["upper-corridor.x0", "bedroom-north.y1"],
-          to: ["upper-corridor.x1", "stairs.y0"],
-          walls: ["right", "left"],
-          classes: "circulation"
-        },
-        {
           id: "bedroom-north",
           label: "Quarto N",
           from: ["knee-front-right.x1", "hall.y0"],
@@ -535,19 +527,18 @@
           to: ["house-left.x0", "stairs.y0"],
           walls: [],
           windows: [
-            { from: "left", dy: "main-transverse-roof.yc - playroom.y0 - 0.45" }
+            { from: "left", dy: "playroom.l / 2 - 0.45" }
           ]
         },
-        {
-          id: "unused-right",
-          label: "Sem uso",
-          from: ["house-right.x1", "office.y1"],
-          to: ["knee-front-right.x1", "main.y1"],
-          windows: [
-            { from: "right", to: "exterior", w: 0.8, h: 0.6 }
-          ],
-          walls: ["front"]
-        }
+        // {
+        //   id: "bedroom-north",
+        //   label: "Sem uso",
+        //   from: ["house-right.x1", "office.y1"],
+        //   to: ["knee-front-right.x1", "main.y1"],
+        //   // Janela e fechamento lateral desativados enquanto esta faixa
+        //   // permanecer sem a cobertura transversal.
+        //   walls: ["front"]
+        // }
       ],
       items: [
         {
@@ -604,18 +595,7 @@
       from: ["garage.x0", "kitchen.y1"],
       to: ["garage.x1", "y0"]
     },
-    {
-      id: "knee-contour-07",
-      // Ambiente em contato: Sem uso (unused-right).
-      scope: "upper",
-      color: "blue",
-      base: { level: "upper.z0" },
-      top: "roofs",
-      // Vale entre as duas coberturas transversais: altura livre de ~1,37 m.
-      // Fecha até o encontro com a água longitudinal, além do recorte de 1,30 m.
-      from: ["house-right.x1", "(main-transverse-roof.y1 + rear-transverse-roof.y0) / 2"],
-      to: ["main-roof.x1 - (main-transverse-roof.y1 - rear-transverse-roof.y0) / 2", "y0"]
-    },
+
     {
       id: "perimeter-plinth",
       color: "mate-amargo",
@@ -762,12 +742,7 @@
         points: [["office-main.x0", "hall.y0"], ["hall.x0", "y0"], ["x0", "house-left.y0"], ["house-left.x0", "y0"]]
       }
     },
-    {
-      id: "upper-right-wall",
-      scope: "upper",
-      base: { level: "upper.z0" },
-      path: { points: [["house-right.x1", "office.y1"], ["x0", "stairs.y0"]] }
-    },
+
     {
       id: "upper-right-wall-rear",
       scope: "upper-rear",
@@ -883,7 +858,7 @@
       label: "Escritório",
       z0: "upper.z0",
       from: ["office-main.x0", "office.y0"],
-      to: ["office.x1", "y0 + 5.5"],
+      to: ["office.x1", "main.y1"],
       orientation: "longitudinal",
       eaves: { left: 0.5, right: 0.5 }
     },
