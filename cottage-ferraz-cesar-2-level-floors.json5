@@ -417,11 +417,35 @@
       rooms: [
         {
           id: "unused-rear",
-          label: "Disponívels — fundos",
-          from: ["kitchen.x1", "main.y1", "upper-rear.z0"],
+          label: "Disponível — fundos",
+          from: ["bathroom-west.x0", "main.y1", "upper-rear.z0"],
           to: ["mudroom.x0", "kitchen.y1"],
           top: "roofs",
           unused: true
+        },
+        {
+          id: "bathroom-west",
+          label: "Banheiro Oeste",
+          from: ["kitchen.x1 - 2.6", "rear-transverse-roof.yc", "upper-rear.z0"],
+          to: ["kitchen.x1", "kitchen.y1"],
+          top: "roofs",
+          classes: "wet",
+          walls: ["left", "front"],
+          doors: [
+            { from: "left", to: "unused-rear", w: 0.8 }
+          ]
+        },
+        {
+          id: "bathroom-front",
+          label: "Banheiro Oeste — frontal",
+          from: ["bathroom-west.x0", "bathroom-west.y0 - bathroom-west.l", "upper-rear.z0"],
+          to: ["bathroom-west.x1", "bathroom-west.y0"],
+          top: "roofs",
+          classes: "wet",
+          walls: ["left", "front", "right"],
+          doors: [
+            { from: "left", to: "unused-rear", w: 0.8 }
+          ]
         },
         {
           id: "bedroom-south",
