@@ -41,7 +41,8 @@
   building: {anchor: "terrain.front-start", position: {x: 4, y: 3}, reference: "building-placement"},
   zones: [
     {id: "building-placement", rectangle: [0, 0, 14, 18.2], visible: false},
-    {id: "main", pos: [4, 2.5], size: [10, 8.8], visible: true}
+    {id: "front-wing", pos: [4, 0], size: [10, 2.5], visible: false, color: "red"},
+    {id: "main", pos: ["front-wing.x0", "front-wing.y1"], size: ["front-wing.w", 8.8], visible: false, color: "blue"}
   ],
   floors: [
     {
@@ -63,29 +64,100 @@
           id: "hall",
           label: "Hall",
           classes: "circulation",
-          walls: ["rear", "left"],
-          rectangle: [8.3, 2.5, 10.1, 4.7],
+          walls: ["rear"],
+          from: ["office.x1", "main.y0"],
+          to:   ["x0 + 1.4", "y0 + 2"],
           doors: [{from: "front", to: "porch", w: 1}, {from: "right", to: "office"}]
+        },
+        {
+          id: "living",
+          label: "Estar",
+          from: ["hall.x1", "main.y0"],
+          to: ["main.x1", "y0 + 3.6"],
+          walls: ["front", "rear", "left", "right"],
+          windows: [
+            // Janelas laterais com venezianas externas de abrir previstas.
+            {id: "living-window-side-front", from: "right", to: "exterior", position: 0.3, w: 0.6, h: 1.5, z0: "ground.z0 + 0.9"},
+            {id: "living-window-side-rear", from: "right", to: "exterior", position: "living.l - 0.9", w: 0.6, h: 1.5, z0: "ground.z0 + 0.9"},
+            // Conjunto frontal de 2 m, centralizado no sofá, sem parede entre módulos.
+            // Módulos laterais de abrir e dois centrais fixos previstos na esquadria.
+            {id: "living-window-front-1", from: "front", to: "exterior", position: "living-sofa.xc - living.x0 - 1", w: 0.5, h: 1.5, z0: "ground.z0 + 1.1"},
+            {id: "living-window-front-2", from: "front", to: "exterior", position: "living-sofa.xc - living.x0 - 0.5", w: 0.5, h: 1.5, z0: "ground.z0 + 1.1"},
+            {id: "living-window-front-3", from: "front", to: "exterior", position: "living-sofa.xc - living.x0", w: 0.5, h: 1.5, z0: "ground.z0 + 1.1"},
+            {id: "living-window-front-4", from: "front", to: "exterior", position: "living-sofa.xc - living.x0 + 0.5", w: 0.5, h: 1.5, z0: "ground.z0 + 1.1"}
+          ]
         },
         {
           id: "office",
           label: "Escritório",
-          classes: "office",
-          walls: [],
-          parts: [
-            {id: "office-main", rectangle: [10.8, 0, 14, 3.8], walls: ["rear"]},
-            {id: "office-extension", rectangle: [10.1, 2.5, 10.8, 3.8], walls: []}
-          ]
+          pos: ["front-wing.x0", "front-wing.y0"],
+          size: [3.3, 3.8],
+          walls: ["front", "rear", "left", "right"]
         },
-        {id: "porch", label: "Varanda", classes: "outdoor porch", walls: [], rectangle: [4, 0, 10.8, 2.5]}
+        {
+          id: "porch",
+          label: "Varanda",
+          classes: "outdoor porch",
+          pos: ["office.x1", "front-wing.y0"],
+          size: [6.8, 2.5],
+          walls: []
+        }
+      ],
+      items: [
+        {
+          id: "living-sofa",
+          type: "three-seat-sofa",
+          label: "Sofá",
+          pos: ["living.x0 + 1.1", "living.y0 + 0.1"]
+        },
+        {
+          id: "living-armchair-left",
+          type: "armchair",
+          pos: ["living.x0 + 0.1", "living.yc - 0.425"],
+          rotation: 270
+        },
+        {
+          id: "living-armchair-right",
+          type: "armchair",
+          pos: ["living-sofa.x1 + 0.25", "living-sofa.yc - 0.425"],
+          rotation: 0
+        },
+        {
+          id: "living-coffee-table",
+          label: "Mesa de centro",
+          pos: ["living-armchair-left.x1 + 0.5", "living-sofa.y1 + 0.5"],
+          size: [1.5, 0.6, 0.4],
+          classes: "furniture table",
+          color: "furniture",
+          chairs: 0
+        },
+        {
+          id: "living-fireplace",
+          label: "Lareira",
+          title: "Lareira — centro da parede lateral externa",
+          pos: ["living.x1 - 0.91", "living.yc - 0.25"],
+          size: [1.2, 0.5, 1.8],
+          classes: "fireplace",
+          rotation: 270
+        },
+        {
+          id: "living-tv-cabinet",
+          label: "TV",
+          pos: ["living-sofa.xc - 0.9", "living.y1 - 0.51"],
+          size: [1.8, 0.45, 0.6],
+          classes: "furniture storage",
+          color: "furniture"
+        }
       ]
     },
     {
       id: "upper-rear",
       storey: "upper",
-      label: "Dormitórios — traseiro",
-      z0: 3,
-      slabs: [{id: "slab-upper-rear", label: "Laje — Dormitórios traseiro", thickness: 0.15}],
+      label: "2º Pavimento - Fundos",
+      z0: "params.floor_height",
+      slabs: [
+        {id: "slab-upper-rear", thickness: 0.15}
+      ],
       rooms: []
     },
     {
