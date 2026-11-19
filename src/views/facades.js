@@ -386,6 +386,8 @@ const FloorPlanFacades = {
       const rawMin = Math.min(...coordinates);
       const max = Math.max(...coordinates);
       const padding = 0.5;
+      const width = Math.max(max - rawMin, 1);
+      const viewportWidth = Number(plan.viewport?.size?.[0] ?? width + padding * 2);
       const frontAligned = direction === "front";
       const viewportOriginX = Number(plan.viewport?.origin?.[0] ?? 0);
       const buildingOffsetX =
@@ -394,12 +396,11 @@ const FloorPlanFacades = {
         ) || 0;
       const horizontalOrigin = frontAligned
         ? viewportOriginX - buildingOffsetX
-        : rawMin - padding;
+        : rawMin - (viewportWidth - width) / 2;
       // Keep the existing local-coordinate expressions while changing only
       // their origin for the front elevation. The padding is already added
       // by those expressions, so do not include it in the origin twice.
-      const min = frontAligned ? horizontalOrigin + padding : rawMin;
-      const width = Math.max(max - rawMin, 1);
+      const min = horizontalOrigin + padding;
       const roofTop = facadeRoofs.reduce((highest, roof) => {
         if (!["gable", "shed"].includes(roof.type)) return highest;
         const geometry = roofGeometry(roof);
@@ -437,9 +438,7 @@ const FloorPlanFacades = {
       const terrainPoints = terrainCoordinates.map((coordinate) => [coordinate,
         side ? terrainElevationAt(edge, coordinate) : terrainElevationAt(coordinate, edge)]);
       const terrainDrop = Math.max(0, ...terrainPoints.map(([, z]) => Number.isFinite(z) ? -z : 0));
-      const viewWidth = frontAligned
-        ? Number(plan.viewport?.size?.[0] ?? width + padding * 2) * scale
-        : (width + padding * 2) * scale;
+      const viewWidth = viewportWidth * scale;
       const viewY = -roofRise * scale;
       const dimensionGap = 0.35;
       const viewHeight =
@@ -447,7 +446,7 @@ const FloorPlanFacades = {
       const svg = document.createElementNS(svgNamespace, "svg");
       svg.classList.add("facade-view");
       svg.setAttribute("width", `${viewWidth}`);
-      if (frontAligned) svg.style.width = `${viewWidth}px`;
+      svg.style.width = `${viewWidth}px`;
       svg.setAttribute("height", `${viewHeight}`);
       svg.setAttribute(
         "viewBox",

@@ -27,6 +27,7 @@ const FloorPlanViewport = {
     const previousScale = plan.viewportScale;
     const [width] = plan.viewport.size;
     const availableWidth =
+      plan.root.parentElement?.getBoundingClientRect?.().width ||
       plan.root.parentElement?.clientWidth || width * plan.viewportScale;
     plan.viewportScale = Math.max(1, availableWidth / width);
     plan.root.style.setProperty("--m", `${plan.viewportScale}px`);

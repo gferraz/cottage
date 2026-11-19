@@ -47,8 +47,8 @@
         { id: "tp-01-rua", y: 0, z: 0 },
         { id: "tp-02-entrada", y: 3.2, z: 0 },
         { id: "tp-03-inicio-descida", y: 12, z: -0.5 },
-        { id: "tp-04-fundos-casa", y: 23.8, z: -1.5 },
-        { id: "tp-05-jardim", y: 29, z: -2 },
+        { id: "tp-04-fundos-casa", y: 23.8, z: -2 },
+        { id: "tp-05-jardim", y: 29, z: -3 },
         { id: "tp-06-fundos-terreno", y: 44.32, z: -6 }
       ]
     },

@@ -270,13 +270,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   max-width: none;
 }
 
-.facade-secondary-section #facade-list .facade-view {
-  margin-left: max(
-    0px,
-    calc((100% - (var(--viewport-width, 20) * var(--m))) / 2)
-  );
-  margin-right: 0;
-}
+.facade-view { margin-inline: 0; }
 
 .facade-section[hidden] { display: none !important; }
 .facade-section h2 {
