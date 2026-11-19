@@ -7178,6 +7178,21 @@ const FloorPlanFacades = {
         .forEach(({ group }) => svg.append(group));
 
       if (plan.terrainReference) {
+        if (["front", "rear", "left", "right"].includes(direction)) {
+          const datum = document.createElementNS(svgNamespace, "line");
+          datum.classList.add("facade-terrain-zero");
+          datum.setAttribute("x1", "0");
+          datum.setAttribute("x2", `${viewWidth}`);
+          datum.setAttribute("y1", `${(floorHeight + padding) * scale}`);
+          datum.setAttribute("y2", `${(floorHeight + padding) * scale}`);
+          datum.setAttribute("stroke", "#888");
+          datum.setAttribute("stroke-width", "1");
+          datum.setAttribute("stroke-dasharray", "6 4");
+          const title = document.createElementNS(svgNamespace, "title");
+          title.textContent = "Cota 0,00 m — referência da frente do terreno";
+          datum.append(title);
+          svg.append(datum);
+        }
         const points = terrainPoints;
         if (points.every(([, z]) => Number.isFinite(z))) {
           const profileLine = document.createElementNS(svgNamespace, "polyline");
