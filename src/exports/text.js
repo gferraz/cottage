@@ -289,7 +289,7 @@ const FloorPlanTextExport = {
       "",
       "## Cômodos",
       "",
-      "| # | ID | Nome | x | y | Largura | Altura | Área bruta | Área útil | Paredes |",
+      "| # | ID | Nome | x | y | Largura | Altura | Área bruta | Área usada | Paredes |",
       "|---:|---|---|---:|---:|---:|---:|---:|---:|---|",
     ];
     const rooms = plan.allRooms.length
@@ -311,7 +311,7 @@ const FloorPlanTextExport = {
 
     lines.push(
       "",
-      `**Total:** ${plan.roomCount} cômodos · ${plan.formatMeters(plan.roomArea)} m² (área líquida, com descontos de sobreposição)`,
+      `**Total:** ${plan.roomCount} cômodos · ${plan.formatMeters(plan.roomArea)} m² (área usada, com descontos de sobreposição)`,
     );
     this.appendStairTable(plan, lines, plan.allStairs ?? [], "##");
     this.appendOpeningTables(plan, lines, FloorPlanOpenings.rendered(plan), "##");
@@ -504,7 +504,7 @@ const FloorPlanTextExport = {
         "",
         "### Cômodos",
         "",
-        "| # | ID | Nome | x | y | Largura | Comprimento | Área bruta | Área útil | Paredes |",
+        "| # | ID | Nome | x | y | Largura | Comprimento | Área bruta | Área usada | Paredes |",
         "|---:|---|---|---:|---:|---:|---:|---:|---:|---|",
       );
       if (floorRooms.length === 0) {

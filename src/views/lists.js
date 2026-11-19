@@ -11,7 +11,7 @@ const FloorPlanLists = {
       plan.roomCountSummary.textContent = `Total de cômodos: ${plan.roomCount}`;
     }
     if (plan.summary) {
-      plan.summary.textContent = `Área total: ${plan.formatMeters(plan.roomArea)}m²`;
+      plan.summary.textContent = `Área usada: ${plan.formatMeters(plan.roomArea)}m²`;
     }
     if (plan.boundsSummary) {
       const bounds = plan.bounds();
@@ -189,8 +189,12 @@ const FloorPlanLists = {
     }
     document.querySelector("#project-area").textContent =
       `${plan.formatMeters(area)} m²`;
+    const usedArea = (plan.allRooms ?? []).reduce((total, entry) =>
+      total + FloorPlanMetrics.netRoomArea(plan, entry.id, entry.reference ?? entry), 0);
+    document.querySelector("#project-used-area").textContent =
+      `${plan.formatMeters(usedArea)} m²`;
     document.querySelector("#project-floor-count").textContent =
-      String(floors.length);
+      String(new Set(floors.map((floor) => floor.storey || floor)).size);
     document.querySelector("#project-floor-labels").textContent = floors
       .map((floor) => floor.label || floor.id)
       .filter(Boolean)
@@ -278,7 +282,7 @@ const FloorPlanLists = {
       "Largura (m)",
       "Comprimento (m)",
       "Bruta (m²)",
-      "Líquida (m²)",
+      "Usada (m²)",
       "Altura mín. → máx. (m)",
       "Área ≥ 2,10 m (m²)",
     ].forEach((text) => {

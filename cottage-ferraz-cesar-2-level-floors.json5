@@ -417,21 +417,22 @@
       rooms: [
         {
           id: "unused-rear",
-          label: "Sem uso — fundos",
+          label: "Disponívels — fundos",
           from: ["kitchen.x1", "main.y1", "upper-rear.z0"],
           to: ["mudroom.x0", "kitchen.y1"],
           top: "roofs",
           unused: true
         },
         {
-          id: "bedroom-rear",
+          id: "bedroom-south",
           label: "Quarto Sul",
           from: ["garage.x0", "garage-knee-wall-front.y0", "upper-rear.z0"],
           to: ["garage.x1", "garage-knee-wall-rear.y0"],
           top: "roofs",
           doors: [
-            { from: "right", to: "unused-rear", dy: "unused-rear.yc - bedroom-rear.y0 - 0.4" }
-          ]
+            { from: "right", to: "unused-rear", dy: "unused-rear.yc - bedroom-south.y0 - 0.4" }
+          ],
+          walls: ["left"]
         },
         {
           id: "stair-arrival",
@@ -443,9 +444,10 @@
         },
         {
           id: "upper-corridor",
-          label: "Corredor superior",
+          label: "Disponível - Central",
           from: ["playroom.x1", "unused-rear.y0"],
           to:   ["bedroom-north.x1", "bedroom-north.y1"],
+          unused: true,
           walls: ["right"]
         },
       ],
@@ -455,14 +457,14 @@
           id: "bed-south-1",
           type: "twin-bed",
           nightstand: { side: "none" },
-          pos: ["bedroom-rear.xc - 1.37", "bedroom-rear.y1 - 1.91 - 0.10"],
+          pos: ["bedroom-south.xc - 1.37", "bedroom-south.y1 - 1.91 - 0.10"],
           rotation: 180
         },
         {
           id: "bed-south-2",
           type: "twin-bed",
           nightstand: { side: "none" },
-          pos: ["bedroom-rear.xc + 0.40", "bedroom-rear.y1 - 1.91 - 0.10"],
+          pos: ["bedroom-south.xc + 0.40", "bedroom-south.y1 - 1.91 - 0.10"],
           rotation: 180
         },
         {
@@ -531,15 +533,6 @@
             { from: "left", dy: "playroom.l / 2 - 0.45" }
           ]
         },
-        // {
-        //   id: "bedroom-north",
-        //   label: "Sem uso",
-        //   from: ["house-right.x1", "office.y1"],
-        //   to: ["knee-front-right.x1", "main.y1"],
-        //   // Janela e fechamento lateral desativados enquanto esta faixa
-        //   // permanecer sem a cobertura transversal.
-        //   walls: ["front"]
-        // }
       ],
       items: [
         {
@@ -578,7 +571,7 @@
     // Fechamentos já atendidos pelas paredes existentes não são duplicados.
     {
       id: "garage-knee-wall-front",
-      // Ambiente em contato: Quarto dos fundos (bedroom-rear).
+      // Ambiente em contato: Quarto Sul (bedroom-south).
       scope: "upper-rear",
       color: "blue",
       base: { level: "upper-rear.z0" },
@@ -588,7 +581,7 @@
     },
     {
       id: "garage-knee-wall-rear",
-      // Ambiente em contato: Quarto dos fundos (bedroom-rear).
+      // Ambiente em contato: Quarto Sul (bedroom-south).
       scope: "upper-rear",
       color: "blue",
       base: { level: "upper-rear.z0" },
@@ -748,7 +741,7 @@
       id: "upper-right-wall-rear",
       scope: "upper-rear",
       base: { level: "upper-rear.z0" },
-      from: ["house-right.x1", "stairs.y0"],
+      from: ["house-right.x1", "kitchen.y0"],
       to: ["x0", "main.y1"]
     },
     {

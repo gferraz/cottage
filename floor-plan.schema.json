@@ -1341,7 +1341,7 @@
         "unused": {
           "type": "boolean",
           "default": false,
-          "description": "Quando true, exclui o cômodo da área líquida, preservando sua área bruta e geometria."
+          "description": "Quando true, exclui o cômodo da área usada, preservando sua área bruta e geometria."
         },
         "comfort_zones": {
           "type": "boolean",
