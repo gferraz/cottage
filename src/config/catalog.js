@@ -15,7 +15,7 @@ window.FloorPlanCatalog = {
     "desejo-ambar": "#f2cb96", // SW 6366
     "abobrinha-italiana": "#9ea67d", // SW 9038
     "aroma-de-uva": "#c5c0c9", // SW 6548
-    furniture: "#a67c52",
+    furniture: "#765438",
     bed: "#78b8b2",
     appliance: "#c7d2dc",
     sanitary: "#d9e8ee",

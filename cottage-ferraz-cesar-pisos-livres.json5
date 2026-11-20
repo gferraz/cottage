@@ -100,12 +100,12 @@
         {
           id: "master-bedroom",
           label: "Suíte",
-          from: ["hall.x1", "living.y1"],
+          from: ["main.x1 - 3.6", "living.y1"],
           to: ["main.x1", "y0 + 3.8"],
           // doors: [
           //   { from: "left", w: 1, dy: 2.4 }
           // ],
-          walls: ["left", "right"],
+          walls: ["front", "left", "right"],
           windows: [
             // Janelas laterais com venezianas externas de abrir previstas.
             { model: "cottage-casement", from: "right", w: 0.6, dx: 0.5 },
@@ -126,7 +126,14 @@
           pos: ["office.x1", "front-wing.y0"],
           size: [6.8, 2.5],
           walls: []
-        }
+        },
+        {
+          id: "vestibule",
+          label: "Vestíbulo",
+          from: ["hall.x1", "master-bedroom.y0"],
+          to: ["master-bedroom.x0", "y0 + 2.2"]
+          //walls: ["front", "rear", "left", "right"]
+        },
       ],
       items: [
         {
@@ -171,7 +178,7 @@
           label: "TV set",
           pos: ["living-sofa.xc - 1", "living.y1 - 0.51"],
           size: [1.8, 0.45, 0.6],
-          classes: "furniture storage",
+          classes: "furniture",
         },
         {
           type: "rug",

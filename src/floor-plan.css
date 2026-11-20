@@ -761,16 +761,20 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   top: calc((var(--y) + var(--building-offset-y, 0) - var(--viewport-origin-y, 0)) * var(--m));
   width: calc(var(--w) * var(--m));
   height: calc(var(--l) * var(--m));
+  border: 1px solid var(--theme-label, #263746);
+  background-color: var(--theme-furniture, #cbb8a8);
 }
 
 .plan-item:not(.room) {
-  z-index: calc(5 + var(--layer, 0));
+  z-index: calc(7 + var(--layer, 0));
   opacity: 0.45;
 }
 
 .plan-item.rug {
   opacity: 0.25;
 }
+
+.plan-item.furniture { background-color: var(--theme-furniture, #765438); }
 
 .plan-wall {
   z-index: calc(4 + var(--layer, 0));

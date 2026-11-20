@@ -967,6 +967,7 @@ class FloorPlan {
       }
     }
     this.updateSummary();
+    this.updateErrorList();
     [this.downloadButton, this.markdownButton, this.dxfButton].forEach(
       (button) => {
         if (button) button.hidden = false;
