@@ -1,0 +1,28 @@
+// Modelos padrão de esquadrias. As dimensões estão em metros.
+{
+  "cottage-casement": {
+    "w": 0.9,
+    "h": 1.5,
+    "z0": 0.9,
+    "type": "casement",
+    "glazing": { "columns": 3, "rows": 3 },
+    "framing": { "frame": 0.05, "mullion": 0.025, "color": "#f3f0e8" }
+  },
+  "cottage-fixed": {
+    "w": 0.9,
+    "h": 1.5,
+    "z0": 0.9,
+    "type": "fixed",
+    "glazing": { "columns": 3, "rows": 3 },
+    "framing": { "frame": 0.05, "mullion": 0.025, "color": "#f3f0e8" }
+  },
+  "cottage-sliding": {
+    "w": 0.9,
+    "h": 1.5,
+    "z0": 0.9,
+    "type": "sliding",
+    "direction": "right",
+    "glazing": { "columns": 3, "rows": 3 },
+    "framing": { "frame": 0.05, "mullion": 0.025, "color": "#f3f0e8" }
+  }
+}

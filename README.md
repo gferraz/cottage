@@ -96,7 +96,7 @@ Os IDs dos cômodos são obrigatórios, globais e únicos. IDs de zonas, itens, 
 
 ## Catálogo compartilhado
 
-Tipos reutilizáveis de itens, padrões de portas/janelas e tokens de cor ficam em [`src/config/catalog.js`](src/config/catalog.js). Uma planta pode sobrescrever tipos em `item-types`, valores de abertura no próprio objeto e cores em `theme.colors`. A prioridade é: definição explícita da planta, catálogo compartilhado e padrão interno.
+Tipos reutilizáveis de itens ficam em [`lib/items.json`](lib/items.json); padrões de portas/janelas e tokens de cor ficam em [`src/config/catalog.js`](src/config/catalog.js). O build incorpora a biblioteca de itens em `dist/index.html`, sem requisição externa. Uma planta pode sobrescrever tipos em `item-types`, valores de abertura no próprio objeto e cores em `theme.colors`. A prioridade é: definição explícita da planta, catálogo compartilhado e padrão interno.
 
 Camas (`queen-bed` e `twin-bed`) aceitam `nightstand: { w: 0.5, side: "both" }`. A largura `w` é sempre opcional (0,5 m para queen e 0,4 m para twin, salvo definição no catálogo). Ela também define a profundidade: os criados-mudos são quadrados, afastados 5 cm das laterais e alinhados à cabeceira. Eles herdam a altura e a rotação da cama. Use `side: "left"`, `"right"` ou `"both"` para escolher o lado antes da rotação da cama. Use `nightstand: { side: "none" }` para remover os criados-mudos, sem precisar informar `w`. O padrão é `"right"` para `twin-bed` e `"both"` para `queen-bed`. Sem `nightstand`, a cama queen inclui dois criados-mudos de 0,5 × 0,5 m, e a cama twin inclui um criado-mudo à direita de 0,4 × 0,4 m. A opção também pode ser definida no catálogo ou em `item-types`.
 
@@ -479,3 +479,9 @@ A grade representa subdivisões do vidro, não uma proteção metálica externa.
 ### Moldura de janela
 
 `config.windows` define padrões de largura, altura, peitoril, tipo, grade e moldura para todas as janelas; valores informados em uma janela prevalecem. `framing` configura moldura e montantes em metros. Por padrão, a moldura externa tem 4 cm, os montantes 2,4 cm e a cor é `#454545`. Exemplo: `framing: { frame: 0.05, mullion: 0.025, color: "#454545" }`. A moldura aparece na fachada e na perspectiva 3D; a mesma cor e espessura são usadas nos montantes da grade.
+
+Os modelos reutilizáveis ficam em [`lib/windows.json5`](lib/windows.json5). Use `model: "cottage-casement"` numa janela ou `config.windows.model` para escolher o padrão do projeto. Propriedades locais, como `w`, `type`, `glazing` e `framing`, sobrescrevem o modelo. O build valida e incorpora a biblioteca em `dist/index.html`, que não depende de uma requisição externa.
+
+Os modelos reutilizáveis ficam em [`lib/windows.json5`](lib/windows.json5). Use `model: "cottage-casement"` numa janela ou `config.windows.model` para escolher um padrão do projeto. Propriedades da janela instalada, como `w`, `type`, `glazing` e `framing`, sobrescrevem o modelo. O build valida e incorpora a biblioteca em `dist/index.html`, sem requisição externa.
+
+Janelas `sliding` aceitam `direction: "left"`, `"right"` ou `"up"`, indicando para onde a folha se move na vista da fachada. Nas duas folhas móveis frontais, a esquerda desliza para a esquerda e a direita para a direita; o modelo `cottage-sliding` usa `right` como padrão.

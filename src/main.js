@@ -981,6 +981,7 @@ class FloorPlan {
    * @returns {Promise<FloorPlan>} A instância após o carregamento.
    */
   async loadFile(file) {
+    await Promise.all([window.FloorPlanWindowLibraryReady, window.FloorPlanItemLibraryReady]);
     const sourceText = await file.text();
     const config = FloorPlanParser.parse(sourceText, { filename: file.name });
     this.currentSourceText = sourceText;

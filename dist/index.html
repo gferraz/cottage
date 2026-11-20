@@ -35,7 +35,7 @@
   --theme-roof-gradient-light: #f1c0a0;
   --theme-opening: #e8c99c;
   --theme-opening-line: #6b4b2a;
-  --theme-window: #eefaff;
+  --theme-window: #9db6c4;
   --theme-window-line: #a7adb3;
   --theme-button: #f2f2f2;
   --theme-button-hover: #e6e6e6;
@@ -3093,6 +3093,10 @@ const FloorPlanOpenings = {
   windowAppearance(opening) {
     const type = opening.windowType ?? opening.type ?? "fixed";
     if (!Object.hasOwn(this.types, type)) throw new Error(`Tipo de abertura de janela inválido: ${type}`);
+    const direction = opening.direction ?? "right";
+    if (!Object.hasOwn({ left: true, right: true, up: true }, direction)) {
+      throw new Error(`Direção de janela deslizante inválida: ${direction}`);
+    }
     const framing = opening.framing ?? {};
     if (!framing || typeof framing !== "object" || Array.isArray(framing)) throw new Error("framing precisa ser um objeto");
     const frameWidth = framing.frame ?? 0.04;
@@ -3107,7 +3111,16 @@ const FloorPlanOpenings = {
     if (![columns, rows].every(value => Number.isInteger(value) && value >= 1 && value <= 32)) {
       throw new Error("A grade de vidros precisa de 1 a 32 colunas e linhas");
     }
-    return { windowType: type, glazing: { columns, rows }, framing: { frame: frameWidth, mullion: mullionWidth, color: frameColor } };
+    return { windowType: type, direction, glazing: { columns, rows }, framing: { frame: frameWidth, mullion: mullionWidth, color: frameColor } };
+  },
+
+  windowDefaults(plan, opening = {}) {
+    const configDefaults = plan.currentConfig?.config?.windows ?? {};
+    const modelId = opening.model ?? configDefaults.model;
+    const model = modelId ? window.FloorPlanWindowLibrary?.[modelId] : {};
+    if (modelId && !model) throw new Error(`Modelo de janela desconhecido: ${modelId}`);
+    const openingType = opening.type === "window" ? undefined : opening.type;
+    return { ...model, ...configDefaults, ...opening, type: openingType ?? configDefaults.type ?? model?.type ?? "fixed" };
   },
 
   // Normalized coordinates keep facade symbols independent of scale and orientation.
@@ -3121,7 +3134,20 @@ const FloorPlanOpenings = {
     if (windowType === "awning") { symbol([0.1, 0.1, 0.5, 0.9]); symbol([0.5, 0.9, 0.9, 0.1]); }
     if (windowType === "tilt") { symbol([0.1, 0.9, 0.5, 0.1]); symbol([0.5, 0.1, 0.9, 0.9]); }
     if (windowType === "sliding") {
-      symbol([0.15, 0.5, 0.85, 0.5]); symbol([0.7, 0.4, 0.85, 0.5]); symbol([0.7, 0.6, 0.85, 0.5]);
+      const direction = this.windowAppearance(opening).direction;
+      if (direction === "up") {
+        symbol([0.5, 0.85, 0.5, 0.15]);
+        symbol([0.4, 0.3, 0.5, 0.15]);
+        symbol([0.6, 0.3, 0.5, 0.15]);
+      } else if (direction === "left") {
+        symbol([0.85, 0.5, 0.15, 0.5]);
+        symbol([0.3, 0.4, 0.15, 0.5]);
+        symbol([0.3, 0.6, 0.15, 0.5]);
+      } else {
+        symbol([0.15, 0.5, 0.85, 0.5]);
+        symbol([0.7, 0.4, 0.85, 0.5]);
+        symbol([0.7, 0.6, 0.85, 0.5]);
+      }
     }
     return lines;
   },
@@ -3176,7 +3202,10 @@ const FloorPlanOpenings = {
     for (const type of Object.keys(defaults)) {
       const config = plan.currentConfig?.config ?? {};
       const key = { door: "doors", window: "windows", opening: "openings" }[type];
-      const configured = { ...(config.openings?.[type] ?? {}), ...(config[key] ?? {}) };
+      const windowModel = type === "window" && config.windows?.model
+        ? window.FloorPlanWindowLibrary?.[config.windows.model] ?? {}
+        : {};
+      const configured = { ...windowModel, ...(config.openings?.[type] ?? {}), ...(config[key] ?? {}) };
       defaults[type] = { ...defaults[type] };
       for (const key of ["w", "h", "z0"]) {
         if (configured[key] !== undefined) defaults[type][key] = configured[key];
@@ -3567,7 +3596,7 @@ const FloorPlanOpenings = {
         "Opening z0 must be finite and h must be greater than zero",
       );
     }
-    const configDefaults = plan.currentConfig?.config?.windows ?? {};
+    const configDefaults = this.windowDefaults(plan, opening);
     const normalized = {
       ...opening,
       ...(type === "window" ? this.windowAppearance({ ...configDefaults, ...opening, windowType: opening.windowType ?? (opening.type === "window" ? undefined : opening.type) ?? configDefaults.type ?? "fixed" }) : {}),
@@ -7279,8 +7308,9 @@ const FloorPlanFacades = {
             const windowHeight = height * scale;
             featureGroup.dataset.windowType = opening.windowType ?? "fixed";
             const framing = FloorPlanOpenings.windowAppearance(opening).framing;
-            rect.setAttribute("stroke", framing.color);
-            rect.setAttribute("stroke-width", `${Math.max(1, framing.frame * scale)}`);
+            rect.style.stroke = framing.color;
+            rect.style.strokeWidth = `${Math.max(1, framing.frame * scale)}`;
+            rect.style.vectorEffect = "non-scaling-stroke";
             for (const { points: [x1, y1, x2, y2], kind } of FloorPlanOpenings.windowLines(opening)) {
               const line = document.createElementNS(svgNamespace, "line");
               line.setAttribute("x1", `${windowX + x1 * windowWidth}`);
@@ -15988,6 +16018,7 @@ class FloorPlan {
    * @returns {Promise<FloorPlan>} A instância após o carregamento.
    */
   async loadFile(file) {
+    await Promise.all([window.FloorPlanWindowLibraryReady, window.FloorPlanItemLibraryReady]);
     const sourceText = await file.text();
     const config = FloorPlanParser.parse(sourceText, { filename: file.name });
     this.currentSourceText = sourceText;
@@ -16095,84 +16126,9 @@ class FloorPlan {
 window.FloorPlan = FloorPlan;
 
 
-window.FloorPlanCatalog = {
-  walls: {
-    thickness: 0.12,
-  },
-  colors: {
-    "casca-de-pinus": "#6e5241", // SW 2807
-    "jangada-de-bambu": "#ad9b8c", // SW 7501
-    "mate-amargo": "#606b4a", // SW 6433
-    "prosa-ao-entardecer": "#989192", // SW 9155
-    "tacho-de-cobre": "#b27147", // SW 7709
-    "leite-maltado": "#decabd", // SW 6057
-    endro: "#7c9067", // SW 6438
-    "malva-exotica": "#afa7ac", // SW 6269
-    "sertao-nordestino": "#cd7d4c", // SW 6642
-    "desejo-ambar": "#f2cb96", // SW 6366
-    "abobrinha-italiana": "#9ea67d", // SW 9038
-    "aroma-de-uva": "#c5c0c9", // SW 6548
-    furniture: "#d8c19a",
-    bed: "#78b8b2",
-    appliance: "#c7d2dc",
-    sanitary: "#d9e8ee",
-    circulation: "#f5eede",
-    terracotta: "#b15232",
-    neutral: "#d8d8d8",
-  },
-  items: {
-    "dining-table": {
-      label: "Mesa de jantar",
-      size: [1.8, 0.9, 0.75],
-      classes: "furniture table",
-      color: "furniture",
-    },
-    "washing-machine": {
-      label: "Lavadora",
-      size: [0.6, 0.6, 0.85],
-      classes: "appliance washing-machine",
-      color: "appliance",
-    },
-    "queen-bed": {
-      label: "Cama Queen",
-      size: [1.6, 2.0, 0.55],
-      classes: "furniture queen-bed",
-      nightstand: { w: 0.5, side: "both" },
-      color: "bed",
-    },
-    "twin-bed": {
-      label: "Cama Twin",
-      size: [0.97, 1.91, 0.55],
-      classes: "furniture twin-bed",
-      nightstand: { w: 0.4, side: "right" },
-      color: "bed",
-    },
-    "three-seat-sofa": {
-      label: "Sofá de 3 lugares",
-      size: [2.1, 0.9, 0.85],
-      classes: "furniture three-seat-sofa",
-      color: "furniture",
-    },
-    armchair: {
-      label: "Poltrona",
-      size: [0.8, 0.85, 0.85],
-      classes: "furniture armchair",
-      color: "furniture",
-    },
-    railing: {
-      label: "Cerca da varanda",
-      size: [1.0, 0.08, 1.1],
-      classes: "architectural railing",
-      color: "neutral",
-    },
-  },
-  openings: {
-    door: { w: 0.8, z0: 0, h: 2.1 },
-    opening: { w: 1.0, z0: 0, h: 2.1 },
-    window: { w: 0.9, z0: 0.9, h: 1.5 },
-  },
-};
+window.FloorPlanWindowLibrary = {"cottage-casement":{"w":0.9,"h":1.5,"z0":0.9,"type":"casement","glazing":{"columns":3,"rows":3},"framing":{"frame":0.05,"mullion":0.025,"color":"#f3f0e8"}},"cottage-fixed":{"w":0.9,"h":1.5,"z0":0.9,"type":"fixed","glazing":{"columns":3,"rows":3},"framing":{"frame":0.05,"mullion":0.025,"color":"#f3f0e8"}},"cottage-sliding":{"w":0.9,"h":1.5,"z0":0.9,"type":"sliding","direction":"right","glazing":{"columns":3,"rows":3},"framing":{"frame":0.05,"mullion":0.025,"color":"#f3f0e8"}}};
 
+window.FloorPlanCatalog = {"walls":{"thickness":0.12},"colors":{"casca-de-pinus":"#6e5241","jangada-de-bambu":"#ad9b8c","mate-amargo":"#606b4a","prosa-ao-entardecer":"#989192","tacho-de-cobre":"#b27147","leite-maltado":"#decabd","endro":"#7c9067","malva-exotica":"#afa7ac","sertao-nordestino":"#cd7d4c","desejo-ambar":"#f2cb96","abobrinha-italiana":"#9ea67d","aroma-de-uva":"#c5c0c9","furniture":"#d8c19a","bed":"#78b8b2","appliance":"#c7d2dc","sanitary":"#d9e8ee","circulation":"#f5eede","terracotta":"#b15232","neutral":"#d8d8d8"},"items":{"dining-table":{"label":"Mesa de jantar","size":[1.8,0.9,0.75],"classes":"furniture table","color":"furniture"},"washing-machine":{"label":"Lavadora","size":[0.6,0.6,0.85],"classes":"appliance washing-machine","color":"appliance"},"queen-bed":{"label":"Cama Queen","size":[1.6,2,0.55],"classes":"furniture queen-bed","nightstand":{"w":0.5,"side":"both"},"color":"bed"},"twin-bed":{"label":"Cama Twin","size":[0.97,1.91,0.55],"classes":"furniture twin-bed","nightstand":{"w":0.4,"side":"right"},"color":"bed"},"three-seat-sofa":{"label":"Sofá de 3 lugares","size":[2.1,0.9,0.85],"classes":"furniture three-seat-sofa","color":"furniture"},"armchair":{"label":"Poltrona","size":[0.8,0.85,0.85],"classes":"furniture armchair","color":"furniture"},"railing":{"label":"Cerca da varanda","size":[1,0.08,1.1],"classes":"architectural railing","color":"neutral"}},"openings":{"door":{"w":0.8,"z0":0,"h":2.1},"opening":{"w":1,"z0":0,"h":2.1},"window":{"w":0.9,"z0":0.9,"h":1.5}}};
 
 const floor = new FloorPlan({
   root: document.querySelector("#floor-plan"),
@@ -16255,13 +16211,14 @@ document.addEventListener("keydown", (event) => {
   document.querySelector("#json-file").click();
 }, { capture: true });
 
-function loadJsonFromCommandLine() {
+async function loadJsonFromCommandLine() {
   const encoded = window.location.hash.startsWith("#json=")
     ? window.location.hash.slice("#json=".length)
     : "";
   if (!encoded) return;
 
   try {
+    await Promise.all([window.FloorPlanWindowLibraryReady, window.FloorPlanItemLibraryReady]);
     const binary = atob(encoded);
     const bytes = Uint8Array.from(binary, (character) =>
       character.charCodeAt(0),

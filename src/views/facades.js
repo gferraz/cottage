@@ -1069,8 +1069,9 @@ const FloorPlanFacades = {
             const windowHeight = height * scale;
             featureGroup.dataset.windowType = opening.windowType ?? "fixed";
             const framing = FloorPlanOpenings.windowAppearance(opening).framing;
-            rect.setAttribute("stroke", framing.color);
-            rect.setAttribute("stroke-width", `${Math.max(1, framing.frame * scale)}`);
+            rect.style.stroke = framing.color;
+            rect.style.strokeWidth = `${Math.max(1, framing.frame * scale)}`;
+            rect.style.vectorEffect = "non-scaling-stroke";
             for (const { points: [x1, y1, x2, y2], kind } of FloorPlanOpenings.windowLines(opening)) {
               const line = document.createElementNS(svgNamespace, "line");
               line.setAttribute("x1", `${windowX + x1 * windowWidth}`);

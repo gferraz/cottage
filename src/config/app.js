@@ -79,13 +79,14 @@ document.addEventListener("keydown", (event) => {
   document.querySelector("#json-file").click();
 }, { capture: true });
 
-function loadJsonFromCommandLine() {
+async function loadJsonFromCommandLine() {
   const encoded = window.location.hash.startsWith("#json=")
     ? window.location.hash.slice("#json=".length)
     : "";
   if (!encoded) return;
 
   try {
+    await Promise.all([window.FloorPlanWindowLibraryReady, window.FloorPlanItemLibraryReady]);
     const binary = atob(encoded);
     const bytes = Uint8Array.from(binary, (character) =>
       character.charCodeAt(0),

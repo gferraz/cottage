@@ -4,6 +4,10 @@ const FloorPlanOpenings = {
   windowAppearance(opening) {
     const type = opening.windowType ?? opening.type ?? "fixed";
     if (!Object.hasOwn(this.types, type)) throw new Error(`Tipo de abertura de janela inválido: ${type}`);
+    const direction = opening.direction ?? "right";
+    if (!Object.hasOwn({ left: true, right: true, up: true }, direction)) {
+      throw new Error(`Direção de janela deslizante inválida: ${direction}`);
+    }
     const framing = opening.framing ?? {};
     if (!framing || typeof framing !== "object" || Array.isArray(framing)) throw new Error("framing precisa ser um objeto");
     const frameWidth = framing.frame ?? 0.04;
@@ -18,7 +22,16 @@ const FloorPlanOpenings = {
     if (![columns, rows].every(value => Number.isInteger(value) && value >= 1 && value <= 32)) {
       throw new Error("A grade de vidros precisa de 1 a 32 colunas e linhas");
     }
-    return { windowType: type, glazing: { columns, rows }, framing: { frame: frameWidth, mullion: mullionWidth, color: frameColor } };
+    return { windowType: type, direction, glazing: { columns, rows }, framing: { frame: frameWidth, mullion: mullionWidth, color: frameColor } };
+  },
+
+  windowDefaults(plan, opening = {}) {
+    const configDefaults = plan.currentConfig?.config?.windows ?? {};
+    const modelId = opening.model ?? configDefaults.model;
+    const model = modelId ? window.FloorPlanWindowLibrary?.[modelId] : {};
+    if (modelId && !model) throw new Error(`Modelo de janela desconhecido: ${modelId}`);
+    const openingType = opening.type === "window" ? undefined : opening.type;
+    return { ...model, ...configDefaults, ...opening, type: openingType ?? configDefaults.type ?? model?.type ?? "fixed" };
   },
 
   // Normalized coordinates keep facade symbols independent of scale and orientation.
@@ -32,7 +45,20 @@ const FloorPlanOpenings = {
     if (windowType === "awning") { symbol([0.1, 0.1, 0.5, 0.9]); symbol([0.5, 0.9, 0.9, 0.1]); }
     if (windowType === "tilt") { symbol([0.1, 0.9, 0.5, 0.1]); symbol([0.5, 0.1, 0.9, 0.9]); }
     if (windowType === "sliding") {
-      symbol([0.15, 0.5, 0.85, 0.5]); symbol([0.7, 0.4, 0.85, 0.5]); symbol([0.7, 0.6, 0.85, 0.5]);
+      const direction = this.windowAppearance(opening).direction;
+      if (direction === "up") {
+        symbol([0.5, 0.85, 0.5, 0.15]);
+        symbol([0.4, 0.3, 0.5, 0.15]);
+        symbol([0.6, 0.3, 0.5, 0.15]);
+      } else if (direction === "left") {
+        symbol([0.85, 0.5, 0.15, 0.5]);
+        symbol([0.3, 0.4, 0.15, 0.5]);
+        symbol([0.3, 0.6, 0.15, 0.5]);
+      } else {
+        symbol([0.15, 0.5, 0.85, 0.5]);
+        symbol([0.7, 0.4, 0.85, 0.5]);
+        symbol([0.7, 0.6, 0.85, 0.5]);
+      }
     }
     return lines;
   },
@@ -87,7 +113,10 @@ const FloorPlanOpenings = {
     for (const type of Object.keys(defaults)) {
       const config = plan.currentConfig?.config ?? {};
       const key = { door: "doors", window: "windows", opening: "openings" }[type];
-      const configured = { ...(config.openings?.[type] ?? {}), ...(config[key] ?? {}) };
+      const windowModel = type === "window" && config.windows?.model
+        ? window.FloorPlanWindowLibrary?.[config.windows.model] ?? {}
+        : {};
+      const configured = { ...windowModel, ...(config.openings?.[type] ?? {}), ...(config[key] ?? {}) };
       defaults[type] = { ...defaults[type] };
       for (const key of ["w", "h", "z0"]) {
         if (configured[key] !== undefined) defaults[type][key] = configured[key];
@@ -478,7 +507,7 @@ const FloorPlanOpenings = {
         "Opening z0 must be finite and h must be greater than zero",
       );
     }
-    const configDefaults = plan.currentConfig?.config?.windows ?? {};
+    const configDefaults = this.windowDefaults(plan, opening);
     const normalized = {
       ...opening,
       ...(type === "window" ? this.windowAppearance({ ...configDefaults, ...opening, windowType: opening.windowType ?? (opening.type === "window" ? undefined : opening.type) ?? configDefaults.type ?? "fixed" }) : {}),

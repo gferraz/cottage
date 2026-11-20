@@ -524,6 +524,11 @@
         "windows": {
           "type": "object",
           "properties": {
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Modelo padrão de janela em lib/windows.json5."
+            },
             "w": {
               "anyOf": [
                 {
@@ -570,6 +575,7 @@
                 "tilt"
               ]
             },
+            "direction": { "type": "string", "enum": ["left", "right", "up"] },
             "framing": {
               "type": "object",
               "properties": {
@@ -3611,6 +3617,8 @@
     "window": {
       "type": "object",
       "properties": {
+        "model": { "type": "string", "minLength": 1, "description": "ID de um modelo em lib/windows.json5." },
+        "direction": { "type": "string", "enum": ["left", "right", "up"], "description": "Direção de movimento da folha deslizante." },
         "id": {
           "$ref": "#/definitions/wall-feature/properties/id"
         },
