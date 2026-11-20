@@ -98,6 +98,21 @@
           ]
         },
         {
+          id: "master-bedroom",
+          label: "Suíte",
+          from: ["hall.x1", "living.y1"],
+          to: ["main.x1", "y0 + 3.8"],
+          // doors: [
+          //   { from: "left", w: 1, dy: 2.4 }
+          // ],
+          walls: ["left", "right"],
+          windows: [
+            // Janelas laterais com venezianas externas de abrir previstas.
+            { model: "cottage-casement", from: "right", w: 0.6, dx: 0.5 },
+            { model: "cottage-casement", from: "right", w: 0.6, dx: 2.7 },
+          ]
+        },
+        {
           id: "office",
           label: "Escritório",
           pos: ["front-wing.x0", "front-wing.y0"],
@@ -115,9 +130,6 @@
       ],
       items: [
         {
-          id: "living-corner-coffee-table",
-          label: "Mesa de café",
-          title: "Mesa de café — canto frontal esquerdo",
           pos: ["living.x0 + 0.2", "living.y0 + 0.2"],
           size: [0.6, 0.6, 0.45],
           classes: "furniture table",
@@ -137,7 +149,6 @@
           rotation: 270
         },
         {
-          id: "living-armchair-right",
           type: "armchair",
           pos: ["living-sofa.x1 + 0.25", "living-sofa.yc - 0.425"],
           rotation: 15
@@ -151,18 +162,16 @@
         },
         {
           label: "Lareira",
-          title: "Lareira — centro da parede lateral externa",
           pos: ["living.x1 - 0.8", "living.yc - 0.25"],
           size: [1.1, 0.5, 1.8],
           classes: "fireplace",
           rotation: 270
         },
         {
-          label: "TV",
+          label: "TV set",
           pos: ["living-sofa.xc - 1", "living.y1 - 0.51"],
           size: [1.8, 0.45, 0.6],
           classes: "furniture storage",
-          color: "furniture"
         },
         {
           type: "rug",
