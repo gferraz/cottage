@@ -266,6 +266,17 @@
       rooms: []
     }
   ],
+  roofs: [
+     {
+       id: "office-roof",
+       label: "Telhado frontal — Escritório",
+       type: "gable",
+       base: "office",
+       z0: "upper.z0",
+       orientation: "longitudinal",
+       pitch: 51
+     }
+   ],
   walls: [
     {
       id: "perimeter-plinth",
