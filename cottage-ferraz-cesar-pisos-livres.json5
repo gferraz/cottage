@@ -8,21 +8,22 @@
   coordinates: ["25°45'06.7\"S", "49°15'29.1\"W"],
   viewport: {size: [24, 24], origin: [-25, 1]},
   config: {
-    floors: {ceiling_height: "params.floor_height"},
-    walls: {thickness: 0.12, color: "desejo-ambar"},
-    windows: {model: "cottage-sliding"}},
-  parameters: {floor_height: 3},
+    floors: { ceiling_height: "params.floor_height" },
+    walls: { thickness: 0.12, color: "desejo-ambar" },
+    windows: { model: "cottage-sliding"}
+  },
+  parameters: { floor_height: 3 },
   terrain: {
     front: {edge: ["P001", "P002"], position: "top", label: "RUA/FRENTE"},
     rear: {edge: ["P013", "P014"], position: "bottom", label: "JARDIM"},
     grading: {
       profile: [
-        {id: "tp-01-rua", y: 0, z: 0},
-        {id: "tp-02-entrada", y: 3.2, z: 0},
-        {id: "tp-03-inicio-descida", y: 12, z: -0.5},
-        {id: "tp-04-fundos-casa", y: 23.8, z: -2},
-        {id: "tp-05-jardim", y: 29, z: -3},
-        {id: "tp-06-fundos-terreno", y: 44.32, z: -6}
+        { id: "tp-01-rua", y: 0, z: 0},
+        { id: "tp-02-entrada", y: 3.2, z: 0},
+        { id: "tp-03-inicio-descida", y: 12, z: -0.5},
+        { id: "tp-04-fundos-casa", y: 23.8, z: -2},
+        { id: "tp-05-jardim", y: 29, z: -3},
+        { id: "tp-06-fundos-terreno", y: 44.32, z: -6}
       ]
     },
     north: {label: "N"},
@@ -43,9 +44,9 @@
   },
   building: {anchor: "terrain.front-start", position: {x: 4, y: 3}, reference: "building-placement"},
   zones: [
-    {id: "building-placement", rectangle: [0, 0, 14, 18.2], visible: false},
-    {id: "front-wing", pos: [4, 0], size: [10, 2.5], visible: false, color: "red"},
-    {id: "main", pos: ["front-wing.x0", "front-wing.y1"], size: ["front-wing.w", 8.8], visible: false, color: "blue"}
+    { id: "building-placement", rectangle: [0, 0, 14, 18.2], visible: false},
+    { id: "front-wing", pos: [4, 0], size: [10, 2.5], visible: false, color: "red"},
+    { id: "main", pos: ["front-wing.x0", "front-wing.y1"], size: ["front-wing.w", 8.8], visible: false, color: "blue"}
   ],
   floors: [
     {
@@ -53,7 +54,7 @@
       storey: "ground",
       label: "Térreo traseiro",
       z0: -0.34,
-      slabs: [{id: "slab-ground-rear", label: "Laje — Térreo traseiro", thickness: 0.15}],
+      slabs: [{ id: "slab-ground-rear", label: "Laje — Térreo traseiro", thickness: 0.15}],
       rooms: []
     },
     {
@@ -61,7 +62,7 @@
       storey: "ground",
       label: "Térreo frontal",
       z0: 0.3,
-      slabs: [{id: "slab-ground", label: "Laje — Térreo frontal", thickness: 0.15}],
+      slabs: [{ id: "slab-ground", label: "Laje — Térreo frontal", thickness: 0.15}],
       rooms: [
         {
           id: "hall",
@@ -70,13 +71,19 @@
           walls: ["front", "rear"],
           from: ["office.x1", "main.y0"],
           to:   ["x0 + 1.4", "y0 + 2"],
-          doors: [{from: "front", to: "porch", w: 1}, {from: "right", to: "office"}]
+          doors: [
+            { from: "front", to: "porch", w: 1 },
+            { from: "left",  to: "office" }
+          ]
         },
         {
           id: "living",
           label: "Estar",
           from: ["hall.x1", "main.y0"],
           to: ["main.x1", "y0 + 3.8"],
+          doors: [
+            { from: "left", w: 1, dy: 2.4 }
+          ],
           walls: ["front", "rear", "left", "right"],
           windows: [
             // Janelas laterais com venezianas externas de abrir previstas.
@@ -139,7 +146,7 @@
           label: "Lareira",
           title: "Lareira — centro da parede lateral externa",
           pos: ["living.x1 - 0.91", "living.yc - 0.25"],
-          size: [1.2, 0.5, 1.8],
+          size: [1.1, 0.5, 1.8],
           classes: "fireplace",
           rotation: 270
         },
@@ -159,7 +166,7 @@
       label: "2º Pavimento - Fundos",
       z0: "params.floor_height",
       slabs: [
-        {id: "slab-upper-rear", thickness: 0.15}
+        { id: "slab-upper-rear", thickness: 0.15}
       ],
       rooms: []
     },
@@ -168,7 +175,7 @@
       storey: "upper",
       label: "Dormitórios",
       z0: 3,
-      slabs: [{id: "slab-upper", label: "Laje — Dormitórios", thickness: 0.15}],
+      slabs: [{ id: "slab-upper", label: "Laje — Dormitórios", thickness: 0.15}],
       rooms: []
     }
   ],
