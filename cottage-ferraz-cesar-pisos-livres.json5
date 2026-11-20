@@ -45,7 +45,7 @@
   building: {anchor: "terrain.front-start", position: {x: 4, y: 3}, reference: "building-placement"},
   zones: [
     { id: "building-placement", rectangle: [0, 0, 14, 18.2], visible: false},
-    { id: "front-wing", pos: [4, 0], size: [10, 2.5], visible: false, color: "red"},
+    { id: "front-wing", pos: [4, 0], size: [10.2, 2.5], visible: false, color: "red"},
     { id: "main", pos: ["front-wing.x0", "front-wing.y1"], size: ["front-wing.w", 8.8], visible: false, color: "blue"}
   ],
   floors: [
@@ -63,7 +63,51 @@
       label: "Térreo frontal",
       z0: 0.3,
       slabs: [{ id: "slab-ground", label: "Laje — Térreo frontal", thickness: 0.15}],
+      stairs: [
+        {
+          id: "stairs",
+          label: "Escada em U",
+          walls: [],
+          overlaps: ["hallway"],
+          overlays: ["hallway"],
+          // Primeiro lance junto ao escritório, subindo da direita para a esquerda.
+          // Patamar lateral esquerdo; segundo lance retorna para o centro da casa.
+          // 18 espelhos de 16,67 cm; 8 pisadas de 30 cm por lance.
+          parts: [
+            {
+              id: "lower-flight",
+              orientation: "transverse",
+              risers: 9,
+              from: ["hallway.x0 + 3.7", "office.y1", "ground.z0"],
+              to: ["x0 - 2.4", "y0 + 1.3", "z0 + params.floor_height / 2"],
+              walls: []
+            },
+            {
+              id: "stair-landing",
+              kind: "landing",
+              from: ["hallway.x0", "lower-flight.y0", "lower-flight.z1"],
+              to: ["lower-flight.x0", "y0 + 2.8", "z0"],
+              walls: []
+            },
+            {
+              id: "upper-flight",
+              orientation: "transverse",
+              risers: 9,
+              from: ["stair-landing.x1", "lower-flight.y1 + 0.2", "stair-landing.z0"],
+              to: ["lower-flight.x1", "y0 + 1.3", "upper.z0"],
+              walls: []
+            }
+          ]
+        }
+      ],
       rooms: [
+        {
+          id: "dining",
+          label: "Jantar",
+          from: ["main.x0", "hallway.y1"],
+          to: ["master-bedroom.x0", "y0 + 4"],
+          walls: ["left"]
+        },
         {
           id: "hall",
           label: "Hall",
@@ -116,35 +160,42 @@
           id: "office",
           label: "Escritório",
           pos: ["front-wing.x0", "front-wing.y0"],
-          size: [3.3, 3.8],
+          size: [3.7, 3.8],
           walls: ["front", "rear", "left", "right"]
         },
         {
           id: "hallway",
           label: "Circulação",
           classes: "circulation",
-          // Reserva para escada de 4,10 × 2,60 m e circulação de 1,20 m.
+          // Escada de 3,70 × 2,80 m e faixa traseira de circulação de 1,20 m.
           from: ["office.x0", "office.y1"],
-          to: ["hall.x1", "y0 + 2.6 + 1.2"],
-          walls: ["left", "rear"]
+          to: ["hall.x1", "y0 + 2.8"],
+          walls: ["left"]
         },
         {
           id: "porch",
           label: "Varanda",
           classes: "outdoor porch",
-          pos: ["office.x1", "front-wing.y0"],
-          size: [6.8, 2.5],
+          from: ["office.x1", "front-wing.y0"],
+          to: ["front-wing.x1", "y0 + 2.5"],
           walls: []
         },
         {
           id: "vestibule",
           label: "Vestíbulo",
-          from: ["hall.x1", "master-bedroom.y0"],
+          from: ["hall.x1", "master-bedroom.y1 - 0.2"],
           to: ["master-bedroom.x0", "y0 + 2.2"],
           walls: ["front", "rear", "left"]
         },
       ],
       items: [
+        {
+          id: "dining-table",
+          type: "dining-table",
+          label: "Mesa de jantar",
+          pos: ["dining.x0 + 1", "dining.y0 + 1.2"],
+          size: [2.7, 1.1, 0.75]
+        },
         {
           pos: ["living.x0 + 0.2", "living.y0 + 0.2"],
           size: [0.6, 0.6, 0.45],
@@ -200,7 +251,7 @@
       id: "upper-rear",
       storey: "upper",
       label: "2º Pavimento - Fundos",
-      z0: "params.floor_height",
+      z0: "ground.z0 + params.floor_height",
       slabs: [
         { id: "slab-upper-rear", thickness: 0.15}
       ],
@@ -210,7 +261,7 @@
       id: "upper",
       storey: "upper",
       label: "Dormitórios",
-      z0: 3,
+      z0: "ground.z0 + params.floor_height",
       slabs: [{ id: "slab-upper", label: "Laje — Dormitórios", thickness: 0.15}],
       rooms: []
     }
