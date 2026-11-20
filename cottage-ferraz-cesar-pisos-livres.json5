@@ -115,6 +115,16 @@
       ],
       items: [
         {
+          id: "living-corner-coffee-table",
+          label: "Mesa de café",
+          title: "Mesa de café — canto frontal esquerdo",
+          pos: ["living.x0 + 0.2", "living.y0 + 0.2"],
+          size: [0.6, 0.6, 0.45],
+          classes: "furniture table",
+          color: "furniture",
+          chairs: 0
+        },
+        {
           id: "living-sofa",
           type: "three-seat-sofa",
           label: "Sofá",
@@ -123,7 +133,7 @@
         {
           id: "living-armchair-left",
           type: "armchair",
-          pos: ["living.x0 + 0.1", "living.yc - 0.4"],
+          pos: ["living.x0 + 0.1", "living.yc - 0.8"],
           rotation: 270
         },
         {
@@ -133,16 +143,13 @@
           rotation: 15
         },
         {
-          id: "living-coffee-table",
           label: "Mesa de centro",
           pos: ["living-armchair-left.x1 + 0.5", "living-sofa.y1 + 0.5"],
           size: [1.5, 0.6, 0.4],
           classes: "furniture table",
-          color: "furniture",
           chairs: 0
         },
         {
-          id: "living-fireplace",
           label: "Lareira",
           title: "Lareira — centro da parede lateral externa",
           pos: ["living.x1 - 0.8", "living.yc - 0.25"],
@@ -151,7 +158,6 @@
           rotation: 270
         },
         {
-          id: "living-tv-cabinet",
           label: "TV",
           pos: ["living-sofa.xc - 1", "living.y1 - 0.51"],
           size: [1.8, 0.45, 0.6],
