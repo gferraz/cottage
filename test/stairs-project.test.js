@@ -53,3 +53,42 @@ test('room walls accept direct top expressions and independent wall references r
   assert.equal(plan.independentWalls.get('limit').topZ, 2.85);
   assert.equal(plan.walls.get('room-left').z1, 2.85);
 });
+
+test('compound stair part walls generate 3D wall volumes at the part elevation and keep owner identity', () => {
+  const source = config();
+  source.floors[0].stairs = [{ id: 'access', walls: [], parts: [
+    { id: 'lower', from: [4, 0, 0], to: [6.4, 1.3, 1.5], orientation: 'transverse', risers: 9, walls: [] },
+    { id: 'landing', kind: 'landing', from: [6.4, 0, 1.5], to: [7.7, 2.8, 1.5], walls: [] },
+    { id: 'upper-flight', from: [6.4, 1.5, 1.5], to: [4, 2.8, 3], orientation: 'transverse', risers: 9,
+      walls: ['rear', 'right'] },
+  ] }];
+  const plan = prepare(source);
+  assert.deepEqual(plan.errors, []);
+  const walls = [...plan.walls.values()].filter(wall => wall.id.startsWith('access.upper-flight-'));
+  assert.equal(walls.length, 2);
+  for (const wall of walls) {
+    assert.equal(wall.z0, 1.5);
+    assert.equal(wall.z1, 3);
+    assert.deepEqual(wall.sourceRoomIds, ['access']);
+    assert.equal(wall.sourceSides[0].partId, 'upper-flight');
+    assert.ok(plan.wallRenderParts.some(part => part.id === wall.id));
+  }
+  assert.ok(![...plan.walls.keys()].some(id => id.startsWith('access.lower-') || id.startsWith('access.landing-')));
+  const drawn = [];
+  plan.showAllFloors = true;
+  plan.roomElements = [];
+  plan.stairElements = [{ dataset: { id: 'access', layer: '1' } }];
+  plan.add = definition => {
+    const element = { dataset: {}, style: { setProperty() {} } };
+    drawn.push({ definition, element });
+    return element;
+  };
+  plan.renderWallsForFloor(plan.model.floors[0]);
+  const drawnStairWalls = drawn.filter(({ definition }) => definition.id.startsWith('access.upper-flight-'));
+  assert.equal(drawnStairWalls.length, 2);
+  assert.ok(drawnStairWalls.every(({ element }) => element.dataset.layer === '1'));
+  source.floors[0].stairs[0].parts[2].top = 'upper.z0 + 1.1';
+  const taller = prepare(source);
+  assert.deepEqual(taller.errors, []);
+  assert.ok(Math.abs(taller.walls.get('access.upper-flight-bottom').z1 - 4.1) < 1e-8);
+});

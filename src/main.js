@@ -371,7 +371,11 @@ class FloorPlan {
   }
 
   renderWallsForFloor(floorConfig) {
-    const roomIds = new Set((floorConfig.rooms ?? []).map((room) => room.id));
+    const roomIds = new Set([
+      ...(floorConfig.rooms ?? []).map((room) => room.id),
+      ...(this.allStairs ?? []).filter((stair) => (stair.floorId ?? null) === (floorConfig.id ?? null))
+        .map((stair) => stair.id),
+    ]);
     const roofs = FloorPlanWalls.roofLimits(this, this.currentConfig);
     this.walls.forEach((wall) => {
       if (!this.showAllFloors && !FloorPlanMetrics.wallOverlapsFloor(this, wall, floorConfig.id)) return;
@@ -389,7 +393,7 @@ class FloorPlan {
         });
         if (element) {
           element.dataset.id = wall.id;
-          const sourceLayers = this.roomElements
+          const sourceLayers = [...this.roomElements, ...(this.stairElements ?? [])]
             .filter((room) => wall.sourceRoomIds.includes(room.dataset.id))
             .map((room) => Number(room.dataset.layer ?? 0));
           const layer = sourceLayers.length ? Math.min(...sourceLayers) : 0;

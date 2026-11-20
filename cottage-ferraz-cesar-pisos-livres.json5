@@ -4,7 +4,7 @@
   $schema: "./floor-plan.schema.json",
   coordinate_system: "cartesian",
   title: "Cottage Ferraz-César — pisos livres",
-  summary: "Estudo baseado em cottage-ferraz-cesar-2-level-floors.json5: terreno, mureta perimetral e lajes preservados; apenas varanda, escritório e hall mantidos. Áreas de piso livre representam os contornos das lajes, sem divisórias.",
+  summary: "Estudo baseado em cottage-ferraz-cesar-2-level-floors.json5: terreno, mureta perimetral e lajes preservados; apenas varanda, escritório e foyer mantidos. Áreas de piso livre representam os contornos das lajes, sem divisórias.",
   coordinates: ["25°45'06.7\"S", "49°15'29.1\"W"],
   viewport: {size: [24, 24], origin: [-25, 1]},
   config: {
@@ -67,25 +67,24 @@
         {
           id: "stairs",
           label: "Escada em U",
-          walls: [],
           overlaps: ["hallway"],
           overlays: ["hallway"],
-          // Primeiro lance junto ao escritório, subindo da direita para a esquerda.
-          // Patamar lateral esquerdo; segundo lance retorna para o centro da casa.
+          // Primeiro lance afastado do escritório, subindo para o patamar lateral esquerdo.
+          // Lance superior junto ao escritório, retornando para o centro da casa.
           // 18 espelhos de 16,67 cm; 8 pisadas de 30 cm por lance.
           parts: [
             {
               id: "lower-flight",
               orientation: "transverse",
               risers: 9,
-              from: ["hallway.x0 + 3.7", "office.y1", "ground.z0"],
+              from: ["hallway.x0 + 3.7", "foyer.y1 + 1.3 + 0.2", "ground.z0"],
               to: ["x0 - 2.4", "y0 + 1.3", "z0 + params.floor_height / 2"],
               walls: []
             },
             {
               id: "stair-landing",
               kind: "landing",
-              from: ["hallway.x0", "lower-flight.y0", "lower-flight.z1"],
+              from: ["hallway.x0", "foyer.y1", "lower-flight.z1"],
               to: ["lower-flight.x0", "y0 + 2.8", "z0"],
               walls: []
             },
@@ -93,9 +92,8 @@
               id: "upper-flight",
               orientation: "transverse",
               risers: 9,
-              from: ["stair-landing.x1", "lower-flight.y1 + 0.2", "stair-landing.z0"],
-              to: ["lower-flight.x1", "y0 + 1.3", "upper.z0"],
-              walls: []
+              from: ["stair-landing.x1", "foyer.y1", "stair-landing.z0"],
+              to: ["lower-flight.x1", "y0 + 1.3", "upper.z0"]
             }
           ]
         }
@@ -109,12 +107,12 @@
           walls: ["left"]
         },
         {
-          id: "hall",
-          label: "Hall",
+          id: "foyer",
+          label: "foyer",
           classes: "circulation",
           walls: ["front"],
           from: ["office.x1", "main.y0"],
-          to:   ["x0 + 1.4", "office.y1"],
+          to:   ["x0 + 1.4", "y0 + 1.3"],
           doors: [
             { from: "front", to: "porch", w: 1 },
             { from: "left",  to: "office" }
@@ -123,7 +121,7 @@
         {
           id: "living",
           label: "Estar",
-          from: ["hall.x1", "main.y0"],
+          from: ["foyer.x1", "main.y0"],
           to: ["main.x1", "y0 + 3.8"],
           doors: [
             { from: "left", w: 1, dy: 2.4 }
@@ -161,7 +159,7 @@
           label: "Escritório",
           pos: ["front-wing.x0", "front-wing.y0"],
           size: [3.7, 3.8],
-          walls: ["front", "rear", "left", "right"]
+          walls: ["front", "left", "right"]
         },
         {
           id: "hallway",
@@ -169,7 +167,7 @@
           classes: "circulation",
           // Escada de 3,70 × 2,80 m e faixa traseira de circulação de 1,20 m.
           from: ["office.x0", "office.y1"],
-          to: ["hall.x1", "y0 + 2.8"],
+          to: ["foyer.x1", "y0 + 2.8"],
           walls: ["left"]
         },
         {
@@ -183,7 +181,7 @@
         {
           id: "vestibule",
           label: "Vestíbulo",
-          from: ["hall.x1", "master-bedroom.y1 - 0.2"],
+          from: ["foyer.x1", "master-bedroom.y1 - 0.2"],
           to: ["master-bedroom.x0", "y0 + 2.2"],
           walls: ["front", "rear", "left"]
         },
@@ -284,7 +282,14 @@
       color: "mate-amargo",
       base: "terrain",
       top: "ground.z0 + 0.15",
-      path: {points: [[4, 9.7], [4, 0], [14, 0], [14, 11.3]]}
+      path: {
+        points: [
+          ["main.x0", "main.y1"],
+          ["x0", "front-wing.y0"],
+          ["front-wing.x1", "y0"],
+          ["x0", "main.y1"]
+        ]
+      }
     },
     {
       id: "perimeter-plinth-rear",

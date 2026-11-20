@@ -760,12 +760,23 @@ const FloorPlanWalls = {
 
     const roomVolumes = [];
     const signatures = new Map();
+    const wallSources = [];
     plan.roomDefinitions.forEach((definition, roomId) => {
+      wallSources.push({ definition, roomId });
+      if (plan.invalidRoomIds.has(roomId) || !definition.parts?.length) return;
+      const geometry = plan.getRoomGeometry(roomId);
+      for (const part of geometry.normalizedParts) {
+        if (part.walls === undefined) continue;
+        wallSources.push({ roomId, part, definition: { ...definition, ...part,
+          walls: part.walls, top: part.top ?? definition.top } });
+      }
+    });
+    wallSources.forEach(({ definition, roomId, part }) => {
       if (plan.invalidRoomIds.has(roomId)) return;
       const floor = plan.roomFloorConfigs?.get(roomId) ?? roomFloors.get(roomId) ?? floors[0] ?? {};
       try {
-        const geometry = plan.getRoomGeometry(roomId);
-        const floorZ0 = Number(floor.z0 ?? 0);
+        const geometry = part ? FloorPlanGeometryBox.fromGeometry(part) : plan.getRoomGeometry(roomId);
+        const floorZ0 = Number(part?.z0 ?? floor.z0 ?? 0);
         const configuredMaxHeight = Number(floor.ceiling_height ?? floor.wall_max_height);
         const floorHeight = configuredMaxHeight;
         const explicitHeight = Number(geometry.h());
@@ -798,7 +809,7 @@ const FloorPlanWalls = {
         ) {
           throw new Error(`Não foi possível determinar o volume vertical do cômodo ${roomId}`);
         }
-        roomVolumes.push({
+        if (!part) roomVolumes.push({
           id: roomId,
           outdoor: definition.classes?.split(/\s+/).includes("outdoor"),
           x0: geometry.x0(),
@@ -834,7 +845,7 @@ const FloorPlanWalls = {
           const to = alongX
             ? [geometry.x1(), centerY, floorZ0]
             : [centerX, geometry.y1(), floorZ0];
-          const wallId = `${roomId}-${side}`;
+          const wallId = `${part ? `${roomId}.${part.id}` : roomId}-${side}`;
           const signature = [
             alongX ? "x" : "y",
             x,
@@ -860,7 +871,7 @@ const FloorPlanWalls = {
             }
             if (!existing.sourceRoomIds.includes(roomId))
               existing.sourceRoomIds.push(roomId);
-            existing.sourceSides.push({ roomId, side });
+            existing.sourceSides.push({ roomId, side, ...(part ? { partId: part.id } : {}) });
             return;
           }
           if (plan.references.has(wallId)) {
@@ -877,7 +888,7 @@ const FloorPlanWalls = {
             type: "wall",
             color: config.config?.walls?.color,
             sourceRoomIds: [roomId],
-            sourceSides: [{ roomId, side }],
+            sourceSides: [{ roomId, side, ...(part ? { partId: part.id } : {}) }],
             state,
             axis: alongX ? "x" : "y",
             from,
