@@ -1010,50 +1010,6 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .outdoor { background: var(--theme-outdoor); }
 .service { background: var(--theme-service); }
 .circulation, .stair-landing, .stair-flight { background: var(--theme-circulation); }
-.stair-flight[data-stair-rise="up"],
-.stair-flight[data-stair-rise="down"] {
-  --stair-opaque: var(--theme-circulation);
-  --stair-clearance: color-mix(in srgb, var(--theme-circulation) 26%, transparent);
-  --stair-transparent: color-mix(in srgb, var(--theme-circulation) 8%, transparent);
-  background: linear-gradient(
-    to bottom,
-    var(--stair-opaque) 0%,
-    var(--stair-clearance) var(--stair-clearance-stop),
-    var(--stair-transparent) 100%
-  ) !important;
-}
-.stair-flight[data-stair-axis="horizontal"][data-stair-rise="up"],
-.stair-flight[data-stair-axis="horizontal"][data-stair-rise="down"] {
-  background: linear-gradient(
-    to right,
-    var(--stair-opaque) 0%,
-    var(--stair-clearance) var(--stair-clearance-stop),
-    var(--stair-transparent) 100%
-  ) !important;
-}
-.stair-flight[data-stair-axis="vertical"][data-stair-direction="reverse"][data-stair-rise="up"],
-.stair-flight[data-stair-axis="vertical"][data-stair-direction="reverse"][data-stair-rise="down"] {
-  background: linear-gradient(
-    to top,
-    var(--stair-opaque) 0%,
-    var(--stair-clearance) var(--stair-clearance-stop),
-    var(--stair-transparent) 100%
-  ) !important;
-}
-.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"][data-stair-rise="up"],
-.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"][data-stair-rise="down"] {
-  background: linear-gradient(
-    to left,
-    var(--stair-opaque) 0%,
-    var(--stair-clearance) var(--stair-clearance-stop),
-    var(--stair-transparent) 100%
-  ) !important;
-}
-.room-overlap.stair-flight {
-  --stair-opaque: rgba(179, 74, 74, 0.62);
-  --stair-clearance: rgba(179, 74, 74, 0.16);
-  --stair-transparent: rgba(179, 74, 74, 0.08);
-}
 .stair-flight {
   --stair-step: 0.28;
 }
@@ -2355,50 +2311,6 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
 .outdoor { background: var(--theme-outdoor); }
 .service { background: var(--theme-service); }
 .circulation, .stair-landing, .stair-flight { background: var(--theme-circulation); }
-.stair-flight[data-stair-rise="up"],
-.stair-flight[data-stair-rise="down"] {
-  --stair-opaque: var(--theme-circulation);
-  --stair-clearance: color-mix(in srgb, var(--theme-circulation) 26%, transparent);
-  --stair-transparent: color-mix(in srgb, var(--theme-circulation) 8%, transparent);
-  background: linear-gradient(
-    to bottom,
-    var(--stair-opaque) 0%,
-    var(--stair-clearance) var(--stair-clearance-stop),
-    var(--stair-transparent) 100%
-  ) !important;
-}
-.stair-flight[data-stair-axis="horizontal"][data-stair-rise="up"],
-.stair-flight[data-stair-axis="horizontal"][data-stair-rise="down"] {
-  background: linear-gradient(
-    to right,
-    var(--stair-opaque) 0%,
-    var(--stair-clearance) var(--stair-clearance-stop),
-    var(--stair-transparent) 100%
-  ) !important;
-}
-.stair-flight[data-stair-axis="vertical"][data-stair-direction="reverse"][data-stair-rise="up"],
-.stair-flight[data-stair-axis="vertical"][data-stair-direction="reverse"][data-stair-rise="down"] {
-  background: linear-gradient(
-    to top,
-    var(--stair-opaque) 0%,
-    var(--stair-clearance) var(--stair-clearance-stop),
-    var(--stair-transparent) 100%
-  ) !important;
-}
-.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"][data-stair-rise="up"],
-.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"][data-stair-rise="down"] {
-  background: linear-gradient(
-    to left,
-    var(--stair-opaque) 0%,
-    var(--stair-clearance) var(--stair-clearance-stop),
-    var(--stair-transparent) 100%
-  ) !important;
-}
-.room-overlap.stair-flight {
-  --stair-opaque: rgba(179, 74, 74, 0.62);
-  --stair-clearance: rgba(179, 74, 74, 0.16);
-  --stair-transparent: rgba(179, 74, 74, 0.08);
-}
 .stair-flight {
   --stair-step: 0.28;
 }
@@ -7488,7 +7400,24 @@ const FloorPlanSlabs = {
         return plan.getRoomGeometry(room.id)?.geometryParts ?? [];
       }).filter(({ x, y, w, l }) => [x, y, w, l].every(Number.isFinite) && w > 0 && l > 0);
       // Partition the union so adjacent/overlapping rooms never stack concrete.
-      const parts = FloorPlanGeometryOperations.partitionRectangles(rectangles);
+      let parts = FloorPlanGeometryOperations.partitionRectangles(rectangles);
+      // A vertical passage cuts the destination slab and any intermediate floors.
+      const openings = floors.flatMap((source) => window.FloorPlanOpenings?.collect(source) ?? []);
+      for (const opening of openings) {
+        if (!FloorPlanOpenings.isVerticalOpening(plan, opening)) continue;
+        const from = floors.find((entry) => entry.id === opening.from);
+        const to = floors.find((entry) => entry.id === opening.to);
+        const bottom = Math.min(Number(from.z0), Number(to.z0));
+        const top = Math.max(Number(from.z0), Number(to.z0));
+        if (Number(floor.z0) <= bottom + 1e-8 || Number(floor.z0) > top + 1e-8) continue;
+        const cutter = FloorPlanGeometryOperations.rectangle(plan.normalizeGeometryAtFloor(opening, from));
+        parts = parts.flatMap((part) => FloorPlanGeometryOperations.subtract(
+          FloorPlanGeometryOperations.rectangle(part), cutter).map((polygon) => {
+          const xs = polygon.map((point) => point[0]), ys = polygon.map((point) => point[1]);
+          const x = Math.min(...xs), y = Math.min(...ys);
+          return { x, y, w: Math.max(...xs) - x, l: Math.max(...ys) - y };
+        }));
+      }
       return (floor.slabs ?? [{ id: `slab-${floor.id ?? index}`, label: `Laje — ${floor.label || floor.id || "Piso"}`, thickness: 0.15 }]).map((definition) => {
         const thickness = Number(definition.thickness ?? 0.15);
         if (!Number.isFinite(thickness) || thickness <= 0) throw new Error("A espessura da laje deve ser positiva.");
@@ -7775,6 +7704,16 @@ const FloorPlan3DWalls = {
 
 const FloorPlan3DElements = {
   heightMaterial(plan, THREE, baseMaterial, stair, z) {
+    const analysis = plan.stairAboveHeadroom?.get(stair.ownerId);
+    if (analysis?.active) {
+      const steps = analysis.parts.get(stair.id)?.steps ?? [];
+      const step = steps.find((entry) => Math.abs(entry.z1 - z) < 1e-7);
+      if (step) {
+        const material = baseMaterial.clone();
+        material.color.set(FloorPlanStairHeadroom.aboveColor(step.minimum));
+        return material;
+      }
+    }
     if (!stair.stairGradient) return baseMaterial;
     const styles = getComputedStyle(plan.root);
     const opaque = (value) => value.replace(/^rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)$/, "rgb($1,$2,$3)");
@@ -7941,8 +7880,9 @@ const FloorPlan3DElements = {
         if (solidStair) {
           const riserMaterial = wallMaterial.clone();
           riserMaterial.color.set(stair.colors?.riser || "#c5bba9");
-          const treadMaterial = wallMaterial.clone();
-          treadMaterial.color.set(stair.colors?.thread || "#928c7e");
+          const treadMaterial = plan.stairAboveHeadroom?.get(stair.ownerId)?.active ? material.clone() : wallMaterial.clone();
+          if (!plan.stairAboveHeadroom?.get(stair.ownerId)?.active)
+            treadMaterial.color.set(stair.colors?.thread || "#928c7e");
           let start = 0;
           solid.forEach((face) => {
             const count = (face.length - 2) * 3;
@@ -14168,6 +14108,30 @@ const FloorPlanDom = {
     window.addEventListener("resize", hide);
   },
 
+  applyStairAppearance(plan, element, geometry, range, ownerId, partId = geometry.id) {
+    const result = plan.stairAboveHeadroom?.get(ownerId);
+    const part = result?.parts.get(partId);
+    if (!result?.active || !part) {
+      this.applyStairGradient(element, geometry, range);
+      return;
+    }
+    // Discrete tread fills replace both the old fade and the elevation gradient.
+    const rectangles = part.steps.map((step) => {
+      const x = (step.x - geometry.x) / geometry.w * 100;
+      const y = (step.y - geometry.y) / geometry.l * 100;
+      return `<rect x="${x}" y="${y}" width="${step.w / geometry.w * 100}" height="${step.l / geometry.l * 100}" fill="${FloorPlanStairHeadroom.aboveColor(step.minimum)}"/>`;
+    }).join("");
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none">${rectangles}</svg>`;
+    element.style.setProperty("background", `url("data:image/svg+xml,${encodeURIComponent(svg)}") center / 100% 100% no-repeat`, "important");
+    element.dataset.stairGradient = "headroom";
+    if (geometry.h > 0) element.style.setProperty("--stair-step",
+      (geometry.stairAxis === "horizontal" ? geometry.w : geometry.l) / part.steps.length);
+    const minimum = Math.min(...part.steps.map((step) => step.minimum));
+    element.title = Number.isFinite(minimum)
+      ? `Altura livre mínima sobre ${geometry.h > 0 ? "o lance" : "o patamar"}: ${minimum.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} m`
+      : "Altura livre sobre a escada: sem cobertura definida";
+  },
+
   applyStairGradient(element, geometry, range) {
     const color = (z) => `color-mix(in srgb, var(--theme-circulation), var(--theme-stair-gradient-dark) ${
       ((1 - FloorPlanGeometry.stairGradientRatio(z, range)) * 100).toFixed(4)}%)`;
@@ -14260,12 +14224,6 @@ const FloorPlanDom = {
       const elevationTolerance = 1e-9;
       element.dataset.stairFace =
         plan.currentFloorHeight >= z1 - elevationTolerance ? "top" : "bottom";
-      if (h > 0) {
-        element.style.setProperty(
-          "--stair-clearance-stop",
-          `${Math.min(100, (2 / h) * 100)}%`,
-        );
-      }
       const arrow = document.createElement("span");
       arrow.className = "stair-arrow";
       arrow.setAttribute("aria-hidden", "true");
@@ -14274,7 +14232,7 @@ const FloorPlanDom = {
     if (classes.split(/\s+/).some((name) => ["stair-flight", "stair-landing"].includes(name))) {
       const sourceFloor = plan.roomFloorConfigs?.get(data.id);
       const base = Number(sourceFloor?.z0 ?? plan.currentFloorHeight);
-      this.applyStairGradient(element, normalized, FloorPlanGeometry.stairGradientRange(base, [normalized]));
+      this.applyStairAppearance(plan, element, normalized, FloorPlanGeometry.stairGradientRange(base, [normalized]), data.id);
     }
     if (title) element.title = title;
     if (!room && showLabel && (label || title)) {
@@ -14428,7 +14386,7 @@ const FloorPlanDom = {
         if (partColor)
           partElement.style.backgroundColor = plan.themeFillColor(partColor);
         if (stairGradient && partClasses.split(/\s+/).some((name) => ["stair-flight", "stair-landing"].includes(name))) {
-          this.applyStairGradient(partElement, part, stairGradient);
+          this.applyStairAppearance(plan, partElement, part, stairGradient, room.id);
         }
         if (partClasses.split(/\s+/).includes("stair-flight")) {
           partElement.dataset.stairAxis = part.stairAxis;
@@ -14440,12 +14398,6 @@ const FloorPlanDom = {
             plan.currentFloorHeight >= part.z1 - elevationTolerance
               ? "top"
               : "bottom";
-          if (part.h > 0) {
-            partElement.style.setProperty(
-              "--stair-clearance-stop",
-              `${Math.min(100, (2 / part.h) * 100)}%`,
-            );
-          }
           const arrow = document.createElement("span");
           arrow.className = "stair-arrow";
           arrow.setAttribute("aria-hidden", "true");
@@ -14810,6 +14762,69 @@ window.FloorPlanDerivedZones = FloorPlanDerivedZones;
 
 // Clearance uses the same inclined underside as walls and the 3D stair solids.
 const FloorPlanStairHeadroom = {
+  // One conservative minimum for the entire walking surface of each tread.
+  above(parts, surfaces) {
+    const results = new Map();
+    const overhead = parts.map((part) => {
+      const flight = /\bstair-flight\b/.test(part.classes ?? "");
+      if (!flight && !/\bstair-landing\b/.test(part.classes ?? "")) return null;
+      if ((part.rotation ?? 0) !== 0 || !(part.w > 0 && part.l > 0)
+        || ![part.x, part.y, part.z0, part.z1].every(Number.isFinite)
+        || (flight && (!(part.h > 0) || !["horizontal", "vertical"].includes(part.stairAxis)))) return null;
+      let plane;
+      try {
+        plane = flight ? FloorPlanWalls.stairUndersidePlane(part) : [0, 0, 1, -part.z0];
+      } catch {
+        return null;
+      }
+      return { part, polygon: FloorPlanHeadroomAnalysis.rectangle(part).map(([x, y]) =>
+        [x, y, -(plane[0] * x + plane[1] * y + plane[3]) / plane[2]]) };
+    }).filter(Boolean);
+    for (const { part } of overhead) {
+      const flight = /\bstair-flight\b/.test(part.classes ?? "");
+      const boxes = flight ? FloorPlanGeometry.stairBoxes(part) : [{ ...part, z1: part.z0 }];
+      const polygons = [...surfaces.flatMap((surface) => surface.polygons),
+        ...overhead.filter((entry) => entry.part !== part).map((entry) => entry.polygon)];
+      const steps = boxes.map((box, index) => {
+        const rectangle = FloorPlanHeadroomAnalysis.rectangle(box);
+        // Flared tiers overlap as solids; only the exposed top is walkable.
+        const footprints = part.type === "solid-flared" && boxes[index + 1]
+          ? FloorPlanGeometryOperations.subtract(rectangle, FloorPlanHeadroomAnalysis.rectangle(boxes[index + 1]))
+          : [rectangle];
+        let minimum = Infinity;
+        for (const polygon of polygons) for (const footprint of footprints) {
+          let clipped = polygon;
+          for (let i = 0; i < footprint.length && clipped.length; i++) {
+            const a = footprint[i], b = footprint[(i + 1) % footprint.length];
+            const nx = b[1] - a[1], ny = a[0] - b[0];
+            clipped = FloorPlanGeometryOperations.clipPolygon(clipped, [nx, ny, 0, -nx * a[0] - ny * a[1]]);
+          }
+          if (FloorPlanHeadroomAnalysis.area(clipped) <= 1e-10) continue;
+          const heights = clipped.map((point) => point[2] - box.z1);
+          // Ignore floors wholly below this tread, but include surfaces crossing it.
+          if (Math.max(...heights) < -1e-8) continue;
+          minimum = Math.min(minimum, Math.max(0, Math.min(...heights)));
+        }
+        return { ...box, minimum };
+      });
+      const ownerId = part.ownerId;
+      if (!results.has(ownerId)) results.set(ownerId, { active: false, parts: new Map() });
+      const result = results.get(ownerId);
+      result.parts.set(part.id, { steps });
+      result.active ||= steps.some((step) => step.minimum < 2.7 - 1e-8);
+    }
+    return results;
+  },
+
+  aboveColor(minimum) {
+    if (!Number.isFinite(minimum)) return "#e6e3da";
+    if (minimum < 1.3 - 1e-8) return "#e6b484";
+    if (minimum < 2.1 - 1e-8) return "#f3cea3";
+    if (minimum < 2.85 - 1e-8) return "#f6e8ad";
+    if (minimum < 3.1 - 1e-8) return "#f7f5ef";
+    return "#b9d2eb";
+  },
+
   analyze(parts, floors, roofs = []) {
     const groups = new Map();
     for (const part of parts) {
@@ -15019,9 +15034,10 @@ const FloorPlanProject = {
     plan.stairSourceLayers = FloorPlanStairHeadroom.sourceLayers(plan);
     plan.derivedZones = FloorPlanStairAccess.generate(plan.stairConnectivity,
       { depth: config.stair_access_depth ?? 1.2 });
-    plan.stairHeadroomResults = FloorPlanStairHeadroom.analyze(stairParts, model.floors,
-      [...FloorPlanRoofGeometry.intersectingSurfaces(plan),
-        ...FloorPlanHeadroomAnalysis.slabSurfaces(plan.allSlabs)]);
+    const overheadSurfaces = [...FloorPlanRoofGeometry.intersectingSurfaces(plan),
+      ...FloorPlanHeadroomAnalysis.slabSurfaces(plan.allSlabs)];
+    plan.stairHeadroomResults = FloorPlanStairHeadroom.analyze(stairParts, model.floors, overheadSurfaces);
+    plan.stairAboveHeadroom = FloorPlanStairHeadroom.above(stairParts, overheadSurfaces);
     plan.preparedProject = {
       model,
       references: new Map(plan.references),

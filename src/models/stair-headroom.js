@@ -1,5 +1,68 @@
 // Clearance uses the same inclined underside as walls and the 3D stair solids.
 const FloorPlanStairHeadroom = {
+  // One conservative minimum for the entire walking surface of each tread.
+  above(parts, surfaces) {
+    const results = new Map();
+    const overhead = parts.map((part) => {
+      const flight = /\bstair-flight\b/.test(part.classes ?? "");
+      if (!flight && !/\bstair-landing\b/.test(part.classes ?? "")) return null;
+      if ((part.rotation ?? 0) !== 0 || !(part.w > 0 && part.l > 0)
+        || ![part.x, part.y, part.z0, part.z1].every(Number.isFinite)
+        || (flight && (!(part.h > 0) || !["horizontal", "vertical"].includes(part.stairAxis)))) return null;
+      let plane;
+      try {
+        plane = flight ? FloorPlanWalls.stairUndersidePlane(part) : [0, 0, 1, -part.z0];
+      } catch {
+        return null;
+      }
+      return { part, polygon: FloorPlanHeadroomAnalysis.rectangle(part).map(([x, y]) =>
+        [x, y, -(plane[0] * x + plane[1] * y + plane[3]) / plane[2]]) };
+    }).filter(Boolean);
+    for (const { part } of overhead) {
+      const flight = /\bstair-flight\b/.test(part.classes ?? "");
+      const boxes = flight ? FloorPlanGeometry.stairBoxes(part) : [{ ...part, z1: part.z0 }];
+      const polygons = [...surfaces.flatMap((surface) => surface.polygons),
+        ...overhead.filter((entry) => entry.part !== part).map((entry) => entry.polygon)];
+      const steps = boxes.map((box, index) => {
+        const rectangle = FloorPlanHeadroomAnalysis.rectangle(box);
+        // Flared tiers overlap as solids; only the exposed top is walkable.
+        const footprints = part.type === "solid-flared" && boxes[index + 1]
+          ? FloorPlanGeometryOperations.subtract(rectangle, FloorPlanHeadroomAnalysis.rectangle(boxes[index + 1]))
+          : [rectangle];
+        let minimum = Infinity;
+        for (const polygon of polygons) for (const footprint of footprints) {
+          let clipped = polygon;
+          for (let i = 0; i < footprint.length && clipped.length; i++) {
+            const a = footprint[i], b = footprint[(i + 1) % footprint.length];
+            const nx = b[1] - a[1], ny = a[0] - b[0];
+            clipped = FloorPlanGeometryOperations.clipPolygon(clipped, [nx, ny, 0, -nx * a[0] - ny * a[1]]);
+          }
+          if (FloorPlanHeadroomAnalysis.area(clipped) <= 1e-10) continue;
+          const heights = clipped.map((point) => point[2] - box.z1);
+          // Ignore floors wholly below this tread, but include surfaces crossing it.
+          if (Math.max(...heights) < -1e-8) continue;
+          minimum = Math.min(minimum, Math.max(0, Math.min(...heights)));
+        }
+        return { ...box, minimum };
+      });
+      const ownerId = part.ownerId;
+      if (!results.has(ownerId)) results.set(ownerId, { active: false, parts: new Map() });
+      const result = results.get(ownerId);
+      result.parts.set(part.id, { steps });
+      result.active ||= steps.some((step) => step.minimum < 2.7 - 1e-8);
+    }
+    return results;
+  },
+
+  aboveColor(minimum) {
+    if (!Number.isFinite(minimum)) return "#e6e3da";
+    if (minimum < 1.3 - 1e-8) return "#e6b484";
+    if (minimum < 2.1 - 1e-8) return "#f3cea3";
+    if (minimum < 2.85 - 1e-8) return "#f6e8ad";
+    if (minimum < 3.1 - 1e-8) return "#f7f5ef";
+    return "#b9d2eb";
+  },
+
   analyze(parts, floors, roofs = []) {
     const groups = new Map();
     for (const part of parts) {

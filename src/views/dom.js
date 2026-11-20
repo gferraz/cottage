@@ -41,6 +41,30 @@ const FloorPlanDom = {
     window.addEventListener("resize", hide);
   },
 
+  applyStairAppearance(plan, element, geometry, range, ownerId, partId = geometry.id) {
+    const result = plan.stairAboveHeadroom?.get(ownerId);
+    const part = result?.parts.get(partId);
+    if (!result?.active || !part) {
+      this.applyStairGradient(element, geometry, range);
+      return;
+    }
+    // Discrete tread fills replace both the old fade and the elevation gradient.
+    const rectangles = part.steps.map((step) => {
+      const x = (step.x - geometry.x) / geometry.w * 100;
+      const y = (step.y - geometry.y) / geometry.l * 100;
+      return `<rect x="${x}" y="${y}" width="${step.w / geometry.w * 100}" height="${step.l / geometry.l * 100}" fill="${FloorPlanStairHeadroom.aboveColor(step.minimum)}"/>`;
+    }).join("");
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none">${rectangles}</svg>`;
+    element.style.setProperty("background", `url("data:image/svg+xml,${encodeURIComponent(svg)}") center / 100% 100% no-repeat`, "important");
+    element.dataset.stairGradient = "headroom";
+    if (geometry.h > 0) element.style.setProperty("--stair-step",
+      (geometry.stairAxis === "horizontal" ? geometry.w : geometry.l) / part.steps.length);
+    const minimum = Math.min(...part.steps.map((step) => step.minimum));
+    element.title = Number.isFinite(minimum)
+      ? `Altura livre mínima sobre ${geometry.h > 0 ? "o lance" : "o patamar"}: ${minimum.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} m`
+      : "Altura livre sobre a escada: sem cobertura definida";
+  },
+
   applyStairGradient(element, geometry, range) {
     const color = (z) => `color-mix(in srgb, var(--theme-circulation), var(--theme-stair-gradient-dark) ${
       ((1 - FloorPlanGeometry.stairGradientRatio(z, range)) * 100).toFixed(4)}%)`;
@@ -133,12 +157,6 @@ const FloorPlanDom = {
       const elevationTolerance = 1e-9;
       element.dataset.stairFace =
         plan.currentFloorHeight >= z1 - elevationTolerance ? "top" : "bottom";
-      if (h > 0) {
-        element.style.setProperty(
-          "--stair-clearance-stop",
-          `${Math.min(100, (2 / h) * 100)}%`,
-        );
-      }
       const arrow = document.createElement("span");
       arrow.className = "stair-arrow";
       arrow.setAttribute("aria-hidden", "true");
@@ -147,7 +165,7 @@ const FloorPlanDom = {
     if (classes.split(/\s+/).some((name) => ["stair-flight", "stair-landing"].includes(name))) {
       const sourceFloor = plan.roomFloorConfigs?.get(data.id);
       const base = Number(sourceFloor?.z0 ?? plan.currentFloorHeight);
-      this.applyStairGradient(element, normalized, FloorPlanGeometry.stairGradientRange(base, [normalized]));
+      this.applyStairAppearance(plan, element, normalized, FloorPlanGeometry.stairGradientRange(base, [normalized]), data.id);
     }
     if (title) element.title = title;
     if (!room && showLabel && (label || title)) {
@@ -301,7 +319,7 @@ const FloorPlanDom = {
         if (partColor)
           partElement.style.backgroundColor = plan.themeFillColor(partColor);
         if (stairGradient && partClasses.split(/\s+/).some((name) => ["stair-flight", "stair-landing"].includes(name))) {
-          this.applyStairGradient(partElement, part, stairGradient);
+          this.applyStairAppearance(plan, partElement, part, stairGradient, room.id);
         }
         if (partClasses.split(/\s+/).includes("stair-flight")) {
           partElement.dataset.stairAxis = part.stairAxis;
@@ -313,12 +331,6 @@ const FloorPlanDom = {
             plan.currentFloorHeight >= part.z1 - elevationTolerance
               ? "top"
               : "bottom";
-          if (part.h > 0) {
-            partElement.style.setProperty(
-              "--stair-clearance-stop",
-              `${Math.min(100, (2 / part.h) * 100)}%`,
-            );
-          }
           const arrow = document.createElement("span");
           arrow.className = "stair-arrow";
           arrow.setAttribute("aria-hidden", "true");

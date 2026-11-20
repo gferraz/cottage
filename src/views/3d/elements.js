@@ -1,5 +1,15 @@
 const FloorPlan3DElements = {
   heightMaterial(plan, THREE, baseMaterial, stair, z) {
+    const analysis = plan.stairAboveHeadroom?.get(stair.ownerId);
+    if (analysis?.active) {
+      const steps = analysis.parts.get(stair.id)?.steps ?? [];
+      const step = steps.find((entry) => Math.abs(entry.z1 - z) < 1e-7);
+      if (step) {
+        const material = baseMaterial.clone();
+        material.color.set(FloorPlanStairHeadroom.aboveColor(step.minimum));
+        return material;
+      }
+    }
     if (!stair.stairGradient) return baseMaterial;
     const styles = getComputedStyle(plan.root);
     const opaque = (value) => value.replace(/^rgba\(([^,]+),([^,]+),([^,]+),[^)]+\)$/, "rgb($1,$2,$3)");
@@ -166,8 +176,9 @@ const FloorPlan3DElements = {
         if (solidStair) {
           const riserMaterial = wallMaterial.clone();
           riserMaterial.color.set(stair.colors?.riser || "#c5bba9");
-          const treadMaterial = wallMaterial.clone();
-          treadMaterial.color.set(stair.colors?.thread || "#928c7e");
+          const treadMaterial = plan.stairAboveHeadroom?.get(stair.ownerId)?.active ? material.clone() : wallMaterial.clone();
+          if (!plan.stairAboveHeadroom?.get(stair.ownerId)?.active)
+            treadMaterial.color.set(stair.colors?.thread || "#928c7e");
           let start = 0;
           solid.forEach((face) => {
             const count = (face.length - 2) * 3;

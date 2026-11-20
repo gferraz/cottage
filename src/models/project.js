@@ -29,9 +29,10 @@ const FloorPlanProject = {
     plan.stairSourceLayers = FloorPlanStairHeadroom.sourceLayers(plan);
     plan.derivedZones = FloorPlanStairAccess.generate(plan.stairConnectivity,
       { depth: config.stair_access_depth ?? 1.2 });
-    plan.stairHeadroomResults = FloorPlanStairHeadroom.analyze(stairParts, model.floors,
-      [...FloorPlanRoofGeometry.intersectingSurfaces(plan),
-        ...FloorPlanHeadroomAnalysis.slabSurfaces(plan.allSlabs)]);
+    const overheadSurfaces = [...FloorPlanRoofGeometry.intersectingSurfaces(plan),
+      ...FloorPlanHeadroomAnalysis.slabSurfaces(plan.allSlabs)];
+    plan.stairHeadroomResults = FloorPlanStairHeadroom.analyze(stairParts, model.floors, overheadSurfaces);
+    plan.stairAboveHeadroom = FloorPlanStairHeadroom.above(stairParts, overheadSurfaces);
     plan.preparedProject = {
       model,
       references: new Map(plan.references),

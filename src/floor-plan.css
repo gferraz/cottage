@@ -948,50 +948,6 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .outdoor { background: var(--theme-outdoor); }
 .service { background: var(--theme-service); }
 .circulation, .stair-landing, .stair-flight { background: var(--theme-circulation); }
-.stair-flight[data-stair-rise="up"],
-.stair-flight[data-stair-rise="down"] {
-  --stair-opaque: var(--theme-circulation);
-  --stair-clearance: color-mix(in srgb, var(--theme-circulation) 26%, transparent);
-  --stair-transparent: color-mix(in srgb, var(--theme-circulation) 8%, transparent);
-  background: linear-gradient(
-    to bottom,
-    var(--stair-opaque) 0%,
-    var(--stair-clearance) var(--stair-clearance-stop),
-    var(--stair-transparent) 100%
-  ) !important;
-}
-.stair-flight[data-stair-axis="horizontal"][data-stair-rise="up"],
-.stair-flight[data-stair-axis="horizontal"][data-stair-rise="down"] {
-  background: linear-gradient(
-    to right,
-    var(--stair-opaque) 0%,
-    var(--stair-clearance) var(--stair-clearance-stop),
-    var(--stair-transparent) 100%
-  ) !important;
-}
-.stair-flight[data-stair-axis="vertical"][data-stair-direction="reverse"][data-stair-rise="up"],
-.stair-flight[data-stair-axis="vertical"][data-stair-direction="reverse"][data-stair-rise="down"] {
-  background: linear-gradient(
-    to top,
-    var(--stair-opaque) 0%,
-    var(--stair-clearance) var(--stair-clearance-stop),
-    var(--stair-transparent) 100%
-  ) !important;
-}
-.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"][data-stair-rise="up"],
-.stair-flight[data-stair-axis="horizontal"][data-stair-direction="reverse"][data-stair-rise="down"] {
-  background: linear-gradient(
-    to left,
-    var(--stair-opaque) 0%,
-    var(--stair-clearance) var(--stair-clearance-stop),
-    var(--stair-transparent) 100%
-  ) !important;
-}
-.room-overlap.stair-flight {
-  --stair-opaque: rgba(179, 74, 74, 0.62);
-  --stair-clearance: rgba(179, 74, 74, 0.16);
-  --stair-transparent: rgba(179, 74, 74, 0.08);
-}
 .stair-flight {
   --stair-step: 0.28;
 }
