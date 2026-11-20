@@ -84,10 +84,10 @@
             { model: "cottage-casement", from: "right", w: 0.6, dx: 2.7 },
             // Conjunto frontal de 2,80 m, centralizado na parede da sala, sem parede entre módulos.
             // Módulos laterais de abrir e dois centrais fixos previstos na esquadria.
-            { model: "cottage-fixed", from: "front", w: 0.7, dx: 1.25, dz: 1.1 },
-            { model: "cottage-sliding", direction: "left", from: "front", w: 0.7, dx: 1.95, dz: 1.1 },
-            { model: "cottage-sliding", direction: "right", from: "front", w: 0.7, dx: 2.65, dz: 1.1 },
-            { model: "cottage-fixed", from: "front", w: 0.7, dx: 3.35, dz: 1.1 }
+            { model: "cottage-fixed",   from: "front", w: 0.7, dx: 1.25, dz: 1.1 },
+            { model: "cottage-sliding", from: "front", w: 0.7, dx: 1.95, dz: 1.1, direction: "left" },
+            { model: "cottage-sliding", from: "front", w: 0.7, dx: 2.65, dz: 1.1, direction: "right" },
+            { model: "cottage-fixed",   from: "front", w: 0.7, dx: 3.35, dz: 1.1 }
           ]
         },
         {
