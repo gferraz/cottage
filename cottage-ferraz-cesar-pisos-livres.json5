@@ -178,7 +178,7 @@
           label: "TV set",
           pos: ["living-sofa.xc - 1", "living.y1 - 0.51"],
           size: [1.8, 0.45, 0.6],
-          classes: "furniture",
+          color: "furniture",
         },
         {
           type: "rug",
