@@ -22,6 +22,7 @@ window.FloorPlanCatalog = {
     circulation: "#f5eede",
     terracotta: "#b15232",
     neutral: "#d8d8d8",
+    item: "#b8b9b6",
   },
   items: typeof module === "object" && module.exports ? require("../../lib/items.json") : {},
   openings: {

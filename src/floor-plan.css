@@ -762,7 +762,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   width: calc(var(--w) * var(--m));
   height: calc(var(--l) * var(--m));
   border: 1px solid var(--theme-label, #263746);
-  background-color: var(--theme-furniture, #cbb8a8);
+  background-color: var(--theme-item, #b8b9b6);
 }
 
 .plan-item:not(.room) {

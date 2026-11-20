@@ -30,8 +30,8 @@ const FloorPlan3DElements = {
         return;
       }
       const material = wallMaterial.clone();
-      if (item.color) {
-        const color = plan.themeFillColor(item.color).replace(/var\((--[\w-]+)\)/g,
+      {
+        const color = plan.themeFillColor(item.color ?? "item").replace(/var\((--[\w-]+)\)/g,
           (_match, property) => getComputedStyle(plan.root).getPropertyValue(property).trim());
         const rgba = color.match(/^rgba\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/i);
         material.color.set(rgba ? `rgb(${rgba[1]}, ${rgba[2]}, ${rgba[3]})` : color);
