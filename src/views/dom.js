@@ -196,10 +196,12 @@ const FloorPlanDom = {
         dimensions.textContent = `${plan.formatMeters(w)}m × ${plan.formatMeters(l)}m`;
         element.append(dimensions);
 
-        const area = document.createElement("small");
-        area.className = "area";
-        area.textContent = `Área: ${plan.formatMeters(element.area())}m²`;
-        element.append(area);
+        if (element.l() >= 1.5) {
+          const area = document.createElement("small");
+          area.className = "area";
+          area.textContent = `Área: ${plan.formatMeters(element.area())}m²`;
+          element.append(area);
+        }
       }
     }
 

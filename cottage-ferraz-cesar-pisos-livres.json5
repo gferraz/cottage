@@ -68,9 +68,9 @@
           id: "hall",
           label: "Hall",
           classes: "circulation",
-          walls: ["front", "rear"],
+          walls: ["front"],
           from: ["office.x1", "main.y0"],
-          to:   ["x0 + 1.4", "y0 + 2"],
+          to:   ["x0 + 1.4", "office.y1"],
           doors: [
             { from: "front", to: "porch", w: 1 },
             { from: "left",  to: "office" }
@@ -120,6 +120,15 @@
           walls: ["front", "rear", "left", "right"]
         },
         {
+          id: "hallway",
+          label: "Circulação",
+          classes: "circulation",
+          // Reserva para escada de 4,10 × 2,60 m e circulação de 1,20 m.
+          from: ["office.x0", "office.y1"],
+          to: ["hall.x1", "y0 + 2.6 + 1.2"],
+          walls: ["left", "rear"]
+        },
+        {
           id: "porch",
           label: "Varanda",
           classes: "outdoor porch",
@@ -131,8 +140,8 @@
           id: "vestibule",
           label: "Vestíbulo",
           from: ["hall.x1", "master-bedroom.y0"],
-          to: ["master-bedroom.x0", "y0 + 2.2"]
-          //walls: ["front", "rear", "left", "right"]
+          to: ["master-bedroom.x0", "y0 + 2.2"],
+          walls: ["front", "rear", "left"]
         },
       ],
       items: [
