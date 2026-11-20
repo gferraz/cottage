@@ -1,4 +1,10 @@
 {
+  "rug": {
+    "label": "Tapete",
+    "size": [2, 3, 0.01],
+    "classes": "furniture rug",
+    "color": "endro"
+  },
   "dining-table": {
     "label": "Mesa de jantar",
     "size": [1.8, 0.9, 0.75],

@@ -84,7 +84,7 @@
           doors: [
             { from: "left", w: 1, dy: 2.4 }
           ],
-          walls: ["front", "rear", "left", "right"],
+          walls: ["front", "left", "right"],
           windows: [
             // Janelas laterais com venezianas externas de abrir previstas.
             { model: "cottage-casement", from: "right", w: 0.6, dx: 0.5 },
@@ -123,14 +123,14 @@
         {
           id: "living-armchair-left",
           type: "armchair",
-          pos: ["living.x0 + 0.1", "living.yc - 0.425"],
+          pos: ["living.x0 + 0.1", "living.yc - 0.4"],
           rotation: 270
         },
         {
           id: "living-armchair-right",
           type: "armchair",
           pos: ["living-sofa.x1 + 0.25", "living-sofa.yc - 0.425"],
-          rotation: 0
+          rotation: 15
         },
         {
           id: "living-coffee-table",
@@ -145,7 +145,7 @@
           id: "living-fireplace",
           label: "Lareira",
           title: "Lareira — centro da parede lateral externa",
-          pos: ["living.x1 - 0.91", "living.yc - 0.25"],
+          pos: ["living.x1 - 0.8", "living.yc - 0.25"],
           size: [1.1, 0.5, 1.8],
           classes: "fireplace",
           rotation: 270
@@ -153,10 +153,15 @@
         {
           id: "living-tv-cabinet",
           label: "TV",
-          pos: ["living-sofa.xc - 0.9", "living.y1 - 0.51"],
+          pos: ["living-sofa.xc - 1", "living.y1 - 0.51"],
           size: [1.8, 0.45, 0.6],
           classes: "furniture storage",
           color: "furniture"
+        },
+        {
+          type: "rug",
+          pos: ["living.x0 + 0.7", "living.y0 + 0.8"],
+          size: [3, 2]
         }
       ]
     },

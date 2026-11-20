@@ -17,9 +17,9 @@ const FloorPlan3DElements = {
       const classes = String(item.classes || "").split(/\s+/);
       if (classes.includes("railing")) return;
       const roundTable = item.type === "round-table" || classes.includes("round-table");
-      const kind = roundTable ? "table" : ["queen-bed", "twin-bed", "car", "table", "chair", "washing-machine", "three-seat-sofa", "armchair", "fireplace"]
+      const kind = roundTable ? "table" : ["rug", "queen-bed", "twin-bed", "car", "table", "chair", "washing-machine", "three-seat-sofa", "armchair", "fireplace"]
         .find((name) => item.type === name || classes.includes(name));
-      const defaults = { car: 1.45, table: 0.75, fireplace: 1.8 };
+      const defaults = { rug: 0.01, car: 1.45, table: 0.75, fireplace: 1.8 };
       const x = Number(item.x), y = Number(item.y), w = Number(item.w), l = Number(item.l);
       const z0 = Number(item.z0 ?? 0);
       const configuredHeight = Number(item.h ?? Number(item.z1) - z0);

@@ -47,6 +47,19 @@ test('2D car and table definitions receive useful 3D heights without duplicating
   assert.ok(Math.abs(groups[1].children[0].geometry.size[2] - 0.075) < 1e-9);
 });
 
+test('rugs without an explicit height stay one centimeter above their floor', () => {
+  for (const definition of [{ type: 'rug' }, { classes: 'furniture rug' }]) {
+    for (const height of [0, 0.02]) {
+      const { groups, errors } = render([{ ...definition, x: 1, y: 2, w: 3, l: 2, z0: 3, h: height }]);
+      assert.deepEqual(errors, []);
+      assert.deepEqual(groups[0].center, [2.5, 3, 3]);
+      const mesh = groups[0].children[0];
+      assert.deepEqual(mesh.geometry.size, [3, 2, height || 0.01]);
+      assert.equal(mesh.center[2], (height || 0.01) / 2);
+    }
+  }
+});
+
 test('unknown items use a generic volume and invalid dimensions are reported', () => {
   const base = { x: 0, y: 0, w: 1, l: 1, z0: 0, h: 0.8 };
   const { groups, errors } = render([{ ...base, id: 'cabinet' }, { ...base, id: 'bad', w: -1 }]);

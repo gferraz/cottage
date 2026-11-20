@@ -827,6 +827,11 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   z-index: calc(5 + var(--layer, 0));
   opacity: 0.45;
 }
+
+.plan-item.rug {
+  opacity: 0.25;
+}
+
 .plan-wall {
   z-index: calc(4 + var(--layer, 0));
   opacity: 1 !important;
@@ -1095,7 +1100,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   z-index: 1;
 }
 .fireplace { background: #555; border: 2px solid #222; }
-.table { border: 2px solid #7a5b3a; background: #caa878; z-index: 5; }
+.table { border: 2px solid #7a5b3a; background: #a67c52; z-index: 5; }
 .round-table { border-radius: 50%; }
 .plan-item.chair {
   border: 1px solid #7a5b3a;
@@ -2435,7 +2440,7 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   z-index: 1;
 }
 .fireplace { background: #555; border: 2px solid #222; }
-.table { border: 2px solid #7a5b3a; background: #caa878; z-index: 5; }
+.table { border: 2px solid #7a5b3a; background: #a67c52; z-index: 5; }
 .round-table { border-radius: 50%; }
 .plan-item.chair {
   border: 1px solid #7a5b3a;
@@ -7776,9 +7781,9 @@ const FloorPlan3DElements = {
       const classes = String(item.classes || "").split(/\s+/);
       if (classes.includes("railing")) return;
       const roundTable = item.type === "round-table" || classes.includes("round-table");
-      const kind = roundTable ? "table" : ["queen-bed", "twin-bed", "car", "table", "chair", "washing-machine", "three-seat-sofa", "armchair", "fireplace"]
+      const kind = roundTable ? "table" : ["rug", "queen-bed", "twin-bed", "car", "table", "chair", "washing-machine", "three-seat-sofa", "armchair", "fireplace"]
         .find((name) => item.type === name || classes.includes(name));
-      const defaults = { car: 1.45, table: 0.75, fireplace: 1.8 };
+      const defaults = { rug: 0.01, car: 1.45, table: 0.75, fireplace: 1.8 };
       const x = Number(item.x), y = Number(item.y), w = Number(item.w), l = Number(item.l);
       const z0 = Number(item.z0 ?? 0);
       const configuredHeight = Number(item.h ?? Number(item.z1) - z0);
@@ -16128,7 +16133,7 @@ window.FloorPlan = FloorPlan;
 
 window.FloorPlanWindowLibrary = {"cottage-casement":{"w":0.9,"h":1.5,"z0":0.9,"type":"casement","glazing":{"columns":3,"rows":3},"framing":{"frame":0.05,"mullion":0.025,"color":"#f3f0e8"}},"cottage-fixed":{"w":0.9,"h":1.5,"z0":0.9,"type":"fixed","glazing":{"columns":3,"rows":3},"framing":{"frame":0.05,"mullion":0.025,"color":"#f3f0e8"}},"cottage-sliding":{"w":0.9,"h":1.5,"z0":0.9,"type":"sliding","direction":"right","glazing":{"columns":3,"rows":3},"framing":{"frame":0.05,"mullion":0.025,"color":"#f3f0e8"}}};
 
-window.FloorPlanCatalog = {"walls":{"thickness":0.12},"colors":{"casca-de-pinus":"#6e5241","jangada-de-bambu":"#ad9b8c","mate-amargo":"#606b4a","prosa-ao-entardecer":"#989192","tacho-de-cobre":"#b27147","leite-maltado":"#decabd","endro":"#7c9067","malva-exotica":"#afa7ac","sertao-nordestino":"#cd7d4c","desejo-ambar":"#f2cb96","abobrinha-italiana":"#9ea67d","aroma-de-uva":"#c5c0c9","furniture":"#d8c19a","bed":"#78b8b2","appliance":"#c7d2dc","sanitary":"#d9e8ee","circulation":"#f5eede","terracotta":"#b15232","neutral":"#d8d8d8"},"items":{"dining-table":{"label":"Mesa de jantar","size":[1.8,0.9,0.75],"classes":"furniture table","color":"furniture"},"washing-machine":{"label":"Lavadora","size":[0.6,0.6,0.85],"classes":"appliance washing-machine","color":"appliance"},"queen-bed":{"label":"Cama Queen","size":[1.6,2,0.55],"classes":"furniture queen-bed","nightstand":{"w":0.5,"side":"both"},"color":"bed"},"twin-bed":{"label":"Cama Twin","size":[0.97,1.91,0.55],"classes":"furniture twin-bed","nightstand":{"w":0.4,"side":"right"},"color":"bed"},"three-seat-sofa":{"label":"Sofá de 3 lugares","size":[2.1,0.9,0.85],"classes":"furniture three-seat-sofa","color":"furniture"},"armchair":{"label":"Poltrona","size":[0.8,0.85,0.85],"classes":"furniture armchair","color":"furniture"},"railing":{"label":"Cerca da varanda","size":[1,0.08,1.1],"classes":"architectural railing","color":"neutral"}},"openings":{"door":{"w":0.8,"z0":0,"h":2.1},"opening":{"w":1,"z0":0,"h":2.1},"window":{"w":0.9,"z0":0.9,"h":1.5}}};
+window.FloorPlanCatalog = {"walls":{"thickness":0.12},"colors":{"casca-de-pinus":"#6e5241","jangada-de-bambu":"#ad9b8c","mate-amargo":"#606b4a","prosa-ao-entardecer":"#989192","tacho-de-cobre":"#b27147","leite-maltado":"#decabd","endro":"#7c9067","malva-exotica":"#afa7ac","sertao-nordestino":"#cd7d4c","desejo-ambar":"#f2cb96","abobrinha-italiana":"#9ea67d","aroma-de-uva":"#c5c0c9","furniture":"#a67c52","bed":"#78b8b2","appliance":"#c7d2dc","sanitary":"#d9e8ee","circulation":"#f5eede","terracotta":"#b15232","neutral":"#d8d8d8"},"items":{"rug":{"label":"Tapete","size":[2,3,0.01],"classes":"furniture rug","color":"endro"},"dining-table":{"label":"Mesa de jantar","size":[1.8,0.9,0.75],"classes":"furniture table","color":"furniture"},"washing-machine":{"label":"Lavadora","size":[0.6,0.6,0.85],"classes":"appliance washing-machine","color":"appliance"},"queen-bed":{"label":"Cama Queen","size":[1.6,2,0.55],"classes":"furniture queen-bed","nightstand":{"w":0.5,"side":"both"},"color":"bed"},"twin-bed":{"label":"Cama Twin","size":[0.97,1.91,0.55],"classes":"furniture twin-bed","nightstand":{"w":0.4,"side":"right"},"color":"bed"},"three-seat-sofa":{"label":"Sofá de 3 lugares","size":[2.3,0.9,0.85],"classes":"furniture three-seat-sofa","color":"furniture"},"armchair":{"label":"Poltrona","size":[0.8,0.85,0.85],"classes":"furniture armchair","color":"furniture"},"railing":{"label":"Cerca da varanda","size":[1,0.08,1.1],"classes":"architectural railing","color":"neutral"}},"openings":{"door":{"w":0.8,"z0":0,"h":2.1},"opening":{"w":1,"z0":0,"h":2.1},"window":{"w":0.9,"z0":0.9,"h":1.5}}};
 
 const floor = new FloorPlan({
   root: document.querySelector("#floor-plan"),
