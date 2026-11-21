@@ -96,3 +96,22 @@ test('headroom appearance replaces the gradient in 2D and 3D with the same discr
   const material = elements.heightMaterial(plan, {}, base, part, step.z1);
   assert.equal(material.color.value, FloorPlanStairHeadroom.aboveColor(step.minimum));
 });
+
+test('office clearance includes stair undersides instead of only roofs and slabs', () => {
+  const source = FloorPlanParser.parse(require('node:fs').readFileSync('cottage-ferraz-cesar-pisos-livres.json5', 'utf8'));
+  const plan = Object.assign(Object.create(FloorPlan.prototype), { catalog: FloorPlanCatalog });
+  plan.prepareProject(source);
+  const office = plan.getRoomGeometry('office');
+  const extension = office.normalizedParts.find(part => part.id === 'office-main');
+  const stairs = plan.getRoomGeometry('stairs');
+  const upper = stairs.normalizedParts.find(part => part.id === 'upper-flight');
+  const surfaces = FloorPlanHeadroomAnalysis.stairSurfaces([{ id: 'stairs', parts: [upper] }]);
+  const expected = FloorPlanHeadroomAnalysis.analyzeRoom({ z0: office.z0(), parts: [extension] }, surfaces, []);
+  assert.ok(expected.covered.area > 2);
+  assert.ok(expected.areas[1].area < expected.covered.area);
+  const result = plan.headroomResults.get('office');
+  const roofOnly = FloorPlanHeadroomAnalysis.analyzeRoom({ z0: office.z0(), parts: office.normalizedParts },
+    [...FloorPlanRoofGeometry.intersectingSurfaces(plan), ...FloorPlanHeadroomAnalysis.slabSurfaces(plan.allSlabs)], []);
+  assert.ok(result.areas[1].area < roofOnly.areas[1].area);
+  assert.ok(result.heightRange.min < 2.1);
+});

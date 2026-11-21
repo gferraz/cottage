@@ -52,10 +52,12 @@ const FloorPlanHeadroom = {
     const surfaces = [
       ...FloorPlanRoofGeometry.intersectingSurfaces(plan),
       ...FloorPlanHeadroomAnalysis.slabSurfaces(plan.allSlabs),
+      ...FloorPlanHeadroomAnalysis.stairSurfaces(rooms),
     ];
     plan.headroomResults = new Map(rooms.map((room) => {
       const deductions = FloorPlanRoomArea.deductionsFor(room, rooms, items, { sameFloor: true });
-      return [room.id, FloorPlanHeadroomAnalysis.analyzeRoom(room, surfaces, deductions, this.thresholds)];
+      const overhead = surfaces.filter((surface) => surface.ownerId !== room.id);
+      return [room.id, FloorPlanHeadroomAnalysis.analyzeRoom(room, overhead, deductions, this.thresholds)];
     }));
     return plan.headroomResults;
   },

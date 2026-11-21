@@ -2,6 +2,24 @@
 const FloorPlanHeadroomAnalysis = {
   thresholds: [1.3, 2.1, 2.85, 3.1],
 
+  stairSurfaces(rooms = []) {
+    return rooms.flatMap((room) => room.parts.flatMap((part) => {
+      const flight = /\bstair-flight\b/.test(part.classes ?? "");
+      if (!flight && !/\bstair-landing\b/.test(part.classes ?? "")) return [];
+      if ((part.rotation ?? 0) !== 0 || !(part.w > 0 && part.l > 0)
+        || ![part.x, part.y, part.z0, part.z1].every(Number.isFinite)
+        || (flight && (!(part.h > 0) || !["horizontal", "vertical"].includes(part.stairAxis)))) return [];
+      let plane;
+      try {
+        plane = flight ? FloorPlanWalls.stairUndersidePlane(part) : [0, 0, 1, -part.z0];
+      } catch {
+        return [];
+      }
+      return [{ ownerId: room.id, polygons: [this.rectangle(part).map(([x, y]) =>
+        [x, y, -(plane[0] * x + plane[1] * y + plane[3]) / plane[2]])] }];
+    }));
+  },
+
   slabSurfaces(slabs = []) {
     return slabs.map((slab) => ({
       polygons: slab.parts.map((part) => this.rectangle(part)
