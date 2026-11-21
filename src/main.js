@@ -826,10 +826,16 @@ class FloorPlan {
    * @param {boolean} [options.preservePresentation=false] Mantém o estado de apresentação atual.
    * @returns {FloorPlan} A própria instância, para encadeamento.
    */
-  load(config, { preservePresentation = false } = {}) {
+  load(config, { preservePresentation = false, sourceFilename = "" } = {}) {
     this.prepareProject(config);
     this.configureViewport(this.model.viewport);
-    return this.renderView({ preservePresentation });
+    const result = this.renderView({ preservePresentation });
+    const sourceElement = document.querySelector("#project-source");
+    if (sourceElement) {
+      sourceElement.textContent = sourceFilename ? `Arquivo: ${sourceFilename}` : "";
+      sourceElement.hidden = !sourceFilename;
+    }
+    return result;
   }
 
   renderView({ activeFloor = null, showAllFloors = this.showAllFloors, selectedFloorIds = activeFloor === null && showAllFloors === this.showAllFloors ? this.selectedFloorIds : null, preservePresentation = true } = {}) {
@@ -999,7 +1005,7 @@ class FloorPlan {
     const sourceText = await file.text();
     const config = FloorPlanParser.parse(sourceText, { filename: file.name });
     this.currentSourceText = sourceText;
-    return this.load(config);
+    return this.load(config, { sourceFilename: file.name });
   }
 
   formatMeters(value) {
