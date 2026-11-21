@@ -261,3 +261,27 @@ test('current cottage bedroom resolves the rear knee wall reference', () => {
   assert.deepEqual(plan.errors.filter((error) => error.id === 'bedroom-north'), []);
   assert.ok(Math.abs(plan.getRoomGeometry('bedroom-north').y0() - Math.min(plan.resolve('knee-wall-rear.y0') - 1, plan.resolve('main.y1'))) < 1e-9);
 });
+
+test('declared stair overlaps cap room walls while roofs still govern uncovered spans', () => {
+  for (const relation of ['overlaps', 'overlays', 'both', 'none']) {
+    const office = { id: 'office', pos: [0, 0], size: [4, 3], top: 'roofs', walls: ['rear'] };
+    const upper = { id: 'flight', classes: 'stair-flight', orientation: 'transverse',
+      from: [0, 2, 1.5], to: [2, 3, 2.5], walls: [] };
+    if (['overlaps', 'both'].includes(relation)) office.overlaps = ['flight'];
+    if (['overlays', 'both'].includes(relation)) upper.overlays = ['office'];
+    const plan = prepare({ z0: 0, ceiling_height: 3, rooms: [office, upper], roofs: [
+      { id: 'roof', type: 'gable', orientation: 'longitudinal', pitch: 45,
+        z0: 3, rectangle: [0, 0, 4, 3] },
+    ] });
+    assert.deepEqual(plan.errors, []);
+    const wall = plan.walls.get('office-bottom');
+    assert.equal(wall.undersideLimits.length, relation === 'none' ? 0 : 1);
+    if (relation === 'none') continue;
+    const faces = walls.boxFaces(...wall.pos, ...wall.pos.map((value, index) => value + wall.size[index]));
+    const solids = walls.wallSolids(faces, walls.roofLimits(plan, plan.currentConfig), wall.roofOnly, wall.undersideLimits);
+    const vertices = solids.flat(2);
+    assert.ok(vertices.some(([x, , z]) => x > 2.1 && z > 3));
+    for (const [x, , z] of vertices.filter(([x]) => x < 2 - 1e-8))
+      assert.ok(z <= 1.5 + x / 2 + 1e-8, `${relation}: wall protrudes through stair`);
+  }
+});

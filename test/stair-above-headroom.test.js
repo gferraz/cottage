@@ -97,21 +97,17 @@ test('headroom appearance replaces the gradient in 2D and 3D with the same discr
   assert.equal(material.color.value, FloorPlanStairHeadroom.aboveColor(step.minimum));
 });
 
-test('office clearance includes stair undersides instead of only roofs and slabs', () => {
-  const source = FloorPlanParser.parse(require('node:fs').readFileSync('cottage-ferraz-cesar-pisos-livres.json5', 'utf8'));
+test('office clearance includes stair undersides without a roof or slab', () => {
+  const source = { floors: [{ id: 'ground', z0: 0.3, ceiling_height: 3,
+    rooms: [{ id: 'office', pos: [0, 0], size: [2.4, 1.3], walls: [], overlaps: ['stairs'] }],
+    stairs: [{ id: 'stairs', overlays: ['office'], parts: [{ id: 'upper-flight',
+      risers: 9, orientation: 'transverse', from: [0, 0, 1.8], to: [2.4, 1.3, 3.3], walls: [] }] }],
+  }] };
   const plan = Object.assign(Object.create(FloorPlan.prototype), { catalog: FloorPlanCatalog });
   plan.prepareProject(source);
-  const office = plan.getRoomGeometry('office');
-  const extension = office.normalizedParts.find(part => part.id === 'office-main');
-  const stairs = plan.getRoomGeometry('stairs');
-  const upper = stairs.normalizedParts.find(part => part.id === 'upper-flight');
-  const surfaces = FloorPlanHeadroomAnalysis.stairSurfaces([{ id: 'stairs', parts: [upper] }]);
-  const expected = FloorPlanHeadroomAnalysis.analyzeRoom({ z0: office.z0(), parts: [extension] }, surfaces, []);
-  assert.ok(expected.covered.area > 2);
-  assert.ok(expected.areas[1].area < expected.covered.area);
   const result = plan.headroomResults.get('office');
-  const roofOnly = FloorPlanHeadroomAnalysis.analyzeRoom({ z0: office.z0(), parts: office.normalizedParts },
-    [...FloorPlanRoofGeometry.intersectingSurfaces(plan), ...FloorPlanHeadroomAnalysis.slabSurfaces(plan.allSlabs)], []);
-  assert.ok(result.areas[1].area < roofOnly.areas[1].area);
-  assert.ok(result.heightRange.min < 2.1);
+  assert.ok(Math.abs(result.covered.area - 3.12) < 1e-8);
+  assert.ok(Math.abs(result.areas[1].area - 1.716) < 1e-8);
+  assert.ok(Math.abs(result.heightRange.min - 1.5) < 0.0001);
+  assert.ok(Math.abs(result.heightRange.max - 2.833333) < 0.0001);
 });

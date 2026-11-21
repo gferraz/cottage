@@ -9834,6 +9834,30 @@ const FloorPlanWalls = {
     return solids;
   },
 
+  overlappingStairLimits(plan, roomId, definition, part, padding = 0) {
+    const targets = new Set([roomId]);
+    const floorZ = part?.z0 ?? plan.getRoomGeometry(roomId).z0();
+    if (part?.id) targets.add(FloorPlanOverlapAnalysis.partKey(roomId, part.id));
+    const lowerTargets = plan.normalizeOverlapTargets(definition.overlaps);
+    const ids = [];
+    plan.roomDefinitions.forEach((upper, ownerId) => {
+      if (ownerId === roomId || plan.invalidRoomIds.has(ownerId)) return;
+      const candidates = upper.parts?.length ? upper.parts : [upper];
+      candidates.forEach((candidate) => {
+        const key = FloorPlanOverlapAnalysis.partKey(ownerId, candidate.id);
+        const overlays = plan.normalizeOverlapTargets(candidate.overlays ?? upper.overlays);
+        if (!overlays.some((target) => targets.has(target))
+          && !lowerTargets.includes(ownerId) && !lowerTargets.includes(key)) return;
+        const geometry = plan.getRoomGeometry(ownerId).normalizedParts
+          .find((entry) => entry.id === candidate.id);
+        if (!geometry || geometry.z1 <= floorZ + 1e-8
+          || !/\bstair-(flight|landing)\b/.test(geometry.classes ?? "")) return;
+        ids.push(upper.parts?.length ? candidate.id : ownerId);
+      });
+    });
+    return ids.length ? this.undersideLimits(plan, ids, padding) : [];
+  },
+
   // Trim the lower surface in strips at every terrain-profile break.
   terrainSolids(faces, reference, offset = { x: 0, y: 0 }) {
     if (!reference) return [faces];
@@ -10397,6 +10421,8 @@ const FloorPlanWalls = {
         const explicitHeight = Number(geometry.h());
         let height = explicitHeight > 0 ? explicitHeight : floorHeight;
         const undersideLimits = this.undersideLimits(plan, definition.top, thickness / 2);
+        if (definition.top === undefined || ["roofs", "roof"].includes(definition.top))
+          undersideLimits.push(...this.overlappingStairLimits(plan, roomId, definition, part, thickness / 2));
         if (undersideLimits.length) height = Math.max(height, ...undersideLimits.map((limit) => limit.peakZ - floorZ0));
         if (definition.top === undefined && !(explicitHeight > 0))
           undersideLimits.push(...this.overheadSlabLimits(plan, floors, floorZ0, thickness / 2));
