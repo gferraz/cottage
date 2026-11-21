@@ -374,6 +374,13 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   border: none;
   background: transparent;
 }
+
+.hide-headroom .headroom-zone,
+.hide-headroom .stair-headroom-zone,
+body:has(.hide-headroom) #comfort-legend {
+  display: none !important;
+}
+
 .headroom-height-label {
   font-size: 0.14px;
   font-weight: normal;
@@ -945,6 +952,10 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
         <div id="slab-list"></div>
       </fieldset>
       <span class="visibility-heading" hidden>Mostrar:</span>
+      <label class="visibility-switch" hidden>
+        <input id="show-headroom" type="checkbox" checked />
+        <span>Faixas de alturas</span>
+      </label>
       <label class="visibility-switch" hidden>
         <input id="show-multi-floor" type="checkbox" />
         <span>Multi-pisos</span>

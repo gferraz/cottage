@@ -31,6 +31,7 @@ const floor = new FloorPlan({
   dxfButton: document.querySelector("#download-dxf"),
   multiFloorSwitch: document.querySelector("#show-multi-floor"),
   roofSwitch: document.querySelector("#show-roofs"),
+  headroomSwitch: document.querySelector("#show-headroom"),
   jsonInput: document.querySelector("#json-file"),
   layerOptions: document.querySelector("#layer-options"),
   visibilityHeading: document.querySelector(".visibility-heading"),

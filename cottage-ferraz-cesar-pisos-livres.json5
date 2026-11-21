@@ -160,7 +160,7 @@
           overlaps: ["stairs"],
           top: "roofs",
           pos: ["front-wing.x0", "front-wing.y0"],
-          size: [3.7, 3.8],
+          size: [3.7, 4.8],
           walls: ["front", "rear", "left", "right"]
         },
         {
@@ -265,6 +265,15 @@
        base: "office",
        z0: "upper.z0",
        orientation: "longitudinal",
+       pitch: 51
+     },
+     {
+       id: "transverse-roof",
+       label: "Telhado transversal",
+       type: "gable",
+       rectangle: ["main.x0", "main.y0", "living.x1", "living.y1"],
+       z0: "upper.z0",
+       orientation: "transverse",
        pitch: 51
      }
    ],

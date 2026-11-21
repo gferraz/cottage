@@ -6,7 +6,7 @@ class FloorPlan {
    * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
    * @param {number} [options.scale=56] Escala inicial em pixels por metro.
    */
-  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, facade3dCameraControls = null, solarSeasonSelect = null, solarTimeDisplay = null, solarTimePrevious = null, solarTimeNext = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, facade3dCameraControls = null, solarSeasonSelect = null, solarTimeDisplay = null, solarTimePrevious = null, solarTimeNext = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, headroomSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
@@ -126,6 +126,13 @@ class FloorPlan {
       multiFloorSwitch.addEventListener("change", () => {
         this.multiFloorMode = multiFloorSwitch.checked;
         this.renderMultiFloorUnderlay();
+      });
+    }
+    this.headroomSwitch = headroomSwitch;
+    if (headroomSwitch) {
+      headroomSwitch.checked = true;
+      headroomSwitch.addEventListener("change", () => {
+        this.root.classList.toggle("hide-headroom", !headroomSwitch.checked);
       });
     }
     if (roofSwitch) {
@@ -593,7 +600,9 @@ class FloorPlan {
   }
 
   updateVisibilityHeading() {
+    this.headroomSwitch?.closest(".visibility-switch")?.toggleAttribute("hidden", !this.currentConfig);
     const hasSwitch = Boolean(
+      (this.headroomSwitch && this.currentConfig) ||
       (this.multiFloorSwitch && !this.multiFloorSwitch.hidden),
     );
     this.visibilityHeading?.toggleAttribute("hidden", !hasSwitch);

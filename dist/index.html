@@ -1802,6 +1802,12 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
 .stair-flight[data-stair-type="solid-flared"]::after { content: none; }
 .comfort-legend .comfort-blue { background: rgba(45, 125, 220, 0.28); }
 
+.hide-headroom .headroom-zone,
+.hide-headroom .stair-headroom-zone,
+body:has(.hide-headroom) #comfort-legend {
+  display: none !important;
+}
+
 
 /* Architects Daughter by Kimberly Geswein; SIL OFL 1.1.
    License: fonts/architects-daughter-OFL.txt. Embedded for offline exports. */
@@ -2196,6 +2202,13 @@ p { margin: 0 0 18px; color: var(--theme-muted); font-size: 13px; }
   border: none;
   background: transparent;
 }
+
+.hide-headroom .headroom-zone,
+.hide-headroom .stair-headroom-zone,
+body:has(.hide-headroom) #comfort-legend {
+  display: none !important;
+}
+
 .headroom-height-label {
   font-size: 0.14px;
   font-weight: normal;
@@ -2767,6 +2780,10 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
         <div id="slab-list"></div>
       </fieldset>
       <span class="visibility-heading" hidden>Mostrar:</span>
+      <label class="visibility-switch" hidden>
+        <input id="show-headroom" type="checkbox" checked />
+        <span>Faixas de alturas</span>
+      </label>
       <label class="visibility-switch" hidden>
         <input id="show-multi-floor" type="checkbox" />
         <span>Multi-pisos</span>
@@ -15134,7 +15151,7 @@ class FloorPlan {
    * @param {Object|null} [options.catalog] Catálogo de tipos e cores reutilizáveis.
    * @param {number} [options.scale=56] Escala inicial em pixels por metro.
    */
-  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, facade3dCameraControls = null, solarSeasonSelect = null, solarTimeDisplay = null, solarTimePrevious = null, solarTimeNext = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
+  constructor({ root, catalog = null, terrainLayer = null, guidesLayer = null, facadeLayer = null, secondaryFacadeLayer = null, facade3dLayer = null, facade3dCameraControls = null, solarSeasonSelect = null, solarTimeDisplay = null, solarTimePrevious = null, solarTimeNext = null, viewportSummary = null, titleElement = null, floorOptions = null, roomList = null, itemList = null, roofList = null, floorSummary = null, roomCountSummary = null, summary = null, usefulAreaSummary = null, boundsSummary = null, terrainSummary = null, openingList = null, windowList = null, naturalList = null, errorList = null, downloadButton = null, markdownButton = null, dxfButton = null, multiFloorSwitch = null, roofSwitch = null, headroomSwitch = null, visibilityHeading = null, jsonInput = null, layerOptions = null, scale = 56 }) {
     this.root = root;
     this.catalog = catalog || window.FloorPlanCatalog || { colors: {}, items: {}, openings: {} };
     this.terrainLayer = terrainLayer;
@@ -15254,6 +15271,13 @@ class FloorPlan {
       multiFloorSwitch.addEventListener("change", () => {
         this.multiFloorMode = multiFloorSwitch.checked;
         this.renderMultiFloorUnderlay();
+      });
+    }
+    this.headroomSwitch = headroomSwitch;
+    if (headroomSwitch) {
+      headroomSwitch.checked = true;
+      headroomSwitch.addEventListener("change", () => {
+        this.root.classList.toggle("hide-headroom", !headroomSwitch.checked);
       });
     }
     if (roofSwitch) {
@@ -15721,7 +15745,9 @@ class FloorPlan {
   }
 
   updateVisibilityHeading() {
+    this.headroomSwitch?.closest(".visibility-switch")?.toggleAttribute("hidden", !this.currentConfig);
     const hasSwitch = Boolean(
+      (this.headroomSwitch && this.currentConfig) ||
       (this.multiFloorSwitch && !this.multiFloorSwitch.hidden),
     );
     this.visibilityHeading?.toggleAttribute("hidden", !hasSwitch);
@@ -16259,6 +16285,7 @@ const floor = new FloorPlan({
   dxfButton: document.querySelector("#download-dxf"),
   multiFloorSwitch: document.querySelector("#show-multi-floor"),
   roofSwitch: document.querySelector("#show-roofs"),
+  headroomSwitch: document.querySelector("#show-headroom"),
   jsonInput: document.querySelector("#json-file"),
   layerOptions: document.querySelector("#layer-options"),
   visibilityHeading: document.querySelector(".visibility-heading"),

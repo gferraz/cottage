@@ -1739,3 +1739,9 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
 /* Nested solid tiers have their own front and side edges in plan. */
 .stair-flight[data-stair-type="solid-flared"]::after { content: none; }
 .comfort-legend .comfort-blue { background: rgba(45, 125, 220, 0.28); }
+
+.hide-headroom .headroom-zone,
+.hide-headroom .stair-headroom-zone,
+body:has(.hide-headroom) #comfort-legend {
+  display: none !important;
+}
