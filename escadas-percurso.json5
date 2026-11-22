@@ -1,0 +1,45 @@
+{
+  title: "Escadas por percurso — três lances e semi-pirâmide",
+  viewport: { size: [12, 7], origin: [1.5, 2.5] },
+  config: { stairs: { width: 1.2, riser: 0.17, tread: 0.28 } },
+  floors: [
+    {
+      id: "ground",
+      label: "Térreo",
+      z0: 0,
+      ceiling_height: 3.06,
+      stairs: [
+        {
+          id: "stairs",
+          label: "Escada — três lances",
+          // Centro da entrada; a primeira subida segue para y decrescente.
+          pos: [4, 6, 0],
+          parts: [
+            { id: "first-flight", direction: "-y", to: 1.02 },
+            { id: "first-landing" },
+            { id: "second-flight", direction: "+x", to: 2.04 },
+            // O comprimento total do patamar afasta os lances paralelos.
+            { id: "extended-landing", direction: "+y", run: 2.4 },
+            { id: "third-flight", direction: "-x", to: "upper.z0" },
+          ],
+        },
+        {
+          id: "entry-stairs",
+          label: "Escada — semi-pirâmide",
+          pos: [10, 6, 0],
+          type: "solid-flared",
+          parts: [
+            {
+              id: "entry-flight",
+              direction: "-y",
+              to: 0.6,
+              tread: 0.34,
+              steps: { widths: [3, 2.6, 2.2, 1.8] },
+            },
+          ],
+        },
+      ],
+    },
+    { id: "upper", label: "Superior", z0: 3.06, ceiling_height: 2.7 },
+  ],
+}
