@@ -67,7 +67,7 @@ test('invalid paths report the part and reason', () => {
   for (const [parts, pattern] of [
     [[flight(), flight('+x', 2)], /patamar/],
     [[flight(), {}, flight('-y', 2)], /informe direction/],
-    [[flight(), { direction: '+x', run: 0.5 }, flight('-y', 2)], /run insuficiente/],
+    [[flight(), { direction: '+x', run: 0.5 }, flight('-y', 2)], /insuficiente para conectar/],
     [[flight(), { direction: '+y', run: 2.4 }, flight('-y', 2)], /interseção/],
     [[flight('bad')], /direction/],
     [[flight('+y', 0)], /acima/],
@@ -149,4 +149,17 @@ test('Cartesian projects reflect the entry point and every horizontal direction'
   close(one.x + one.w, -4);
   assert.equal(one.stairDirection, 'reverse');
   assert.equal(two.stairDirection, 'forward');
+});
+
+
+test('U landing depth is independent of the full-width contacts on its cross face', () => {
+  const parts = generate([
+    { ...flight('-x', 1.5), width: 1.4, run: 2.5 },
+    { direction: '-y', width: 1.2, run: 2.8 },
+    { ...flight('+x', 3), width: 1.3, run: 2.5 },
+  ]);
+  close(parts[1].w, 1.2);
+  close(parts[1].l, 2.8);
+  close(parts[0].x, parts[2].x);
+  close(parts[0].y - (parts[2].y + parts[2].l), 0.1);
 });

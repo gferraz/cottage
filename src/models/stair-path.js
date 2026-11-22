@@ -75,12 +75,16 @@ const FloorPlanStairPath = {
         const nextWidth = widthOf(next);
         const previous = result.at(-1);
         const entryWidth = previous.type === 'solid-flared' ? previous.steps.widths.at(-1) : previous.pathWidth;
-        if (width + epsilon < Math.max(entryWidth, nextWidth)) fail(part, 'width não acomoda a largura dos lances vizinhos');
         const parallel = d[0] * incoming[0] + d[1] * incoming[1];
         if (parallel < 0) fail(part, 'direction do patamar não pode voltar sobre o lance de entrada');
         const depth = parallel ? run : width;
         const cross = parallel ? width : run;
-        if (depth + epsilon < nextWidth || cross + epsilon < Math.max(entryWidth, nextWidth)) fail(part, 'run insuficiente para conectar os lances');
+        // Each interface must fit on its actual face. For a U turn both
+        // flights meet the cross face; depth is independent of flight width.
+        const outgoingAcross = outgoing[0] * incoming[0] + outgoing[1] * incoming[1] === 0;
+        if (cross + epsilon < entryWidth || (outgoingAcross ? depth : cross) + epsilon < nextWidth) {
+          fail(part, 'run ou width insuficiente para conectar os lances');
+        }
         const transverse = [-incoming[1], incoming[0]];
         const sign = d[0] * transverse[0] + d[1] * transverse[1];
         const offset = parallel ? -cross / 2 : sign > 0 ? -entryWidth / 2 : entryWidth / 2 - cross;
