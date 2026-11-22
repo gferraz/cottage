@@ -194,6 +194,30 @@ const FloorPlan3DElements = {
         step.userData.stepIndex = index;
         scene.add(step);
       }
+      // With one fewer tread than risers, the destination supplies the last
+      // horizontal surface. Draw its arrival riser explicitly: a zero-height
+      // landing cannot close the gap above the flight's last tread.
+      if (steps.risers > stepCount) {
+        const end = (axis === "horizontal" ? x : y) + (ascendsWithIncreasingAxis ? run : 0);
+        const bottom = z0 + stepCount * stepRise;
+        const top = z0 + height;
+        const face = axis === "horizontal"
+          ? [[end, y, bottom], [end, y, top], [end, y + length, top], [end, y + length, bottom]]
+          : [[x, end, bottom], [x + width, end, bottom], [x + width, end, top], [x, end, top]];
+        if (!ascendsWithIncreasingAxis) face.reverse();
+        const vertices = [...face[0], ...face[1], ...face[2], ...face[0], ...face[2], ...face[3]];
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
+        geometry.computeVertexNormals();
+        const material = this.heightMaterial(plan, THREE, wallMaterial, stair, top);
+        const riser = new THREE.Mesh(geometry, material);
+        riser.castShadow = true;
+        riser.receiveShadow = true;
+        riser.userData.domainId = stair.id;
+        riser.userData.stepIndex = stepCount;
+        riser.userData.stairFace = "arrival-riser";
+        scene.add(riser);
+      }
     });
 
     if (stairLandings.length) {

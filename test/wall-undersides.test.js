@@ -105,9 +105,13 @@ test('stair meshes leave the inclined underside clear instead of filling down to
     });
     assert.ok(meshes.length > 1);
     if (definition.risers) {
-      assert.equal(meshes.length, definition.risers - 1);
+      assert.equal(meshes.length, definition.risers);
       const top = Math.max(...meshes.flatMap((mesh) => mesh.geometry.vertices.filter((_, i) => i % 3 === 2)));
-      assert.ok(Math.abs(top - (geometry.z1 - geometry.h / definition.risers)) < 1e-8);
+      assert.ok(Math.abs(top - geometry.z1) < 1e-8);
+      const arrival = meshes.at(-1);
+      assert.equal(arrival.userData.stairFace, 'arrival-riser');
+      const bottom = Math.min(...arrival.geometry.vertices.filter((_, i) => i % 3 === 2));
+      assert.ok(Math.abs(bottom - (geometry.z1 - geometry.h / definition.risers)) < 1e-8);
     }
     const plane = walls.stairUndersidePlane(geometry);
     for (const mesh of meshes) {
