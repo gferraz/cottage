@@ -86,8 +86,9 @@ test('headroom appearance replaces the gradient in 2D and 3D with the same discr
   const element = { dataset: {}, style: { setProperty: (key, value) => { properties[key] = value; } } };
   FloorPlanDom.applyStairAppearance(plan, element, part, { base: 0, top: 1 }, 'stairs');
   assert.equal(element.dataset.stairGradient, 'headroom');
-  assert.ok(properties.background.startsWith('url('));
-  assert.ok(!properties.background.includes('linear-gradient'));
+  assert.ok(properties['--stair-headroom-background'].startsWith('url('));
+  assert.ok(!properties['--stair-headroom-background'].includes('linear-gradient'));
+  assert.ok(properties.background.startsWith('var(--stair-headroom-background, linear-gradient('));
   const step = plan.stairAboveHeadroom.get('stairs').parts.get('flight').steps[0];
   const base = { clone: () => ({ color: { set(value) { this.value = value; } } }) };
   const elements = require('node:vm').runInNewContext(

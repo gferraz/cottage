@@ -1751,3 +1751,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
 body:has(.hide-headroom) #comfort-legend {
   display: none !important;
 }
+
+.hide-headroom [data-stair-gradient="headroom"] {
+  --stair-headroom-background: initial !important;
+}

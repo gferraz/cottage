@@ -48,14 +48,16 @@ const FloorPlanDom = {
       this.applyStairGradient(element, geometry, range);
       return;
     }
-    // Discrete tread fills replace both the old fade and the elevation gradient.
+    const heightBackground = this.applyStairGradient(element, geometry, range);
+    // Keep the elevation fill available when the headroom bands are disabled.
     const rectangles = part.steps.map((step) => {
       const x = (step.x - geometry.x) / geometry.w * 100;
       const y = (step.y - geometry.y) / geometry.l * 100;
       return `<rect x="${x}" y="${y}" width="${step.w / geometry.w * 100}" height="${step.l / geometry.l * 100}" fill="${FloorPlanStairHeadroom.aboveColor(step.minimum)}"/>`;
     }).join("");
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none">${rectangles}</svg>`;
-    element.style.setProperty("background", `url("data:image/svg+xml,${encodeURIComponent(svg)}") center / 100% 100% no-repeat`, "important");
+    element.style.setProperty("--stair-headroom-background", `url("data:image/svg+xml,${encodeURIComponent(svg)}") center / 100% 100% no-repeat`);
+    element.style.setProperty("background", `var(--stair-headroom-background, ${heightBackground})`, "important");
     element.dataset.stairGradient = "headroom";
     if (geometry.h > 0) element.style.setProperty("--stair-step",
       (geometry.stairAxis === "horizontal" ? geometry.w : geometry.l) / part.steps.length);
@@ -103,6 +105,7 @@ const FloorPlanDom = {
     }
     element.dataset.stairGradient = "height";
     element.style.setProperty("background", background, "important");
+    return background;
   },
 
   add(plan, data) {
