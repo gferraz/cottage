@@ -19,6 +19,7 @@ src("models/roof-geometry");
 src("models/headroom-analysis");
 src("models/communications");
 src("models/stair-connectivity");
+src("models/stair-path");
 src("models/derived-zones");
 src("models/overlap-analysis");
 src("models/stair-headroom");

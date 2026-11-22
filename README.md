@@ -198,6 +198,39 @@ Degraus e patamares usam automaticamente faixas de altura livre quando alguma pi
 
 Quando nenhuma pisada ou patamar tem menos de 2,70 m livres (inclusive sem cobertura definida), permanece o gradiente de elevação: do tom escuro nas cotas baixas até a cor clara de circulação nas cotas altas. A escala usa o piso de origem e a maior cota de toda a escada, sem reiniciar por lance. A planta e o 3D aplicam a mesma decisão e as mesmas cores, inclusive ao visualizar a escada por outro piso.
 
+### Escadas por percurso
+
+Também é possível definir uma escada por uma sequência de direções e cotas, sem calcular as coordenadas de cada parte. Veja o projeto completo em [`escadas-percurso.json5`](escadas-percurso.json5), que reúne três lances e uma semi-pirâmide.
+
+```json5
+{
+  id: "stairs",
+  pos: [4, 6, "ground.z0"],
+  width: 1.2, // Opcional.
+  riser: 0.17, // Espelho desejado, opcional.
+  tread: 0.28, // Piso do degrau, opcional.
+  parts: [
+    { id: "first-flight", direction: "-y", to: 1.02 },
+    { id: "first-landing" },
+    { id: "second-flight", direction: "+x", to: 2.04 },
+    { id: "extended-landing", direction: "+y", run: 2.4 },
+    { id: "third-flight", direction: "-x", to: "upper.z0" },
+  ],
+}
+```
+
+`pos` é o centro da face de entrada do primeiro lance, e não o canto do envelope. Sua terceira coordenada é uma cota absoluta; quando omitida, usa a cota do pavimento. Direções aceitas: `+x`, `-x`, `+y` e `-y`. Os limites `stairs.x0`, `stairs.y0` etc. são calculados depois de montar o percurso.
+
+Com `to` escalar (número ou expressão), a parte é um lance ascendente até aquela cota absoluta. O número de espelhos é o inteiro mais próximo de `desnível / riser`, com mínimo de dois; a altura real é `desnível / espelhos`. Há um piso a menos que espelhos, pois a chegada é o patamar ou pavimento, e `run = (espelhos - 1) * tread`. `risers` pode fixar a quantidade; `run` explícito fixa o comprimento e recalcula o piso real. Valores positivos são obrigatórios. Lances com espelhos diferentes geram um aviso.
+
+Sem `to`, a parte é um patamar horizontal entre dois lances. `run` define seu comprimento total, incluindo as conexões, e assume `width` quando omitido. Para uma curva em L, a direção do patamar pode ser omitida: ele avança no sentido do lance anterior e sai pela face voltada ao seguinte. Para um retorno em U, informe uma direção perpendicular ao lance anterior para escolher o lado do afastamento. Por exemplo, `+y`, patamar em `+x` com `run: 2.4`, e lance em `-y` geram dois lances paralelos. Um percurso reto pode usar apenas um lance ou lances consecutivos na mesma direção. Mudanças de direção entre lances exigem patamar.
+
+Os defaults de `width`, `riser` e `tread` são respectivamente 1,20 m, 0,17 m e 0,28 m. Podem ser definidos em `config.stairs`, na escada ou em cada parte, nessa ordem de precedência. Partes sem ID recebem `<escada>-part-<posição>`. IDs explícitos continuam disponíveis em referências geométricas. Não misture partes por percurso e partes por coordenadas na mesma escada.
+
+`type: "solid-flared"` continua disponível, inclusive por percurso. `steps.widths` informa as larguras da base ao topo e determina tanto a largura máxima quanto a quantidade de espelhos e pisos, incluindo o piso superior. Assim, quatro larguras, `to: 0.6` a partir de zero e `tread: 0.34` geram quatro espelhos de 15 cm e `run: 1.36`. Um `risers` explícito deve coincidir com a quantidade de larguras.
+
+A validação do percurso verifica conexão na mesma cota, cobertura de toda a largura nas interfaces, dimensões dos patamares e interseções entre partes cujos intervalos de altura se encontram. Partes em intervalos de altura separados podem compartilhar projeção; as análises existentes de altura livre continuam responsáveis pela folga vertical. A sintaxe antiga por `from`/`to` em arrays permanece compatível.
+
 Aberturas verticais entre pisos recortam a laje superior e as lajes intermediárias atravessadas, preservando a laje do piso inferior. O recorte participa do 3D e dos cálculos de altura livre acima e abaixo das escadas e nos cômodos.
 
 Portas, janelas e vãos aceitam `z0` e `h` para a projeção vertical: `z1 = z0 + h`. Quando omitidos, portas e vãos usam `z0: 0, h: 2.1`, e janelas usam `z0: 0.9, h: 1.2`. A largura continua sendo informada por `w` e a posição relativa por `dx` ou `dy`.

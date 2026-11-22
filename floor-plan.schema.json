@@ -575,7 +575,14 @@
                 "tilt"
               ]
             },
-            "direction": { "type": "string", "enum": ["left", "right", "up"] },
+            "direction": {
+              "type": "string",
+              "enum": [
+                "left",
+                "right",
+                "up"
+              ]
+            },
             "framing": {
               "type": "object",
               "properties": {
@@ -748,6 +755,48 @@
                   "type": "string"
                 }
               }
+            },
+            "width": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ],
+              "default": 1.2,
+              "description": "Largura do percurso em metros."
+            },
+            "riser": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ],
+              "default": 0.17,
+              "description": "Altura desejada do espelho; ajustada ao desnível exato."
+            },
+            "tread": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ],
+              "default": 0.28,
+              "description": "Profundidade do piso do degrau em metros."
             }
           },
           "additionalProperties": false
@@ -3617,8 +3666,20 @@
     "window": {
       "type": "object",
       "properties": {
-        "model": { "type": "string", "minLength": 1, "description": "ID de um modelo em lib/windows.json5." },
-        "direction": { "type": "string", "enum": ["left", "right", "up"], "description": "Direção de movimento da folha deslizante." },
+        "model": {
+          "type": "string",
+          "minLength": 1,
+          "description": "ID de um modelo em lib/windows.json5."
+        },
+        "direction": {
+          "type": "string",
+          "enum": [
+            "left",
+            "right",
+            "up"
+          ],
+          "description": "Direção de movimento da folha deslizante."
+        },
         "id": {
           "$ref": "#/definitions/wall-feature/properties/id"
         },
@@ -4303,6 +4364,48 @@
               "type": "string"
             }
           }
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ],
+          "default": 1.2,
+          "description": "Largura do percurso em metros."
+        },
+        "riser": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ],
+          "default": 0.17,
+          "description": "Altura desejada do espelho; ajustada ao desnível exato."
+        },
+        "tread": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ],
+          "default": 0.28,
+          "description": "Profundidade do piso do degrau em metros."
         }
       },
       "required": [
@@ -4393,7 +4496,7 @@
           }
         }
       ],
-      "description": "Escada de primeira classe. kind padrão flight; parts reúne lances e patamares com IDs globais."
+      "description": "Escada de primeira classe. kind padrão flight; parts reúne lances e patamares com IDs globais. No percurso, pos é o centro da entrada do primeiro lance, com cota opcional; parts encadeia direções, cotas e patamares."
     },
     "stair-part": {
       "type": "object",
@@ -4426,21 +4529,33 @@
           "maxItems": 3
         },
         "to": {
-          "type": "array",
-          "items": {
-            "anyOf": [
-              {
-                "type": "number"
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Número, referência geométrica ou expressão com params.nome."
+                  }
+                ]
               },
-              {
-                "type": "string",
-                "minLength": 1,
-                "description": "Número, referência geométrica ou expressão com params.nome."
-              }
-            ]
-          },
-          "minItems": 2,
-          "maxItems": 3
+              "minItems": 2,
+              "maxItems": 3
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ],
+          "description": "Array para geometria explícita; número ou expressão para a cota absoluta final de um lance por percurso."
         },
         "pos": {
           "type": "array",
@@ -4720,6 +4835,70 @@
               "type": "string"
             }
           }
+        },
+        "width": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ],
+          "default": 1.2,
+          "description": "Largura do percurso em metros."
+        },
+        "riser": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ],
+          "default": 0.17,
+          "description": "Altura desejada do espelho; ajustada ao desnível exato."
+        },
+        "tread": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ],
+          "default": 0.28,
+          "description": "Profundidade do piso do degrau em metros."
+        },
+        "direction": {
+          "enum": [
+            "+x",
+            "-x",
+            "+y",
+            "-y"
+          ],
+          "description": "Sentido do percurso; obrigatório em lances e patamares de retorno."
+        },
+        "run": {
+          "anyOf": [
+            {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ],
+          "description": "Comprimento total horizontal. Sem to, define um patamar; com to, substitui o comprimento calculado do lance."
         }
       },
       "allOf": [

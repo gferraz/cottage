@@ -212,7 +212,15 @@ const FloorPlanModel = {
       const classes = new Set(String(stair.classes ?? "").split(/\s+/).filter(Boolean));
       if (!stair.parts?.length) classes.add(kind === "landing" ? "stair-landing" : "stair-flight");
       const result = { ...stair, walls: stair.walls ?? [], classes: [...classes].join(" ") };
-      if (stair.parts) result.parts = stair.parts.map(part => stairWithDefaults(part));
+      if (stair.parts) result.parts = stair.parts.map((part, index) => {
+        const inherited = FloorPlanStairPath.isPath(stair)
+          ? Object.fromEntries(['width', 'riser', 'tread', 'type', 'steps', 'colors', 'walls']
+            .filter(key => stair[key] !== undefined).map(key => [key, stair[key]])) : {};
+        const normalized = stairWithDefaults({ ...inherited, ...part });
+        // Generated paths need stable IDs even when the author omits them.
+        if (FloorPlanStairPath.isPath(stair)) normalized.id ??= `${stair.id}-part-${index + 1}`;
+        return window.FloorPlanParser?.copyLocation(part, normalized) ?? normalized;
+      });
       return window.FloorPlanParser?.copyLocation(entry, result) ?? result;
     };
     const expand = (floor) => {

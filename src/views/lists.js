@@ -99,7 +99,7 @@ const FloorPlanLists = {
       const section = document.createElement("section");
       section.className = "technical-global-errors technical-global-warnings";
       const heading = document.createElement("h3");
-      heading.textContent = "Avisos de depreciação";
+      heading.textContent = plan.warnings.some(warning => warning.code === "stair-path-risers") ? "Avisos" : "Avisos de depreciação";
       section.append(heading);
       plan.warnings.forEach((warning) => {
         const item = document.createElement("div");

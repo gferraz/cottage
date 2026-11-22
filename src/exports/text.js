@@ -586,7 +586,7 @@ const FloorPlanTextExport = {
     });
 
     if (plan.warnings?.length) {
-      lines.push("", "## Avisos de depreciação", "");
+      lines.push("", plan.warnings.some(warning => warning.code === "stair-path-risers") ? "## Avisos" : "## Avisos de depreciação", "");
       plan.warnings.forEach((warning) => {
         const source = warning.location ? FloorPlanParser.formatLocation(warning.location) : warning.path;
         lines.push(`- ${plan.markdownText(warning.message)}${source ? ` (${plan.markdownText(source)})` : ""}`);

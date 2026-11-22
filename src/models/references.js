@@ -670,6 +670,9 @@ const FloorPlanReferences = {
   },
 
   normalizeParts(plan, parts) {
+    const owner = parts[0]?.id && plan.partOwners?.get(parts[0].id);
+    const parent = owner && plan.roomDefinitions?.get(owner);
+    if (parent && FloorPlanStairPath.isPath(parent)) return plan.getRoomGeometry(owner).normalizedParts;
     const localReferences = new Map();
     const scoped = FloorPlanGeometry.inContext(plan, {
       partScopes: [...FloorPlanGeometry.context(plan).partScopes, localReferences],

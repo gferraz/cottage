@@ -7,7 +7,9 @@ const stairAxisFor = (data, width, length) => {
 const FloorPlanGeometryDomain = {
   normalizeRoomGeometry(plan, room) {
     const compound = Boolean(room.parts?.length);
-    const parts = compound ? plan.normalizeParts(room.parts) : [plan.normalizeGeometry(room)];
+    const parts = FloorPlanStairPath.isPath(room)
+      ? FloorPlanStairPath.generate(plan, room)
+      : compound ? plan.normalizeParts(room.parts) : [plan.normalizeGeometry(room)];
     const floor = plan.roomFloorConfigs?.get(room.id);
     const normalizedParts = parts.map((part) => ({
       ...part,
@@ -104,6 +106,11 @@ const FloorPlanGeometryDomain = {
   },
 
   normalizeGeometryDefinition(plan, data) {
+    const owner = plan.partOwners?.get(data.id);
+    const parent = owner && plan.roomDefinitions?.get(owner);
+    if (parent && FloorPlanStairPath.isPath(parent)) {
+      return plan.getRoomGeometry(owner).normalizedParts.find(part => part.id === data.id);
+    }
     if (data?.type && data.size === undefined && plan.itemTypes?.[data.type]) {
       const itemType = plan.itemTypes[data.type];
       data = {

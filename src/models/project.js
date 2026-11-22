@@ -16,6 +16,15 @@ const FloorPlanProject = {
     plan.warnings = model.warnings;
     plan.itemTypes = { ...(plan.catalog.items ?? {}), ...(config["item-types"] ?? {}) };
     plan.prepareRoomReferences(config);
+    for (const { stair } of model.stairs) {
+      if (!FloorPlanStairPath.isPath(stair) || plan.invalidRoomIds.has(stair.id)) continue;
+      const flights = plan.getRoomGeometry(stair.id).normalizedParts.filter(part => part.kind === 'flight');
+      const rises = flights.map(part => FloorPlanGeometry.stairSteps(part).rise);
+      if (rises.some(rise => Math.abs(rise - rises[0]) > 1e-7)) plan.warnings.push({
+        code: 'stair-path-risers', path: stair.id,
+        message: `Escada ${stair.id}: os lances têm alturas de espelho diferentes (${flights.map((part, i) => `${part.id}: ${(rises[i] * 100).toFixed(2)} cm`).join('; ')}). Ajuste as cotas ou risers para uniformizar.`,
+      });
+    }
     const floorErrors = new Map(model.floors.map((floor) =>
       [floor, FloorPlanReferences.collectFloorFeatureErrors(plan, floor)]));
     plan.prepareGlobalLists(config);

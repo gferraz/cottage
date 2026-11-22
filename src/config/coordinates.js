@@ -163,6 +163,9 @@ const FloorPlanCoordinates = {
         entry.pos = point(entry.pos);
         entry.pos[0] = this.arithmetic("-", entry.pos[0], width);
       }
+      // Path directions follow the same reflected axis as explicit endpoints.
+      if (entry.direction === "+x") entry.direction = "-x";
+      else if (entry.direction === "-x") entry.direction = "+x";
       if (Array.isArray(entry.from)) entry.from = point(entry.from);
       if (Array.isArray(entry.to)) entry.to = point(entry.to);
       if (entry.path?.points) entry.path.points = entry.path.points.map(point);
