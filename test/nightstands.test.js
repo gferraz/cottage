@@ -40,8 +40,8 @@ test('nightstand centers follow the bed rotation, including arbitrary angles', (
       const stand = plan.resolveItemType(item);
       const dx = (index === 0 ? -1 : 1) * 1.15;
       const dy = -0.9;
-      close(stand.pos[0] + 0.2, 2.9 + dx * Math.cos(angle) - dy * Math.sin(angle));
-      close(stand.pos[1] + 0.2, 4.1 + dx * Math.sin(angle) + dy * Math.cos(angle));
+      close(stand.pos[0] + 0.2, rotatedCenter(1.8, 2.2, rotation)[0] + dx * Math.cos(angle) - dy * Math.sin(angle));
+      close(stand.pos[1] + 0.2, rotatedCenter(1.8, 2.2, rotation)[1] + dx * Math.sin(angle) + dy * Math.cos(angle));
       assert.deepEqual(stand.size, [0.4, 0.4, 0.7]);
       assert.equal(stand.rotation, rotation);
     });
@@ -100,8 +100,8 @@ test('twin beds default to the right and support either side or both through rot
         assert.equal(stand.id, `twin-nightstand-${expectedSides[index]}`);
         const dx = (expectedSides[index] === 'left' ? -1 : 1) * ((0.97 + 0.4) / 2 + 0.05);
         const dy = (0.4 - 1.91) / 2;
-        close(stand.pos[0] + 0.2, 2.485 + dx * Math.cos(angle) - dy * Math.sin(angle));
-        close(stand.pos[1] + 0.2, 3.955 + dx * Math.sin(angle) + dy * Math.cos(angle));
+        close(stand.pos[0] + 0.2, rotatedCenter(0.97, 1.91, rotation)[0] + dx * Math.cos(angle) - dy * Math.sin(angle));
+        close(stand.pos[1] + 0.2, rotatedCenter(0.97, 1.91, rotation)[1] + dx * Math.sin(angle) + dy * Math.cos(angle));
         assert.deepEqual(stand.size, [0.4, 0.4, 0.55]);
         assert.equal(stand.pos[2], 3);
         assert.equal(stand.rotation, rotation);
@@ -124,8 +124,8 @@ test('queen beds default to both sides and support either side or both through r
         assert.equal(stand.id, `queen-nightstand-${expectedSides[index]}`);
         const dx = (expectedSides[index] === 'left' ? -1 : 1) * ((1.6 + 0.4) / 2 + 0.05);
         const dy = (0.4 - 2) / 2;
-        close(stand.pos[0] + 0.2, 2.8 + dx * Math.cos(angle) - dy * Math.sin(angle));
-        close(stand.pos[1] + 0.2, 4 + dx * Math.sin(angle) + dy * Math.cos(angle));
+        close(stand.pos[0] + 0.2, rotatedCenter(1.6, 2, rotation)[0] + dx * Math.cos(angle) - dy * Math.sin(angle));
+        close(stand.pos[1] + 0.2, rotatedCenter(1.6, 2, rotation)[1] + dx * Math.sin(angle) + dy * Math.cos(angle));
         assert.deepEqual(stand.size, [0.4, 0.4, 0.55]);
         assert.equal(stand.pos[2], 3);
         assert.equal(stand.rotation, rotation);
@@ -228,8 +228,8 @@ test('queen recamier follows the bed through rotation and elevation independentl
     const recamier = plan.resolveItemType(items[1]);
     const angle = rotation * Math.PI / 180;
     assert.equal(recamier.id, 'bed-recamier');
-    close(recamier.pos[0] + 0.225, 2.8 - 1.275 * Math.sin(angle));
-    close(recamier.pos[1] + 0.7, 4 + 1.275 * Math.cos(angle));
+    close(recamier.pos[0] + 0.225, rotatedCenter(1.6, 2, rotation)[0] - 1.275 * Math.sin(angle));
+    close(recamier.pos[1] + 0.7, rotatedCenter(1.6, 2, rotation)[1] + 1.275 * Math.cos(angle));
     assert.equal(recamier.pos[2], 3);
     assert.deepEqual(recamier.size, [0.45, 1.4, 0.45]);
     assert.equal(recamier.rotation, (rotation + 90) % 360);
@@ -246,3 +246,9 @@ test('recamier is opt-in, supports catalog defaults, and rejects invalid configu
   assert.throws(() => plan.resolveItemType({ ...bed, recamier: {} }), /Recamier/);
   assert.throws(() => plan.resolveItemType({ type: 'twin-bed', recamier: true }), /queen/);
 });
+
+function rotatedCenter(w, l, rotation) {
+  const a = rotation * Math.PI / 180;
+  return [2 + (w * Math.abs(Math.cos(a)) + l * Math.abs(Math.sin(a))) / 2,
+    3 + (w * Math.abs(Math.sin(a)) + l * Math.abs(Math.cos(a))) / 2];
+}

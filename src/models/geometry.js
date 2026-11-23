@@ -1,5 +1,6 @@
 const FloorPlanGeometry = {
   itemDefinition: Symbol("item-definition"),
+  nominalPosition: Symbol("nominal-position"),
 
   context(plan) {
     return plan.resolutionContext ?? Object.freeze({

@@ -163,3 +163,43 @@ test('U landing depth is independent of the full-width contacts on its cross fac
   close(parts[0].x, parts[2].x);
   close(parts[0].y - (parts[2].y + parts[2].l), 0.1);
 });
+
+
+test('z0 resolves the current elevation through successive flights and flat landings', () => {
+  const plan = prepare([{ id: 'stairs', pos: [4, 6, 'z0 + 0.3'], parts: [
+    { id: 'one', direction: '+x', to: 'z0+1.02' },
+    { id: 'pad', run: '(z0 - 2.12) * 2' },
+    { id: 'two', direction: '+y', to: 'z0 + 1.02 ' },
+    { id: 'pad-two' },
+    { id: 'three', direction: '-x', to: '(z0 + 0.51)' },
+  ] }]);
+  assert.deepEqual(plan.errors, []);
+  const [one, pad, two, padTwo, three] = plan.getRoomGeometry('stairs').normalizedParts;
+  close(one.z0, 2.3); close(one.z1, 3.32);
+  close(pad.z0, 3.32); close(pad.z1, 3.32); close(pad.w, 2.4);
+  close(two.z0, 3.32); close(two.z1, 4.34);
+  close(padTwo.z0, 4.34); close(three.z0, 4.34); close(three.z1, 4.85);
+});
+
+test('current z0 is scoped to each stair and does not replace absolute references or floor defaults', () => {
+  const plan = prepare([
+    { id: 'a', pos: [0, 0], parts: [{ direction: '+x', to: 'z0 + 1.02' }] },
+    { id: 'b', pos: [10, 10, 0], parts: [{ direction: '-x', to: 'z0 + 1.02' }, {},
+      { direction: '-y', to: 'upper.z0' }] },
+  ]);
+  assert.deepEqual(plan.errors, []);
+  close(plan.references.get('a').z1(), 3.02);
+  close(plan.references.get('b-part-1').z0(), 0);
+  close(plan.references.get('b-part-1').z1(), 1.02);
+  close(plan.references.get('b').z1(), 5.06);
+  assert.equal(plan.currentFloorHeight, 0);
+});
+
+test('relative targets still reject a final target below the preceding flight', () => {
+  const plan = prepare([{ id: 'stairs', pos: [0, 0, 0.3], parts: [
+    { direction: '+x', to: 'z0 + 1.5' }, {},
+    { direction: '+y', to: 'z0 + 2.7' }, {},
+    { id: 'last', direction: '-x', to: 3.3 },
+  ] }]);
+  assert.ok(plan.errors.some(error => error.category === 'stair' && /last.*acima/.test(error.message)));
+});

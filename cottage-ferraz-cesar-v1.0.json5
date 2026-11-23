@@ -385,7 +385,7 @@
           type: "three-seat-sofa",
           label: "Sofá",
           title: "Sofá linear de 3 lugares — Estar",
-          pos: ["living.x1 - 1.6", "living.y1 - 1.8"],
+          pos: ["(living.x1 - 1.6) + 0.7", "(living.y1 - 1.8) - 0.7"],
           rotation: 90
         },
         {
@@ -562,25 +562,19 @@
           id: "bed-east",
           type: "twin-bed",
           nightstand: { side: "left" },
-          pos: [
-            "bedroom-east.x0 + params.bed_knee_wall_clearance + 0.47",
-            "bedroom-east.y0 + (bedroom-east.l - 1.94) / 3 - 0.47"
-          ],
+          pos: ["(bedroom-east.x0 + params.bed_knee_wall_clearance + 0.47) - 0.47", "(bedroom-east.y0 + (bedroom-east.l - 1.94) / 3 - 0.47) + 0.47"],
           rotation: 270
         },
         {
           id: "bed-east-2",
           type: "twin-bed",
-          pos: [
-            "bedroom-east.x0 + params.bed_knee_wall_clearance + 0.47",
-            "bedroom-east.y0 + 2 * (bedroom-east.l - 1.94) / 3 + 0.97 - 0.47"
-          ],
+          pos: ["(bedroom-east.x0 + params.bed_knee_wall_clearance + 0.47) - 0.47", "(bedroom-east.y0 + 2 * (bedroom-east.l - 1.94) / 3 + 0.97 - 0.47) + 0.47"],
           rotation: 270
         },
         {
           id: "bed-north-1",
           type: "queen-bed",
-          pos: ["bedroom-north.x1 - 1.8", "bedroom-north.yc - 1"],
+          pos: ["(bedroom-north.x1 - 1.8) - 0.2", "(bedroom-north.yc - 1) + 0.2"],
           rotation: 90
         }
       ]

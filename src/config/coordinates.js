@@ -1,4 +1,5 @@
 const FloorPlanCoordinates = {
+  reflectedPosition: Symbol("reflected-position"),
   // Small arithmetic trees keep references and parameters symbolic during an
   // axis change. No user expression is evaluated as JavaScript.
   expression(value) {
@@ -162,6 +163,7 @@ const FloorPlanCoordinates = {
         const width = widthOf(entry) ?? 0;
         entry.pos = point(entry.pos);
         entry.pos[0] = this.arithmetic("-", entry.pos[0], width);
+        if (entry.rotation !== undefined) entry[this.reflectedPosition] = true;
       }
       // Path directions follow the same reflected axis as explicit endpoints.
       if (entry.direction === "+x") entry.direction = "-x";

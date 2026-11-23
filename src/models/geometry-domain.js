@@ -102,7 +102,20 @@ const FloorPlanGeometryDomain = {
       itemReferences: Boolean(data?.[FloorPlanGeometry.itemDefinition]),
       roomBoundsCache: new Map(),
     });
-    return this.normalizeGeometryDefinition(scoped, data);
+    const geometry = this.normalizeGeometryDefinition(scoped, data);
+    // Renderers rotate the nominal rectangle around its center. Move that
+    // rectangle so pos anchors the minimum corner of the rotated footprint.
+    if (data.pos && !data[FloorPlanGeometry.nominalPosition] && geometry.rotation) {
+      const angle = geometry.rotation * Math.PI / 180;
+      const snap = (value) => Math.abs(value) < 1e-12 ? 0 : value;
+      const c = snap(Math.abs(Math.cos(angle))), s = snap(Math.abs(Math.sin(angle)));
+      const width = geometry.w * c + geometry.l * s;
+      const length = geometry.w * s + geometry.l * c;
+      const reflected = data[window.FloorPlanCoordinates?.reflectedPosition];
+      geometry.x += (reflected ? -1 : 1) * (width - geometry.w) / 2;
+      geometry.y += (length - geometry.l) / 2;
+    }
+    return geometry;
   },
 
   normalizeGeometryDefinition(plan, data) {

@@ -13,8 +13,9 @@ const FloorPlanStairPath = {
     });
     const vectors = { '+x': [1, 0], '-x': [-1, 0], '+y': [0, 1], '-y': [0, -1] };
     const fail = (part, message) => { throw new Error(`Escada ${stair.id}, parte ${part.id}: ${message}`); };
+    let localOrigin = { z0: plan.currentFloorHeight ?? 0 };
     const number = (value, part, name, positive = true) => {
-      const result = plan.resolve(value);
+      const result = plan.resolve(value, localOrigin);
       if (!Number.isFinite(result) || (positive && result <= 0)) fail(part, `${name} precisa ser um número ${positive ? 'positivo' : 'finito'}`);
       return result;
     };
@@ -33,6 +34,7 @@ const FloorPlanStairPath = {
     const result = [];
     let incoming;
     for (let index = 0; index < parts.length; index++) {
+      localOrigin = { z0: z };
       const part = parts[index];
       if (['from', 'size', 'rectangle', 'pos', 'copy', 'orientation', 'rotation', 'x', 'y', 'w', 'l', 'z0', 'h', 'inset', 'outset', 'parts'].some(key => part[key] !== undefined)
         || Array.isArray(part.to)) fail(part, 'não misture percurso e coordenadas explícitas');

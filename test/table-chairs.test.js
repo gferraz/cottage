@@ -56,11 +56,13 @@ test('chairs follow arbitrary table rotation and floor elevation without mutatin
   for (const rotation of [90, 180, 270, 37]) {
     const { chairs } = prepare({ ...base, rotation }, 3);
     const angle = rotation * Math.PI / 180;
+    const cx = 2 + (1.8 * Math.abs(Math.cos(angle)) + 0.9 * Math.abs(Math.sin(angle))) / 2;
+    const cy = 3 + (1.8 * Math.abs(Math.sin(angle)) + 0.9 * Math.abs(Math.cos(angle))) / 2;
     chairs.forEach((chair, index) => {
       const dx = zero[index].pos[0] + 0.225 - 2.9;
       const dy = zero[index].pos[1] + 0.225 - 3.45;
-      close(chair.pos[0] + 0.225, 2.9 + dx * Math.cos(angle) - dy * Math.sin(angle));
-      close(chair.pos[1] + 0.225, 3.45 + dx * Math.sin(angle) + dy * Math.cos(angle));
+      close(chair.pos[0] + 0.225, cx + dx * Math.cos(angle) - dy * Math.sin(angle));
+      close(chair.pos[1] + 0.225, cy + dx * Math.sin(angle) + dy * Math.cos(angle));
       assert.equal(chair.pos[2], 3);
       assert.equal(chair.rotation, (zero[index].rotation + rotation) % 360);
     });
@@ -86,4 +88,27 @@ test('static references and global lists include chairs even when the table refe
   Object.assign(plan, { roomDefinitions: new Map(), roomReferences: new Map() });
   FloorPlanReferences.prepareGlobalLists(plan, { floors: [floor] });
   assert.equal(plan.allItems.filter(item => item.classes?.includes('chair')).length, 8);
+});
+
+test('pos anchors the rotated table footprint, including oblique and reflected coordinates', () => {
+  require('./helpers/load-modules');
+  require('../src/config/coordinates.js');
+  require('../src/models/model.js');
+  for (const rotation of [0, 90, 180, 270, 37, -15]) {
+    const table = { type: 'dining-table', pos: [0.3, 0.3], size: [2.7, 1.1], rotation };
+    for (const reflected of [false, true]) {
+      const definition = reflected
+        ? FloorPlanModel.fromConfig({ coordinate_system: 'cartesian', parameters: { angle: rotation }, floors: [{ items: [{ ...table, rotation: 'params.angle' }] }] }).floors[0].items[0] : table;
+      const { plan } = prepare(definition);
+      const g = plan.normalizeGeometry(plan.resolveItemType(definition));
+      const a = g.rotation * Math.PI / 180;
+      const points = [-1, 1].flatMap(x => [-1, 1].map(y => [
+        g.x + g.w / 2 + x * g.w / 2 * Math.cos(a) - y * g.l / 2 * Math.sin(a),
+        g.y + g.l / 2 + x * g.w / 2 * Math.sin(a) + y * g.l / 2 * Math.cos(a),
+      ]));
+      close(Math.min(...points.map(p => p[1])), 0.3);
+      if (reflected) close(Math.max(...points.map(p => p[0])), -0.3);
+      else close(Math.min(...points.map(p => p[0])), 0.3);
+    }
+  }
 });

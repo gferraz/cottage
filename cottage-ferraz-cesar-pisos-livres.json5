@@ -67,13 +67,16 @@
         {
           id: "stairs",
           label: "Escada em U",
-          overlays: ["office"],
-          pos: ["office.x1", "office.y1 + 2.1", "ground.z0"],
+          pos: ["master-bedroom.x0 - 0.6", "master-bedroom.y0", "ground.z0"],
           tread: "(office.w - 1.2) / 8",
+          overlaps: ["dining"],
+          overlays: ["dining"],
           parts: [
-            { id: "lower-flight",  direction: "-x", to: "ground.z0 + params.floor_height / 2", walls: [] },
-            { id: "stair-landing", direction: "-y", run: 2.4, walls: ["front"] },
-            { id: "upper-flight",  direction: "+x", to: "upper.z0", walls: ["front"] }
+            { id: "lower-flight",    direction: "+y", to: "ground.z0 + 1.5" },
+            { id: "first-landing",   direction: "+y" },
+            { id: "middle-flight",   direction: "-x", to: "ground.z0 + 2.7" },
+            { id: "second-landing",  direction: "+y" },
+            { id: "upper-flight",    direction: "-y", to: "upper.z0" }
           ]
         }
       ],
@@ -81,8 +84,8 @@
         {
           id: "dining",
           label: "Jantar",
-          from: ["main.x0", "stairs.y1"],
-          to: ["master-bedroom.x0", "y0 + 4"],
+          from: ["main.x0", "office.y1"],
+          to: ["vestibule.x0", "y0 + 6"],
           walls: ["left"]
         },
         {
@@ -136,10 +139,9 @@
         {
           id: "office",
           label: "Escritório",
-          overlaps: ["stairs"],
           top: "roofs",
           pos: ["front-wing.x0", "front-wing.y0"],
-          size: [3.7, 6],
+          size: [3.7, 4],
           walls: ["front", "rear", "left", "right"]
         },
         {
@@ -153,7 +155,7 @@
         {
           id: "vestibule",
           label: "Vestíbulo",
-          from: ["foyer.x1", "master-bedroom.y1 - 0.2"],
+          from: ["foyer.x1", "stairs.y1"],
           to: ["master-bedroom.x0", "y0 + 2.2"],
           walls: ["front", "rear", "left"]
         },
@@ -163,7 +165,8 @@
           id: "dining-table",
           type: "dining-table",
           label: "Mesa de jantar",
-          pos: ["dining.x0 + 1", "dining.y0 + 1.2"],
+          pos: ["(dining.x0 + 0.5) + 0.8", "(dining.y0 + 1) - 0.8"],
+          rotation: 90,
           size: [2.7, 1.1, 0.75]
         },
         {
@@ -182,12 +185,12 @@
         {
           id: "living-armchair-left",
           type: "armchair",
-          pos: ["living.x0 + 0.1", "living.yc - 0.8"],
+          pos: ["(living.x0 + 0.1) - 0.025", "(living.yc - 0.8) + 0.025"],
           rotation: 270
         },
         {
           type: "armchair",
-          pos: ["living-sofa.x1 + 0.25", "living-sofa.yc - 0.425"],
+          pos: ["(living-sofa.x1 + 0.25) - 0.0963684", "(living-sofa.yc - 0.425) - 0.0890461"],
           rotation: 15
         },
         {

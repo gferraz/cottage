@@ -97,7 +97,7 @@ const FloorPlanModel = {
             return [name, visit(child, name)];
           }));
       }
-      if (value[this.deprecationWarningsKey]) result[this.deprecationWarningsKey] = value[this.deprecationWarningsKey];
+      for (const symbol of Object.getOwnPropertySymbols(value)) result[symbol] = value[symbol];
       return window.FloorPlanParser?.copyLocation(value, result) ?? result;
     };
     return visit(config);
@@ -136,7 +136,7 @@ const FloorPlanModel = {
         }
       };
       const result = Array.isArray(value) ? value.map(childValue)
-        : Object.fromEntries(Object.entries(value).map(([key, child]) => [key, childValue(child, key)]));
+        : Object.fromEntries(Reflect.ownKeys(value).map(key => [key, childValue(value[key], key)]));
       return window.FloorPlanParser?.copyLocation(value, result) ?? result;
     };
     return visit(config);

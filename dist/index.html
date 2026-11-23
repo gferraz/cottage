@@ -3649,6 +3649,7 @@ window.FloorPlanOpenings = FloorPlanOpenings;
 
 
 const FloorPlanCoordinates = {
+  reflectedPosition: Symbol("reflected-position"),
   // Small arithmetic trees keep references and parameters symbolic during an
   // axis change. No user expression is evaluated as JavaScript.
   expression(value) {
@@ -3812,6 +3813,7 @@ const FloorPlanCoordinates = {
         const width = widthOf(entry) ?? 0;
         entry.pos = point(entry.pos);
         entry.pos[0] = this.arithmetic("-", entry.pos[0], width);
+        if (entry.rotation !== undefined) entry[this.reflectedPosition] = true;
       }
       // Path directions follow the same reflected axis as explicit endpoints.
       if (entry.direction === "+x") entry.direction = "-x";
@@ -4262,7 +4264,7 @@ const FloorPlanModel = {
             return [name, visit(child, name)];
           }));
       }
-      if (value[this.deprecationWarningsKey]) result[this.deprecationWarningsKey] = value[this.deprecationWarningsKey];
+      for (const symbol of Object.getOwnPropertySymbols(value)) result[symbol] = value[symbol];
       return window.FloorPlanParser?.copyLocation(value, result) ?? result;
     };
     return visit(config);
@@ -4301,7 +4303,7 @@ const FloorPlanModel = {
         }
       };
       const result = Array.isArray(value) ? value.map(childValue)
-        : Object.fromEntries(Object.entries(value).map(([key, child]) => [key, childValue(child, key)]));
+        : Object.fromEntries(Reflect.ownKeys(value).map(key => [key, childValue(value[key], key)]));
       return window.FloorPlanParser?.copyLocation(value, result) ?? result;
     };
     return visit(config);
@@ -5105,6 +5107,7 @@ window.FloorPlanExport = FloorPlanExport;
 
 const FloorPlanGeometry = {
   itemDefinition: Symbol("item-definition"),
+  nominalPosition: Symbol("nominal-position"),
 
   context(plan) {
     return plan.resolutionContext ?? Object.freeze({
@@ -10902,6 +10905,7 @@ const FloorPlanElements = {
     return {
       [FloorPlanGeometry.itemDefinition]: true,
       ...(id ? { id } : {}),
+      [FloorPlanGeometry.nominalPosition]: true,
       label: "Cadeira",
       classes: "furniture chair",
       color: "furniture",
@@ -10924,6 +10928,7 @@ const FloorPlanElements = {
     const dy = (w - geometry.l) / 2;
     return {
       ...(id ? { id } : {}),
+      [FloorPlanGeometry.nominalPosition]: true,
       label: "Criado-mudo",
       title: `Criado-mudo — ${definition.title || definition.label || "Cama"}`,
       classes: "furniture storage nightstand",
@@ -10946,6 +10951,7 @@ const FloorPlanElements = {
     const dy = geometry.l / 2 + this.bedAccessoryGap + 0.45 / 2;
     return {
       ...(id ? { id } : {}),
+      [FloorPlanGeometry.nominalPosition]: true,
       label: "Recamier",
       title: `Recamier — ${definition.title || definition.label || "Cama Queen"}`,
       classes: "furniture storage storage-chest",
@@ -13765,8 +13771,9 @@ const FloorPlanStairPath = {
     });
     const vectors = { '+x': [1, 0], '-x': [-1, 0], '+y': [0, 1], '-y': [0, -1] };
     const fail = (part, message) => { throw new Error(`Escada ${stair.id}, parte ${part.id}: ${message}`); };
+    let localOrigin = { z0: plan.currentFloorHeight ?? 0 };
     const number = (value, part, name, positive = true) => {
-      const result = plan.resolve(value);
+      const result = plan.resolve(value, localOrigin);
       if (!Number.isFinite(result) || (positive && result <= 0)) fail(part, `${name} precisa ser um número ${positive ? 'positivo' : 'finito'}`);
       return result;
     };
@@ -13785,6 +13792,7 @@ const FloorPlanStairPath = {
     const result = [];
     let incoming;
     for (let index = 0; index < parts.length; index++) {
+      localOrigin = { z0: z };
       const part = parts[index];
       if (['from', 'size', 'rectangle', 'pos', 'copy', 'orientation', 'rotation', 'x', 'y', 'w', 'l', 'z0', 'h', 'inset', 'outset', 'parts'].some(key => part[key] !== undefined)
         || Array.isArray(part.to)) fail(part, 'não misture percurso e coordenadas explícitas');
@@ -14011,7 +14019,20 @@ const FloorPlanGeometryDomain = {
       itemReferences: Boolean(data?.[FloorPlanGeometry.itemDefinition]),
       roomBoundsCache: new Map(),
     });
-    return this.normalizeGeometryDefinition(scoped, data);
+    const geometry = this.normalizeGeometryDefinition(scoped, data);
+    // Renderers rotate the nominal rectangle around its center. Move that
+    // rectangle so pos anchors the minimum corner of the rotated footprint.
+    if (data.pos && !data[FloorPlanGeometry.nominalPosition] && geometry.rotation) {
+      const angle = geometry.rotation * Math.PI / 180;
+      const snap = (value) => Math.abs(value) < 1e-12 ? 0 : value;
+      const c = snap(Math.abs(Math.cos(angle))), s = snap(Math.abs(Math.sin(angle)));
+      const width = geometry.w * c + geometry.l * s;
+      const length = geometry.w * s + geometry.l * c;
+      const reflected = data[window.FloorPlanCoordinates?.reflectedPosition];
+      geometry.x += (reflected ? -1 : 1) * (width - geometry.w) / 2;
+      geometry.y += (length - geometry.l) / 2;
+    }
+    return geometry;
   },
 
   normalizeGeometryDefinition(plan, data) {

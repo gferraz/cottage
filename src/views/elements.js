@@ -84,6 +84,7 @@ const FloorPlanElements = {
     return {
       [FloorPlanGeometry.itemDefinition]: true,
       ...(id ? { id } : {}),
+      [FloorPlanGeometry.nominalPosition]: true,
       label: "Cadeira",
       classes: "furniture chair",
       color: "furniture",
@@ -106,6 +107,7 @@ const FloorPlanElements = {
     const dy = (w - geometry.l) / 2;
     return {
       ...(id ? { id } : {}),
+      [FloorPlanGeometry.nominalPosition]: true,
       label: "Criado-mudo",
       title: `Criado-mudo — ${definition.title || definition.label || "Cama"}`,
       classes: "furniture storage nightstand",
@@ -128,6 +130,7 @@ const FloorPlanElements = {
     const dy = geometry.l / 2 + this.bedAccessoryGap + 0.45 / 2;
     return {
       ...(id ? { id } : {}),
+      [FloorPlanGeometry.nominalPosition]: true,
       label: "Recamier",
       title: `Recamier — ${definition.title || definition.label || "Cama Queen"}`,
       classes: "furniture storage storage-chest",

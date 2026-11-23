@@ -67,7 +67,7 @@ test("canonical room parts retain ownership, elevation and orientation without c
   assert.deepEqual([low.id, low.ownerId, low.floorId, low.z0, low.z1, low.rotation,
     low.classes, low.risers], ["low", "compound", "ground", 2, 3, 90, "stair-flight", 7]);
   assert.deepEqual(room.geometryParts, [
-    { x: 0, y: 5, w: 2, l: 1 }, { x: 2, y: 5, w: 1, l: 2 },
+    { x: -0.5, y: 5.5, w: 2, l: 1 }, { x: 2, y: 5, w: 1, l: 2 },
   ]);
   const lazy = plan.roomReferences.get("compound");
   assert.equal(lazy.normalizedParts, room.normalizedParts);
@@ -99,13 +99,13 @@ test("simple rooms retain their declared height and get a complete floor-scoped 
   close(room.geometry().area(), 12);
 });
 
-test("rotation preserves nominal coordinates and dimensions instead of expanding their rectangle", () => {
+test("rotation anchors the rotated footprint at pos while retaining local dimensions", () => {
   const plan = prepare(fixture());
   const source = { pos: [1, 2, 4], size: [2, 1, 0.5], rotation: -90 };
   const original = structuredClone(source);
   const geometry = plan.normalizeGeometry(source);
   assert.deepEqual([geometry.x, geometry.y, geometry.w, geometry.l,
-    geometry.z0, geometry.z1, geometry.rotation], [1, 2, 2, 1, 4, 4.5, 270]);
+    geometry.z0, geometry.z1, geometry.rotation], [0.5, 2.5, 2, 1, 4, 4.5, 270]);
   assert.deepEqual(source, original);
 });
 

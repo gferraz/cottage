@@ -4555,7 +4555,7 @@
               "minLength": 1
             }
           ],
-          "description": "Array para geometria explícita; número ou expressão para a cota absoluta final de um lance por percurso."
+          "description": "Array para geometria explícita; número ou expressão para a cota absoluta final de um lance por percurso. Nas expressões por percurso, z0 é a cota de partida da parte atual."
         },
         "pos": {
           "type": "array",
