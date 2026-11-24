@@ -10,7 +10,7 @@ const generate = (parts, extra = {}) => FloorPlanStairPath.generate({ resolve: N
 });
 const flight = (direction = '+y', to = 1.02) => ({ direction, to });
 
-test('four starting directions preserve the entry midpoint and compute six risers and five treads', () => {
+test('four starting directions anchor the envelope and compute six risers and five treads', () => {
   for (const direction of ['+x', '-x', '+y', '-y']) {
     const [part] = generate([flight(direction)]);
     assert.equal(part.risers, 6);
@@ -18,9 +18,8 @@ test('four starting directions preserve the entry midpoint and compute six riser
     const horizontal = direction.endsWith('x');
     close(horizontal ? part.w : part.l, 1.4);
     close(horizontal ? part.l : part.w, 1.2);
-    close(horizontal ? part.y + part.l / 2 : part.x + part.w / 2, horizontal ? 6 : 4);
-    close(horizontal ? part.x + (direction[0] === '-' ? part.w : 0)
-      : part.y + (direction[0] === '-' ? part.l : 0), horizontal ? 4 : 6);
+    close(part.x, 4);
+    close(part.y, 6);
   }
 });
 
@@ -138,7 +137,7 @@ test('sample project prepares both types without errors or mutating the input', 
   assert.equal(plan.getRoomGeometry('stairs').normalizedParts.length, 5);
 });
 
-test('Cartesian projects reflect the entry point and every horizontal direction', () => {
+test('Cartesian projects reflect the envelope origin and every horizontal direction', () => {
   const plan = Object.assign(Object.create(FloorPlan.prototype), { catalog: FloorPlanCatalog });
   plan.prepareProject({ id: 'ground', z0: 0, ceiling_height: 3, coordinate_system: 'cartesian', stairs: [{ id: 'stairs', pos: [4, 6, 0], parts: [
     { id: 'one', direction: '+x', to: 1.02 }, { direction: '+y', run: 2.4 },
@@ -146,7 +145,9 @@ test('Cartesian projects reflect the entry point and every horizontal direction'
   ] }] });
   assert.deepEqual(plan.errors, []);
   const [one, , two] = plan.getRoomGeometry('stairs').normalizedParts;
-  close(one.x + one.w, -4);
+  const parts = plan.getRoomGeometry('stairs').normalizedParts;
+  close(Math.max(...parts.map(part => part.x + part.w)), -4);
+  close(Math.min(...parts.map(part => part.y)), 6);
   assert.equal(one.stairDirection, 'reverse');
   assert.equal(two.stairDirection, 'forward');
 });
@@ -202,4 +203,14 @@ test('relative targets still reject a final target below the preceding flight', 
     { id: 'last', direction: '-x', to: 3.3 },
   ] }]);
   assert.ok(plan.errors.some(error => error.category === 'stair' && /last.*acima/.test(error.message)));
+});
+
+test('multi-flight envelopes use pos even when the path extends behind its entry', () => {
+  for (const direction of ['+x', '-x', '+y', '-y']) {
+    const side = direction.endsWith('x') ? '+y' : '+x';
+    const opposite = (direction[0] === '+' ? '-' : '+') + direction[1];
+    const parts = generate([flight(direction), { direction: side, run: 2.4 }, flight(opposite, 3.06)]);
+    close(Math.min(...parts.map(part => part.x)), 4);
+    close(Math.min(...parts.map(part => part.y)), 6);
+  }
 });

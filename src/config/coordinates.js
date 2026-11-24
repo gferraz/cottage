@@ -163,7 +163,7 @@ const FloorPlanCoordinates = {
         const width = widthOf(entry) ?? 0;
         entry.pos = point(entry.pos);
         entry.pos[0] = this.arithmetic("-", entry.pos[0], width);
-        if (entry.rotation !== undefined) entry[this.reflectedPosition] = true;
+        if (entry.rotation !== undefined || window.FloorPlanStairPath?.isPath(entry)) entry[this.reflectedPosition] = true;
       }
       // Path directions follow the same reflected axis as explicit endpoints.
       if (entry.direction === "+x") entry.direction = "-x";

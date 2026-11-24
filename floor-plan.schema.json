@@ -4496,7 +4496,7 @@
           }
         }
       ],
-      "description": "Escada de primeira classe. kind padrão flight; parts reúne lances e patamares com IDs globais. No percurso, pos é o centro da entrada do primeiro lance, com cota opcional; parts encadeia direções, cotas e patamares."
+      "description": "Escada de primeira classe. kind padrão flight; parts reúne lances e patamares com IDs globais. No percurso, pos é o canto de menor X e Y do envelope completo da escada, com cota inicial opcional; parts encadeia direções, cotas e patamares."
     },
     "stair-part": {
       "type": "object",

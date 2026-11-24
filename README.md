@@ -219,7 +219,7 @@ Também é possível definir uma escada por uma sequência de direções e cotas
 }
 ```
 
-`pos` é o centro da face de entrada do primeiro lance, e não o canto do envelope. Sua terceira coordenada é uma cota absoluta; quando omitida, usa a cota do pavimento. Direções aceitas: `+x`, `-x`, `+y` e `-y`. Os limites `stairs.x0`, `stairs.y0` etc. são calculados depois de montar o percurso.
+`pos` indica o canto de menor X e Y do envelope completo da escada, como nos cômodos e itens. O percurso é montado e depois deslocado para esse ponto, independentemente das direções dos lances; o centro da entrada é calculado internamente. Sua terceira coordenada é uma cota absoluta; quando omitida, usa a cota do pavimento. Direções aceitas: `+x`, `-x`, `+y` e `-y`. Os limites `stairs.x0`, `stairs.y0` etc. são calculados depois de montar o percurso.
 
 Com `to` escalar (número ou expressão), a parte é um lance ascendente até aquela cota absoluta. Nas expressões de cada parte, `z0` representa a cota de partida daquela parte: `to: "z0 + 1.5"` sobe 1,50 m a partir da chegada anterior. Patamares mantêm a cota, sem acrescentar altura. Em `pos[2]`, `z0` representa a cota do pavimento; por exemplo, `pos: [4, 6, "z0 + 0.3"]` parte 30 cm acima dele. Referências como `ground.z0` e `upper.z0` continuam absolutas. O número de espelhos é o inteiro mais próximo de `desnível / riser`, com mínimo de dois; a altura real é `desnível / espelhos`. Há um piso a menos que espelhos, pois a chegada é o patamar ou pavimento, e `run = (espelhos - 1) * tread`. `risers` pode fixar a quantidade; `run` explícito fixa o comprimento e recalcula o piso real. Valores positivos são obrigatórios. Lances com espelhos diferentes geram um aviso.
 

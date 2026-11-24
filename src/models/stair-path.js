@@ -22,6 +22,7 @@ const FloorPlanStairPath = {
     if (!Array.isArray(stair.pos) || stair.pos.length < 2 || stair.pos.length > 3) fail(stair, 'pos precisa ser [x, y] ou [x, y, z]');
     if (stair.rotation) fail(stair, 'o percurso aceita somente direções ortogonais, sem rotation');
     let p = stair.pos.slice(0, 2).map(value => number(value, stair, 'pos', false));
+    const origin = [...p];
     let z = number(stair.pos[2] ?? plan.currentFloorHeight ?? 0, stair, 'cota inicial', false);
     const settings = ['width', 'riser', 'tread', 'type', 'steps', 'colors', 'walls'];
     const parts = stair.parts.map((part, index) => ({
@@ -115,6 +116,17 @@ const FloorPlanStairPath = {
       localReferences.set(stair.id, { partReferences: localReferences });
       p = exit; z = endZ;
       if (flight) incoming = d;
+    }
+    // Anchor the entire envelope, independently of the entry direction.
+    // A reflected Cartesian origin denotes the envelope's maximum X.
+    const reflected = stair[window.FloorPlanCoordinates?.reflectedPosition];
+    const dx = origin[0] - (reflected
+      ? Math.max(...result.map(part => part.x + part.w))
+      : Math.min(...result.map(part => part.x)));
+    const dy = origin[1] - Math.min(...result.map(part => part.y));
+    for (const part of result) {
+      part.x += dx;
+      part.y += dy;
     }
     this.validate(result, stair.id);
     return result;
