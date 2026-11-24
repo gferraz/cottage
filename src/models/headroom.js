@@ -1,12 +1,12 @@
 const FloorPlanHeadroom = {
-  thresholds: [1.3, 2.1, 2.85, 3.1],
+  thresholds: [1.3, 2.1, 2.3, 2.85, 3.1],
 
   enabled(plan, roomId) {
     return plan.roomDefinitions.get(roomId)?.comfort_zones
       ?? plan.roomFloorConfigs.get(roomId)?.comfort_zones
       ?? plan.currentConfig?.comfort_zones ?? true;
   },
-  colors: ["rgba(240, 140, 35, 0.14)", "rgba(245, 215, 75, 0.14)", "rgba(255, 255, 255, 0.35)", "rgba(45, 125, 220, 0.28)"],
+  colors: ["rgba(240, 140, 35, 0.14)", "rgba(245, 185, 65, 0.20)", "rgba(245, 215, 75, 0.14)", "rgba(255, 255, 255, 0.35)", "rgba(45, 125, 220, 0.28)"],
 
   area(polygon) {
     return FloorPlanGeometryOperations.area(polygon);

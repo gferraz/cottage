@@ -58,6 +58,7 @@ const FloorPlanStairHeadroom = {
     if (!Number.isFinite(minimum)) return "#e6e3da";
     if (minimum < 1.3 - 1e-8) return "#e6b484";
     if (minimum < 2.1 - 1e-8) return "#f3cea3";
+    if (minimum < 2.3 - 1e-8) return "#f3d18d";
     if (minimum < 2.85 - 1e-8) return "#f6e8ad";
     if (minimum < 3.1 - 1e-8) return "#f7f5ef";
     return "#b9d2eb";

@@ -1,6 +1,6 @@
 // Pure height-band analysis. All regions use the supplied physical roof underside.
 const FloorPlanHeadroomAnalysis = {
-  thresholds: [1.3, 2.1, 2.85, 3.1],
+  thresholds: [1.3, 2.1, 2.3, 2.85, 3.1],
 
   stairSurfaces(rooms = []) {
     return rooms.flatMap((room) => room.parts.flatMap((part) => {

@@ -24,6 +24,28 @@ const FloorPlan3DWalls = {
     });
   },
 
+  renderDoorHandles({ THREE, scene, opening, wall, alongX }) {
+    const handle = FloorPlanOpenings.doorHandle(opening);
+    const material = new THREE.MeshLambertMaterial({ color: "#655d54" });
+    const add = (along, across, elevation, length, depth, height) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(
+        alongX ? length : depth, alongX ? depth : length, height,
+      ), material);
+      mesh.position.set(alongX ? along : wall.from[0] + across,
+        alongX ? wall.from[1] + across : along, elevation);
+      mesh.userData.domainId = opening.id;
+      mesh.userData.doorHandle = true;
+      mesh.castShadow = true;
+      scene.add(mesh);
+    };
+    for (const face of [-1, 1]) {
+      // A short spindle lifts the lever clear of the 4 cm door leaf.
+      add(handle.start, face * 0.035, handle.z, 0.025, 0.03, 0.025);
+      add((handle.start + handle.end) / 2, face * 0.055, handle.z,
+        Math.abs(handle.end - handle.start), 0.018, 0.018);
+    }
+  },
+
   renderWindowGrid({ THREE, scene, opening, part, wall, alongX }) {
     const { glazing: { columns, rows } } = FloorPlanOpenings.windowAppearance(opening);
     if (columns === 1 && rows === 1) return;
@@ -176,23 +198,27 @@ const FloorPlan3DWalls = {
 
     openings.forEach((opening) => {
       if (!opening.element) return;
-      const part = opening.element;
-      const feature = new THREE.Mesh(
-        new THREE.BoxGeometry(
-          alongX ? part.w : 0.04,
-          alongX ? 0.04 : part.w,
-          part.h,
-        ),
-        part.type === "window" ? windowMaterial : doorMaterial,
-      );
-      feature.position.set(
-        alongX ? part.x + part.w / 2 : wall.from[0],
-        alongX ? wall.from[1] : part.y + part.w / 2,
-        part.z0 + part.h / 2,
-      );
-      feature.renderOrder = 9;
-      scene.add(feature);
-      if (part.type === "window") this.renderWindowGrid({ THREE, scene, opening, part, wall, alongX });
+      const parts = opening.components ?? [opening.element];
+      for (const part of parts) {
+        const feature = new THREE.Mesh(
+          new THREE.BoxGeometry(
+            alongX ? part.w : 0.04,
+            alongX ? 0.04 : part.w,
+            part.h,
+          ),
+          part.kind === "frame" ? new THREE.MeshLambertMaterial({ color: "#78604b" })
+            : part.type === "window" ? windowMaterial : doorMaterial,
+        );
+        feature.position.set(
+          alongX ? part.x + part.w / 2 : wall.from[0],
+          alongX ? wall.from[1] : part.y + part.w / 2,
+          part.z0 + part.h / 2,
+        );
+        feature.renderOrder = 9;
+        scene.add(feature);
+        if (part.type === "window") this.renderWindowGrid({ THREE, scene, opening, part, wall, alongX });
+      }
+      if (opening.type === "door") this.renderDoorHandles({ THREE, scene, opening, wall, alongX });
     });
   },
 };

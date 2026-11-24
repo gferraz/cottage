@@ -17,8 +17,8 @@ test("stair clearance reuses roof height thresholds and partitions the flight fo
   assert.equal(analyze(input).length, 1);
   assert.equal(result.floorId, "ground");
   assert.equal(result.ownerId, "future-stair");
-  assert.deepEqual(result.areas.map((area) => area.height), [1.3, 2.1, 2.85, 3.1]);
-  result.bands.forEach((band, index) => close(band.area, [1.3, 0.8, 0.75, 0.25, 0.9][index]));
+  assert.deepEqual(result.areas.map((area) => area.height), [1.3, 2.1, 2.3, 2.85, 3.1]);
+  result.bands.forEach((band, index) => close(band.area, [1.3, 0.8, 0.2, 0.55, 0.25, 0.9][index]));
   close(result.bands.reduce((sum, band) => sum + band.area, 0), result.covered.area);
   assert.deepEqual(input, original);
 });
@@ -49,7 +49,7 @@ test("level landings, multiple owners and floors use absolute underside elevatio
   const below = results.find((r) => r.ownerId === "future-stair" && r.floorId === "ground");
   close(below.bands[1].area, 4);
   const deep = results.find((r) => r.ownerId === "future-stair" && r.floorId === "lower");
-  close(deep.bands[4].area, 4);
+  close(deep.bands[5].area, 4);
 });
 test("the lowest overlapping underside or roof limits headroom without double-counting", () => {
   const [result] = analyze([flight(), { ...flight(), id: "landing", classes: "stair-landing",
@@ -83,7 +83,7 @@ test("visibility requires Camada 0 and every source part hidden; analysis identi
   assert.deepEqual(hidden, [false, true]);
   assert.equal(plan.stairHeadroomResults, results);
 });
-test("stair and roof presentation share band drawing, colors and the five clearance labels", () => {
+test("stair and roof presentation share band drawing, colors and the six clearance labels", () => {
   require("../src/views/headroom");
   const previous = globalThis.document;
   const element = (tag) => ({ tag, attributes: {}, children: [], namespaceURI: "svg",
@@ -93,11 +93,11 @@ test("stair and roof presentation share band drawing, colors and the five cleara
   try {
     const svg = element("svg");
     FloorPlanHeadroomView.appendBands({ formatMeters: String }, svg, analyze([flight()])[0],
-      { colors: ["low", "medium", "high", "blue"], label: "Sob a escada", allLabels: true });
+      { colors: ["low", "mid-low", "medium", "high", "blue"], label: "Sob a escada", allLabels: true });
     assert.deepEqual(svg.children.filter((child) => child.tag === "text").map((child) => child.textContent),
-      ["1,3−", "1,3+", "2,1+", "2,85+", "3,1+"]);
+      ["1,3−", "1,3+", "2,1+", "2,3+", "2,85+", "3,1+"]);
     assert.deepEqual(svg.children.filter((child) => child.tag === "path").map((child) => child.attributes.fill),
-      ["rgba(210, 110, 25, 0.24)", "low", "medium", "high", "blue"]);
+      ["rgba(210, 110, 25, 0.24)", "low", "mid-low", "medium", "high", "blue"]);
   } finally {
     if (previous === undefined) delete globalThis.document;
     else globalThis.document = previous;

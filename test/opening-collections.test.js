@@ -134,3 +134,18 @@ test('cartesian reflection mirrors the door hinge along horizontal walls', () =>
   }] }).config;
   assert.deepEqual(config.rooms[0].doors.map(d => [d.from, d.hinge]), [['top', 'end'], ['bottom', 'start'], ['right', undefined]]);
 });
+
+
+test('door handles follow the latch side and stay at the same height in every orientation', () => {
+  for (const horizontal of [true, false]) {
+    for (const hinge of ['start', 'end']) {
+      const door = { x: 2, y: 3, z0: 3, h: 2.1, w: 0.8, horizontal, hinge };
+      const handle = FloorPlanOpenings.doorHandle(door);
+      const origin = horizontal ? 2 : 3;
+      assert.ok(Math.abs(handle.start - origin - (hinge === 'end' ? 0.08 : 0.72)) < 1e-9);
+      assert.ok(Math.abs(Math.abs(handle.end - handle.start) - 0.1) < 1e-9);
+      assert.equal(handle.z, 4.05);
+      assert.equal(handle.end > handle.start, hinge === 'end');
+    }
+  }
+});

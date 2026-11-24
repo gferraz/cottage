@@ -18,10 +18,10 @@ test('prepared headroom bands partition coverage and retain cumulative threshold
   const input = { parts: [{ x: 0, y: 0, w: 4, l: 2 }], z0: 0 };
   const surfaces = [{ polygons: [[[0, 0, 1], [4, 0, 3], [4, 2, 3], [0, 2, 1]]] }];
   const result = FloorPlanHeadroomAnalysis.analyzeRoom(input, surfaces, []);
-  [6.8, 3.6, 0.6, 0].forEach((expected, i) => close(result.areas[i].area, expected));
-  [1.2, 3.2, 3, 0.6, 0].forEach((expected, i) => close(result.bands[i].area, expected));
+  [6.8, 3.6, 2.8, 0.6, 0].forEach((expected, i) => close(result.areas[i].area, expected));
+  [1.2, 3.2, 0.8, 2.2, 0.6, 0].forEach((expected, i) => close(result.bands[i].area, expected));
   close(result.bands.reduce((sum, band) => sum + band.area, 0), result.covered.area);
-  assert.equal(result.bands[4].labelPosition, null);
+  assert.equal(result.bands[5].labelPosition, null);
   close(result.bands[0].labelPosition[0], 0.3);
 });
 
@@ -47,7 +47,8 @@ test('single gable produces exact threshold areas relative to room floor', () =>
   const result = comfort.calculate([room], surfaces([roof('single')]), 0);
   close(result[0].area, 13.6);
   close(result[1].area, 7.2);
-  close(result[2].area, 1.2);
+  close(result[2].area, 5.6);
+  close(result[3].area, 1.2);
   const raised = comfort.calculate([room], surfaces([roof('single')]), 1);
   close(raised[0].area, 5.6);
   close(raised[1].area, 0);

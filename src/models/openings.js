@@ -85,13 +85,54 @@ const FloorPlanOpenings = {
       position: door.position,
       w: door.w,
       h: door.w / 2,
-      z0: door.z1,
+      z0: door.void.z1,
       windowType: "fixed",
       glazing: { columns: 1, rows: 1 },
+      framing: { frame: 0.04, color: "#78604b" },
     };
     const window = plan.normalizeOpening(definition);
     window.parentDoorId = door.id;
+    // The door header is also the bottom rail of the transom.
+    const frame = 0.04;
+    const along = window.horizontal ? "x" : "y";
+    window.void = {
+      ...window.void,
+      [along]: window[along] - frame,
+      w: window.w + 2 * frame,
+      h: window.h + frame,
+      z1: window.z1 + frame,
+    };
+    window.components = this.doorComponents(window).map(component => ({
+      ...component, kind: component.kind === "leaf" ? "glass" : "frame",
+    }));
     return window;
+  },
+
+  doorComponents(door) {
+    const frame = 0.04;
+    const along = door.horizontal ? "x" : "y";
+    const part = (kind, offset, w, z0, h) => ({
+      ...door.element, kind, [along]: door[along] + offset, w, z0, h, z1: z0 + h,
+    });
+    return [
+      part("frame", -frame, frame, door.z0, door.h + frame),
+      part("frame", door.w, frame, door.z0, door.h + frame),
+      part("frame", 0, door.w, door.z1, frame),
+      part("leaf", 0, door.w, door.z0, door.h),
+    ];
+  },
+
+  doorHandle(door) {
+    const horizontal = door.horizontal ?? ["top", "bottom"].includes(door.wall);
+    const end = door.hinge === "end";
+    const inset = Math.min(0.08, door.w / 4);
+    const length = Math.min(0.1, door.w / 3);
+    const start = (horizontal ? door.x : door.y) + (end ? inset : door.w - inset);
+    return {
+      start,
+      end: start + (end ? length : -length),
+      z: door.z0 + Math.min(1.05, door.h / 2),
+    };
   },
 
   doorSymbol(opening) {
@@ -628,6 +669,18 @@ const FloorPlanOpenings = {
             ...openingGeometry,
             type,
           };
+    if (type === "door") {
+      const frame = 0.04;
+      const along = horizontal ? "x" : "y";
+      normalized.void = {
+        ...openingGeometry,
+        [along]: normalized[along] - frame,
+        w: width + 2 * frame,
+        h: height + frame,
+        z1: normalized.z1 + frame,
+      };
+      normalized.components = this.doorComponents(normalized);
+    }
     FloorPlanGeometryBox.attach(normalized, {
       label: normalized.id,
     });

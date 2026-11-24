@@ -1029,10 +1029,11 @@ const FloorPlanFacades = {
 
       facadeOpenings
         .forEach((opening) => {
-          const start = side ? opening.y : opening.x;
-          const z0 = Number(opening.z0 ?? 0);
-          const height = Number(opening.h ?? opening.z1 - z0);
-          const featureWidth = Number(opening.w ?? 0.8);
+          const envelope = opening.components ? opening.void : opening;
+          const start = side ? envelope.y : envelope.x;
+          const z0 = Number(envelope.z0 ?? 0);
+          const height = Number(envelope.h ?? envelope.z1 - z0);
+          const featureWidth = Number(envelope.w ?? 0.8);
           if (![start, z0, height, featureWidth].every(Number.isFinite)) return;
           const depth = side ? opening.x : opening.y;
           const clipId = `facade-${index}-opening-${svg.querySelectorAll("clipPath").length}`;
@@ -1062,7 +1063,34 @@ const FloorPlanFacades = {
           title.textContent = `${opening.type || "Abertura"}: ${opening.id || "sem id"}`;
           rect.append(title);
           featureGroup.append(rect);
-          if (opening.type === "window") {
+          if (opening.components) {
+            rect.style.fill = "none";
+            rect.style.stroke = "none";
+            for (const component of opening.components ?? []) {
+              const panel = document.createElementNS(svgNamespace, "rect");
+              panel.setAttribute("x", `${((side ? component.y : component.x) - min + padding) * scale}`);
+              panel.setAttribute("y", `${(floorHeight - component.z1 + padding) * scale}`);
+              panel.setAttribute("width", `${component.w * scale}`);
+              panel.setAttribute("height", `${component.h * scale}`);
+              panel.setAttribute("fill", component.kind === "frame" ? "#78604b" : component.kind === "glass" ? "var(--theme-window)" : "#d6b58d");
+              panel.setAttribute("stroke", "var(--theme-opening-line)");
+              panel.setAttribute("stroke-width", "0.7");
+              featureGroup.append(panel);
+            }
+            if (opening.type === "door") {
+              const handle = document.createElementNS(svgNamespace, "line");
+              const handleGeometry = FloorPlanOpenings.doorHandle(opening);
+              const handleStart = handleGeometry.start;
+              handle.setAttribute("x1", `${(handleStart - min + padding) * scale}`);
+              handle.setAttribute("x2", `${(handleGeometry.end - min + padding) * scale}`);
+              handle.setAttribute("y1", `${(floorHeight - handleGeometry.z + padding) * scale}`);
+              handle.setAttribute("y2", handle.getAttribute("y1"));
+              handle.setAttribute("stroke", "#655d54");
+              handle.setAttribute("stroke-width", "1.5");
+              featureGroup.append(handle);
+            }
+          }
+          if (opening.type === "window" && !opening.components) {
             const windowX = (start - min + padding) * scale;
             const windowY = (floorHeight - z0 - height + padding) * scale;
             const windowWidth = featureWidth * scale;

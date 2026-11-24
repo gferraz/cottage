@@ -543,8 +543,16 @@ O símbolo da porta mostra a folha e o arco de abertura. Os defaults são
 parede; `outside`, para o lado oposto. Esses campos se aplicam às portas.
 
 Use `transom: true` na porta para adicionar uma bandeira fixa acima dela.
-A bandeira herda a largura e a posição da porta, começa em `z0 + h` e tem
+A bandeira herda a largura e a posição da porta, começa acima do marco superior da porta e tem
 altura igual a `w / 2`. Por exemplo, uma porta de 0,80 × 2,10 m recebe uma
 bandeira de 0,80 × 0,40 m. Omitir `transom` ou usar `false` mantém a porta
 sem bandeira. A bandeira aparece nas elevações e no 3D, sem sobrepor o símbolo
 da porta na planta baixa.
+
+Nas portas, `w` e `h` representam a folha. O marco tem seção de 4 cm nas
+laterais e no topo: o recorte da parede mede `w + 0.08` por `h + 0.04`.
+As elevações mostram marco, folha e maçaneta; o 3D mostra marco, folha e maçanetas nas duas faces.
+A bandeira começa acima do marco superior, mantendo a largura da folha.
+
+A bandeira acompanha as laterais do marco da porta e recebe uma travessa
+superior de 4 cm. A travessa superior da porta serve de base para o vidro.

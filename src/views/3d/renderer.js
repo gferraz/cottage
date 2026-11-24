@@ -380,7 +380,7 @@ const FloorPlanFacades3D = {
       side: THREE.DoubleSide,
     });
     const doorMaterial = new THREE.MeshLambertMaterial({
-      color: "#8b6b4f",
+      color: "#d6b58d",
       side: THREE.DoubleSide,
     });
     const terrainMaterial = new THREE.MeshLambertMaterial({

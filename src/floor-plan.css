@@ -1737,6 +1737,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
 .comfort-legend span { display: inline-block; margin-right: 1em; }
 .comfort-legend i { display: inline-block; width: 0.8em; height: 0.8em; margin-right: 0.3em; }
 .comfort-legend .comfort-low { background: rgba(240, 140, 35, 0.14); }
+.comfort-legend .comfort-mid-low { background: rgba(245, 185, 65, 0.20); }
 .comfort-legend .comfort-medium { background: rgba(245, 215, 75, 0.14); }
 .comfort-legend .comfort-high { background: rgba(255, 255, 255, 0.35); border: 1px solid #ccc; }
 

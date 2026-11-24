@@ -114,13 +114,36 @@ test('transom true derives a fixed window from the resolved door on every floor'
     const door = plan.allOpenings.find(d => d.id === id);
     const transom = plan.allWindows.find(w => w.parentDoorId === id);
     assert.ok(transom);
+    assert.ok(Math.abs(door.void.w - door.w - 0.08) < 1e-9);
+    assert.ok(Math.abs(door.void.h - door.h - 0.04) < 1e-9);
+    const axis = door.horizontal ? 'x' : 'y';
+    assert.ok(Math.abs(door[axis] - door.void[axis] - 0.04) < 1e-9);
+    assert.equal(door.components.length, 4);
     for (const key of ['x', 'y', 'w', 'wallId', 'floorId', 'position']) assert.equal(transom[key], door[key]);
-    assert.equal(transom.z0, door.z1);
+    assert.equal(transom.z0, door.void.z1);
     assert.equal(transom.h, door.w / 2);
     assert.equal(transom.windowType, 'fixed');
+    assert.equal(transom.void.w, door.void.w);
+    assert.equal(transom.components.filter(p => p.kind === 'frame').length, 3);
+    assert.equal(transom.components.find(p => p.kind === 'glass').h, door.w / 2);
+    assert.equal(transom.components[0].x, door.components[0].x);
+    assert.equal(transom.components[0].y, door.components[0].y);
     assert.deepEqual(transom.glazing, { columns: 1, rows: 1 });
     assert.equal(door.h, id === 'entry' ? 2.1 : 2);
   }
   assert.equal(plan.allWindows.length, 2);
   assert.throws(() => plan.normalizeOpening({ type: 'door', from: 'room.top', transom: {} }), /transom/);
+});
+
+
+test('door frame expands the wall cut while preserving the leaf dimensions', () => {
+  const door = { type: 'door', horizontal: true, x: 1, y: 2, w: 0.8, h: 2.1, z0: 0, z1: 2.1,
+    element: { type: 'door', x: 1, y: 2 } };
+  const parts = FloorPlanOpenings.doorComponents(door);
+  assert.equal(parts.length, 4);
+  assert.equal(parts[0].x, 0.96);
+  assert.equal(parts[1].x, 1.8);
+  assert.equal(parts[2].z0, 2.1);
+  assert.equal(parts[3].w, 0.8);
+  assert.equal(parts[3].h, 2.1);
 });

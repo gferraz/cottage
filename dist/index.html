@@ -1799,6 +1799,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
 .comfort-legend span { display: inline-block; margin-right: 1em; }
 .comfort-legend i { display: inline-block; width: 0.8em; height: 0.8em; margin-right: 0.3em; }
 .comfort-legend .comfort-low { background: rgba(240, 140, 35, 0.14); }
+.comfort-legend .comfort-mid-low { background: rgba(245, 185, 65, 0.20); }
 .comfort-legend .comfort-medium { background: rgba(245, 215, 75, 0.14); }
 .comfort-legend .comfort-high { background: rgba(255, 255, 255, 0.35); border: 1px solid #ccc; }
 
@@ -2872,7 +2873,8 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
       <p id="comfort-legend" class="comfort-legend" hidden>
         Altura livre: <span><i class="comfort-below"></i>&lt; 1,30 m</span>
         <span><i class="comfort-low"></i>1,30–2,10 m</span>
-        <span><i class="comfort-medium"></i>2,10–2,85 m</span>
+        <span><i class="comfort-mid-low"></i>2,10–2,30 m</span>
+        <span><i class="comfort-medium"></i>2,30–2,85 m</span>
         <span><i class="comfort-high"></i>2,85–3,10 m</span>
         <span><i class="comfort-blue"></i>≥ 3,10 m</span>
       </p>
@@ -3156,13 +3158,54 @@ const FloorPlanOpenings = {
       position: door.position,
       w: door.w,
       h: door.w / 2,
-      z0: door.z1,
+      z0: door.void.z1,
       windowType: "fixed",
       glazing: { columns: 1, rows: 1 },
+      framing: { frame: 0.04, color: "#78604b" },
     };
     const window = plan.normalizeOpening(definition);
     window.parentDoorId = door.id;
+    // The door header is also the bottom rail of the transom.
+    const frame = 0.04;
+    const along = window.horizontal ? "x" : "y";
+    window.void = {
+      ...window.void,
+      [along]: window[along] - frame,
+      w: window.w + 2 * frame,
+      h: window.h + frame,
+      z1: window.z1 + frame,
+    };
+    window.components = this.doorComponents(window).map(component => ({
+      ...component, kind: component.kind === "leaf" ? "glass" : "frame",
+    }));
     return window;
+  },
+
+  doorComponents(door) {
+    const frame = 0.04;
+    const along = door.horizontal ? "x" : "y";
+    const part = (kind, offset, w, z0, h) => ({
+      ...door.element, kind, [along]: door[along] + offset, w, z0, h, z1: z0 + h,
+    });
+    return [
+      part("frame", -frame, frame, door.z0, door.h + frame),
+      part("frame", door.w, frame, door.z0, door.h + frame),
+      part("frame", 0, door.w, door.z1, frame),
+      part("leaf", 0, door.w, door.z0, door.h),
+    ];
+  },
+
+  doorHandle(door) {
+    const horizontal = door.horizontal ?? ["top", "bottom"].includes(door.wall);
+    const end = door.hinge === "end";
+    const inset = Math.min(0.08, door.w / 4);
+    const length = Math.min(0.1, door.w / 3);
+    const start = (horizontal ? door.x : door.y) + (end ? inset : door.w - inset);
+    return {
+      start,
+      end: start + (end ? length : -length),
+      z: door.z0 + Math.min(1.05, door.h / 2),
+    };
   },
 
   doorSymbol(opening) {
@@ -3699,6 +3742,18 @@ const FloorPlanOpenings = {
             ...openingGeometry,
             type,
           };
+    if (type === "door") {
+      const frame = 0.04;
+      const along = horizontal ? "x" : "y";
+      normalized.void = {
+        ...openingGeometry,
+        [along]: normalized[along] - frame,
+        w: width + 2 * frame,
+        h: height + frame,
+        z1: normalized.z1 + frame,
+      };
+      normalized.components = this.doorComponents(normalized);
+    }
     FloorPlanGeometryBox.attach(normalized, {
       label: normalized.id,
     });
@@ -7339,10 +7394,11 @@ const FloorPlanFacades = {
 
       facadeOpenings
         .forEach((opening) => {
-          const start = side ? opening.y : opening.x;
-          const z0 = Number(opening.z0 ?? 0);
-          const height = Number(opening.h ?? opening.z1 - z0);
-          const featureWidth = Number(opening.w ?? 0.8);
+          const envelope = opening.components ? opening.void : opening;
+          const start = side ? envelope.y : envelope.x;
+          const z0 = Number(envelope.z0 ?? 0);
+          const height = Number(envelope.h ?? envelope.z1 - z0);
+          const featureWidth = Number(envelope.w ?? 0.8);
           if (![start, z0, height, featureWidth].every(Number.isFinite)) return;
           const depth = side ? opening.x : opening.y;
           const clipId = `facade-${index}-opening-${svg.querySelectorAll("clipPath").length}`;
@@ -7372,7 +7428,34 @@ const FloorPlanFacades = {
           title.textContent = `${opening.type || "Abertura"}: ${opening.id || "sem id"}`;
           rect.append(title);
           featureGroup.append(rect);
-          if (opening.type === "window") {
+          if (opening.components) {
+            rect.style.fill = "none";
+            rect.style.stroke = "none";
+            for (const component of opening.components ?? []) {
+              const panel = document.createElementNS(svgNamespace, "rect");
+              panel.setAttribute("x", `${((side ? component.y : component.x) - min + padding) * scale}`);
+              panel.setAttribute("y", `${(floorHeight - component.z1 + padding) * scale}`);
+              panel.setAttribute("width", `${component.w * scale}`);
+              panel.setAttribute("height", `${component.h * scale}`);
+              panel.setAttribute("fill", component.kind === "frame" ? "#78604b" : component.kind === "glass" ? "var(--theme-window)" : "#d6b58d");
+              panel.setAttribute("stroke", "var(--theme-opening-line)");
+              panel.setAttribute("stroke-width", "0.7");
+              featureGroup.append(panel);
+            }
+            if (opening.type === "door") {
+              const handle = document.createElementNS(svgNamespace, "line");
+              const handleGeometry = FloorPlanOpenings.doorHandle(opening);
+              const handleStart = handleGeometry.start;
+              handle.setAttribute("x1", `${(handleStart - min + padding) * scale}`);
+              handle.setAttribute("x2", `${(handleGeometry.end - min + padding) * scale}`);
+              handle.setAttribute("y1", `${(floorHeight - handleGeometry.z + padding) * scale}`);
+              handle.setAttribute("y2", handle.getAttribute("y1"));
+              handle.setAttribute("stroke", "#655d54");
+              handle.setAttribute("stroke-width", "1.5");
+              featureGroup.append(handle);
+            }
+          }
+          if (opening.type === "window" && !opening.components) {
             const windowX = (start - min + padding) * scale;
             const windowY = (floorHeight - z0 - height + padding) * scale;
             const windowWidth = featureWidth * scale;
@@ -7671,6 +7754,28 @@ const FloorPlan3DWalls = {
     });
   },
 
+  renderDoorHandles({ THREE, scene, opening, wall, alongX }) {
+    const handle = FloorPlanOpenings.doorHandle(opening);
+    const material = new THREE.MeshLambertMaterial({ color: "#655d54" });
+    const add = (along, across, elevation, length, depth, height) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(
+        alongX ? length : depth, alongX ? depth : length, height,
+      ), material);
+      mesh.position.set(alongX ? along : wall.from[0] + across,
+        alongX ? wall.from[1] + across : along, elevation);
+      mesh.userData.domainId = opening.id;
+      mesh.userData.doorHandle = true;
+      mesh.castShadow = true;
+      scene.add(mesh);
+    };
+    for (const face of [-1, 1]) {
+      // A short spindle lifts the lever clear of the 4 cm door leaf.
+      add(handle.start, face * 0.035, handle.z, 0.025, 0.03, 0.025);
+      add((handle.start + handle.end) / 2, face * 0.055, handle.z,
+        Math.abs(handle.end - handle.start), 0.018, 0.018);
+    }
+  },
+
   renderWindowGrid({ THREE, scene, opening, part, wall, alongX }) {
     const { glazing: { columns, rows } } = FloorPlanOpenings.windowAppearance(opening);
     if (columns === 1 && rows === 1) return;
@@ -7823,23 +7928,27 @@ const FloorPlan3DWalls = {
 
     openings.forEach((opening) => {
       if (!opening.element) return;
-      const part = opening.element;
-      const feature = new THREE.Mesh(
-        new THREE.BoxGeometry(
-          alongX ? part.w : 0.04,
-          alongX ? 0.04 : part.w,
-          part.h,
-        ),
-        part.type === "window" ? windowMaterial : doorMaterial,
-      );
-      feature.position.set(
-        alongX ? part.x + part.w / 2 : wall.from[0],
-        alongX ? wall.from[1] : part.y + part.w / 2,
-        part.z0 + part.h / 2,
-      );
-      feature.renderOrder = 9;
-      scene.add(feature);
-      if (part.type === "window") this.renderWindowGrid({ THREE, scene, opening, part, wall, alongX });
+      const parts = opening.components ?? [opening.element];
+      for (const part of parts) {
+        const feature = new THREE.Mesh(
+          new THREE.BoxGeometry(
+            alongX ? part.w : 0.04,
+            alongX ? 0.04 : part.w,
+            part.h,
+          ),
+          part.kind === "frame" ? new THREE.MeshLambertMaterial({ color: "#78604b" })
+            : part.type === "window" ? windowMaterial : doorMaterial,
+        );
+        feature.position.set(
+          alongX ? part.x + part.w / 2 : wall.from[0],
+          alongX ? wall.from[1] : part.y + part.w / 2,
+          part.z0 + part.h / 2,
+        );
+        feature.renderOrder = 9;
+        scene.add(feature);
+        if (part.type === "window") this.renderWindowGrid({ THREE, scene, opening, part, wall, alongX });
+      }
+      if (opening.type === "door") this.renderDoorHandles({ THREE, scene, opening, wall, alongX });
     });
   },
 };
@@ -8709,7 +8818,7 @@ const FloorPlanFacades3D = {
       side: THREE.DoubleSide,
     });
     const doorMaterial = new THREE.MeshLambertMaterial({
-      color: "#8b6b4f",
+      color: "#d6b58d",
       side: THREE.DoubleSide,
     });
     const terrainMaterial = new THREE.MeshLambertMaterial({
@@ -9539,7 +9648,7 @@ window.FloorPlanRoofs = FloorPlanRoofs;
 
 // Pure height-band analysis. All regions use the supplied physical roof underside.
 const FloorPlanHeadroomAnalysis = {
-  thresholds: [1.3, 2.1, 2.85, 3.1],
+  thresholds: [1.3, 2.1, 2.3, 2.85, 3.1],
 
   stairSurfaces(rooms = []) {
     return rooms.flatMap((room) => room.parts.flatMap((part) => {
@@ -9706,14 +9815,14 @@ window.FloorPlanHeadroomView = FloorPlanHeadroomView;
 
 
 const FloorPlanHeadroom = {
-  thresholds: [1.3, 2.1, 2.85, 3.1],
+  thresholds: [1.3, 2.1, 2.3, 2.85, 3.1],
 
   enabled(plan, roomId) {
     return plan.roomDefinitions.get(roomId)?.comfort_zones
       ?? plan.roomFloorConfigs.get(roomId)?.comfort_zones
       ?? plan.currentConfig?.comfort_zones ?? true;
   },
-  colors: ["rgba(240, 140, 35, 0.14)", "rgba(245, 215, 75, 0.14)", "rgba(255, 255, 255, 0.35)", "rgba(45, 125, 220, 0.28)"],
+  colors: ["rgba(240, 140, 35, 0.14)", "rgba(245, 185, 65, 0.20)", "rgba(245, 215, 75, 0.14)", "rgba(255, 255, 255, 0.35)", "rgba(45, 125, 220, 0.28)"],
 
   area(polygon) {
     return FloorPlanGeometryOperations.area(polygon);
@@ -15250,6 +15359,7 @@ const FloorPlanStairHeadroom = {
     if (!Number.isFinite(minimum)) return "#e6e3da";
     if (minimum < 1.3 - 1e-8) return "#e6b484";
     if (minimum < 2.1 - 1e-8) return "#f3cea3";
+    if (minimum < 2.3 - 1e-8) return "#f3d18d";
     if (minimum < 2.85 - 1e-8) return "#f6e8ad";
     if (minimum < 3.1 - 1e-8) return "#f7f5ef";
     return "#b9d2eb";
