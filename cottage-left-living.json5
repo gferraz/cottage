@@ -1,0 +1,308 @@
+// X = 0 na extremidade esquerda da planta (incluindo o avanço traseiro); X cresce para a direita.
+// Origem deslocada 14 m; geometria e implantação no terreno preservadas.
+{
+  $schema: "./floor-plan.schema.json",
+  coordinate_system: "cartesian",
+  title: "Cottage Ferraz-César — estar à esquerda",
+  summary: "Estar e escritório intercambiados. Estar longitudinal, girado 90°, com 3,70 m de largura alinhada ao jantar e mobiliário redistribuído.",
+  coordinates: ["25°45'06.7\"S", "49°15'29.1\"W"],
+  viewport: {size: [24, 24], origin: [-25, 1]},
+  config: {
+    floors: { ceiling_height: "params.floor_height" },
+    walls: { thickness: 0.12, color: "desejo-ambar" },
+    windows: { model: "cottage-sliding"}
+  },
+  parameters: { floor_height: 3 },
+  terrain: {
+    front: {edge: ["P001", "P002"], position: "top", label: "RUA/FRENTE"},
+    rear: {edge: ["P013", "P014"], position: "bottom", label: "JARDIM"},
+    grading: {
+      profile: [
+        { id: "tp-01-rua", y: 0, z: 0},
+        { id: "tp-02-entrada", y: 3.2, z: 0},
+        { id: "tp-03-inicio-descida", y: 12, z: -0.5},
+        { id: "tp-04-fundos-casa", y: 23.8, z: -2},
+        { id: "tp-05-jardim", y: 29, z: -3},
+        { id: "tp-06-fundos-terreno", y: 44.32, z: -6}
+      ]
+    },
+    north: {label: "N"},
+    unit: "m",
+    boundary_order: ["P002", "P001", "P014", "P013"],
+    corners: {
+      P001: {easting: 674815.253, northing: 7150521.976, z: 0},
+      P002: {easting: 674798.334, northing: 7150529.176, z: 0},
+      P013: {easting: 674783.457, northing: 7150487.338, z: -6},
+      P014: {easting: 674800.113, northing: 7150476.994, z: -6}
+    },
+    segments: [
+      {from: "P001", to: "P002", distance: 18.387, azimuth_deg: 293.052521, azimuth_dms: "293° 03' 09\""},
+      {from: "P002", to: "P013", distance: 44.404, azimuth_deg: 199.574666, azimuth_dms: "199° 34' 29\""},
+      {from: "P013", to: "P014", distance: 19.607, azimuth_deg: 121.84183, azimuth_dms: "121° 50' 31\""},
+      {from: "P014", to: "P001", distance: 47.462, azimuth_deg: 18.601256, azimuth_dms: "18° 36' 05\""}
+    ]
+  },
+  building: {anchor: "terrain.front-start", position: {x: 4, y: 3}, reference: "building-placement"},
+  zones: [
+    { id: "building-placement", rectangle: [0, 0, 14, 18.2], visible: false},
+    { id: "front-wing", pos: [4, 0], size: [10.2, 2.5], visible: false, color: "red"},
+    { id: "main", pos: ["front-wing.x0", "front-wing.y1"], size: ["front-wing.w", 8.8], visible: false, color: "blue"}
+  ],
+  floors: [
+    {
+      id: "ground-rear",
+      storey: "ground",
+      label: "Térreo traseiro",
+      z0: -0.34,
+      slabs: [{ id: "slab-ground-rear", label: "Laje — Térreo traseiro", thickness: 0.15}],
+      rooms: []
+    },
+    {
+      id: "ground",
+      storey: "ground",
+      label: "Térreo frontal",
+      z0: 0.3,
+      slabs: [{ id: "slab-ground", label: "Laje — Térreo frontal", thickness: 0.15}],
+      stairs: [
+        {
+          id: "stairs",
+          label: "Escada",
+          pos: ["foyer.x1 - 1.8", "foyer.y1", "ground.z0"],
+          overlaps: ["dining"],
+          overlays: ["dining"],
+          parts: [
+            { id: "lower-flight",    direction: "+y", to: "ground.z0 + 2.5" },
+            { id: "first-landing",   direction: "+y" },
+            { id: "middle-flight",   direction: "-x", to: "ground.z0 + 3" },
+            // { id: "second-landing",  direction: "+y" },
+            // { id: "upper-flight",    direction: "-y", to: "upper.z0" }
+          ]
+        }
+      ],
+      rooms: [
+        {
+          id: "dining",
+          label: "Jantar",
+          from: ["main.x0", "living.y1"],
+          to: ["living.x1", "y0 + 5.5"],
+          walls: ["front", "rear", "left", "right"]
+        },
+        {
+          id: "foyer",
+          label: "foyer",
+          classes: "circulation",
+          walls: ["front"],
+          from: ["living.x1", "main.y0"],
+          to:   ["x0 + 2.4", "y0 + 2.3"],
+          doors: [
+            { from: "front", to: "porch", w: 1 },
+            { from: "left",  to: "living" }
+          ]
+        },
+        {
+          id: "living",
+          label: "Estar",
+          top: "roofs",
+          pos: ["front-wing.x0", "front-wing.y0"],
+          size: [3.7, 5.1],
+          walls: ["front", "left", "right"],
+          windows: [
+            { model: "cottage-casement", from: "left", w: 0.6, dx: 0.5 },
+            { model: "cottage-casement", from: "left", w: 0.6, dx: 2.7 },
+            // Conjunto frontal de 2,80 m, centralizado nos 3,70 m do estar.
+            { model: "cottage-fixed", from: "front", w: 0.7, dx: 0.45, dz: 1.1 },
+            { model: "cottage-sliding", from: "front", w: 0.7, dx: 1.15, dz: 1.1, direction: "left" },
+            { model: "cottage-sliding", from: "front", w: 0.7, dx: 1.85, dz: 1.1, direction: "right" },
+            { model: "cottage-fixed", from: "front", w: 0.7, dx: 2.55, dz: 1.1 }
+          ]
+        },
+        {
+          id: "master-bedroom",
+          label: "Suíte",
+          from: ["main.x1 - 3.6", "office.y1"],
+          to: ["main.x1", "y0 + 3.8"],
+          // doors: [
+          //   { from: "left", w: 1, dy: 2.4 }
+          // ],
+          walls: ["front", "left", "right"],
+          windows: [
+            // Janelas laterais com venezianas externas de abrir previstas.
+            { model: "cottage-casement", from: "right", w: 0.6, dx: 0.5 },
+            { model: "cottage-casement", from: "right", w: 0.6, dx: 2.7 },
+          ]
+        },
+        {
+          id: "office",
+          label: "Escritório",
+          from: ["foyer.x1", "main.y0"],
+          to: ["main.x1", "y0 + 3.8"],
+          walls: ["front", "left", "right"],
+          doors: [{ from: "left", to: "foyer", w: 0.8 }],
+          windows: [{ model: "cottage-casement", from: "right", w: 0.6, dx: 0.5 }]
+        },
+        {
+          id: "porch",
+          label: "Varanda",
+          classes: "outdoor porch",
+          from: ["living.x1", "front-wing.y0"],
+          to: ["front-wing.x1", "y0 + 2.5"],
+          walls: []
+        },
+        {
+          id: "vestibule",
+          label: "Vestíbulo",
+          from: ["foyer.x1", "stairs.y1"],
+          to: ["master-bedroom.x0", "y0 + 2.2"],
+          walls: ["front", "rear", "left"]
+        },
+      ],
+      items: [
+        {
+          id: "dining-buffet",
+          label: "Buffet",
+          pos: ["dining.xc - 1.5", "dining.y1 - 0.5"],
+          size: [3, 0.5, 0.85],
+          classes: "furniture storage",
+          color: "furniture"
+        },
+        {
+          id: "dining-table",
+          type: "dining-table",
+          label: "Mesa de jantar",
+          pos: ["dining.xc - 0.55", "dining.yc - 1.5"],
+          rotation: 90,
+          size: [2.7, 1.1, 0.75]
+        },
+        {
+          pos: ["living.x0 + 0.2", "living.y0 + 0.2"],
+          size: [0.6, 0.6, 0.45],
+          classes: "furniture table",
+          color: "furniture",
+          chairs: 0
+        },
+        {
+          id: "living-sofa",
+          type: "three-seat-sofa",
+          label: "Sofá",
+          pos: ["living.x0 + 0.2", "living.y0 + 1.1"],
+          rotation: 270
+        },
+        {
+          id: "living-armchair-left",
+          type: "armchair",
+          pos: ["living.x0 + 1.6", "living.y0 + 0.2"],
+          rotation: 0
+        },
+        {
+          type: "armchair",
+          pos: ["living.x0 + 1.5", "living.y0 + 3.7"],
+          rotation: 180
+        },
+        {
+          label: "Mesa de centro",
+          pos: ["living.x0 + 1.65", "living.y0 + 1.5"],
+          rotation: 90,
+          size: [1.5, 0.6, 0.4],
+          classes: "furniture table",
+          chairs: 0
+        },
+        {
+          label: "Lareira",
+          pos: ["living.x0 + 0.2", "living.y1 - 0.7"],
+          size: [1.1, 0.5, 1.8],
+          classes: "fireplace",
+          rotation: 0
+        },
+        {
+          label: "Rack de TV",
+          pos: ["living.x1 - 0.6", "living.y0 + 1.3"],
+          rotation: 90,
+          size: [1.8, 0.45, 0.6],
+          color: "furniture",
+        },
+        {
+          type: "rug",
+          pos: ["living.x0 + 0.5", "living.y0 + 0.8"],
+          rotation: 90,
+          size: [3, 2]
+        }
+      ]
+    },
+    {
+      id: "upper-rear",
+      storey: "upper",
+      label: "2º Pavimento - Fundos",
+      z0: "ground.z0 + params.floor_height",
+      slabs: [
+        { id: "slab-upper-rear", thickness: 0.15}
+      ],
+      rooms: []
+    },
+    {
+      id: "upper",
+      storey: "upper",
+      label: "Dormitórios",
+      z0: "ground.z0 + params.floor_height",
+      slabs: [{ id: "slab-upper", label: "Laje — Dormitórios", thickness: 0.15}],
+      rooms: []
+    }
+  ],
+  roofs: [
+     {
+       id: "office-roof",
+       label: "Telhado frontal — Estar",
+       type: "gable",
+       base: "living",
+       z0: "upper.z0",
+       orientation: "longitudinal",
+       pitch: 51
+     },
+     {
+       id: "transverse-roof",
+       label: "Telhado transversal",
+       type: "gable",
+       rectangle: ["main.x0", "main.y0", "main.x1", "office.y1 + 2"],
+       z0: "upper.z0",
+       orientation: "transverse",
+       pitch: 51
+     }
+   ],
+  walls: [
+    {
+      id: "perimeter-plinth",
+      scope: "ground",
+      color: "mate-amargo",
+      base: "terrain",
+      top: "ground.z0 + 0.15",
+      path: {
+        points: [
+          ["main.x0", "main.y1"],
+          ["x0", "front-wing.y0"],
+          ["front-wing.x1", "y0"],
+          ["x0", "main.y1"]
+        ]
+      }
+    },
+    {
+      id: "perimeter-plinth-rear",
+      scope: "ground-rear",
+      color: "mate-amargo",
+      base: "terrain",
+      top: "ground-rear.z0 + 0.15",
+      path: {
+        points: [
+          [4, 9.7],
+          [4, 9.7],
+          [0, 9.7],
+          [0, 16.2],
+          [4, 16.2],
+          [4, 16.1],
+          [8.3, 16.1],
+          [8.3, 18.2],
+          [14, 18.2],
+          [14, 11.3]
+        ]
+      }
+    }
+  ]
+}
