@@ -624,6 +624,12 @@ const FloorPlanReferences = {
             floorId: floorConfig.id,
             floorLabel: floorConfig.label,
           });
+          const transom = FloorPlanOpenings.transomForDoor(scoped, feature);
+          if (transom) plan.allWindows.push({
+            ...transom,
+            floorId: floorConfig.id,
+            floorLabel: floorConfig.label,
+          });
         } catch {
           // Validation and rendering record the error with its source data.
         }

@@ -145,6 +145,7 @@ const FloorPlanCoordinates = {
         if (!roomId || width === undefined) throw new Error("A transformação da abertura precisa do cômodo e da largura");
         entry[positionKey] = this.arithmetic("-", this.arithmetic("-", `${roomId}.w`, entry[positionKey]), width);
       }
+      if (["top", "bottom"].includes(wall) && category === "door") entry.hinge = (entry.hinge ?? "start") === "start" ? "end" : "start";
       if (typeof entry.from === "string") entry.from = (match?.[1] ?? "") + side(wall);
       if (entry.rectangle || entry.pos) geometry(entry);
     };

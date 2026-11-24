@@ -88,6 +88,10 @@ const FloorPlanModel = {
             if (["openings", "doors", "windows"].includes(name) && Array.isArray(child)) {
               return [name, child.map((opening) => {
                 const normalized = visit(opening);
+                if (normalized.wall !== undefined) {
+                  normalized.from = normalized.wall;
+                  delete normalized.wall;
+                }
                 if (typeof normalized.from === "string") {
                   normalized.from = normalized.from.replace(/(^|\.)(front|rear)$/, (_, prefix, wall) => prefix + side(wall));
                 }

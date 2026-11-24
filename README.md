@@ -524,3 +524,27 @@ Os modelos reutilizáveis ficam em [`lib/windows.json5`](lib/windows.json5). Use
 Janelas `sliding` aceitam `direction: "left"`, `"right"` ou `"up"`, indicando para onde a folha se move na vista da fachada. Nas duas folhas móveis frontais, a esquerda desliza para a esquerda e a direita para a direita; o modelo `cottage-sliding` usa `right` como padrão.
 
 Com `pos` e `rotation`, a rotação é aplicada antes do posicionamento: `pos` indica o canto mínimo do retângulo envolvente do objeto rotacionado, sem incluir cadeiras ou acessórios. `size` mantém as dimensões locais. Por exemplo, `pos: [0.3, 0.3], size: [2.7, 1.1], rotation: 90` ocupa X de 0,30 a 1,40 m e Y de 0,30 a 3,00 m. As formas `x/y`, `rectangle` e `from/to` mantêm a convenção nominal.
+
+Portas podem usar `wall` para indicar a parede (`front`, `rear`, `left`, `right`)
+no ambiente que as declara, ou uma referência qualificada, como `quarto.front`,
+no nível do pavimento. `from` continua aceito; `wall` tem prioridade.
+
+```json5
+doors: [
+  { wall: "front", to: "corredor", dx: 0.3, w: 0.8, h: 2.1,
+    hinge: "start", opens: "inside", angle: 90 }
+]
+```
+
+O símbolo da porta mostra a folha e o arco de abertura. Os defaults são
+`hinge: "start"`, `opens: "inside"` e `angle: 90` (maior que 0 e até 180 graus).
+`start` significa esquerda em paredes horizontais e topo em paredes verticais;
+`end` indica a outra extremidade. `inside` abre para o ambiente proprietário da
+parede; `outside`, para o lado oposto. Esses campos se aplicam às portas.
+
+Use `transom: true` na porta para adicionar uma bandeira fixa acima dela.
+A bandeira herda a largura e a posição da porta, começa em `z0 + h` e tem
+altura igual a `w / 2`. Por exemplo, uma porta de 0,80 × 2,10 m recebe uma
+bandeira de 0,80 × 0,40 m. Omitir `transom` ou usar `false` mantém a porta
+sem bandeira. A bandeira aparece nas elevações e no 3D, sem sobrepor o símbolo
+da porta na planta baixa.

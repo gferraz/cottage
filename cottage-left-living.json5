@@ -96,7 +96,7 @@
           to:   ["x0 + 2.4", "y0 + 2.3"],
           doors: [
             { from: "front", to: "porch", w: 1 },
-            { from: "left",  to: "living" }
+            { from: "left",  to: "living", transom: true }
           ]
         },
         {
@@ -137,7 +137,7 @@
           from: ["foyer.x1", "main.y0"],
           to: ["main.x1", "y0 + 3.8"],
           walls: ["front", "left", "right"],
-          doors: [{ from: "left", to: "foyer", w: 0.8 }],
+          doors: [{ from: "left", to: "foyer", w: 0.8, transom: true }],
           windows: [{ model: "cottage-casement", from: "right", w: 0.6, dx: 0.5 }]
         },
         {

@@ -63,6 +63,55 @@ const FloorPlanOpenings = {
     return lines;
   },
 
+  doorAppearance(opening) {
+    const hinge = opening.hinge ?? "start";
+    const opens = opening.opens ?? "inside";
+    const angle = opening.angle ?? 90;
+    if (!["start", "end"].includes(hinge)) throw new Error("hinge deve ser start ou end");
+    if (!["inside", "outside"].includes(opens)) throw new Error("opens deve ser inside ou outside");
+    if (!Number.isFinite(angle) || angle <= 0 || angle > 180) throw new Error("angle deve ser maior que 0 e no máximo 180 graus");
+    return { hinge, opens, angle };
+  },
+
+  transomForDoor(plan, door) {
+    if (door.type !== "door" || door.transom !== true) return null;
+    // Derive from the resolved door so defaults, expressions and shared walls
+    // place both parts at exactly the same position.
+    const definition = {
+      id: `${door.id}-transom`,
+      type: "window",
+      from: door.from,
+      to: door.to,
+      position: door.position,
+      w: door.w,
+      h: door.w / 2,
+      z0: door.z1,
+      windowType: "fixed",
+      glazing: { columns: 1, rows: 1 },
+    };
+    const window = plan.normalizeOpening(definition);
+    window.parentDoorId = door.id;
+    return window;
+  },
+
+  doorSymbol(opening) {
+    const { hinge, opens, angle } = this.doorAppearance(opening);
+    const horizontal = ["top", "bottom"].includes(opening.wall);
+    const width = opening.w;
+    const end = hinge === "end";
+    const pivot = end ? width : 0;
+    const along = end ? -1 : 1;
+    const inward = ["top", "left"].includes(opening.wall) ? 1 : -1;
+    const across = inward * (opens === "inside" ? 1 : -1);
+    const radians = angle * Math.PI / 180;
+    const point = (a, b) => horizontal ? [a, b] : [b, a];
+    const origin = point(pivot, 0);
+    const start = point(pivot + along * width, 0);
+    const finish = point(pivot + along * width * Math.cos(radians), across * width * Math.sin(radians));
+    const sweep = (horizontal ? along * across : -along * across) > 0 ? 1 : 0;
+    return { origin, start, finish, sweep };
+  },
+
   collections: { openings: "opening", doors: "door", windows: "window" },
 
   visit(owner, callback) {
@@ -77,7 +126,7 @@ const FloorPlanOpenings = {
   collect(owner, { roomId } = {}) {
     const entries = [];
     this.visit(owner, (entry, type, key) => {
-      const from = String(entry.from ?? "").trim();
+      const from = String(entry.wall ?? entry.from ?? "").trim().replace(/(^|\.)(front|rear)$/, (_, prefix, side) => prefix + ({ front: "top", rear: "bottom" }[side]));
       const localSide = { front: "top", rear: "bottom" }[from] ?? from;
       const relative = roomId && /^(top|right|bottom|left)$/.test(localSide);
       const result = {
@@ -142,6 +191,8 @@ const FloorPlanOpenings = {
     plan.openings.push(passage);
 
     plan.renderWallFeature(passage, "plan-opening");
+    const transom = this.transomForDoor(plan, passage);
+    if (transom) plan.windows.push(transom);
     return passage;
   },
 
@@ -364,6 +415,20 @@ const FloorPlanOpenings = {
       title: `${feature.type}: ${feature.id}`,
     });
     element.dataset.openingRoomId = feature.roomId;
+    if (feature.type === "door") {
+      const { origin, start, finish, sweep } = this.doorSymbol(feature);
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.classList.add("door-swing");
+      svg.setAttribute("viewBox", `${-feature.w} ${-feature.w} ${3 * feature.w} ${3 * feature.w}`);
+      svg.setAttribute("aria-hidden", "true");
+      svg.style.width = svg.style.height = `calc(${3 * feature.w} * var(--m))`;
+      svg.style.left = `calc(${(feature.horizontal ? 0 : wallThickness / 2) - feature.w} * var(--m) - 2px)`;
+      svg.style.top = `calc(${(feature.horizontal ? wallThickness / 2 : 0) - feature.w} * var(--m) - 2px)`;
+      const path = document.createElementNS(svg.namespaceURI, "path");
+      path.setAttribute("d", `M ${origin} L ${finish} M ${start} A ${feature.w} ${feature.w} 0 0 ${sweep} ${finish}`);
+      svg.append(path);
+      element.append(svg);
+    }
     if (feature.type === "opening") {
       const sourceRoom = plan.rooms.get(feature.roomId);
       const sourceBackground = sourceRoom
@@ -378,7 +443,8 @@ const FloorPlanOpenings = {
   },
 
   normalizeOpening(plan, opening) {
-    const match = String(opening.from ?? "")
+    const reference = String(opening.wall ?? opening.from ?? "").replace(/(^|\.)(front|rear)$/, (_, prefix, side) => prefix + ({ front: "top", rear: "bottom" }[side]));
+    const match = reference
       .trim()
       .match(/^(.+)\.(top|left|right|bottom)$/);
     if (!match)
@@ -410,6 +476,9 @@ const FloorPlanOpenings = {
     if (!(type in defaults))
       throw new Error(`Unsupported opening type: ${type}`);
 
+    if (type === "door" && opening.transom !== undefined && typeof opening.transom !== "boolean") {
+      throw new Error("transom deve ser true ou false");
+    }
     const horizontal = wall === "top" || wall === "bottom";
     const wallStart = horizontal ? room.x0() : room.y0();
     const wallLength = horizontal ? room.w() : room.l();
@@ -510,9 +579,10 @@ const FloorPlanOpenings = {
     const configDefaults = this.windowDefaults(plan, opening);
     const normalized = {
       ...opening,
+      ...(type === "door" ? this.doorAppearance(opening) : {}),
       ...(type === "window" ? this.windowAppearance({ ...configDefaults, ...opening, windowType: opening.windowType ?? (opening.type === "window" ? undefined : opening.type) ?? configDefaults.type ?? "fixed" }) : {}),
       id,
-      from: opening.from,
+      from: reference,
       to: target,
       type,
       position,

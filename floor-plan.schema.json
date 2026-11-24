@@ -2388,12 +2388,27 @@
           "type": "array",
           "minItems": 3,
           "maxItems": 3
+        },
+        "wall": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Parede local (front, rear, left, right) ou referência qualificada como quarto.front. Tem prioridade sobre from."
         }
       },
-      "required": [
-        "from"
-      ],
-      "additionalProperties": false
+      "required": [],
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "wall"
+          ]
+        },
+        {
+          "required": [
+            "from"
+          ]
+        }
+      ]
     },
     "floor": {
       "type": "object",
@@ -3656,12 +3671,52 @@
               "minLength": 1
             }
           ]
+        },
+        "wall": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Parede local (front, rear, left, right) ou referência qualificada como quarto.front. Tem prioridade sobre from."
+        },
+        "hinge": {
+          "enum": [
+            "start",
+            "end"
+          ],
+          "default": "start"
+        },
+        "opens": {
+          "enum": [
+            "inside",
+            "outside"
+          ],
+          "default": "inside"
+        },
+        "angle": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 180,
+          "default": 90
+        },
+        "transom": {
+          "type": "boolean",
+          "default": false,
+          "description": "Bandeira fixa acima da porta, com a mesma largura e altura igual à metade da largura da porta."
         }
       },
-      "required": [
-        "from"
-      ],
-      "additionalProperties": false
+      "required": [],
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "wall"
+          ]
+        },
+        {
+          "required": [
+            "from"
+          ]
+        }
+      ]
     },
     "window": {
       "type": "object",
@@ -3778,12 +3833,27 @@
             "tilt"
           ],
           "description": "Tipo de abertura. A categoria window é determinada pela coleção windows."
+        },
+        "wall": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Parede local (front, rear, left, right) ou referência qualificada como quarto.front. Tem prioridade sobre from."
         }
       },
-      "required": [
-        "from"
-      ],
-      "additionalProperties": false
+      "required": [],
+      "additionalProperties": false,
+      "anyOf": [
+        {
+          "required": [
+            "wall"
+          ]
+        },
+        {
+          "required": [
+            "from"
+          ]
+        }
+      ]
     },
     "wall-feature": {
       "type": "object",
@@ -3970,10 +4040,25 @@
             "tilt"
           ],
           "description": "Tipo de abertura. Na coleção windows, a categoria já é determinada pela coleção."
+        },
+        "wall": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Parede local (front, rear, left, right) ou referência qualificada como quarto.front. Tem prioridade sobre from."
         }
       },
-      "required": [
-        "from"
+      "required": [],
+      "anyOf": [
+        {
+          "required": [
+            "wall"
+          ]
+        },
+        {
+          "required": [
+            "from"
+          ]
+        }
       ]
     },
     "stair": {

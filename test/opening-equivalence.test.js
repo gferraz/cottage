@@ -94,3 +94,33 @@ test('independent windows preserve identity and geometry when moved out of rooms
 
   assert.equal(independent.plan.normalizeOpening({ from: 'sala.top', type: 'window' }).id, 'sala-exterior-0');
 });
+
+test('transom true derives a fixed window from the resolved door on every floor', () => {
+  const { plan } = prepare(FloorPlanParser.parse(JSON.stringify({ floors: [
+    { id: 'ground', z0: 0, ceiling_height: 3, rooms: [
+      { id: 'room', pos: [0, 0], size: [4, 4], walls: 'solid', doors: [
+        { id: 'entry', wall: 'front', w: 0.8, h: 2.1, dx: 0.3, transom: true },
+        { id: 'plain', wall: 'left', transom: false },
+      ] },
+    ] },
+    { id: 'upper', z0: 3, ceiling_height: 3, rooms: [
+      { id: 'bedroom', pos: [0, 0], size: [4, 4], walls: 'solid', doors: [
+        { id: 'upper-entry', wall: 'right', w: 1.2, h: 2, transom: true },
+      ] },
+    ] },
+  ] }), { filename: 'plan.json5' }));
+  FloorPlanReferences.prepareGlobalLists(plan, plan.currentConfig);
+  for (const id of ['entry', 'upper-entry']) {
+    const door = plan.allOpenings.find(d => d.id === id);
+    const transom = plan.allWindows.find(w => w.parentDoorId === id);
+    assert.ok(transom);
+    for (const key of ['x', 'y', 'w', 'wallId', 'floorId', 'position']) assert.equal(transom[key], door[key]);
+    assert.equal(transom.z0, door.z1);
+    assert.equal(transom.h, door.w / 2);
+    assert.equal(transom.windowType, 'fixed');
+    assert.deepEqual(transom.glazing, { columns: 1, rows: 1 });
+    assert.equal(door.h, id === 'entry' ? 2.1 : 2);
+  }
+  assert.equal(plan.allWindows.length, 2);
+  assert.throws(() => plan.normalizeOpening({ type: 'door', from: 'room.top', transom: {} }), /transom/);
+});

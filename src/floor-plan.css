@@ -865,6 +865,19 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
   pointer-events: none;
 }
 
+
+/* Door symbols follow the same meter scale as the wall opening. */
+.plan-opening.opening-door { overflow: visible; }
+.door-swing { position: absolute; overflow: visible; pointer-events: none; }
+.door-swing path {
+  fill: none;
+  stroke: #929292;
+  stroke-width: 1.2px;
+  stroke-dasharray: 1 3;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
 .opening-opening {
   border-color: #4d6872;
   background: var(--opening-source-background, #b9d9e2);

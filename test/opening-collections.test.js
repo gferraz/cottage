@@ -96,3 +96,41 @@ test('window types and glazing generate distinct facade symbols and validate sub
   for (const columns of [0, -1, 1.5, 33, '2']) assert.throws(() => FloorPlanOpenings.windowAppearance({ glazing: { columns } }), /grade de vidros/);
   assert.throws(() => FloorPlanOpenings.windowAppearance({ type: 'unknown' }), /Tipo de abertura de janela/);
 });
+
+test('wall accepts local and qualified references without changing the source', () => {
+  const source = { doors: [{ wall: 'front', hinge: 'end', opens: 'outside', angle: 120 }] };
+  assert.equal(FloorPlanOpenings.collect(source, { roomId: 'quarto' })[0].from, 'quarto.top');
+  assert.equal(source.doors[0].wall, 'front');
+  const config = FloorPlanModel.fromConfig({ rooms: [{ id: 'quarto', ...source }], doors: [{ wall: 'quarto.rear' }] }).config;
+  assert.equal(config.rooms[0].doors[0].from, 'top');
+  assert.equal(config.doors[0].from, 'quarto.bottom');
+});
+
+test('door symbols put the hinge and leaf on the correct side for every wall', () => {
+  assert.deepEqual(FloorPlanOpenings.doorAppearance({}), { hinge: 'start', opens: 'inside', angle: 90 });
+  for (const wall of ['top', 'bottom', 'left', 'right']) {
+    for (const hinge of ['start', 'end']) {
+      for (const opens of ['inside', 'outside']) {
+        const symbol = FloorPlanOpenings.doorSymbol({ wall, hinge, opens, w: 0.8 });
+        const horizontal = ['top', 'bottom'].includes(wall);
+        const along = horizontal ? 0 : 1;
+        const across = 1 - along;
+        assert.equal(symbol.origin[along], hinge === 'start' ? 0 : 0.8);
+        assert.ok(Math.abs(symbol.finish[along] - symbol.origin[along]) < 1e-9);
+        const sign = (['top', 'left'].includes(wall) ? 1 : -1) * (opens === 'inside' ? 1 : -1);
+        assert.ok(Math.abs(symbol.finish[across] - sign * 0.8) < 1e-9);
+        assert.ok(Math.abs(Math.hypot(...symbol.finish.map((v, i) => v - symbol.origin[i])) - 0.8) < 1e-9);
+      }
+    }
+  }
+  for (const value of [{ hinge: 'left' }, { opens: 'from' }, { angle: 0 }, { angle: 181 }, { angle: '90' }]) {
+    assert.throws(() => FloorPlanOpenings.doorAppearance(value));
+  }
+});
+
+test('cartesian reflection mirrors the door hinge along horizontal walls', () => {
+  const config = FloorPlanModel.fromConfig({ coordinate_system: 'cartesian', rooms: [{ id: 'room',
+    doors: [{ wall: 'front' }, { wall: 'rear', hinge: 'end' }, { wall: 'left' }],
+  }] }).config;
+  assert.deepEqual(config.rooms[0].doors.map(d => [d.from, d.hinge]), [['top', 'end'], ['bottom', 'start'], ['right', undefined]]);
+});
