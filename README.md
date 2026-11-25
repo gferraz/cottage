@@ -471,17 +471,17 @@ As faixas são cumulativas e descontam as sobreposições declaradas, como a
 área útil dos cômodos. Este cálculo considera coberturas, sem inferir forros,
 lajes ou obstáculos internos.
 
-### Lajes (`slabs`)
+### Laje do piso (`slab`)
 
-Cada piso pode declarar `slabs: [{ id: "slab-ground", label: "Laje — Térreo", thickness: 0.15 }]`.
-A laje acompanha a união dos ambientes do piso, preservando recortes e excluindo ambientes compostos exclusivamente por lances ou patamares de escada. O topo fica em `floor.z0`, com a espessura desenvolvida para baixo. Sem `slabs`, é criada uma laje de 15 cm; `slabs: []` omite a laje. A lista na barra esquerda, junto às seleções de pisos e camadas, permite alternar cada laje independentemente e conserva a seleção ao trocar de piso durante a sessão. Esses controles afetam a perspectiva 3D.
+Cada piso pode declarar `slab: { id: "slab-ground", label: "Laje — Térreo", thickness: 0.15 }`.
+A laje acompanha a união dos ambientes do piso, preservando recortes e excluindo ambientes compostos exclusivamente por lances ou patamares de escada. O topo fica em `floor.z0`, com a espessura desenvolvida para baixo. Sem `slab`, é criada uma laje de 15 cm; `slab: false` omite a laje. A lista na barra esquerda, junto às seleções de pisos e camadas, permite alternar cada laje independentemente e conserva a seleção ao trocar de piso durante a sessão. Esses controles afetam a perspectiva 3D.
 
-Sem `label`, a laje usa o `label` do piso onde está situada. O `id` da laje é opcional; quando omitido, o sistema gera uma chave pela posição na coleção.
+Sem `label`, a laje usa o `label` do piso onde está situada. O `id` da laje é opcional; quando omitido, o sistema gera uma chave automaticamente.
 
-Declare recortes em `slabs[].openings`, sem `from` ou `to`: a laje proprietária determina a cota. Uma abertura aceita um retângulo ou `parts` para a união de vários retângulos, inclusive formatos em L. Sobreposições entre partes são recortadas uma única vez, sem preencher o envelope do conjunto.
+Declare recortes em `slab.openings`, sem `from` ou `to`: a laje proprietária determina a cota. Uma abertura aceita um retângulo ou `parts` para a união de vários retângulos, inclusive formatos em L. Sobreposições entre partes são recortadas uma única vez, sem preencher o envelope do conjunto.
 
 ```json5
-slabs: [{
+slab: {
   id: "slab-upper",
   openings: [{
     id: "stair-well",
@@ -490,10 +490,12 @@ slabs: [{
       { rectangle: [0, 1.8, 3, 3] }
     ]
   }]
-}]
+}
 ```
 
 A forma antiga `openings: [{ from: "ground", to: "upper", rectangle: [...] }]` no piso continua recortando as lajes entre as cotas, com aviso de depreciação. Para migrar, mova a abertura para cada laje a recortar e remova `from/to`.
+
+O array `slabs` está depreciado, mas continua aceito com aviso. Use `slab: { ... }` no lugar de `slabs: [{ ... }]`, ou `slab: false` no lugar de `slabs: []`. Se ambos estiverem presentes, `slab` tem prioridade. Arrays antigos com várias lajes continuam funcionando até serem migrados.
 
 Áreas locais de terreno plano podem ser definidas em `terrain.grading.flatAreas`, por exemplo `[{ reference: "front-stairs", margin: 0.15, transition: 0.5 }]`. O terreno acompanha o retângulo da referência na sua cota inferior, com margem e transição em metros; a posição acompanha a implantação da casa. Fora da transição, permanece o perfil longitudinal.
 

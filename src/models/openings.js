@@ -182,6 +182,17 @@ const FloorPlanOpenings = {
     return entries;
   },
 
+  slabDefinitions(floor) {
+    if (floor.slab === false) return [];
+    if (floor.slab !== undefined) {
+      if (!floor.slab || typeof floor.slab !== "object" || Array.isArray(floor.slab)) {
+        throw new Error("slab precisa ser um objeto ou false.");
+      }
+      return [floor.slab];
+    }
+    return floor.slabs;
+  },
+
   verticalForFloor(plan, floor) {
     const floors = plan.currentConfig?.floors ?? [plan.currentConfig];
     const lower = floors.filter(candidate => candidate && Number(candidate.z0 ?? 0) < Number(floor.z0 ?? 0))
@@ -199,7 +210,7 @@ const FloorPlanOpenings = {
     return [
       ...this.collect(floor).filter(opening => plan.isVerticalOpening
         ? plan.isVerticalOpening(opening) : this.isVerticalOpening(plan, opening)).flatMap(expand),
-      ...(floor.slabs ?? []).flatMap((slab, slabIndex) => (slab.openings ?? []).flatMap((opening, index) => expand({
+      ...(this.slabDefinitions(floor) ?? []).flatMap((slab, slabIndex) => (slab.openings ?? []).flatMap((opening, index) => expand({
         ...opening, id: opening.id ?? `slab-${slabIndex}-opening-${index}`,
         type: "opening", from: floor.id, to: lower?.id ?? floor.id,
         slabOpening: true, slabIndex,

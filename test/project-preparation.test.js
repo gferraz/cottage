@@ -205,7 +205,7 @@ test('slab-owned compound openings resolve expressions and remove overhead obstr
   const plan = newPlan();
   plan.prepareProject(config);
   assert.deepEqual(plan.errors, []);
-  assert.deepEqual(plan.warnings, []);
+  assert.ok(plan.warnings.every(warning => warning.code === "floor-slabs"));
   const slab = plan.allSlabs.find(slab => slab.floorId === 'upper');
   assert.equal(slab.label, 'Superior');
   assert.equal(slab.parts.reduce((sum, part) => sum + part.w * part.l, 0), 11);
@@ -229,4 +229,20 @@ test('cartesian slab openings follow their referenced rooms through axis reflect
   config.floors[1].slabs[0].openings[0] = { rectangle: ['upstairs.x0', 'upstairs.y0', 'upstairs.x0 + 1', 'upstairs.y0 + 3'] };
   plan.prepareProject(config);
   assert.equal(plan.allSlabs.find(slab => slab.floorId === 'upper').parts.reduce((sum, part) => sum + part.w * part.l, 0), 13);
+});
+
+test('singular slab takes precedence over legacy arrays and keeps cartesian openings', () => {
+  const config = source();
+  config.coordinate_system = 'cartesian';
+  config.floors[0].slab = false;
+  config.floors[0].slabs = [{}];
+  config.floors[1].slabs = [{ thickness: 0.4 }];
+  config.floors[1].slab = { thickness: 0.2, openings: [{ rectangle: ['upstairs.x0', 'upstairs.y0', 'upstairs.x0 + 1', 'upstairs.y0 + 3'] }] };
+  const plan = newPlan();
+  plan.prepareProject(config);
+  assert.deepEqual(plan.errors, []);
+  assert.equal(plan.allSlabs.length, 1);
+  assert.equal(plan.allSlabs[0].floorId, 'upper');
+  assert.equal(plan.allSlabs[0].thickness, 0.2);
+  assert.equal(plan.allSlabs[0].parts.reduce((sum, part) => sum + part.w * part.l, 0), 13);
 });

@@ -60,9 +60,13 @@ const FloorPlanModel = {
         (value.openings ?? []).forEach((opening, index) => {
           if (floorIds.has(opening.from) && floorIds.has(opening.to)) {
             emit(value.openings, String(index), `${path}.openings`, "floor-opening",
-              "Aberturas entre pisos estão depreciadas. Mova a geometria para slabs[].openings, na laje a recortar, e remova from/to.");
+              "Aberturas entre pisos estão depreciadas. Mova a geometria para slab.openings, na laje a recortar, e remova from/to.");
           }
         });
+      }
+      if (["", "floors"].includes(context) && Object.hasOwn(value, "slabs")) {
+        emit(value, "slabs", path, "floor-slabs",
+          "slabs está depreciado. Use slab: { ... } para a laje do piso ou slab: false para omiti-la. Quando ambos existem, slab tem prioridade.");
       }
       if (context === "config" && value.openings) {
         for (const [type, collection] of [["door", "doors"], ["window", "windows"], ["opening", "openings"]]) {

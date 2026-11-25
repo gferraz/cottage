@@ -36,7 +36,7 @@ const FloorPlanSlabs = {
         return parts;
       };
       parts = cutParts(parts, openings.filter(opening => !opening.slabOpening));
-      return (floor.slabs ?? [{ id: `slab-${floor.id ?? index}`, thickness: 0.15 }]).map((definition, slabIndex) => {
+      return (FloorPlanOpenings.slabDefinitions(floor) ?? [{ id: `slab-${floor.id ?? index}`, thickness: 0.15 }]).map((definition, slabIndex) => {
         const thickness = Number(definition.thickness ?? 0.15);
         if (!Number.isFinite(thickness) || thickness <= 0) throw new Error("A espessura da laje deve ser positiva.");
         return { ...definition, key: `${floor.id ?? index}:${definition.id ?? `slab-${slabIndex}`}`, floorId: floor.id,

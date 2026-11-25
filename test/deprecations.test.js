@@ -102,8 +102,20 @@ test('floor-to-floor openings warn with source location; slab openings are curre
   assert.equal(warnings.length, 1);
   assert.equal(warnings[0].code, 'floor-opening');
   assert.equal(warnings[0].location.file, 'legacy.json5');
-  assert.match(warnings[0].message, /slabs\[\]\.openings/);
-  config.floors[1].slabs = [{ openings: [{ parts: [{ rectangle: [0,0,1,1] }] }] }];
+  assert.match(warnings[0].message, /slab\.openings/);
+  config.floors[1].slab = { openings: [{ parts: [{ rectangle: [0,0,1,1] }] }] };
   delete config.floors[1].openings;
   assert.deepEqual(model.collectDeprecations(config), []);
+});
+
+test('slabs warns at the original location while slab is current', () => {
+  const source = FloorPlanParser.parse(`{ floors: [{ id: 'upper', slabs: [{}], slab: {} }] }`, { filename: 'slab.json5' });
+  const warnings = model.collectDeprecations(source);
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0].code, 'floor-slabs');
+  assert.equal(warnings[0].location.file, 'slab.json5');
+  assert.match(warnings[0].message, /slab tem prioridade/);
+  assert.deepEqual(model.collectDeprecations({ slab: false, floors: [{ slab: {} }] }), []);
+  const first = model.fromConfig(source);
+  assert.deepEqual(model.fromConfig(first.config).warnings, first.warnings);
 });

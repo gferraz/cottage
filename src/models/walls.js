@@ -755,7 +755,7 @@ const FloorPlanWalls = {
 
   overheadSlabLimits(plan, floors, floorZ, padding = 0) {
     return floors.filter(floor => Number(floor.z0) > floorZ + 1e-8).flatMap(floor => {
-      const slabs = floor.slabs ?? [{ thickness: 0.15 }];
+      const slabs = FloorPlanOpenings.slabDefinitions(floor) ?? [{ thickness: 0.15 }];
       return slabs.flatMap(slab => {
         const z = Number(floor.z0) - Number(slab.thickness ?? 0.15);
         if (z <= floorZ + 1e-8) return [];

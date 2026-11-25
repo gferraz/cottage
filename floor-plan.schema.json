@@ -1030,7 +1030,7 @@
     },
     "slabs": {
       "type": "array",
-      "description": "Lajes na base do piso. Quando ausente, gera uma laje de 0,15 m acompanhando os cômodos, exceto escadas.",
+      "description": "Depreciado: use slab como objeto ou slab: false. slab tem prioridade quando ambos existem.",
       "items": {
         "type": "object",
         "properties": {
@@ -1056,8 +1056,10 @@
             }
           }
         },
-        "additionalProperties": false
-      }
+        "additionalProperties": false,
+        "description": "Laje do piso; sem label, usa o label do piso."
+      },
+      "deprecated": true
     },
     "stairs": {
       "type": "array",
@@ -1065,6 +1067,17 @@
       "items": {
         "$ref": "#/definitions/stair"
       }
+    },
+    "slab": {
+      "description": "Laje do piso. Ausente: laje padrão de 0,15 m; false: sem laje.",
+      "oneOf": [
+        {
+          "$ref": "#/definitions/slab"
+        },
+        {
+          "const": false
+        }
+      ]
     }
   },
   "additionalProperties": false,
@@ -2526,7 +2539,7 @@
         },
         "slabs": {
           "type": "array",
-          "description": "Lajes na base do piso. Quando ausente, gera uma laje de 0,15 m acompanhando os cômodos, exceto escadas.",
+          "description": "Depreciado: use slab como objeto ou slab: false. slab tem prioridade quando ambos existem.",
           "items": {
             "type": "object",
             "properties": {
@@ -2553,7 +2566,8 @@
               }
             },
             "additionalProperties": false
-          }
+          },
+          "deprecated": true
         },
         "stairs": {
           "type": "array",
@@ -2566,6 +2580,17 @@
           "type": "boolean",
           "default": true,
           "description": "Visibilidade inicial. Os seletores permitem alterá-la durante a sessão."
+        },
+        "slab": {
+          "description": "Laje do piso. Ausente: laje padrão de 0,15 m; false: sem laje.",
+          "oneOf": [
+            {
+              "$ref": "#/definitions/slab"
+            },
+            {
+              "const": false
+            }
+          ]
         }
       },
       "required": [
@@ -5290,6 +5315,34 @@
           ]
         }
       ]
+    },
+    "slab": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "thickness": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "visible": {
+          "type": "boolean",
+          "default": true,
+          "description": "Visibilidade inicial. Os seletores permitem alterá-la durante a sessão."
+        },
+        "openings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/slab-opening"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "description": "Laje do piso; sem label, usa o label do piso."
     }
   }
 }

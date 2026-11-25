@@ -210,6 +210,7 @@ const FloorPlanCoordinates = {
       entry.walls?.forEach(geometry);
       entry.roofs?.forEach(roof);
       entry.slabs?.forEach(slab => slab.openings?.forEach(geometry));
+      entry.slab?.openings?.forEach(geometry);
       window.FloorPlanOpenings.visit(entry, (item, type) => opening(item, undefined, type));
     };
     floor(result);

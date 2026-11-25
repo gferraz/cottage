@@ -55,7 +55,7 @@
       storey: "ground",
       label: "Térreo traseiro",
       z0: -0.34,
-      slabs: [{ visible: false }],
+      slab: { visible: false },
       rooms: []
     },
     {
@@ -64,7 +64,7 @@
       storey: "ground",
       label: "Térreo frontal",
       z0: 0.3,
-      slabs: [{ visible: false}],
+      slab: { visible: false },
       stairs: [
         {
           id: "stairs",
@@ -254,13 +254,13 @@
       storey: "upper",
       label: "2º Piso",
       z0: "ground.z0 + params.floor_height",
-      slabs: [{
+      slab: {
         visible: false,
         openings: [{
           id: "stair-well",
           rectangle: ["first-landing.x0", "upper-flight.y0", "upper-flight.x1", "upper-flight.y1"]
         }]
-      }],
+      },
       rooms: [
         { id: "unused", label: "2 Piso - TBD", copy: "main" },
       ]

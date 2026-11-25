@@ -3255,6 +3255,17 @@ const FloorPlanOpenings = {
     return entries;
   },
 
+  slabDefinitions(floor) {
+    if (floor.slab === false) return [];
+    if (floor.slab !== undefined) {
+      if (!floor.slab || typeof floor.slab !== "object" || Array.isArray(floor.slab)) {
+        throw new Error("slab precisa ser um objeto ou false.");
+      }
+      return [floor.slab];
+    }
+    return floor.slabs;
+  },
+
   verticalForFloor(plan, floor) {
     const floors = plan.currentConfig?.floors ?? [plan.currentConfig];
     const lower = floors.filter(candidate => candidate && Number(candidate.z0 ?? 0) < Number(floor.z0 ?? 0))
@@ -3272,7 +3283,7 @@ const FloorPlanOpenings = {
     return [
       ...this.collect(floor).filter(opening => plan.isVerticalOpening
         ? plan.isVerticalOpening(opening) : this.isVerticalOpening(plan, opening)).flatMap(expand),
-      ...(floor.slabs ?? []).flatMap((slab, slabIndex) => (slab.openings ?? []).flatMap((opening, index) => expand({
+      ...(this.slabDefinitions(floor) ?? []).flatMap((slab, slabIndex) => (slab.openings ?? []).flatMap((opening, index) => expand({
         ...opening, id: opening.id ?? `slab-${slabIndex}-opening-${index}`,
         type: "opening", from: floor.id, to: lower?.id ?? floor.id,
         slabOpening: true, slabIndex,
@@ -4062,6 +4073,7 @@ const FloorPlanCoordinates = {
       entry.walls?.forEach(geometry);
       entry.roofs?.forEach(roof);
       entry.slabs?.forEach(slab => slab.openings?.forEach(geometry));
+      entry.slab?.openings?.forEach(geometry);
       window.FloorPlanOpenings.visit(entry, (item, type) => opening(item, undefined, type));
     };
     floor(result);
@@ -4431,9 +4443,13 @@ const FloorPlanModel = {
         (value.openings ?? []).forEach((opening, index) => {
           if (floorIds.has(opening.from) && floorIds.has(opening.to)) {
             emit(value.openings, String(index), `${path}.openings`, "floor-opening",
-              "Aberturas entre pisos estão depreciadas. Mova a geometria para slabs[].openings, na laje a recortar, e remova from/to.");
+              "Aberturas entre pisos estão depreciadas. Mova a geometria para slab.openings, na laje a recortar, e remova from/to.");
           }
         });
+      }
+      if (["", "floors"].includes(context) && Object.hasOwn(value, "slabs")) {
+        emit(value, "slabs", path, "floor-slabs",
+          "slabs está depreciado. Use slab: { ... } para a laje do piso ou slab: false para omiti-la. Quando ambos existem, slab tem prioridade.");
       }
       if (context === "config" && value.openings) {
         for (const [type, collection] of [["door", "doors"], ["window", "windows"], ["opening", "openings"]]) {
@@ -7717,7 +7733,7 @@ const FloorPlanSlabs = {
         return parts;
       };
       parts = cutParts(parts, openings.filter(opening => !opening.slabOpening));
-      return (floor.slabs ?? [{ id: `slab-${floor.id ?? index}`, thickness: 0.15 }]).map((definition, slabIndex) => {
+      return (FloorPlanOpenings.slabDefinitions(floor) ?? [{ id: `slab-${floor.id ?? index}`, thickness: 0.15 }]).map((definition, slabIndex) => {
         const thickness = Number(definition.thickness ?? 0.15);
         if (!Number.isFinite(thickness) || thickness <= 0) throw new Error("A espessura da laje deve ser positiva.");
         return { ...definition, key: `${floor.id ?? index}:${definition.id ?? `slab-${slabIndex}`}`, floorId: floor.id,
@@ -10726,7 +10742,7 @@ const FloorPlanWalls = {
 
   overheadSlabLimits(plan, floors, floorZ, padding = 0) {
     return floors.filter(floor => Number(floor.z0) > floorZ + 1e-8).flatMap(floor => {
-      const slabs = floor.slabs ?? [{ thickness: 0.15 }];
+      const slabs = FloorPlanOpenings.slabDefinitions(floor) ?? [{ thickness: 0.15 }];
       return slabs.flatMap(slab => {
         const z = Number(floor.z0) - Number(slab.thickness ?? 0.15);
         if (z <= floorZ + 1e-8) return [];
