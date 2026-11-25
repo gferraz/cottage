@@ -56,7 +56,7 @@ for (const name of ['config/catalog', 'config/coordinates', 'config/parser', 'mo
 
 test("project plinth closes the ground outline at floor level and follows the current terrain", () => {
   const fs = require("node:fs");
-  const config = FloorPlanParser.parse(fs.readFileSync(require("node:path").resolve(__dirname, "../cottage-ferraz-cesar.json5"), "utf8"));
+  const config = FloorPlanParser.parse(fs.readFileSync(require("node:path").resolve(__dirname, "../archive/cottage-ferraz-cesar.json5"), "utf8"));
   const model = FloorPlanModel.fromConfig(config);
   const plan = Object.assign(Object.create(FloorPlan.prototype), {
     model, currentConfig: model.config, errors: [], invalidRoomIds: new Set(), partReferenceStack: [],

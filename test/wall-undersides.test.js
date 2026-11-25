@@ -258,7 +258,7 @@ test('wall cycles report a useful error without overflowing the stack', () => {
 
 test('current cottage bedroom resolves the rear knee wall reference', () => {
   const fs = require('node:fs');
-  const source = FloorPlanParser.parse(fs.readFileSync('cottage-ferraz-cesar.json5', 'utf8'));
+  const source = FloorPlanParser.parse(fs.readFileSync('archive/cottage-ferraz-cesar.json5', 'utf8'));
   source.floors.flatMap((floor) => floor.rooms ?? []).find((room) => room.id === 'bedroom-north')
     .from[1] = 'knee-wall-rear.y0 - 1';
   const plan = prepare(source);

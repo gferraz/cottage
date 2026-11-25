@@ -54,7 +54,7 @@ test("split ground levels connect through two corridor risers and retain usable 
       assert.equal(plan.getRoomGeometry(id).z0(), 0.3, id);
     for (const id of ["garage", "kitchen", "powder", "laundry", "rear-corridor"])
       assert.equal(plan.getRoomGeometry(id).z0(), -2 * rise, id);
-    for (const id of ["unused-rear", "bedroom-rear", "upper-corridor", "stair-arrival"])
+    for (const id of ["unused-rear", "bedroom-south", "bathroom-west", "bathroom-front", "upper-corridor", "stair-arrival"])
       assert.equal(plan.getRoomGeometry(id).z0(), 3, id);
     for (const id of ["bedroom-north", "bedroom-east", "playroom"])
       assert.equal(plan.getRoomGeometry(id).z0(), 3, id);
@@ -63,15 +63,13 @@ test("split ground levels connect through two corridor risers and retain usable 
       assert.equal(plan.stairDefinitions.has(id), false);
     assert.equal(plan.getRoomGeometry("stairs").normalizedParts.find(part => part.id === "upper-flight").z1, 3);
     assert.equal(plan.getRoomGeometry("playroom").y1(), plan.getRoomGeometry("stair-arrival").y0());
-    const frontCorridor = plan.getRoomGeometry("upper-corridor-front");
     const rearCorridor = plan.getRoomGeometry("upper-corridor");
-    assert.equal(frontCorridor.z0(), 3);
     assert.equal(rearCorridor.z0(), 3);
-    assert.equal(frontCorridor.y1(), rearCorridor.y0());
+    assert.equal(plan.roomDefinitions.has("upper-corridor-front"), false);
     const roof = plan.allRoofs.find(roof => roof.id === "rear-transverse-roof");
     assert.equal(plan.resolve(roof.z0), 3);
-    assert.equal(rearCorridor.y0(), plan.getRoomGeometry("stairs").y0());
-    assert.equal(rearCorridor.y0(), plan.getRoomGeometry("dining").y1());
+    assert.equal(rearCorridor.y1(), plan.getRoomGeometry("stairs").y0());
+    assert.equal(rearCorridor.y0(), plan.getRoomGeometry("bedroom-north").y1());
     const steps = plan.getRoomGeometry("level-stairs");
     const corridor = plan.getRoomGeometry("rear-corridor");
     assert.equal(steps.y0(), plan.getRoomGeometry("dining").y1());

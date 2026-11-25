@@ -93,7 +93,7 @@ test("optional IDs survive normalization without changing interpolation", () => 
 require("../src/config/parser.js");
 test("cottage study profile has editable IDs and preserves the declared study levels", () => {
   const fs = require("node:fs");
-  const config = FloorPlanParser.parse(fs.readFileSync(require("node:path").resolve(__dirname, "../cottage-ferraz-cesar.json5"), "utf8"));
+  const config = FloorPlanParser.parse(fs.readFileSync(require("node:path").resolve(__dirname, "../archive/cottage-ferraz-cesar.json5"), "utf8"));
   const profile = terrain.profile(config.terrain.grading);
   assert.equal(profile.axis, "y");
   assert.equal(profile.points.length, 6);

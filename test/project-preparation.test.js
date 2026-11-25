@@ -100,7 +100,7 @@ test("a new project revision invalidates prepared geometry and analyses explicit
 });
 
 test("both cottage studies prepare all domain data and floor validation without a view", () => {
-  for (const file of ["cottage-ferraz-cesar.json5", "cottage-ferraz-cesar-garage-transverse.json5"]) {
+  for (const file of ["archive/cottage-ferraz-cesar.json5", "archive/cottage-ferraz-cesar-garage-transverse.json5"]) {
     const plan = newPlan();
     const prepared = plan.prepareProject(FloorPlanParser.parse(fs.readFileSync(path.join(__dirname, "..", file), "utf8")));
     assert.deepEqual(prepared.errors, [], file);
@@ -116,7 +116,7 @@ test("both cottage studies prepare all domain data and floor validation without 
     const underStairs = plan.stairHeadroomResults.filter((result) => result.ownerId === "stairs");
     assert.deepEqual(underStairs.map((result) => result.floorId), ["ground"]);
     assert.ok(underStairs[0].covered.area > 0);
-    assert.equal(underStairs[0].bands.length, 4);
+    assert.deepEqual(underStairs[0].bands.map(band => band.height), [0, 1.3, 2.1, 2.3, 2.85, 3.1]);
   }
 });
 

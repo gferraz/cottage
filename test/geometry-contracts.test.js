@@ -264,7 +264,7 @@ test("roof thickness grows vertically above the reference underside without redu
 
 test("current cottage stair keeps its intermediate elevation, tread counts and landing connections", () => {
   const source = FloorPlanParser.parse(fs.readFileSync(
-    path.join(__dirname, "../cottage-ferraz-cesar.json5"), "utf8",
+    path.join(__dirname, "../archive/cottage-ferraz-cesar.json5"), "utf8",
   ));
   const original = structuredClone(source);
   const plan = prepare(source);
@@ -302,7 +302,7 @@ test("current cottage stair keeps its intermediate elevation, tread counts and l
 });
 
 test("both cottage projects can analyze every floor from domain parts without rendering", () => {
-  for (const file of ["cottage-ferraz-cesar.json5", "cottage-ferraz-cesar-garage-transverse.json5"]) {
+  for (const file of ["archive/cottage-ferraz-cesar.json5", "archive/cottage-ferraz-cesar-garage-transverse.json5"]) {
     const plan = prepare(FloorPlanParser.parse(fs.readFileSync(path.join(__dirname, "..", file), "utf8")));
     assert.deepEqual(plan.errors, []);
     for (const floor of plan.currentConfig.floors) {
@@ -350,8 +350,8 @@ test("headroom results are prepared for every floor regardless of selected floor
 
 test("global communications are prepared without drawing and remain independent of selected floor", () => {
   for (const [file, groundCount, upperCount] of [
-    ["cottage-ferraz-cesar.json5", 13, 5],
-    ["cottage-ferraz-cesar-garage-transverse.json5", 14, 8],
+    ["archive/cottage-ferraz-cesar.json5", 13, 5],
+    ["archive/cottage-ferraz-cesar-garage-transverse.json5", 14, 8],
   ]) {
     const plan = prepare(FloorPlanParser.parse(fs.readFileSync(path.join(__dirname, "..", file), "utf8")));
     plan.prepareGlobalLists(plan.currentConfig);

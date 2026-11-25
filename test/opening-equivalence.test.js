@@ -47,7 +47,7 @@ function legacy(value) {
 }
 
 test('migrated plans retain wall cuts and vertical geometry across every floor', () => {
-  for (const file of ['cottage-ferraz-cesar.json5', 'examples/parametros-e-aberturas.json5', 'examples/portas-janelas-vaos.json5']) {
+  for (const file of ['archive/cottage-ferraz-cesar.json5', 'examples/parametros-e-aberturas.json5', 'examples/portas-janelas-vaos.json5']) {
     const source = FloorPlanParser.parse(fs.readFileSync(file, 'utf8'), { filename: 'plan.json5' });
     const current = prepare(source);
     assert.deepEqual(current.entries, prepare(legacy(source)).entries, file);

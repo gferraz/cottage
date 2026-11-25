@@ -1,7 +1,6 @@
 require("./helpers/load-modules");
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 globalThis.window = globalThis;
 for (const name of ['models/terrain', 'config/catalog', 'config/coordinates', 'models/geometry-box',
   'models/geometry', 'models/geometry-domain', 'models/walls', 'config/parser', 'models/model',
@@ -93,19 +92,26 @@ test('lazy forward item references keep item semantics without shrinking a refer
   assert.equal(plan.itemReferenceContext, undefined);
 });
 
-test('current Cartesian cottage keeps all three headboards at the configured inner clearance', () => {
-  const config = FloorPlanParser.parse(fs.readFileSync('cottage-ferraz-cesar.json5', 'utf8'));
-  config.parameters.bed_knee_wall_clearance = 0.4;
-  const plan = prepare(config);
-  const floor = plan.currentConfig.floors.find((f) => f.id === 'upper');
-  const beds = floor.items.filter((i) => i.id?.startsWith('bed-'));
-  assert.equal(beds.length, 3);
-  for (const bed of beds) {
-    const g = plan.normalizeGeometryAtFloor(plan.resolveItemType(bed), floor);
-    const roomId = `bedroom-${bed.id.includes('east') ? 'east' : bed.id.includes('north') ? 'north' : 'west'}`;
-    const bounds = FloorPlanWalls.itemRoomBounds(plan, roomId);
-    const x = g.x + (g.w - g.l) / 2;
-    close(Math.min(x - bounds.x0(), bounds.x1() - x - g.l), 0.4);
+test('rotated headboards follow the configured clearance from inner room edges', () => {
+  for (const clearance of [0.3, 0.4]) {
+    const config = fixture();
+    config.parameters = { bed_knee_wall_clearance: clearance };
+    config.floors[0].items = [
+      { id: 'bed-left', type: 'twin-bed', rotation: 270,
+        pos: ['room.x0 + params.bed_knee_wall_clearance', 'room.y0 + 0.2'] },
+      { id: 'bed-left-2', type: 'twin-bed', rotation: 270,
+        pos: ['room.x0 + params.bed_knee_wall_clearance', 'room.y0 + 2'] },
+      { id: 'bed-right', type: 'queen-bed', rotation: 90,
+        pos: ['room.x1 - params.bed_knee_wall_clearance - 2', 'room.y0 + 1'] },
+    ];
+    const plan = prepare(config);
+    const floor = plan.currentConfig.floors[0];
+    const bounds = FloorPlanWalls.itemRoomBounds(plan, 'room');
+    for (const bed of floor.items) {
+      const g = plan.normalizeGeometryAtFloor(plan.resolveItemType(bed), floor);
+      const x = g.x + (g.w - g.l) / 2;
+      close(bed.rotation === 270 ? x - bounds.x0() : bounds.x1() - x - g.l, clearance);
+    }
   }
 });
 

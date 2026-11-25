@@ -38,7 +38,7 @@ test('west bedroom and bathroom rear windows resolve to an exterior wall below t
 });
 
 test('removed upper rooms leave no furniture or unresolved references', () => {
-  const plan = prepare('cottage-ferraz-cesar.json5');
+  const plan = prepare('archive/cottage-ferraz-cesar.json5');
   const upper = plan.currentConfig.floors.find((floor) => floor.id === 'upper');
   assert.equal(plan.rooms.has('bedroom-west'), false);
   assert.equal(plan.rooms.has('bathroom'), false);
@@ -47,7 +47,7 @@ test('removed upper rooms leave no furniture or unresolved references', () => {
 });
 
 test('current stair arrival occupies the strip beside the stair opening', () => {
-  const plan = prepare('cottage-ferraz-cesar.json5');
+  const plan = prepare('archive/cottage-ferraz-cesar.json5');
   const upper = plan.currentConfig.floors.find((floor) => floor.id === 'upper');
   const arrival = plan.rooms.get('stair-arrival');
   const opening = plan.normalizeGeometryAtFloor(upper.openings[0], upper);
@@ -58,7 +58,7 @@ test('current stair arrival occupies the strip beside the stair opening', () => 
 });
 
 test('current unused room window resolves to the exterior right wall', () => {
-  const plan = prepare('cottage-ferraz-cesar.json5');
+  const plan = prepare('archive/cottage-ferraz-cesar.json5');
   const definition = FloorPlanOpenings.collect(plan.roomDefinitions.get('unused-right'))[0];
   const opening = plan.normalizeOpening({ ...definition, from: `unused-right.${definition.from}` });
   assert.equal(opening.wallId, 'upper-right-wall');
@@ -66,7 +66,7 @@ test('current unused room window resolves to the exterior right wall', () => {
 });
 
 test('transverse study bedroom door resolves to its rear wall', () => {
-  const plan = prepare('cottage-ferraz-cesar-garage-transverse.json5');
+  const plan = prepare('archive/cottage-ferraz-cesar-garage-transverse.json5');
   assert.deepEqual(plan.errors, []);
   const definition = FloorPlanOpenings.collect(plan.roomDefinitions.get('bedroom-north'))
     .find((opening) => opening.type === 'door');
@@ -75,7 +75,7 @@ test('transverse study bedroom door resolves to its rear wall', () => {
 });
 
 test('garage walls inherit the default color while the terrain plinth stays green', () => {
-  const plan = prepare('cottage-ferraz-cesar-garage-transverse.json5');
+  const plan = prepare('archive/cottage-ferraz-cesar-garage-transverse.json5');
   const defaultColor = plan.currentConfig.config.walls.color;
   const garageWalls = [...plan.walls.values()].filter((wall) => wall.sourceRoomIds.includes('garage'));
   assert.equal(garageWalls.length, 4);
@@ -87,7 +87,7 @@ test('garage walls inherit the default color while the terrain plinth stays gree
 });
 
 test('plan view excludes the green plinth below the floor without changing its 3D parts', () => {
-  const plan = prepare('cottage-ferraz-cesar-garage-transverse.json5');
+  const plan = prepare('archive/cottage-ferraz-cesar-garage-transverse.json5');
   plan.currentFloorId = 'ground';
   const drawn = [];
   plan.add = (item) => {
@@ -108,8 +108,8 @@ test('plan view excludes the green plinth below the floor without changing its 3
 
 test('garage walls continue into the upper plan while walls ending at its level stay hidden', () => {
   for (const [file, wallCount] of [
-    ['cottage-ferraz-cesar.json5', 3],
-    ['cottage-ferraz-cesar-garage-transverse.json5', 4],
+    ['archive/cottage-ferraz-cesar.json5', 3],
+    ['archive/cottage-ferraz-cesar-garage-transverse.json5', 4],
   ]) {
     const plan = prepare(file);
     const roofs = FloorPlanWalls.roofLimits(plan, plan.currentConfig);
