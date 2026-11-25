@@ -55,7 +55,7 @@
       storey: "ground",
       label: "Térreo traseiro",
       z0: -0.34,
-      slabs: [{ id: "slab-ground-rear", visible: false, label: "Laje — Térreo traseiro", thickness: 0.15}],
+      slabs: [{ label: "Laje 1.2", visible: false }],
       rooms: []
     },
     {
@@ -64,7 +64,7 @@
       storey: "ground",
       label: "Térreo frontal",
       z0: 0.3,
-      slabs: [{ id: "slab-ground", visible: false, label: "Laje — Térreo frontal", thickness: 0.15}],
+      slabs: [{ label: "Laje 1.1", visible: false}],
       stairs: [
         {
           id: "stairs",
@@ -76,11 +76,17 @@
             { id: "lower-flight",    direction: "+y", to: "z0 + params.floor_height / 2" },
             { id: "first-landing",   direction: "+x" },
             { id: "upper-flight",   direction: "+x", to: "upper.z0", walls: ["front", "rear"] }
+          ],
+          openings: [
+            {
+              from: "ground",
+              to: "upper",
+              rectangle: ["upper-flight.x0", "upper-flight.y0", "upper-flight.x1 - 1.2", "upper-flight.y1"]
+            }
           ]
         }
       ],
       rooms: [
-
         {
           id: "dining",
           label: "Jantar",
@@ -255,19 +261,19 @@
       storey: "upper",
       label: "2º Pavimento - Fundos",
       z0: "ground.z0 + params.floor_height",
-      slabs: [
-        { id: "slab-upper-rear", visible: false, thickness: 0.15}
-      ],
+      slabs: [ { label: "Laje 2.2", visible: false } ],
       rooms: []
     },
     {
       id: "upper",
       visible: false,
       storey: "upper",
-      label: "Dormitórios",
+      label: "2º Piso",
       z0: "ground.z0 + params.floor_height",
-      slabs: [{ id: "slab-upper", visible: false, label: "Laje — Dormitórios", thickness: 0.15}],
-      rooms: []
+      slabs: [{ label: "Laje 2.1", visible: false }],
+      rooms: [
+        { id: "unused", label: "2 Piso - TBD", copy: "main" },
+      ]
     }
   ],
   roofs: [
