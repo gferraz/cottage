@@ -12,7 +12,7 @@
     walls: { thickness: 0.12, color: "desejo-ambar" },
     windows: { model: "cottage-sliding"}
   },
-  parameters: { floor_height: 3 },
+  parameters: { floor_height: 3.1 },
   terrain: {
     front: {edge: ["P001", "P002"], position: "top", label: "RUA/FRENTE"},
     rear: {edge: ["P013", "P014"], position: "bottom", label: "JARDIM"},
@@ -71,9 +71,9 @@
           overlaps: ["dining"],
           overlays: ["dining"],
           parts: [
-            { id: "lower-flight",    direction: "+y", to: "upper.z0" }
-            // { id: "first-landing",   direction: "+y" },
-            // { id: "middle-flight",   direction: "-x", to: "ground.z0 + 3" },
+            { id: "lower-flight",    direction: "+y", to: "z0 + params.floor_height" },
+            // { id: "first-landing",   direction: "+y" }
+            // { id: "middle-flight",   direction: "-x", to: "upper.z0" }
             // { id: "second-landing",  direction: "+y" },
             // { id: "upper-flight",    direction: "-y", to: "upper.z0" }
           ]
@@ -110,10 +110,24 @@
             { model: "cottage-casement", from: "left", w: 0.6, dx: 0.5 },
             { model: "cottage-casement", from: "left", w: 0.6, dx: 2.7 },
             // Conjunto frontal de 2,80 m, centralizado nos 3,70 m do estar.
-            { model: "cottage-fixed", from: "front", w: 0.7, dx: 0.45, dz: 1.1 },
-            { model: "cottage-sliding", from: "front", w: 0.7, dx: 1.15, dz: 1.1, direction: "left" },
-            { model: "cottage-sliding", from: "front", w: 0.7, dx: 1.85, dz: 1.1, direction: "right" },
-            { model: "cottage-fixed", from: "front", w: 0.7, dx: 2.55, dz: 1.1 }
+            {
+              model: "cottage-sliding",
+              from: "front",
+              w: 0.7,
+              dx: 1.15,
+              dz: 1.1,
+              direction: "up",
+              glazing: { columns: 4, rows: 4 }
+            },
+            {
+              model: "cottage-sliding",
+              from: "front",
+              w: 0.7,
+              dx: 1.85,
+              dz: 1.1,
+              direction: "up",
+              glazing: {  columns: 4, rows: 4 }
+            },
           ]
         },
         {
