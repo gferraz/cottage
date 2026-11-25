@@ -825,6 +825,7 @@ const FloorPlanFacades = {
           baseStart: base, baseEnd: base,
           top: plan.roomDefinitions?.get(roomId)?.top !== undefined ? wall?.z1 ?? top : top,
           roofOnly: wall?.roofOnly,
+          basePlane: wall?.basePlane,
           undersideLimits: wall?.undersideLimits ?? FloorPlanWalls.undersideLimits(plan,
             plan.roomDefinitions?.get(roomId)?.top, Number(plan.catalog.walls?.thickness ?? 0.12) / 2),
         }, roofLimits, side);
@@ -1005,6 +1006,7 @@ const FloorPlanFacades = {
             terrainOffset: { x: buildingOffsetX, y: buildingOffsetY },
             roofOnly: ["roofs", "roof"].includes(wall.top),
             undersideLimits: wall.undersideLimits,
+            basePlane: wall.basePlane,
           }, roofLimits, side);
           if (!polygons.length) return;
           // Adjacent segments in the same facade plane share one silhouette.

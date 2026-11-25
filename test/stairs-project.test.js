@@ -69,6 +69,17 @@ test('compound stair part walls generate 3D wall volumes at the part elevation a
   for (const wall of walls) {
     assert.equal(wall.z0, 1.5);
     assert.equal(wall.z1, 3);
+    const solids = FloorPlanWalls.wallSolids(
+      FloorPlanWalls.boxFaces(wall.x, wall.y, wall.z0, wall.x + wall.w, wall.y + wall.l, wall.z1),
+      [], false, wall.undersideLimits, wall.thickness, wall.basePlane,
+    );
+    assert.ok(wall.basePlane);
+    assert.ok(solids.length);
+    for (const [x, y, z] of solids.flat(2)) {
+      const [a, b, c, d] = wall.basePlane;
+      assert.ok(a * x + b * y + c * z + d >= -1e-8);
+    }
+    assert.ok(solids.flat(2).some(point => point[2] > wall.z0 && point[2] < wall.z1));
     assert.deepEqual(wall.sourceRoomIds, ['access']);
     assert.equal(wall.sourceSides[0].partId, 'upper-flight');
     assert.ok(plan.wallRenderParts.some(part => part.id === wall.id));

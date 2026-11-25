@@ -27,8 +27,12 @@ const FloorPlanFacades3D = {
       view.visibleFloorRanges = views.map(entry => entry.visibleFloorRange);
       return view;
     }
-    if (plan.showAllFloors) return plan;
-    const index = Math.max(0, floors.findIndex((floor) => floor.id === plan.currentFloorId));
+    if (plan.showAllFloors && plan.selectedFloorIds?.size !== 1) return plan;
+    // Initial visibility may select a different floor from the active one.
+    // Match the floor checkboxes, as the 2D view already does.
+    const floorId = plan.selectedFloorIds?.size === 1
+      ? [...plan.selectedFloorIds][0] : plan.currentFloorId;
+    const index = Math.max(0, floors.findIndex((floor) => String(floor.id) === String(floorId)));
     const floor = floors[index];
     const z0 = Number(floor.z0);
     const nextFloor = this.nextFloorAbove(plan, floor);

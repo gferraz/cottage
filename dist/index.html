@@ -7190,6 +7190,7 @@ const FloorPlanFacades = {
           baseStart: base, baseEnd: base,
           top: plan.roomDefinitions?.get(roomId)?.top !== undefined ? wall?.z1 ?? top : top,
           roofOnly: wall?.roofOnly,
+          basePlane: wall?.basePlane,
           undersideLimits: wall?.undersideLimits ?? FloorPlanWalls.undersideLimits(plan,
             plan.roomDefinitions?.get(roomId)?.top, Number(plan.catalog.walls?.thickness ?? 0.12) / 2),
         }, roofLimits, side);
@@ -7370,6 +7371,7 @@ const FloorPlanFacades = {
             terrainOffset: { x: buildingOffsetX, y: buildingOffsetY },
             roofOnly: ["roofs", "roof"].includes(wall.top),
             undersideLimits: wall.undersideLimits,
+            basePlane: wall.basePlane,
           }, roofLimits, side);
           if (!polygons.length) return;
           // Adjacent segments in the same facade plane share one silhouette.
@@ -7896,7 +7898,7 @@ const FloorPlan3DWalls = {
           wall.from[0] + x * Math.cos(angle) - y * Math.sin(angle),
           wall.from[1] + x * Math.sin(angle) + y * Math.cos(angle), z,
         ])) : faces;
-        const solids = FloorPlanWalls.wallSolids(worldFaces, roofLimits, wall.roofOnly, wall.undersideLimits);
+        const solids = FloorPlanWalls.wallSolids(worldFaces, roofLimits, wall.roofOnly, wall.undersideLimits, wall.thickness, wall.basePlane);
         const visibleSolids = wall.base === "terrain" ? solids.flatMap((solid) =>
           FloorPlanWalls.terrainSolids(solid, terrainProfile, { x: buildingOffsetX, y: buildingOffsetY })) : solids;
         visibleSolids.forEach((solid) => {
@@ -8031,6 +8033,8 @@ const FloorPlan3DElements = {
         group.add(mesh);
       };
       if (kind === "queen-bed" || kind === "twin-bed") {
+        // The headboard rises 1.30 m from the floor, independently of mattress height.
+        box(1, Math.min(0.08, l) / l, 1.3 / h, 0, -0.5 + Math.min(0.08, l) / (2 * l), 0.65 / h);
         box(1, 1, 0.45, 0, 0, 0.225);
         box(0.96, 0.96, 0.4, 0, 0, 0.65, light);
         box(0.8, 0.2, 0.15, 0, -0.33, 0.925, light);
@@ -8466,8 +8470,12 @@ const FloorPlanFacades3D = {
       view.visibleFloorRanges = views.map(entry => entry.visibleFloorRange);
       return view;
     }
-    if (plan.showAllFloors) return plan;
-    const index = Math.max(0, floors.findIndex((floor) => floor.id === plan.currentFloorId));
+    if (plan.showAllFloors && plan.selectedFloorIds?.size !== 1) return plan;
+    // Initial visibility may select a different floor from the active one.
+    // Match the floor checkboxes, as the 2D view already does.
+    const floorId = plan.selectedFloorIds?.size === 1
+      ? [...plan.selectedFloorIds][0] : plan.currentFloorId;
+    const index = Math.max(0, floors.findIndex((floor) => String(floor.id) === String(floorId)));
     const floor = floors[index];
     const z0 = Number(floor.z0);
     const nextFloor = this.nextFloorAbove(plan, floor);
@@ -10101,13 +10109,21 @@ const FloorPlanWalls = {
     return limits;
   },
 
-  wallSolids(faces, roofs, roofOnly = false, undersideLimits = []) {
-    let solids = this.roofSolids(faces, roofs, roofOnly);
+  wallSolids(faces, roofs, roofOnly = false, undersideLimits = [], thickness = 0, basePlane) {
+    // Roof footprints meet room wall axes. Include the outer half of the
+    // wall without moving the roof slopes or changing the visible roof.
+    const limits = roofOnly && thickness > 0 ? roofs.map((roof) => ({
+      ...roof,
+      bounds: roof.bounds.map(([a, b, c, d]) =>
+        [a, b, c, d - Math.hypot(a, b) * thickness / 2]),
+    })) : roofs;
+    let solids = this.roofSolids(faces, limits, roofOnly);
     // Apply each object separately: the nearest underside wins in overlaps,
     // while wall portions outside its footprint keep their original height.
     undersideLimits.forEach((limit) => {
       solids = solids.flatMap((solid) => this.roofSolids(solid, [limit]));
     });
+    if (basePlane) solids = solids.map((solid) => this.clipSolid(solid, basePlane.map(value => -value))).filter(solid => solid.length);
     return solids;
   },
 
@@ -10323,7 +10339,7 @@ const FloorPlanWalls = {
     return result;
   },
 
-  wallElevation({ from, to, thickness, baseStart, baseEnd, top, roofOnly, undersideLimits, terrainReference, terrainOffset }, roofs, side) {
+  wallElevation({ from, to, thickness, baseStart, baseEnd, top, roofOnly, undersideLimits, basePlane, terrainReference, terrainOffset }, roofs, side) {
     const dx = to[0] - from[0], dy = to[1] - from[1];
     const length = Math.hypot(dx, dy);
     if (length <= 1e-9) return [];
@@ -10334,7 +10350,7 @@ const FloorPlanWalls = {
         from[1] + uy * x + ux * y,
         z === baseStart && x === length ? baseEnd : z,
       ]));
-    const solids = this.wallSolids(faces, roofs, roofOnly, undersideLimits);
+    const solids = this.wallSolids(faces, roofs, roofOnly, undersideLimits, thickness, basePlane);
     const visibleSolids = terrainReference ? solids.flatMap((solid) =>
       this.terrainSolids(solid, terrainReference, terrainOffset)) : solids;
     return visibleSolids.flatMap((solid) => {
@@ -10572,7 +10588,7 @@ const FloorPlanWalls = {
     const [w, l] = wall.size;
     const solids = this.wallSolids(
       this.boxFaces(x, y, floorZ, x + w, y + l, wall.z1),
-      roofs, wall.roofOnly, wall.undersideLimits,
+      roofs, wall.roofOnly, wall.undersideLimits, wall.thickness, wall.basePlane,
     );
     const axis = wall.axis === "x" ? 0 : 1;
     const intervals = solids.filter((solid) => solid.flat().some((point) => point[2] > floorZ + 1e-9))
@@ -10773,6 +10789,7 @@ const FloorPlanWalls = {
             floorZ0,
             height,
             thickness,
+            /\bstair-flight\b/.test(definition.classes ?? "") ? wallId : "",
           ]
             .map((value) => typeof value === "number" ? value.toFixed(6) : value)
             .join(":");
@@ -10821,6 +10838,8 @@ const FloorPlanWalls = {
             z1: floorZ0 + height,
             h: height,
             thickness,
+            basePlane: /\bstair-flight\b/.test(definition.classes ?? "")
+              ? this.stairUndersidePlane(part ?? plan.normalizeGeometryAtFloor(definition, floor)) : undefined,
             undersideLimits: [...undersideLimits],
             roofOnly,
             touchedRoomIds: [],

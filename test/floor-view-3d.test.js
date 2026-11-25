@@ -15,6 +15,18 @@ const plan = () => {
     independentWalls: new Map([['wall', { z0: 0, topZ: 7, x0: () => 0 }]]) };
 };
 
+test('3D uses the only visible floor on load even when the active floor is hidden', () => {
+  const source = plan();
+  source.selectedFloorIds = new Set(['upper']);
+  source.showAllFloors = false;
+  source.currentConfig.floors[0].visible = false;
+  const view = renderer.floorView(source);
+  assert.equal(view.visibleFloor.id, 'upper');
+  assert.equal(view.allRooms[0].id, 'up');
+  assert.equal(view.wallRenderParts[0].z0, 3);
+  assert.equal(source.currentFloorId, 'ground');
+});
+
 test('adjacent split levels do not cut rear walls or doors at the front slab height', () => {
   const source = plan();
   source.currentConfig.floors = [

@@ -23,6 +23,37 @@ test('opening finds a shared wall declared only by the neighboring room', () => 
   assert.throws(() => walls.resolveRoomSide(plan, 'office', 'right', opening), /Mais de uma parede/);
 });
 const box = () => walls.boxFaces(0, 0, 0, 10, 1, 8);
+test('roof-limited perimeter walls retain their full thickness below unchanged slopes', () => {
+  const roof = {
+    bounds: [[-1, 0, 0, 0], [1, 0, 0, -4], [0, -1, 0, 0], [0, 1, 0, -5]],
+    slopes: [[-1, 0, 1, -3], [1, 0, 1, -7]],
+  };
+  const original = JSON.stringify(roof);
+  for (const thickness of [0.12, 0.2]) {
+    const half = thickness / 2;
+    for (const [bounds, axis] of [
+      [[0, -half, 0, 4, half, 8], 1],
+      [[-half, 0, 0, half, 5, 8], 0],
+      [[4 - half, 0, 0, 4 + half, 5, 8], 0],
+    ]) {
+      const faces = walls.boxFaces(...bounds);
+      const solids = walls.wallSolids(faces, [roof], true, [], thickness);
+      const points = solids.flat(2);
+      const across = points.map((point) => point[axis]);
+      assert.ok(Math.abs(Math.max(...across) - Math.min(...across) - thickness) < 1e-8);
+      assert.ok(points.every(([x, , z]) => z <= Math.min(x + 3, 7 - x) + 1e-8));
+      assert.ok(points.some(([, , z]) => z > 2.8));
+      // Expansion must not create walls beyond the roof plus its half-wall margin.
+      assert.equal(walls.wallSolids(walls.boxFaces(-1, 0, 0, -0.5, 5, 8),
+        [roof], true, [], thickness).length, 0);
+    }
+  }
+  const elevation = walls.wallElevation({ from: [0, 0], to: [0, 5], thickness: 0.12,
+    baseStart: 0, baseEnd: 0, top: 8, roofOnly: true }, [roof], false);
+  const xs = elevation.flat().map(([x]) => x);
+  assert.ok(Math.abs(Math.max(...xs) - Math.min(...xs) - 0.12) < 1e-8);
+  assert.equal(JSON.stringify(roof), original);
+});
 const roof = {
   bounds: [[-1, 0, 0, 2], [1, 0, 0, -8], [0, -1, 0, -1], [0, 1, 0, -2]],
   slopes: [[-1, 0, 1, -1], [1, 0, 1, -11]],
@@ -379,7 +410,9 @@ test('elevation keeps hull corners when repeated cut coordinates differ by float
   const partition = { bounds: [[-1, 0, 0, 1.4], [0, -1, 0, 2]], slopes: [[0, 0, 1, -8]] };
   const polygons = walls.wallElevation({ from: [-0.8, 0], to: [3, 0], thickness: 0.12,
     baseStart: 0, baseEnd: 0, top: 8, roofOnly: true }, [partition, roof], false);
-  assert.ok(polygons[0].some(([x, z]) => Math.abs(x - 1.4) < 1e-8 && Math.abs(z - 4.97583545) < 1e-8));
+  const boundary = 1.4 - 0.12 / 2;
+  const top = 6.704691469605153 - 1.234897156535051 * boundary;
+  assert.ok(polygons[0].some(([x, z]) => Math.abs(x - boundary) < 1e-8 && Math.abs(z - top) < 1e-8));
   for (let i = 0; i < polygons[0].length; i += 1) {
     const a = polygons[0][i], b = polygons[0][(i + 1) % polygons[0].length];
     assert.ok(!(a[0] > 1 && b[0] > 1 && a[1] === 0 && b[1] > 4 && Math.abs(a[0] - b[0]) > 1e-8));

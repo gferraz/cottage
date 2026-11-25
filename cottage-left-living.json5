@@ -42,9 +42,9 @@
       {from: "P014", to: "P001", distance: 47.462, azimuth_deg: 18.601256, azimuth_dms: "18° 36' 05\""}
     ]
   },
-  building: {anchor: "terrain.front-start", position: {x: 4, y: 3}, reference: "building-placement"},
+  building: {anchor: "terrain.front-start", position: {x: 4, y: 3}, reference: "envelope"},
   zones: [
-    { id: "building-placement", rectangle: [0, 0, 14, 18.2], visible: false},
+    { id: "envelope", rectangle: [0, 0, 14, 18.2], visible: true},
     { id: "front-wing", pos: [4, 0], size: [10.2, 2.5], visible: false, color: "red"},
     { id: "main", pos: ["front-wing.x0", "front-wing.y1"], size: ["front-wing.w", 8.8], visible: false, color: "blue"}
   ],
@@ -70,33 +70,23 @@
           id: "stairs",
           label: "Escada",
           pos: ["foyer.x1 - 1.2", "foyer.y0 + 1.6", "ground.z0"],
-          overlaps: ["closet", "hallway"],
-          overlays: ["closet", "hallway"],
+          overlaps: ["master-bedroom", "hallway"],
+          overlays: ["master-bedroom", "hallway"],
           parts: [
             { id: "lower-flight",    direction: "+y", to: "z0 + params.floor_height / 2" },
             { id: "first-landing",   direction: "+x" },
-            { id: "middle-flight",   direction: "+x", to: "upper.z0" }
-            // { id: "second-landing",  direction: "+y" },
-            // { id: "upper-flight",    direction: "-y", to: "upper.z0" }
+            { id: "upper-flight",   direction: "+x", to: "upper.z0", walls: ["front", "rear"] }
           ]
         }
       ],
       rooms: [
-        {
-          id: "closet",
-          label: "Closet",
-          from: ["office.x0", "office.y1"],
-          to: ["main.x1", "y0 + 2.2"],
-          doors: [
-            { from: "rear", to: "master-bedroom",  opens: "outside", w: 1 }
-          ]
-        },
+
         {
           id: "dining",
           label: "Jantar",
           from: ["main.x0", "living.y1"],
           to: ["living.x1", "y0 + 5.5"],
-          walls: ["front", "rear", "left"]
+          walls: ["front", "left"]
         },
         {
           id: "foyer",
@@ -107,7 +97,6 @@
           to:   ["x0 + 2.4", "y0 + 1.6"],
           doors: [
             { from: "front", to: "porch",  opens: "outside", w: 1 },
-            { from: "left",  to: "living", opens: "outside", transom: true }
           ]
         },
         {
@@ -122,6 +111,7 @@
           top: "roofs",
           pos: ["front-wing.x0", "front-wing.y0"],
           size: [3.7, 5.1],
+          doors: [{ from: "right", to: "foyer", opens: "inside", transom: true }],
           walls: ["front", "left", "right"],
           windows: [
             { model: "cottage-casement", from: "left", w: 0.6, dx: 0.5 },
@@ -150,7 +140,7 @@
         {
           id: "master-bedroom",
           label: "Suíte",
-          from: ["office.x0", "closet.y1"],
+          from: ["office.x0", "office.y1"],
           to: ["main.x1", "y0 + 3.8"],
           // doors: [
           //   { from: "left", w: 1, dy: 2.4 }
@@ -181,6 +171,13 @@
         },
       ],
       items: [
+        {
+          id: "master-bed",
+          type: "queen-bed",
+          label: "Cama queen",
+          pos: ["master-bedroom.xc - 0.8", "master-bedroom.y0 + 0.1"],
+          nightstand: { side: "both", w: 0.5 }
+        },
         {
           id: "dining-buffet",
           label: "Buffet",
@@ -315,34 +312,13 @@
       scope: "ground",
       color: "mate-amargo",
       base: "terrain",
-      top: "ground.z0 + 0.15",
+      top: "ground.z0",
       path: {
         points: [
           ["main.x0", "main.y1"],
           ["x0", "front-wing.y0"],
           ["front-wing.x1", "y0"],
           ["x0", "main.y1"]
-        ]
-      }
-    },
-    {
-      id: "perimeter-plinth-rear",
-      scope: "ground-rear",
-      color: "mate-amargo",
-      base: "terrain",
-      top: "ground-rear.z0 + 0.15",
-      path: {
-        points: [
-          [4, 9.7],
-          [4, 9.7],
-          [0, 9.7],
-          [0, 16.2],
-          [4, 16.2],
-          [4, 16.1],
-          [8.3, 16.1],
-          [8.3, 18.2],
-          [14, 18.2],
-          [14, 11.3]
         ]
       }
     }

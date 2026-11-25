@@ -33,9 +33,26 @@ test('beds use the correct floor elevation, center and rotation', () => {
   assert.deepEqual(errors, []);
   assert.deepEqual(groups[0].center, [2.5, 5, 3]);
   assert.equal(groups[0].rotation.z, Math.PI / 2);
-  assert.equal(groups[0].children.length, 3);
+  assert.equal(groups[0].children.length, 4);
   assert.equal(groups[0].userData.domainId, 'bed');
   groups[0].children.forEach(mesh => assert.ok(mesh.castShadow && mesh.receiveShadow));
+});
+
+test('queen and twin headboards rise 1.30 meters from their floor independently of bed height', () => {
+  for (const type of ['queen-bed', 'twin-bed']) {
+    for (const h of [0.55, 0.7]) {
+      const { groups, errors } = render([{ type, x: 0, y: 0, w: 1.6, l: 2, z0: 3, h, rotation: 270 }]);
+      assert.deepEqual(errors, []);
+      const headboard = groups[0].children[0];
+      assert.equal(headboard.geometry.size[0], 1.6);
+      assert.equal(headboard.geometry.size[1], 0.08);
+      assert.ok(Math.abs(headboard.geometry.size[2] - 1.3) < 1e-9);
+      assert.ok(Math.abs(headboard.center[2] - 0.65) < 1e-9);
+      assert.equal(headboard.center[1], -0.96);
+      assert.equal(groups[0].center[2], 3);
+      assert.equal(groups[0].rotation.z, 1.5 * Math.PI);
+    }
+  }
 });
 
 test('2D car and table definitions receive useful 3D heights without duplicating railings', () => {

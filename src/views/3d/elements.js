@@ -74,6 +74,8 @@ const FloorPlan3DElements = {
         group.add(mesh);
       };
       if (kind === "queen-bed" || kind === "twin-bed") {
+        // The headboard rises 1.30 m from the floor, independently of mattress height.
+        box(1, Math.min(0.08, l) / l, 1.3 / h, 0, -0.5 + Math.min(0.08, l) / (2 * l), 0.65 / h);
         box(1, 1, 0.45, 0, 0, 0.225);
         box(0.96, 0.96, 0.4, 0, 0, 0.65, light);
         box(0.8, 0.2, 0.15, 0, -0.33, 0.925, light);

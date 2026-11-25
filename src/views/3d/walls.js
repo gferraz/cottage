@@ -165,7 +165,7 @@ const FloorPlan3DWalls = {
           wall.from[0] + x * Math.cos(angle) - y * Math.sin(angle),
           wall.from[1] + x * Math.sin(angle) + y * Math.cos(angle), z,
         ])) : faces;
-        const solids = FloorPlanWalls.wallSolids(worldFaces, roofLimits, wall.roofOnly, wall.undersideLimits);
+        const solids = FloorPlanWalls.wallSolids(worldFaces, roofLimits, wall.roofOnly, wall.undersideLimits, wall.thickness, wall.basePlane);
         const visibleSolids = wall.base === "terrain" ? solids.flatMap((solid) =>
           FloorPlanWalls.terrainSolids(solid, terrainProfile, { x: buildingOffsetX, y: buildingOffsetY })) : solids;
         visibleSolids.forEach((solid) => {
