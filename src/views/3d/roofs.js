@@ -1,7 +1,7 @@
 const FloorPlan3DRoofs = {
   render({ plan, THREE, scene, roofMaterial, roofEdgeMaterial, roofLineMaterial }) {
     FloorPlanRoofGeometry.intersectingSurfaces(plan).forEach(({ roof, polygons }) => {
-      if (!polygons.length) return;
+      if (!polygons.length || plan.hiddenRoofs?.has(roof.id)) return;
       const value = roof.thickness ?? 0.12;
       const resolved = Number(plan.resolve(value));
       const thickness = Number.isFinite(resolved) && resolved >= 0 ? resolved : 0.12;

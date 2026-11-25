@@ -618,6 +618,7 @@ const FloorPlanFacades = {
       svg.append(verticalLabel);
 
       facadeRoofs.forEach((roof) => {
+        if (plan.hiddenRoofs?.has(roof.id)) return;
         const geometry = roofGeometry(roof);
         if (!roofReachesFacade(geometry)) return;
         const polygons = roofSurfaces.find((entry) => entry.roof === roof)?.polygons ?? [];

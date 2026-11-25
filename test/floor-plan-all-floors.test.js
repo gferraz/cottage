@@ -119,3 +119,22 @@ test('combined floors clip projected stairs to the opening without adding lower-
   assert.equal(stair.style.clipPath, "inset(calc(0 * var(--m)) calc(2 * var(--m)) calc(0 * var(--m)) calc(0 * var(--m)))");
   assert.equal(projections, 0);
 });
+
+test('configured visibility initializes selections and resets session overrides', () => {
+  const plan = Object.create(FloorPlan.prototype);
+  plan.currentConfig = { floors: [{ id: 'shown' }, { id: 'hidden', visible: false }, { id: 'explicit', visible: true }] };
+  plan.allRoofs = [{ id: 'roof-a', visible: false }, { id: 'roof-b', visible: true }];
+  plan.allSlabs = [{ key: 'shown:a', visible: false }, { key: 'shown:b' }];
+  plan.resetVisibility();
+  assert.deepEqual([...plan.selectedFloorIds], ['shown', 'explicit']);
+  assert.deepEqual([...plan.hiddenRoofs], ['roof-a']);
+  assert.deepEqual([...plan.hiddenSlabs], ['shown:a']);
+  assert.equal(plan.showRoofs, true);
+  plan.selectedFloorIds.clear();
+  plan.hiddenSlabs.clear();
+  plan.hiddenRoofs.clear();
+  plan.resetVisibility();
+  assert.equal(plan.selectedFloorIds.size, 2);
+  assert.equal(plan.hiddenSlabs.size, 1);
+  assert.equal(plan.hiddenRoofs.size, 1);
+});

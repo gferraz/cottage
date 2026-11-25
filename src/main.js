@@ -141,6 +141,8 @@ class FloorPlan {
       roofSwitch.checked = false;
       roofSwitch.addEventListener("change", () => {
         this.showRoofs = roofSwitch.checked;
+        this.hiddenRoofs = new Set(roofSwitch.checked ? [] : (this.allRoofs ?? []).map(roof => roof.id));
+        this.renderView();
         this.updateRoofVisibility();
         if (this.currentConfig) this.renderFacade3D();
       });
@@ -585,7 +587,7 @@ class FloorPlan {
 
   updateRoofVisibility() {
     this.root.querySelectorAll(".roof-plan").forEach((roof) => {
-      roof.classList.toggle("roof-hidden", !this.showRoofs);
+      roof.classList.toggle("roof-hidden", !this.showRoofs || this.hiddenRoofs?.has(roof.dataset.id));
     });
     FloorPlanFacades.updateRoofVisibility(this);
     this.updateVisibilityHeading();
@@ -594,7 +596,8 @@ class FloorPlan {
       const floors = this.currentConfig?.floors ?? [];
       const selected = this.selectedFloorIds?.size ?? 0;
       const hasRoofs = (this.allRoofs?.length ?? 0) > 0;
-      all.checked = selected === floors.length && (!hasRoofs || this.showRoofs);
+      const allRoofsVisible = (this.allRoofs ?? []).every(roof => !this.hiddenRoofs?.has(roof.id));
+      all.checked = selected === floors.length && (!hasRoofs || (this.showRoofs && allRoofsVisible));
       all.indeterminate = !all.checked && (selected > 0 || (hasRoofs && this.showRoofs));
     }
   }
@@ -794,6 +797,7 @@ class FloorPlan {
     const selected = new Set(this.visibleFloors().map(floor => String(floor.id)));
     if (id === "__all_floors__") {
       this.showRoofs = checked;
+      this.hiddenRoofs = new Set(checked ? [] : (this.allRoofs ?? []).map(roof => roof.id));
       selected.clear();
       (checked ? floors : []).forEach(floor => selected.add(String(floor.id)));
     } else if (checked) selected.add(String(id));
@@ -828,6 +832,7 @@ class FloorPlan {
    */
   load(config, { preservePresentation = false, sourceFilename = "" } = {}) {
     this.prepareProject(config);
+    if (!preservePresentation) this.resetVisibility();
     this.configureViewport(this.model.viewport);
     const result = this.renderView({ preservePresentation });
     const sourceElement = document.querySelector("#project-source");
@@ -836,6 +841,15 @@ class FloorPlan {
       sourceElement.hidden = !sourceFilename;
     }
     return result;
+  }
+
+  resetVisibility() {
+    const floors = this.currentConfig.floors ?? [this.currentConfig];
+    this.selectedFloorIds = new Set(floors.filter(floor => floor.visible !== false).map(floor => String(floor.id)));
+    this.showAllFloors = this.selectedFloorIds.size !== 1;
+    this.hiddenRoofs = new Set(this.allRoofs.filter(roof => roof.visible === false).map(roof => roof.id));
+    this.showRoofs = this.allRoofs.some(roof => !this.hiddenRoofs.has(roof.id));
+    this.hiddenSlabs = new Set(this.allSlabs.filter(slab => slab.visible === false).map(slab => slab.key));
   }
 
   renderView({ activeFloor = null, showAllFloors = this.showAllFloors, selectedFloorIds = activeFloor === null && showAllFloors === this.showAllFloors ? this.selectedFloorIds : null, preservePresentation = true } = {}) {
@@ -847,9 +861,8 @@ class FloorPlan {
     document.body?.classList.remove("page-empty");
     document.body?.classList.add("page-has-plan");
     if (!preservePresentation) {
-      selectedFloorIds = null;
-      this.showAllFloors = true;
-      this.showRoofs = true;
+      this.resetVisibility();
+      selectedFloorIds = this.selectedFloorIds;
       this.facade3dCamera = { azimuthStep: 0, elevation: 30, zoom: 1 };
       this.solarSeason = config.solar?.season ?? "equinox";
       this.solarTime = config.solar?.time ?? "12:00";
@@ -900,6 +913,26 @@ class FloorPlan {
           label.append(input, text);
           this.floorOptions.append(label);
         });
+        for (const roof of this.allRoofs) {
+          const label = document.createElement("label");
+          label.className = "floor-option";
+          const input = document.createElement("input");
+          input.type = "checkbox";
+          input.name = "roof-selection";
+          input.addEventListener("change", event => event.stopPropagation());
+          input.checked = !this.hiddenRoofs?.has(roof.id);
+          input.addEventListener("change", () => {
+            this.hiddenRoofs ??= new Set();
+            if (input.checked) this.hiddenRoofs.delete(roof.id);
+            else this.hiddenRoofs.add(roof.id);
+            this.showRoofs = this.allRoofs.some(entry => !this.hiddenRoofs.has(entry.id));
+            this.renderView();
+          });
+          const text = document.createElement("span");
+          text.textContent = roof.label || roof.id || "Telhado";
+          label.append(input, text);
+          this.floorOptions.append(label);
+        }
         if (config.floors.length > 0) {
           const label = document.createElement("label");
           label.className = "floor-option";
@@ -954,6 +987,7 @@ class FloorPlan {
       this.roofSwitch.hidden = !hasRoofs;
       this.floorOptions?.closest(".floor-selector")?.toggleAttribute("hidden", !hasRoofs && (config.floors?.length ?? 0) < 2);
       this.roofSwitch.checked = this.showRoofs;
+      this.roofSwitch.indeterminate = this.showRoofs && this.allRoofs.some(roof => this.hiddenRoofs?.has(roof.id));
       this.roofSwitch.closest(".visibility-switch")?.toggleAttribute("hidden", !hasRoofs);
     }
     this.updateRoofVisibility();

@@ -556,3 +556,5 @@ A bandeira começa acima do marco superior, mantendo a largura da folha.
 
 A bandeira acompanha as laterais do marco da porta e recebe uma travessa
 superior de 4 cm. A travessa superior da porta serve de base para o vidro.
+
+Pisos (`floors`), telhados (`roofs`) e lajes (`slabs`) aceitam `visible: true | false` (padrão: `true`). Ao carregar uma planta, os seletores começam marcados conforme esses valores. Alterações nos seletores duram durante a sessão e não modificam a geometria nem as referências.

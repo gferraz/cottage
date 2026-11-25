@@ -1046,6 +1046,11 @@
           "thickness": {
             "type": "number",
             "exclusiveMinimum": 0
+          },
+          "visible": {
+            "type": "boolean",
+            "default": true,
+            "description": "Visibilidade inicial. Os seletores permitem alterá-la durante a sessão."
           }
         },
         "additionalProperties": false
@@ -2534,6 +2539,11 @@
               "thickness": {
                 "type": "number",
                 "exclusiveMinimum": 0
+              },
+              "visible": {
+                "type": "boolean",
+                "default": true,
+                "description": "Visibilidade inicial. Os seletores permitem alterá-la durante a sessão."
               }
             },
             "additionalProperties": false
@@ -2545,6 +2555,11 @@
           "items": {
             "$ref": "#/definitions/stair"
           }
+        },
+        "visible": {
+          "type": "boolean",
+          "default": true,
+          "description": "Visibilidade inicial. Os seletores permitem alterá-la durante a sessão."
         }
       },
       "required": [
@@ -2752,7 +2767,9 @@
           "type": "string"
         },
         "visible": {
-          "type": "boolean"
+          "type": "boolean",
+          "default": true,
+          "description": "Visibilidade inicial. Os seletores permitem alterá-la durante a sessão."
         },
         "orientation": {
           "enum": [
