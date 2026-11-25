@@ -69,20 +69,13 @@
         {
           id: "stairs",
           label: "Escada",
-          pos: ["foyer.x1 - 1.2", "foyer.y0 + 1.6", "ground.z0"],
+          pos: ["foyer.x1 - 1.2", "foyer.y0 + 1.5", "ground.z0"],
           overlaps: ["master-bedroom", "hallway"],
           overlays: ["master-bedroom", "hallway"],
           parts: [
             { id: "lower-flight",    direction: "+y", to: "z0 + params.floor_height / 2" },
             { id: "first-landing",   direction: "+x" },
             { id: "upper-flight",   direction: "+x", to: "upper.z0", walls: ["front", "rear"] }
-          ],
-          openings: [
-            {
-              from: "ground",
-              to: "upper",
-              rectangle: ["upper-flight.x0", "upper-flight.y0", "upper-flight.x1 - 1.2", "upper-flight.y1"]
-            }
           ]
         }
       ],
@@ -256,21 +249,19 @@
       ]
     },
     {
-      id: "upper-rear",
-      visible: false,
-      storey: "upper",
-      label: "2º Pavimento - Fundos",
-      z0: "ground.z0 + params.floor_height",
-      slabs: [ { label: "Laje 2.2", visible: false } ],
-      rooms: []
-    },
-    {
       id: "upper",
       visible: false,
       storey: "upper",
       label: "2º Piso",
       z0: "ground.z0 + params.floor_height",
       slabs: [{ label: "Laje 2.1", visible: false }],
+      openings: [
+        {
+          from: "upper",
+          to: "ground",
+          rectangle: ["first-landing.x0", "upper-flight.y0", "upper-flight.x1", "upper-flight.y1"]
+        }
+      ],
       rooms: [
         { id: "unused", label: "2 Piso - TBD", copy: "main" },
       ]
