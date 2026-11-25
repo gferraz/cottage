@@ -67,13 +67,13 @@
         {
           id: "stairs",
           label: "Escada",
-          pos: ["foyer.x1 - 1.2", "foyer.y1", "ground.z0"],
+          pos: ["foyer.x1 - 1.2", "office.y1", "ground.z0"],
           overlaps: ["dining"],
           overlays: ["dining"],
           parts: [
-            { id: "lower-flight",    direction: "+y", to: "z0 + params.floor_height" },
-            // { id: "first-landing",   direction: "+y" }
-            // { id: "middle-flight",   direction: "-x", to: "upper.z0" }
+            { id: "lower-flight",    direction: "+x", to: "z0 + params.floor_height / 2", },
+            { id: "first-landing",   direction: "+y", run: 2.4, walls: ["front"] },
+            { id: "middle-flight",   direction: "-x", to: "upper.z0" }
             // { id: "second-landing",  direction: "+y" },
             // { id: "upper-flight",    direction: "-y", to: "upper.z0" }
           ]
@@ -81,11 +81,21 @@
       ],
       rooms: [
         {
+          id: "closet",
+          label: "Closet",
+          from: ["stairs.x1", "office.y1"],
+          to: ["main.x1", "master-bedroom.y0"],
+          doors: [
+            { from: "rear", to: "master-bedroom",  opens: "outside", w: 1 }
+          ],
+          walls: ["front"]
+        },
+        {
           id: "dining",
           label: "Jantar",
           from: ["main.x0", "living.y1"],
           to: ["living.x1", "y0 + 5.5"],
-          walls: ["front", "rear", "left", "right"]
+          walls: ["front", "rear", "left"]
         },
         {
           id: "foyer",
@@ -133,7 +143,7 @@
         {
           id: "master-bedroom",
           label: "Suíte",
-          from: ["office.x0", "office.y1"],
+          from: ["office.x0", "stairs.y1"],
           to: ["main.x1", "y0 + 3.8"],
           // doors: [
           //   { from: "left", w: 1, dy: 2.4 }
@@ -282,6 +292,15 @@
      }
    ],
   walls: [
+    {
+      id: "lower-flight-front-wall",
+      scope: "ground",
+      base: { level: "lower-flight.z0" },
+      // O topo acompanha a face inferior inclinada do lance.
+      top: "lower-flight",
+      from: ["lower-flight.x0", "lower-flight.y0"],
+      to: ["lower-flight.x1", "lower-flight.y0"]
+    },
     {
       id: "perimeter-plinth",
       scope: "ground",
