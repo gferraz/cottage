@@ -92,3 +92,18 @@ test('top level wrapper warns while direct numeric and expression levels stay cu
   assert.equal(warnings.length, 1);
   assert.equal(warnings[0].code, 'top-level');
 });
+
+test('floor-to-floor openings warn with source location; slab openings are current', () => {
+  const config = FloorPlanParser.parse(`{ floors: [
+    { id: 'ground', z0: 0 },
+    { id: 'upper', z0: 3, openings: [{ from: 'upper', to: 'ground', rectangle: [0,0,1,1] }] }
+  ] }`, { filename: 'legacy.json5' });
+  const warnings = model.collectDeprecations(config);
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0].code, 'floor-opening');
+  assert.equal(warnings[0].location.file, 'legacy.json5');
+  assert.match(warnings[0].message, /slabs\[\]\.openings/);
+  config.floors[1].slabs = [{ openings: [{ parts: [{ rectangle: [0,0,1,1] }] }] }];
+  delete config.floors[1].openings;
+  assert.deepEqual(model.collectDeprecations(config), []);
+});

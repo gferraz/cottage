@@ -11,27 +11,37 @@ const FloorPlanSlabs = {
       // Partition the union so adjacent/overlapping rooms never stack concrete.
       let parts = FloorPlanGeometryOperations.partitionRectangles(rectangles);
       // A vertical passage cuts the destination slab and any intermediate floors.
-      const openings = floors.flatMap((source) => window.FloorPlanOpenings?.collect(source) ?? []);
-      for (const opening of openings) {
-        if (!FloorPlanOpenings.isVerticalOpening(plan, opening)) continue;
-        const from = floors.find((entry) => entry.id === opening.from);
-        const to = floors.find((entry) => entry.id === opening.to);
-        const bottom = Math.min(Number(from.z0), Number(to.z0));
-        const top = Math.max(Number(from.z0), Number(to.z0));
-        if (Number(floor.z0) <= bottom + 1e-8 || Number(floor.z0) > top + 1e-8) continue;
-        const cutter = FloorPlanGeometryOperations.rectangle(plan.normalizeGeometryAtFloor(opening, from));
-        parts = parts.flatMap((part) => FloorPlanGeometryOperations.subtract(
-          FloorPlanGeometryOperations.rectangle(part), cutter).map((polygon) => {
-          const xs = polygon.map((point) => point[0]), ys = polygon.map((point) => point[1]);
-          const x = Math.min(...xs), y = Math.min(...ys);
-          return { x, y, w: Math.max(...xs) - x, l: Math.max(...ys) - y };
-        }));
-      }
-      return (floor.slabs ?? [{ id: `slab-${floor.id ?? index}`, label: `Laje — ${floor.label || floor.id || "Piso"}`, thickness: 0.15 }]).map((definition) => {
+      const openings = floors.flatMap((source) => window.FloorPlanOpenings?.verticalForFloor(plan, source) ?? []);
+      const cutParts = (initial, entries) => {
+        let parts = initial;
+        for (const opening of entries) {
+          if (!FloorPlanOpenings.isVerticalOpening(plan, opening)) continue;
+          const from = floors.find((entry) => entry.id === opening.from);
+          const to = floors.find((entry) => entry.id === opening.to);
+          const bottom = Math.min(Number(from.z0), Number(to.z0));
+          const top = Math.max(Number(from.z0), Number(to.z0));
+          if (!opening.slabOpening && (Number(floor.z0) <= bottom + 1e-8 || Number(floor.z0) > top + 1e-8)) continue;
+          const geometry = plan.normalizeGeometryAtFloor(opening, from);
+          if (![geometry.x, geometry.y, geometry.w, geometry.l].every(Number.isFinite) || geometry.w <= 0 || geometry.l <= 0) {
+            throw new Error(`Abertura ${opening.id ?? ""}: dimensões precisam ser positivas e finitas.`);
+          }
+          const cutter = FloorPlanGeometryOperations.rectangle(geometry);
+          parts = parts.flatMap((part) => FloorPlanGeometryOperations.subtract(
+            FloorPlanGeometryOperations.rectangle(part), cutter).map((polygon) => {
+            const xs = polygon.map((point) => point[0]), ys = polygon.map((point) => point[1]);
+            const x = Math.min(...xs), y = Math.min(...ys);
+            return { x, y, w: Math.max(...xs) - x, l: Math.max(...ys) - y };
+          }));
+        }
+        return parts;
+      };
+      parts = cutParts(parts, openings.filter(opening => !opening.slabOpening));
+      return (floor.slabs ?? [{ id: `slab-${floor.id ?? index}`, thickness: 0.15 }]).map((definition, slabIndex) => {
         const thickness = Number(definition.thickness ?? 0.15);
         if (!Number.isFinite(thickness) || thickness <= 0) throw new Error("A espessura da laje deve ser positiva.");
-        return { ...definition, key: `${floor.id ?? index}:${definition.id}`, floorId: floor.id,
-          label: definition.label || definition.id || "Laje", thickness, z: Number(floor.z0 ?? 0), parts };
+        return { ...definition, key: `${floor.id ?? index}:${definition.id ?? `slab-${slabIndex}`}`, floorId: floor.id,
+          label: definition.label || floor.label || floor.id || "Laje", thickness, z: Number(floor.z0 ?? 0),
+          parts: cutParts(parts, openings.filter(opening => opening.slabOpening && opening.from === floor.id && opening.slabIndex === slabIndex)) };
       });
     });
   },

@@ -175,7 +175,7 @@ const FloorPlanLayers = {
       );
       const activeFloorId = activeFloor?.id;
       const verticalOpeningGeometries = [];
-      const verticalOpenings = FloorPlanOpenings.collect(activeFloor)
+      const verticalOpenings = FloorPlanOpenings.verticalForFloor(plan, activeFloor)
         .filter((opening) => plan.isVerticalOpening(opening))
         .filter((opening) =>
           [opening.from, opening.to].includes(activeFloorId),

@@ -182,8 +182,34 @@ const FloorPlanOpenings = {
     return entries;
   },
 
+  verticalForFloor(plan, floor) {
+    const floors = plan.currentConfig?.floors ?? [plan.currentConfig];
+    const lower = floors.filter(candidate => candidate && Number(candidate.z0 ?? 0) < Number(floor.z0 ?? 0))
+      .sort((a, b) => Number(b.z0 ?? 0) - Number(a.z0 ?? 0))[0];
+    const expand = (opening) => {
+      if (opening.parts !== undefined && (!Array.isArray(opening.parts) || !opening.parts.length)) {
+        throw new Error("A abertura precisa de ao menos uma parte em parts.");
+      }
+      if (opening.parts === undefined) return [opening];
+      return opening.parts.map((part, index) => ({
+        ...opening, ...part, parts: undefined,
+        id: opening.parts ? `${opening.id ?? "slab-opening"}-${index + 1}` : opening.id,
+      }));
+    };
+    return [
+      ...this.collect(floor).filter(opening => plan.isVerticalOpening
+        ? plan.isVerticalOpening(opening) : this.isVerticalOpening(plan, opening)).flatMap(expand),
+      ...(floor.slabs ?? []).flatMap((slab, slabIndex) => (slab.openings ?? []).flatMap((opening, index) => expand({
+        ...opening, id: opening.id ?? `slab-${slabIndex}-opening-${index}`,
+        type: "opening", from: floor.id, to: lower?.id ?? floor.id,
+        slabOpening: true, slabIndex,
+      }))),
+    ];
+  },
+
   forFloor(plan, floor) {
-    return [...this.collect(floor), ...this.roomOpenings(plan, floor)];
+    return [...this.collect(floor).filter(opening => !this.isVerticalOpening(plan, opening)),
+      ...this.verticalForFloor(plan, floor), ...this.roomOpenings(plan, floor)];
   },
 
   rendered(plan, { type, floor, active = false } = {}) {
@@ -238,12 +264,13 @@ const FloorPlanOpenings = {
   },
 
   isVerticalOpening(plan, opening) {
+    if (opening?.slabOpening) return true;
     if (opening?.type && opening.type !== "opening") return false;
     const floors = plan.currentConfig?.floors ?? [];
     const from = String(opening?.from ?? "").trim();
     const to = String(opening?.to ?? "").trim();
     return (
-      (Array.isArray(opening?.size) ||
+      (Array.isArray(opening?.parts) || Array.isArray(opening?.size) ||
         opening?.rectangle !== undefined ||
         opening?.inset !== undefined ||
         opening?.outset !== undefined) &&
@@ -262,13 +289,13 @@ const FloorPlanOpenings = {
       throw new Error(`Unknown vertical opening source floor: ${fromId}`);
     if (!toFloor)
       throw new Error(`Unknown vertical opening target floor: ${toId}`);
-    if (fromId === toId)
+    if (fromId === toId && !opening.slabOpening)
       throw new Error("Abertura vertical precisa conectar pisos diferentes");
     const fromHeight = Number(fromFloor.z0 ?? 0);
     const toHeight = Number(toFloor.z0 ?? 0);
     if (
       ![fromHeight, toHeight].every(Number.isFinite) ||
-      fromHeight === toHeight
+      (fromHeight === toHeight && !opening.slabOpening)
     ) {
       throw new Error(
         "Os pisos da abertura vertical precisam ter elevações diferentes",
@@ -320,6 +347,30 @@ const FloorPlanOpenings = {
   },
 
   clipProjection(plan, element, geometry, opening) {
+    if (opening.slabOpening) {
+      const clips = element.slabOpeningClips ??= [];
+      const x = Math.max(geometry.x, opening.x), y = Math.max(geometry.y, opening.y);
+      const w = Math.min(geometry.x + geometry.w, opening.x + opening.w) - x;
+      const l = Math.min(geometry.y + geometry.l, opening.y + opening.l) - y;
+      if (w > 0 && l > 0) clips.push({ x, y, w, l });
+      if (clips.length > 1) {
+        const point = (x, y) => `${100 * (x - geometry.x) / geometry.w}% ${100 * (y - geometry.y) / geometry.l}%`;
+        const rectangles = FloorPlanGeometryOperations.partitionRectangles(clips);
+        const origin = point(rectangles[0].x, rectangles[0].y);
+        const paths = rectangles.flatMap(rectangle => {
+          const { x, y, w, l } = rectangle;
+          return [point(x, y), point(x + w, y), point(x + w, y + l), point(x, y + l), point(x, y), origin];
+        });
+        element.style.clipPath = `polygon(evenodd, ${paths.join(", ")})`;
+        return;
+      }
+      if (!clips.length) {
+        element.style.clipPath = "inset(50%)";
+        return;
+      }
+      // A later part outside this stair must preserve the earlier intersection.
+      opening = clips[0];
+    }
     const top = Math.max(0, opening.y - geometry.y);
     const right = Math.max(
       0,
@@ -416,7 +467,7 @@ const FloorPlanOpenings = {
     const floors = config.floors ?? [config];
     const currentFloorId = floorConfig.id;
     floors.forEach((sourceFloor) => {
-      this.collect(sourceFloor).forEach((opening) => {
+      this.verticalForFloor(plan, sourceFloor).forEach((opening) => {
         if (!plan.isVerticalOpening(opening)) return;
         const sourceFloorId = String(opening.from ?? "").trim();
         const targetFloorId = String(opening.to ?? "").trim();

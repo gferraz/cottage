@@ -55,6 +55,15 @@ const FloorPlanModel = {
           });
         }
       }
+      if (["", "floors"].includes(context)) {
+        const floorIds = new Set((config.floors ?? []).map(floor => floor.id));
+        (value.openings ?? []).forEach((opening, index) => {
+          if (floorIds.has(opening.from) && floorIds.has(opening.to)) {
+            emit(value.openings, String(index), `${path}.openings`, "floor-opening",
+              "Aberturas entre pisos estão depreciadas. Mova a geometria para slabs[].openings, na laje a recortar, e remova from/to.");
+          }
+        });
+      }
       if (context === "config" && value.openings) {
         for (const [type, collection] of [["door", "doors"], ["window", "windows"], ["opening", "openings"]]) {
           if (Object.hasOwn(value.openings, type)) {

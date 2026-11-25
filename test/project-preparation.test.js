@@ -194,3 +194,39 @@ test("export restores an independent floor selection", () => {
   FloorPlanHtmlExport.captureFloorViews(plan, floor => floor.id);
   assert.deepEqual([...calls.at(-3).selectedFloorIds], ["ground"]);
 });
+
+test('slab-owned compound openings resolve expressions and remove overhead obstruction only in their union', () => {
+  const config = source();
+  config.floors[1].slabs = [{ id: 'upper-slab', openings: [{ id: 'well', parts: [
+    { rectangle: ['upstairs.x0', 'upstairs.y0', 'upstairs.x0 + 1', 'upstairs.y0 + 3'] },
+    { rectangle: ['upstairs.x0', 'upstairs.y0 + 2', 'upstairs.x0 + 3', 'upstairs.y0 + 3'] },
+  ] }] }];
+  config.floors[1].label = 'Superior';
+  const plan = newPlan();
+  plan.prepareProject(config);
+  assert.deepEqual(plan.errors, []);
+  assert.deepEqual(plan.warnings, []);
+  const slab = plan.allSlabs.find(slab => slab.floorId === 'upper');
+  assert.equal(slab.label, 'Superior');
+  assert.equal(slab.parts.reduce((sum, part) => sum + part.w * part.l, 0), 11);
+  assert.equal(plan.allSlabs.find(slab => slab.floorId === 'ground').parts.reduce((sum, part) => sum + part.w * part.l, 0), 16);
+});
+
+test('cartesian slab openings follow their referenced rooms through axis reflection', () => {
+  const config = source();
+  config.coordinate_system = 'cartesian';
+  config.floors[1].slabs = [{ id: 'upper-slab', openings: [{ id: 'well', parts: [
+    { rectangle: ['upstairs.x0', 'upstairs.y0', 'upstairs.x0 + 1', 'upstairs.y0 + 3'] },
+    { rectangle: ['upstairs.x0', 'upstairs.y0 + 2', 'upstairs.x0 + 3', 'upstairs.y0 + 3'] },
+  ] }] }];
+  const plan = newPlan();
+  plan.prepareProject(config);
+  assert.deepEqual(plan.errors, []);
+  const slab = plan.allSlabs.find(slab => slab.floorId === 'upper');
+  assert.equal(slab.parts.reduce((sum, part) => sum + part.w * part.l, 0), 11);
+  assert.ok(slab.parts.every(part => part.x >= -4 && part.x + part.w <= 0));
+  // The same reflection must apply to a single rectangle without parts.
+  config.floors[1].slabs[0].openings[0] = { rectangle: ['upstairs.x0', 'upstairs.y0', 'upstairs.x0 + 1', 'upstairs.y0 + 3'] };
+  plan.prepareProject(config);
+  assert.equal(plan.allSlabs.find(slab => slab.floorId === 'upper').parts.reduce((sum, part) => sum + part.w * part.l, 0), 13);
+});

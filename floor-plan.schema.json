@@ -1033,9 +1033,6 @@
       "description": "Lajes na base do piso. Quando ausente, gera uma laje de 0,15 m acompanhando os cômodos, exceto escadas.",
       "items": {
         "type": "object",
-        "required": [
-          "id"
-        ],
         "properties": {
           "id": {
             "type": "string"
@@ -1051,6 +1048,12 @@
             "type": "boolean",
             "default": true,
             "description": "Visibilidade inicial. Os seletores permitem alterá-la durante a sessão."
+          },
+          "openings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/slab-opening"
+            }
           }
         },
         "additionalProperties": false
@@ -2526,9 +2529,6 @@
           "description": "Lajes na base do piso. Quando ausente, gera uma laje de 0,15 m acompanhando os cômodos, exceto escadas.",
           "items": {
             "type": "object",
-            "required": [
-              "id"
-            ],
             "properties": {
               "id": {
                 "type": "string"
@@ -2544,6 +2544,12 @@
                 "type": "boolean",
                 "default": true,
                 "description": "Visibilidade inicial. Os seletores permitem alterá-la durante a sessão."
+              },
+              "openings": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/definitions/slab-opening"
+                }
               }
             },
             "additionalProperties": false
@@ -5086,6 +5092,202 @@
               ]
             }
           }
+        }
+      ]
+    },
+    "slab-opening": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/wall-feature/properties/id"
+        },
+        "pos": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "size": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 2,
+          "maxItems": 3
+        },
+        "rectangle": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "minLength": 1,
+                "description": "Número, referência geométrica ou expressão com params.nome."
+              }
+            ]
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "inset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "outset": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "parts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/definitions/wall-feature/properties/id"
+              },
+              "pos": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                },
+                "minItems": 2,
+                "maxItems": 3
+              },
+              "size": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                },
+                "minItems": 2,
+                "maxItems": 3
+              },
+              "rectangle": {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "Número, referência geométrica ou expressão com params.nome."
+                    }
+                  ]
+                },
+                "minItems": 4,
+                "maxItems": 4
+              },
+              "inset": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3
+              },
+              "outset": {
+                "type": "array",
+                "minItems": 3,
+                "maxItems": 3
+              }
+            },
+            "additionalProperties": false,
+            "anyOf": [
+              {
+                "required": [
+                  "rectangle"
+                ]
+              },
+              {
+                "required": [
+                  "inset"
+                ]
+              },
+              {
+                "required": [
+                  "outset"
+                ]
+              },
+              {
+                "required": [
+                  "pos",
+                  "size"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "additionalProperties": false,
+      "description": "Recorte na laje proprietária, com geometria retangular ou parts para a união de retângulos. A cota vem do piso da laje; não usa from/to.",
+      "anyOf": [
+        {
+          "required": [
+            "rectangle"
+          ]
+        },
+        {
+          "required": [
+            "inset"
+          ]
+        },
+        {
+          "required": [
+            "outset"
+          ]
+        },
+        {
+          "required": [
+            "parts"
+          ]
+        },
+        {
+          "required": [
+            "pos",
+            "size"
+          ]
         }
       ]
     }

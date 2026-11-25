@@ -147,7 +147,7 @@ const FloorPlanCoordinates = {
       }
       if (["top", "bottom"].includes(wall) && category === "door") entry.hinge = (entry.hinge ?? "start") === "start" ? "end" : "start";
       if (typeof entry.from === "string") entry.from = (match?.[1] ?? "") + side(wall);
-      if (entry.rectangle || entry.pos) geometry(entry);
+      if (entry.rectangle || entry.pos || entry.parts || entry.inset || entry.outset) geometry(entry);
     };
     const geometry = (entry) => {
       if (entry.rectangle) {
@@ -209,6 +209,7 @@ const FloorPlanCoordinates = {
       entry.guides?.forEach(geometry);
       entry.walls?.forEach(geometry);
       entry.roofs?.forEach(roof);
+      entry.slabs?.forEach(slab => slab.openings?.forEach(geometry));
       window.FloorPlanOpenings.visit(entry, (item, type) => opening(item, undefined, type));
     };
     floor(result);
