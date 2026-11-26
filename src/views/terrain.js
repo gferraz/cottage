@@ -165,6 +165,8 @@ const FloorPlanTerrain = {
     const rearEdge = terrain.rear?.edge ?? order.slice(-2);
     plan.terrainReference = {
       frontStart: { x: offsetX, y: offsetY },
+      bounds: { x0: minX + offsetX, x1: maxX + offsetX,
+        y0: minY + offsetY, y1: maxY + offsetY },
       grading: FloorPlanTerrainGeometry.profile(terrain.grading),
       frontY: edgeMean(frontEdge, "y"),
       rearY: edgeMean(rearEdge, "y"),

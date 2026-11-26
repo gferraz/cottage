@@ -227,6 +227,59 @@ const FloorPlanWalls = {
     return solids;
   },
 
+  slabPlanes(slab, part, padding = 0) {
+    const { x, y, w, l } = part;
+    return [
+      [-1, 0, 0, x - padding], [1, 0, 0, -x - w - padding],
+      [0, -1, 0, y - padding], [0, 1, 0, -y - l - padding],
+      [0, 0, -1, slab.z - slab.thickness], [0, 0, 1, -slab.z],
+    ];
+  },
+
+  subtractSlabs(solids, slabs = [], padding = 0) {
+    let remaining = solids;
+    for (const slab of slabs) {
+      for (const part of slab.parts) {
+        const planes = this.slabPlanes(slab, part, padding);
+        remaining = remaining.flatMap((solid) => {
+          // Avoid partitioning walls that merely touch a slab face.
+          if (!planes.reduce((inside, plane) => this.clipSolid(inside, plane), solid).length) return [solid];
+          let inside = solid;
+          const outside = [];
+          for (const plane of planes) {
+            const next = this.clipSolid(inside, plane);
+            const remainder = this.clipSolid(inside, plane.map((value) => -value));
+            if (remainder.length) outside.push(remainder);
+            inside = next;
+            if (!inside.length) break;
+          }
+          return outside;
+        });
+      }
+    }
+    return remaining;
+  },
+
+  slabWallJunction(solids, slabs = [], thickness = 0) {
+    const padding = thickness / 2;
+    const extensions = [];
+    // Slab footprints follow room axes. Complete their bearing through the
+    // outer half of the wall, including walls that continue to a roof.
+    for (const slab of slabs) {
+      const candidates = [];
+      const previous = [];
+      for (const part of slab.parts) {
+        const pieces = solids.map((solid) => this.slabPlanes(slab, part, padding)
+          .reduce((inside, plane) => this.clipSolid(inside, plane), solid)).filter((inside) => inside.length);
+        candidates.push(...this.subtractSlabs(pieces, [{ ...slab, parts: previous }], padding));
+        previous.push(part);
+      }
+      const extra = this.subtractSlabs(candidates, slabs);
+      if (extra.length) extensions.push({ slab, solids: extra });
+    }
+    return { walls: this.subtractSlabs(solids, slabs, padding), extensions };
+  },
+
   overlappingStairLimits(plan, roomId, definition, part, padding = 0) {
     const targets = new Set([roomId]);
     const floorZ = part?.z0 ?? plan.getRoomGeometry(roomId).z0();

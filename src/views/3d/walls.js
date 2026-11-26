@@ -83,7 +83,7 @@ const FloorPlan3DWalls = {
   },
 
   renderRoomWall({
-    THREE, scene, wall, openings, material, wallLineMaterial,
+    plan, THREE, scene, wall, openings, material, wallLineMaterial,
     terrainProfile, buildingOffsetX, buildingOffsetY,
     windowMaterial, doorMaterial, finite, reportInvalid, roofLimits,
   }) {
@@ -146,6 +146,7 @@ const FloorPlan3DWalls = {
     const cuts = [...new Set([0, length, ...holes.flatMap((hole) => [hole.x0, hole.x1])])].sort((a, b) => a - b);
     const vertices = [];
     const wallSolids = [];
+    const slabVertices = new Map();
     for (let i = 0; i < cuts.length - 1; i += 1) {
       const start = cuts[i], end = cuts[i + 1];
       const active = holes.filter((hole) => hole.x0 < end && hole.x1 > start).sort((a, b) => a.z0 - b.z0);
@@ -168,7 +169,19 @@ const FloorPlan3DWalls = {
         const solids = FloorPlanWalls.wallSolids(worldFaces, roofLimits, wall.roofOnly, wall.undersideLimits, wall.thickness, wall.basePlane);
         const visibleSolids = wall.base === "terrain" ? solids.flatMap((solid) =>
           FloorPlanWalls.terrainSolids(solid, terrainProfile, { x: buildingOffsetX, y: buildingOffsetY })) : solids;
-        visibleSolids.forEach((solid) => {
+        // Visibility toggles hide concrete without restoring intersecting walls.
+        const junction = FloorPlanWalls.slabWallJunction(visibleSolids, plan.allSlabs, wall.thickness);
+        for (const { slab, solids: extensions } of junction.extensions) {
+          if (plan.hiddenSlabs?.has(slab.key)
+            || (plan.selectedFloorIds && !plan.selectedFloorIds.has(String(slab.floorId)))
+            || (plan.visibleFloorConfigs && !plan.visibleFloorConfigs.some(floor => floor.id === slab.floorId))) continue;
+          if (!slabVertices.has(slab.key)) slabVertices.set(slab.key, []);
+          const positions = slabVertices.get(slab.key);
+          extensions.forEach(solid => solid.forEach(face => {
+            for (let j = 1; j < face.length - 1; j += 1) positions.push(...face[0], ...face[j], ...face[j + 1]);
+          }));
+        }
+        junction.walls.forEach((solid) => {
           wallSolids.push(solid);
           solid.forEach((face) => {
             for (let j = 1; j < face.length - 1; j += 1) vertices.push(...face[0], ...face[j], ...face[j + 1]);
@@ -186,6 +199,17 @@ const FloorPlan3DWalls = {
     if (wall.pathSegment !== undefined) mesh.userData.pathSegment = wall.pathSegment;
     mesh.renderOrder = 1;
     scene.add(mesh);
+    for (const [key, positions] of slabVertices) {
+      const concreteGeometry = new THREE.BufferGeometry();
+      concreteGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      concreteGeometry.computeVertexNormals();
+      const concrete = new THREE.Mesh(concreteGeometry,
+        new THREE.MeshLambertMaterial({ color: "#c9c5ba", side: THREE.DoubleSide }));
+      concrete.userData.domainId = key;
+      concrete.castShadow = true;
+      concrete.receiveShadow = true;
+      scene.add(concrete);
+    }
     const outlineGeometry = new THREE.BufferGeometry();
     outlineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(
       FloorPlanWalls.outlineSegments(wallSolids).flat(), 3,
@@ -216,7 +240,7 @@ const FloorPlan3DWalls = {
         );
         feature.renderOrder = 9;
         scene.add(feature);
-        if (part.type === "window") this.renderWindowGrid({ THREE, scene, opening, part, wall, alongX });
+        if (part.type === "window" && !opening.components) this.renderWindowGrid({ THREE, scene, opening, part, wall, alongX });
       }
       if (opening.type === "door") this.renderDoorHandles({ THREE, scene, opening, wall, alongX });
     });

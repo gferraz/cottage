@@ -289,3 +289,40 @@ test('declared stair overlaps cap room walls while roofs still govern uncovered 
       assert.ok(z <= 1.5 + x / 2 + 1e-8, `${relation}: wall protrudes through stair`);
   }
 });
+
+test('slab removes only its concrete volume and preserves walls above, below and in openings', () => {
+  const slab = { z: 3, thickness: 0.2, parts: [{ x: 0, y: 0, w: 2, l: 1 }] };
+  const source = walls.boxFaces(0, 0, 0, 2, 1, 5);
+  const result = walls.subtractSlabs([source], [slab]);
+  assert.ok(Math.abs(volume(result) - 9.6) < 1e-8);
+  assert.equal(result.length, 2);
+  const levels = result.map(solid => {
+    const zs = solid.flat().map(vertex => vertex[2]);
+    return [Math.min(...zs), Math.max(...zs)];
+  }).sort((a, b) => a[0] - b[0]);
+  assert.deepEqual(levels, [[0, 2.8], [3, 5]]);
+  const cutSlab = { ...slab, parts: [{ x: 0, y: 0, w: 0.5, l: 1 }, { x: 1.5, y: 0, w: 0.5, l: 1 }] };
+  assert.ok(Math.abs(volume(walls.subtractSlabs([source], [cutSlab])) - 9.8) < 1e-8);
+  assert.ok(Math.abs(volume(walls.subtractSlabs([source], [slab, slab])) - 9.6) < 1e-8);
+  const beside = walls.boxFaces(3, 0, 0, 4, 1, 5);
+  assert.deepEqual(walls.subtractSlabs([beside], [slab]), [beside]);
+});
+
+test('roof-height living walls expose the slab through the full wall thickness', () => {
+  const slab = { key: 'upper', z: 3.55, thickness: 0.15,
+    parts: [{ x: 0, y: 0, w: 3.7, l: 2.5 }, { x: 0, y: 2.5, w: 3.7, l: 2.6 }] };
+  for (const source of [
+    walls.boxFaces(-0.06, 0, 0.45, 0.06, 5.1, 6),
+    walls.boxFaces(0, -0.06, 0.45, 3.7, 0.06, 6),
+  ]) {
+    const result = walls.slabWallJunction([source], [slab], 0.12);
+    const originalVolume = volume([source]);
+    const length = source.flat().some(v => v[1] === 5.1) ? 5.1 : 3.7;
+    assert.ok(Math.abs(volume(result.walls) - (originalVolume - length * 0.12 * 0.15)) < 1e-8);
+    assert.ok(Math.abs(volume(result.extensions.flatMap(entry => entry.solids)) - length * 0.06 * 0.15) < 1e-8);
+    for (const solid of result.walls) {
+      const zs = solid.flat().map(v => v[2]);
+      assert.ok(Math.max(...zs) <= 3.4 + 1e-8 || Math.min(...zs) >= 3.55 - 1e-8);
+    }
+  }
+});

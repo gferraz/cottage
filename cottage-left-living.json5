@@ -19,7 +19,7 @@
     grading: {
       profile: [
         { id: "tp-01-rua", y: 0, z: 0},
-        { id: "tp-02-entrada", y: 3.2, z: 0},
+        { id: "tp-02-entrada", y: 3.2, z: 0.15},
         { id: "tp-03-inicio-descida", y: 12, z: -0.5},
         { id: "tp-04-fundos-casa", y: 23.8, z: -2},
         { id: "tp-05-jardim", y: 29, z: -3},
@@ -63,7 +63,7 @@
       visible: true,
       storey: "ground",
       label: "Térreo frontal",
-      z0: 0.3,
+      z0: 0.45,
       slab: { visible: false },
       stairs: [
         {
@@ -91,7 +91,7 @@
           id: "foyer",
           label: "foyer",
           classes: "circulation",
-          walls: ["front"],
+          walls: [],
           from: ["living.x1", "main.y0"],
           to:   ["x0 + 2.4", "y0 + 1.56"],
           doors: [
@@ -265,7 +265,8 @@
         }]
       },
       rooms: [
-        { id: "unused", label: "2 Piso - TBD", copy: "main" },
+        { id: "unused-main", label: "2 Piso - TBD", copy: "main" },
+        { id: "unused-living", label: "2 Piso - TBD", copy: "living" }
       ]
     }
   ],

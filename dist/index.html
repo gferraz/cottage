@@ -478,6 +478,7 @@ p { margin: 0 0 14px; color: var(--theme-muted); font-size: 13px; }
 .facade-opening { fill: var(--theme-opening); stroke: var(--theme-opening-line); stroke-width: 2; }
 .facade-window { fill: var(--theme-window); stroke: var(--theme-window-line); stroke-width: 2; }
 .facade-railing { fill: #d8d8d8; fill-opacity: 0.9; stroke: #777; stroke-width: 1.5; }
+.facade-slab { fill: var(--theme-slab-fill, #b8b8b0); stroke: var(--theme-wall); stroke-width: 1; }
 .facade-roof { fill: var(--theme-roof-surface, #b45c3d); fill-opacity: 0.55; stroke: var(--theme-roof-line); stroke-width: 1.5; }
 .facade-gable-wall { fill: var(--theme-wall-fill); fill-opacity: 1; stroke: var(--theme-wall); stroke-width: 1.5; }
 .facade-gable-wall.facade-wall-virtual { fill: none; stroke: var(--theme-wall-virtual); stroke-dasharray: 5 4; }
@@ -3160,7 +3161,7 @@ const FloorPlanOpenings = {
       h: door.w / 2,
       z0: door.void.z1,
       windowType: "fixed",
-      glazing: { columns: 1, rows: 1 },
+      glazing: { columns: 2, rows: 1 },
       framing: { frame: 0.04, color: "#78604b" },
     };
     const window = plan.normalizeOpening(definition);
@@ -3178,6 +3179,14 @@ const FloorPlanOpenings = {
     window.components = this.doorComponents(window).map(component => ({
       ...component, kind: component.kind === "leaf" ? "glass" : "frame",
     }));
+    const glass = window.components.pop();
+    const mullion = window.framing.mullion;
+    const paneWidth = (window.w - mullion) / 2;
+    window.components.push(
+      { ...glass, w: paneWidth },
+      { ...glass, [along]: glass[along] + paneWidth, w: mullion, kind: "frame" },
+      { ...glass, [along]: glass[along] + paneWidth + mullion, w: paneWidth },
+    );
     return window;
   },
 
@@ -6194,6 +6203,8 @@ const FloorPlanTerrain = {
     const rearEdge = terrain.rear?.edge ?? order.slice(-2);
     plan.terrainReference = {
       frontStart: { x: offsetX, y: offsetY },
+      bounds: { x0: minX + offsetX, x1: maxX + offsetX,
+        y0: minY + offsetY, y1: maxY + offsetY },
       grading: FloorPlanTerrainGeometry.profile(terrain.grading),
       frontY: edgeMean(frontEdge, "y"),
       rearY: edgeMean(rearEdge, "y"),
@@ -6826,6 +6837,12 @@ const FloorPlanFacades = {
           : [geometry.x0, geometry.x1];
         coordinates.push(...span);
       });
+      const buildingOffsetY = Number.parseFloat(
+        getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
+      ) || 0;
+      const terrainBounds = side ? plan.terrainReference?.bounds : null;
+      const terrainStart = terrainBounds ? terrainBounds.y0 - buildingOffsetY : facadeMin;
+      const terrainEnd = terrainBounds ? terrainBounds.y1 - buildingOffsetY : facadeMax;
       const rawMin = Math.min(...coordinates);
       const max = Math.max(...coordinates);
       const padding = 0.5;
@@ -6867,25 +6884,32 @@ const FloorPlanFacades = {
             Math.tan((geometry.pitch * Math.PI) / 180),
         );
       }, 0);
-      const buildingOffsetY = Number.parseFloat(
-        getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
-      ) || 0;
       const terrainElevationAt = (x, y) => FloorPlanTerrainGeometry.elevationAt(
         plan.terrainReference, x + buildingOffsetX, y + buildingOffsetY,
       );
       const terrainAxis = side ? "y" : "x";
       const terrainOffset = side ? buildingOffsetY : buildingOffsetX;
-      const terrainCoordinates = [facadeMin,
+      const terrainCoordinates = [terrainStart,
         ...FloorPlanTerrainGeometry.breaks(plan.terrainReference, terrainAxis).map((value) => value - terrainOffset)
-          .filter((value) => value > facadeMin && value < facadeMax), facadeMax];
+          .filter((value) => value > terrainStart && value < terrainEnd), terrainEnd];
       const terrainPoints = terrainCoordinates.map((coordinate) => [coordinate,
         side ? terrainElevationAt(edge, coordinate) : terrainElevationAt(coordinate, edge)]);
-      const terrainDrop = Math.max(0, ...terrainPoints.map(([, z]) => Number.isFinite(z) ? -z : 0));
+      // The extended terrain profile must not resize or recenter the elevations.
+      const terrainFrameCoordinates = [facadeMin, facadeMax,
+        ...terrainCoordinates.filter((value) => value > facadeMin && value < facadeMax)];
+      const terrainDrop = Math.max(0, ...terrainFrameCoordinates.map((coordinate) => {
+        const z = side ? terrainElevationAt(edge, coordinate) : terrainElevationAt(coordinate, edge);
+        return Number.isFinite(z) ? -z : 0;
+      }));
       const viewWidth = viewportWidth * scale;
       const viewY = -roofRise * scale;
       const dimensionGap = 0.35;
+      const facadeDrop = Math.max(roofDrop, terrainDrop, 0,
+        ...(plan.allSlabs ?? []).map((slab) => slab.thickness - slab.z),
+        ...projectedRooms.map((room) => -room.z0()),
+        ...stairs.map((part) => -part.z0));
       const viewHeight =
-        (floorHeight + padding * 2 + roofRise + Math.max(roofDrop, terrainDrop) + dimensionGap) * scale;
+        (floorHeight + padding * 2 + roofRise + facadeDrop + dimensionGap) * scale;
       const svg = document.createElementNS(svgNamespace, "svg");
       svg.classList.add("facade-view");
       svg.setAttribute("width", `${viewWidth}`);
@@ -6949,7 +6973,7 @@ const FloorPlanFacades = {
         getComputedStyle(plan.root).getPropertyValue("--theme-label").trim() ||
         "#263746";
       const dimensionY =
-        (floorHeight + padding + roofDrop + dimensionGap) * scale;
+        (floorHeight + padding + facadeDrop + dimensionGap) * scale;
       const dimensionX0 = (facadeMin - min + padding) * scale;
       const dimensionX1 = (facadeMax - min + padding) * scale;
       const horizontalDimension = document.createElementNS(svgNamespace, "line");
@@ -7024,8 +7048,8 @@ const FloorPlanFacades = {
 
       const verticalDimension = document.createElementNS(svgNamespace, "line");
       const verticalDimensionX = frontAligned
-        ? (facadeMax - min + padding + 0.22) * scale
-        : (padding + width + 0.22) * scale;
+        ? (max - min + padding + dimensionGap) * scale
+        : (rawMin - min + padding - dimensionGap) * scale;
       const verticalDimensionY0 = (padding - roofRise) * scale;
       // The vertical cota measures from the highest visible point down to
       // the facade base, not to the separate horizontal dimension line.
@@ -7047,15 +7071,16 @@ const FloorPlanFacades = {
       svg.append(verticalDimension);
 
       const verticalLabel = document.createElementNS(svgNamespace, "text");
+      const verticalLabelX = verticalDimensionX + (frontAligned ? 0.16 : -0.16) * scale;
       verticalLabel.textContent = `${plan.formatMeters(floorHeight + roofRise)}m`;
-      verticalLabel.setAttribute("x", `${verticalDimensionX + 0.16 * scale}`);
+      verticalLabel.setAttribute("x", `${verticalLabelX}`);
       verticalLabel.setAttribute("y", `${(verticalDimensionY0 + verticalDimensionY1) / 2}`);
       verticalLabel.setAttribute("text-anchor", "middle");
       verticalLabel.setAttribute("fill", dimensionStroke);
       verticalLabel.setAttribute("font-size", "8");
       verticalLabel.setAttribute(
         "transform",
-        `rotate(-90 ${verticalDimensionX + 0.16 * scale} ${(verticalDimensionY0 + verticalDimensionY1) / 2})`,
+        `rotate(-90 ${verticalLabelX} ${(verticalDimensionY0 + verticalDimensionY1) / 2})`,
       );
       svg.append(verticalLabel);
 
@@ -7590,6 +7615,42 @@ const FloorPlanFacades = {
         } catch { /* Invalid stairs are reported during project preparation. */ }
       });
 
+      // Project each concrete strip at its own depth so walls and roofs can
+      // conceal it without filling the open space beneath the slab.
+      for (const slab of plan.allSlabs ?? []) {
+        const strips = new Map();
+        for (const part of slab.parts) {
+          const depth = side
+            ? part.x + (facadeEdge === "min" ? 0 : part.w)
+            : part.y + (facadeEdge === "min" ? 0 : part.l);
+          const start = side ? part.y : part.x;
+          const end = start + (side ? part.l : part.w);
+          if (!strips.has(depth)) strips.set(depth, []);
+          strips.get(depth).push([start, end]);
+        }
+        for (const [depth, spans] of strips) {
+          const merged = [];
+          for (const span of spans.sort((a, b) => a[0] - b[0])) {
+            const previous = merged.at(-1);
+            if (previous && span[0] <= previous[1] + 1e-8) previous[1] = Math.max(previous[1], span[1]);
+            else merged.push([...span]);
+          }
+          for (const [start, end] of merged) {
+            const face = document.createElementNS(svgNamespace, "rect");
+            face.classList.add("facade-slab");
+            face.dataset.id = slab.key;
+            face.setAttribute("x", `${(start - min + padding) * scale}`);
+            face.setAttribute("y", `${(floorHeight - slab.z + padding) * scale}`);
+            face.setAttribute("width", `${(end - start) * scale}`);
+            face.setAttribute("height", `${slab.thickness * scale}`);
+            const title = document.createElementNS(svgNamespace, "title");
+            title.textContent = `Laje: ${slab.label} · espessura ${plan.formatMeters(slab.thickness)} m`;
+            face.append(title);
+            addFace(depth, [face], true);
+          }
+        }
+      }
+
       // Clip hidden edges and labels as well as fills. Painter ordering alone
       // allows rear annotations to leak through translucent surfaces.
       facadeFaces.forEach((face, faceIndex) => {
@@ -7654,6 +7715,13 @@ const FloorPlanFacades = {
           profileLine.setAttribute("stroke", getComputedStyle(plan.root)
             .getPropertyValue("--theme-terrain-boundary").trim() || "#55724d");
           profileLine.setAttribute("stroke-width", "2");
+          if (side) {
+            profileLine.setAttribute("stroke-dasharray", "1 5");
+            profileLine.setAttribute("stroke-linecap", "round");
+          }
+          const title = document.createElementNS(svgNamespace, "title");
+          title.textContent = "Perfil do terreno — cotas definidas no projeto";
+          profileLine.append(title);
           svg.append(profileLine);
         }
       }
@@ -7903,7 +7971,7 @@ const FloorPlan3DWalls = {
   },
 
   renderRoomWall({
-    THREE, scene, wall, openings, material, wallLineMaterial,
+    plan, THREE, scene, wall, openings, material, wallLineMaterial,
     terrainProfile, buildingOffsetX, buildingOffsetY,
     windowMaterial, doorMaterial, finite, reportInvalid, roofLimits,
   }) {
@@ -7966,6 +8034,7 @@ const FloorPlan3DWalls = {
     const cuts = [...new Set([0, length, ...holes.flatMap((hole) => [hole.x0, hole.x1])])].sort((a, b) => a - b);
     const vertices = [];
     const wallSolids = [];
+    const slabVertices = new Map();
     for (let i = 0; i < cuts.length - 1; i += 1) {
       const start = cuts[i], end = cuts[i + 1];
       const active = holes.filter((hole) => hole.x0 < end && hole.x1 > start).sort((a, b) => a.z0 - b.z0);
@@ -7988,7 +8057,19 @@ const FloorPlan3DWalls = {
         const solids = FloorPlanWalls.wallSolids(worldFaces, roofLimits, wall.roofOnly, wall.undersideLimits, wall.thickness, wall.basePlane);
         const visibleSolids = wall.base === "terrain" ? solids.flatMap((solid) =>
           FloorPlanWalls.terrainSolids(solid, terrainProfile, { x: buildingOffsetX, y: buildingOffsetY })) : solids;
-        visibleSolids.forEach((solid) => {
+        // Visibility toggles hide concrete without restoring intersecting walls.
+        const junction = FloorPlanWalls.slabWallJunction(visibleSolids, plan.allSlabs, wall.thickness);
+        for (const { slab, solids: extensions } of junction.extensions) {
+          if (plan.hiddenSlabs?.has(slab.key)
+            || (plan.selectedFloorIds && !plan.selectedFloorIds.has(String(slab.floorId)))
+            || (plan.visibleFloorConfigs && !plan.visibleFloorConfigs.some(floor => floor.id === slab.floorId))) continue;
+          if (!slabVertices.has(slab.key)) slabVertices.set(slab.key, []);
+          const positions = slabVertices.get(slab.key);
+          extensions.forEach(solid => solid.forEach(face => {
+            for (let j = 1; j < face.length - 1; j += 1) positions.push(...face[0], ...face[j], ...face[j + 1]);
+          }));
+        }
+        junction.walls.forEach((solid) => {
           wallSolids.push(solid);
           solid.forEach((face) => {
             for (let j = 1; j < face.length - 1; j += 1) vertices.push(...face[0], ...face[j], ...face[j + 1]);
@@ -8006,6 +8087,17 @@ const FloorPlan3DWalls = {
     if (wall.pathSegment !== undefined) mesh.userData.pathSegment = wall.pathSegment;
     mesh.renderOrder = 1;
     scene.add(mesh);
+    for (const [key, positions] of slabVertices) {
+      const concreteGeometry = new THREE.BufferGeometry();
+      concreteGeometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      concreteGeometry.computeVertexNormals();
+      const concrete = new THREE.Mesh(concreteGeometry,
+        new THREE.MeshLambertMaterial({ color: "#c9c5ba", side: THREE.DoubleSide }));
+      concrete.userData.domainId = key;
+      concrete.castShadow = true;
+      concrete.receiveShadow = true;
+      scene.add(concrete);
+    }
     const outlineGeometry = new THREE.BufferGeometry();
     outlineGeometry.setAttribute("position", new THREE.Float32BufferAttribute(
       FloorPlanWalls.outlineSegments(wallSolids).flat(), 3,
@@ -8036,7 +8128,7 @@ const FloorPlan3DWalls = {
         );
         feature.renderOrder = 9;
         scene.add(feature);
-        if (part.type === "window") this.renderWindowGrid({ THREE, scene, opening, part, wall, alongX });
+        if (part.type === "window" && !opening.components) this.renderWindowGrid({ THREE, scene, opening, part, wall, alongX });
       }
       if (opening.type === "door") this.renderDoorHandles({ THREE, scene, opening, wall, alongX });
     });
@@ -10214,6 +10306,59 @@ const FloorPlanWalls = {
     });
     if (basePlane) solids = solids.map((solid) => this.clipSolid(solid, basePlane.map(value => -value))).filter(solid => solid.length);
     return solids;
+  },
+
+  slabPlanes(slab, part, padding = 0) {
+    const { x, y, w, l } = part;
+    return [
+      [-1, 0, 0, x - padding], [1, 0, 0, -x - w - padding],
+      [0, -1, 0, y - padding], [0, 1, 0, -y - l - padding],
+      [0, 0, -1, slab.z - slab.thickness], [0, 0, 1, -slab.z],
+    ];
+  },
+
+  subtractSlabs(solids, slabs = [], padding = 0) {
+    let remaining = solids;
+    for (const slab of slabs) {
+      for (const part of slab.parts) {
+        const planes = this.slabPlanes(slab, part, padding);
+        remaining = remaining.flatMap((solid) => {
+          // Avoid partitioning walls that merely touch a slab face.
+          if (!planes.reduce((inside, plane) => this.clipSolid(inside, plane), solid).length) return [solid];
+          let inside = solid;
+          const outside = [];
+          for (const plane of planes) {
+            const next = this.clipSolid(inside, plane);
+            const remainder = this.clipSolid(inside, plane.map((value) => -value));
+            if (remainder.length) outside.push(remainder);
+            inside = next;
+            if (!inside.length) break;
+          }
+          return outside;
+        });
+      }
+    }
+    return remaining;
+  },
+
+  slabWallJunction(solids, slabs = [], thickness = 0) {
+    const padding = thickness / 2;
+    const extensions = [];
+    // Slab footprints follow room axes. Complete their bearing through the
+    // outer half of the wall, including walls that continue to a roof.
+    for (const slab of slabs) {
+      const candidates = [];
+      const previous = [];
+      for (const part of slab.parts) {
+        const pieces = solids.map((solid) => this.slabPlanes(slab, part, padding)
+          .reduce((inside, plane) => this.clipSolid(inside, plane), solid)).filter((inside) => inside.length);
+        candidates.push(...this.subtractSlabs(pieces, [{ ...slab, parts: previous }], padding));
+        previous.push(part);
+      }
+      const extra = this.subtractSlabs(candidates, slabs);
+      if (extra.length) extensions.push({ slab, solids: extra });
+    }
+    return { walls: this.subtractSlabs(solids, slabs, padding), extensions };
   },
 
   overlappingStairLimits(plan, roomId, definition, part, padding = 0) {

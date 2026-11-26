@@ -384,6 +384,12 @@ const FloorPlanFacades = {
           : [geometry.x0, geometry.x1];
         coordinates.push(...span);
       });
+      const buildingOffsetY = Number.parseFloat(
+        getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
+      ) || 0;
+      const terrainBounds = side ? plan.terrainReference?.bounds : null;
+      const terrainStart = terrainBounds ? terrainBounds.y0 - buildingOffsetY : facadeMin;
+      const terrainEnd = terrainBounds ? terrainBounds.y1 - buildingOffsetY : facadeMax;
       const rawMin = Math.min(...coordinates);
       const max = Math.max(...coordinates);
       const padding = 0.5;
@@ -425,25 +431,32 @@ const FloorPlanFacades = {
             Math.tan((geometry.pitch * Math.PI) / 180),
         );
       }, 0);
-      const buildingOffsetY = Number.parseFloat(
-        getComputedStyle(plan.root).getPropertyValue("--building-offset-y"),
-      ) || 0;
       const terrainElevationAt = (x, y) => FloorPlanTerrainGeometry.elevationAt(
         plan.terrainReference, x + buildingOffsetX, y + buildingOffsetY,
       );
       const terrainAxis = side ? "y" : "x";
       const terrainOffset = side ? buildingOffsetY : buildingOffsetX;
-      const terrainCoordinates = [facadeMin,
+      const terrainCoordinates = [terrainStart,
         ...FloorPlanTerrainGeometry.breaks(plan.terrainReference, terrainAxis).map((value) => value - terrainOffset)
-          .filter((value) => value > facadeMin && value < facadeMax), facadeMax];
+          .filter((value) => value > terrainStart && value < terrainEnd), terrainEnd];
       const terrainPoints = terrainCoordinates.map((coordinate) => [coordinate,
         side ? terrainElevationAt(edge, coordinate) : terrainElevationAt(coordinate, edge)]);
-      const terrainDrop = Math.max(0, ...terrainPoints.map(([, z]) => Number.isFinite(z) ? -z : 0));
+      // The extended terrain profile must not resize or recenter the elevations.
+      const terrainFrameCoordinates = [facadeMin, facadeMax,
+        ...terrainCoordinates.filter((value) => value > facadeMin && value < facadeMax)];
+      const terrainDrop = Math.max(0, ...terrainFrameCoordinates.map((coordinate) => {
+        const z = side ? terrainElevationAt(edge, coordinate) : terrainElevationAt(coordinate, edge);
+        return Number.isFinite(z) ? -z : 0;
+      }));
       const viewWidth = viewportWidth * scale;
       const viewY = -roofRise * scale;
       const dimensionGap = 0.35;
+      const facadeDrop = Math.max(roofDrop, terrainDrop, 0,
+        ...(plan.allSlabs ?? []).map((slab) => slab.thickness - slab.z),
+        ...projectedRooms.map((room) => -room.z0()),
+        ...stairs.map((part) => -part.z0));
       const viewHeight =
-        (floorHeight + padding * 2 + roofRise + Math.max(roofDrop, terrainDrop) + dimensionGap) * scale;
+        (floorHeight + padding * 2 + roofRise + facadeDrop + dimensionGap) * scale;
       const svg = document.createElementNS(svgNamespace, "svg");
       svg.classList.add("facade-view");
       svg.setAttribute("width", `${viewWidth}`);
@@ -507,7 +520,7 @@ const FloorPlanFacades = {
         getComputedStyle(plan.root).getPropertyValue("--theme-label").trim() ||
         "#263746";
       const dimensionY =
-        (floorHeight + padding + roofDrop + dimensionGap) * scale;
+        (floorHeight + padding + facadeDrop + dimensionGap) * scale;
       const dimensionX0 = (facadeMin - min + padding) * scale;
       const dimensionX1 = (facadeMax - min + padding) * scale;
       const horizontalDimension = document.createElementNS(svgNamespace, "line");
@@ -582,8 +595,8 @@ const FloorPlanFacades = {
 
       const verticalDimension = document.createElementNS(svgNamespace, "line");
       const verticalDimensionX = frontAligned
-        ? (facadeMax - min + padding + 0.22) * scale
-        : (padding + width + 0.22) * scale;
+        ? (max - min + padding + dimensionGap) * scale
+        : (rawMin - min + padding - dimensionGap) * scale;
       const verticalDimensionY0 = (padding - roofRise) * scale;
       // The vertical cota measures from the highest visible point down to
       // the facade base, not to the separate horizontal dimension line.
@@ -605,15 +618,16 @@ const FloorPlanFacades = {
       svg.append(verticalDimension);
 
       const verticalLabel = document.createElementNS(svgNamespace, "text");
+      const verticalLabelX = verticalDimensionX + (frontAligned ? 0.16 : -0.16) * scale;
       verticalLabel.textContent = `${plan.formatMeters(floorHeight + roofRise)}m`;
-      verticalLabel.setAttribute("x", `${verticalDimensionX + 0.16 * scale}`);
+      verticalLabel.setAttribute("x", `${verticalLabelX}`);
       verticalLabel.setAttribute("y", `${(verticalDimensionY0 + verticalDimensionY1) / 2}`);
       verticalLabel.setAttribute("text-anchor", "middle");
       verticalLabel.setAttribute("fill", dimensionStroke);
       verticalLabel.setAttribute("font-size", "8");
       verticalLabel.setAttribute(
         "transform",
-        `rotate(-90 ${verticalDimensionX + 0.16 * scale} ${(verticalDimensionY0 + verticalDimensionY1) / 2})`,
+        `rotate(-90 ${verticalLabelX} ${(verticalDimensionY0 + verticalDimensionY1) / 2})`,
       );
       svg.append(verticalLabel);
 
@@ -1148,6 +1162,42 @@ const FloorPlanFacades = {
         } catch { /* Invalid stairs are reported during project preparation. */ }
       });
 
+      // Project each concrete strip at its own depth so walls and roofs can
+      // conceal it without filling the open space beneath the slab.
+      for (const slab of plan.allSlabs ?? []) {
+        const strips = new Map();
+        for (const part of slab.parts) {
+          const depth = side
+            ? part.x + (facadeEdge === "min" ? 0 : part.w)
+            : part.y + (facadeEdge === "min" ? 0 : part.l);
+          const start = side ? part.y : part.x;
+          const end = start + (side ? part.l : part.w);
+          if (!strips.has(depth)) strips.set(depth, []);
+          strips.get(depth).push([start, end]);
+        }
+        for (const [depth, spans] of strips) {
+          const merged = [];
+          for (const span of spans.sort((a, b) => a[0] - b[0])) {
+            const previous = merged.at(-1);
+            if (previous && span[0] <= previous[1] + 1e-8) previous[1] = Math.max(previous[1], span[1]);
+            else merged.push([...span]);
+          }
+          for (const [start, end] of merged) {
+            const face = document.createElementNS(svgNamespace, "rect");
+            face.classList.add("facade-slab");
+            face.dataset.id = slab.key;
+            face.setAttribute("x", `${(start - min + padding) * scale}`);
+            face.setAttribute("y", `${(floorHeight - slab.z + padding) * scale}`);
+            face.setAttribute("width", `${(end - start) * scale}`);
+            face.setAttribute("height", `${slab.thickness * scale}`);
+            const title = document.createElementNS(svgNamespace, "title");
+            title.textContent = `Laje: ${slab.label} · espessura ${plan.formatMeters(slab.thickness)} m`;
+            face.append(title);
+            addFace(depth, [face], true);
+          }
+        }
+      }
+
       // Clip hidden edges and labels as well as fills. Painter ordering alone
       // allows rear annotations to leak through translucent surfaces.
       facadeFaces.forEach((face, faceIndex) => {
@@ -1212,6 +1262,13 @@ const FloorPlanFacades = {
           profileLine.setAttribute("stroke", getComputedStyle(plan.root)
             .getPropertyValue("--theme-terrain-boundary").trim() || "#55724d");
           profileLine.setAttribute("stroke-width", "2");
+          if (side) {
+            profileLine.setAttribute("stroke-dasharray", "1 5");
+            profileLine.setAttribute("stroke-linecap", "round");
+          }
+          const title = document.createElementNS(svgNamespace, "title");
+          title.textContent = "Perfil do terreno — cotas definidas no projeto";
+          profileLine.append(title);
           svg.append(profileLine);
         }
       }

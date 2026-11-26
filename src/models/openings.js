@@ -87,7 +87,7 @@ const FloorPlanOpenings = {
       h: door.w / 2,
       z0: door.void.z1,
       windowType: "fixed",
-      glazing: { columns: 1, rows: 1 },
+      glazing: { columns: 2, rows: 1 },
       framing: { frame: 0.04, color: "#78604b" },
     };
     const window = plan.normalizeOpening(definition);
@@ -105,6 +105,14 @@ const FloorPlanOpenings = {
     window.components = this.doorComponents(window).map(component => ({
       ...component, kind: component.kind === "leaf" ? "glass" : "frame",
     }));
+    const glass = window.components.pop();
+    const mullion = window.framing.mullion;
+    const paneWidth = (window.w - mullion) / 2;
+    window.components.push(
+      { ...glass, w: paneWidth },
+      { ...glass, [along]: glass[along] + paneWidth, w: mullion, kind: "frame" },
+      { ...glass, [along]: glass[along] + paneWidth + mullion, w: paneWidth },
+    );
     return window;
   },
 

@@ -124,11 +124,15 @@ test('transom true derives a fixed window from the resolved door on every floor'
     assert.equal(transom.h, door.w / 2);
     assert.equal(transom.windowType, 'fixed');
     assert.equal(transom.void.w, door.void.w);
-    assert.equal(transom.components.filter(p => p.kind === 'frame').length, 3);
-    assert.equal(transom.components.find(p => p.kind === 'glass').h, door.w / 2);
+    assert.equal(transom.components.filter(p => p.kind === 'frame').length, 4);
+    const panes = transom.components.filter(p => p.kind === 'glass');
+    assert.equal(panes.length, 2);
+    assert.equal(panes[0].w, panes[1].w);
+    assert.equal(panes[0].h, door.w / 2);
+    assert.ok(Math.abs(panes[1][axis] - panes[0][axis] - panes[0].w - transom.framing.mullion) < 1e-9);
     assert.equal(transom.components[0].x, door.components[0].x);
     assert.equal(transom.components[0].y, door.components[0].y);
-    assert.deepEqual(transom.glazing, { columns: 1, rows: 1 });
+    assert.deepEqual(transom.glazing, { columns: 2, rows: 1 });
     assert.equal(door.h, id === 'entry' ? 2.1 : 2);
   }
   assert.equal(plan.allWindows.length, 2);
