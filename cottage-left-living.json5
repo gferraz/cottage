@@ -9,6 +9,7 @@
   viewport: {size: [24, 24], origin: [-25, 1]},
   config: {
     floors: { ceiling_height: "params.floor_height" },
+    roofs: { rake: 0.5 },
     walls: { thickness: 0.12, color: "desejo-ambar" },
     windows: { model: "cottage-sliding"}
   },
@@ -69,7 +70,7 @@
         {
           id: "stairs",
           label: "Escada",
-          pos: ["foyer.x1 - 1.2", "office.y1 - 2.24", "ground.z0"],
+          pos: ["main.x1 - 1.2", "office.y1", "upper.z0"],
           overlaps: ["master-bedroom", "hallway"],
           overlays: ["master-bedroom", "hallway"],
           parts: [
@@ -266,7 +267,7 @@
       },
       rooms: [
         { id: "unused-main", label: "2 Piso - TBD", copy: "main" },
-        { id: "unused-living", label: "2 Piso - TBD", copy: "living" }
+        { id: "unused-living", label: "2 Piso - TBD", rectangle: ["living.x0", "living.y0", "living.x1", "foyer.y0"] }
       ]
     }
   ],
