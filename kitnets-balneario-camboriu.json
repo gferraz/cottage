@@ -1,0 +1,692 @@
+{
+  "$schema": "./floor-plan.schema.json",
+  "coordinate_system": "cartesian",
+  "title": "Kitnets — Balneário Camboriú — estudo da imagem",
+  "summary": "Reconstrução aproximada da imagem fornecida: lote 12 × 24 m, corpo de 12 × 14,45 m, recuo frontal de 7,55 m e fundos de 2 m. Divisões medidas proporcionalmente na imagem; áreas P/M/T nas legendas transcritas da referência, não recalculadas nem garantidas. Alturas hipotéticas: mezaninos a 2,50 m e segundo pavimento a 5,20 m. Banheiros, portas internas, cobertura e escada comum não definidos na referência e não projetados neste estudo. A faixa tracejada do hall é apenas reserva de circulação. A indicação de 40% do mezanino térreo é anotação da imagem, sem verificação normativa. Localização informada pela imagem do mapa: latitude −26,987737, longitude −48,641739. Frente para a Rua Bulgária, aproximadamente sul-sudoeste (SSO), azimute 202,5°; fundos a 22,5°. Orientação estimada a partir da indicação do usuário, sem levantamento topográfico. Os vértices do terreno usam um referencial métrico local rotacionado, não coordenadas cadastrais ou UTM; lote retangular e nivelado assumido para o estudo.",
+  "parameters": {
+    "lot_width": 12,
+    "lot_depth": 24,
+    "front_setback": 7.55,
+    "rear_setback": 2,
+    "building_depth": 14.45,
+    "mezzanine_height": 2.5,
+    "upper_height": 5.2
+  },
+  "viewport": {"size": [14, 26], "origin": [-13, -1]},
+  "config": {
+    "floors": {"ceiling_height": 2.7},
+    "walls": {"thickness": 0.12},
+    "windows": {"w": 1.55, "h": 1.2, "dz": 1, "type": "sliding", "glazing": {"columns": 2, "rows": 1}}
+  },
+  "floors": [
+    {
+      "id": "terreo",
+      "label": "Térreo — piso",
+      "z0": 0,
+      "ceiling_height": 5.05,
+      "visible": true,
+      "rooms": [
+        {
+          "id": "hall",
+          "label": "Hall · escada comum a definir",
+          "pos": [-8.6, 7.55],
+          "size": [2.4, 6.85],
+          "walls": [],
+          "color": "#f6efd8"
+        },
+        {
+          "id": "k01",
+          "label": "K1",
+          "pos": [-12, 7.55],
+          "size": [3.4, 7.75],
+          "walls": ["front", "rear", "left", "right"],
+          "color": "#fffdf6",
+          "windows": [{"id": "k01-janela", "wall": "front", "to": "exterior", "w": 1.55}],
+          "title": "K1 · P 25.5 · M 10.2 m² (referência)"
+        },
+        {
+          "id": "k02",
+          "label": "K2",
+          "pos": [-6.2, 7.55],
+          "size": [2.8, 6.85],
+          "walls": ["front", "rear", "left", "right"],
+          "color": "#fffdf6",
+          "windows": [{"id": "k02-janela", "wall": "front", "to": "exterior", "w": 1.55}],
+          "title": "K2 · P 19.2 · M 7.7 m² (referência)"
+        },
+        {
+          "id": "k03",
+          "label": "K3",
+          "pos": [-3.4, 7.55],
+          "size": [3.4, 7.75],
+          "walls": ["front", "rear", "left", "right"],
+          "color": "#fffdf6",
+          "windows": [{"id": "k03-janela", "wall": "front", "to": "exterior", "w": 1.55}],
+          "title": "K3 · P 25.5 · M 10.2 m² (referência)"
+        },
+        {
+          "id": "k04",
+          "label": "K4",
+          "pos": [-12, 15.3],
+          "size": [3.4, 6.7],
+          "walls": ["front", "rear", "left", "right"],
+          "color": "#fffdf6",
+          "windows": [{"id": "k04-janela", "wall": "rear", "to": "exterior", "w": 1.55}],
+          "title": "K4 · P 23.1 · M 9.2 m² (referência)"
+        },
+        {
+          "id": "k05",
+          "label": "K5",
+          "pos": [-8.6, 16.2],
+          "size": [2.6, 5.8],
+          "walls": ["front", "rear", "left", "right"],
+          "color": "#fffdf6",
+          "windows": [{"id": "k05-janela", "wall": "rear", "to": "exterior", "w": 1.55}],
+          "title": "K5 · P 15.3 · M 6.1 m² (referência)"
+        },
+        {
+          "id": "k06",
+          "label": "K6",
+          "pos": [-6, 16.2],
+          "size": [2.6, 5.8],
+          "walls": ["front", "rear", "left", "right"],
+          "color": "#fffdf6",
+          "windows": [{"id": "k06-janela", "wall": "rear", "to": "exterior", "w": 1.55}],
+          "title": "K6 · P 15.3 · M 6.1 m² (referência)"
+        },
+        {
+          "id": "k07",
+          "label": "K7",
+          "pos": [-3.4, 15.3],
+          "size": [3.4, 6.7],
+          "walls": ["front", "rear", "left", "right"],
+          "color": "#fffdf6",
+          "windows": [{"id": "k07-janela", "wall": "rear", "to": "exterior", "w": 1.55}],
+          "title": "K7 · P 23.1 · M 9.2 m² (referência)"
+        },
+        {
+          "id": "terreo-corredor",
+          "label": "Corredor comum · 1,80 m",
+          "pos": [-8.6, 14.4],
+          "size": [5.2, 1.8],
+          "walls": [],
+          "color": "#eeece5"
+        }
+      ],
+      "stairs": [
+        {
+          "id": "k01-escada",
+          "label": "K1 — escada do mezanino (estimada)",
+          "from": [-9.26, 8.45, 0],
+          "to": [-8.61, 10.95, 2.5],
+          "risers": 14,
+          "walls": [],
+          "overlaps": ["k01"],
+          "overlays": ["k01"]
+        },
+        {
+          "id": "k02-escada",
+          "label": "K2 — escada do mezanino (estimada)",
+          "from": [-6.04, 8.45, 0],
+          "to": [-5.39, 10.95, 2.5],
+          "risers": 14,
+          "walls": [],
+          "overlaps": ["k02"],
+          "overlays": ["k02"]
+        },
+        {
+          "id": "k03-escada",
+          "label": "K3 — escada do mezanino (estimada)",
+          "from": [-0.66, 8.45, 0],
+          "to": [-0.01, 10.95, 2.5],
+          "risers": 14,
+          "walls": [],
+          "overlaps": ["k03"],
+          "overlays": ["k03"]
+        },
+        {
+          "id": "k04-escada",
+          "label": "K4 — escada do mezanino (estimada)",
+          "from": [-9.26, 21.1, 0],
+          "to": [-8.61, 18.6, 2.5],
+          "risers": 14,
+          "walls": [],
+          "overlaps": ["k04"],
+          "overlays": ["k04"]
+        },
+        {
+          "id": "k05-escada",
+          "label": "K5 — escada do mezanino (estimada)",
+          "from": [-6.66, 21.1, 0],
+          "to": [-6.01, 18.6, 2.5],
+          "risers": 14,
+          "walls": [],
+          "overlaps": ["k05"],
+          "overlays": ["k05"]
+        },
+        {
+          "id": "k06-escada",
+          "label": "K6 — escada do mezanino (estimada)",
+          "from": [-5.84, 21.1, 0],
+          "to": [-5.19, 18.6, 2.5],
+          "risers": 14,
+          "walls": [],
+          "overlaps": ["k06"],
+          "overlays": ["k06"]
+        },
+        {
+          "id": "k07-escada",
+          "label": "K7 — escada do mezanino (estimada)",
+          "from": [-3.24, 21.1, 0],
+          "to": [-2.59, 18.6, 2.5],
+          "risers": 14,
+          "walls": [],
+          "overlaps": ["k07"],
+          "overlays": ["k07"]
+        }
+      ],
+      "zones": [
+        {"id": "lazer", "label": "Lazer", "pos": [-12, 0], "size": [4.2, 7.55], "color": "#dceecf"},
+        {"id": "passeio", "label": "Passeio / entrada", "pos": [-7.8, 0], "size": [2, 7.55], "color": "#e7e7e7"},
+        {"id": "vaga-1", "label": "Vaga 1", "pos": [-5.8, 0], "size": [2.5, 5.05], "color": "#dfe7ef"},
+        {"id": "vaga-2", "label": "Vaga 2", "pos": [-3.3, 0], "size": [2.5, 5.05], "color": "#dfe7ef"},
+        {
+          "id": "bicicletario",
+          "label": "Bicicletário · 8 bicicletas",
+          "pos": [-5.8, 5.05],
+          "size": [5, 2.5],
+          "color": "#efe6cc"
+        },
+        {"id": "servico", "label": "Serviço", "pos": [-0.8, 0], "size": [0.8, 7.55], "color": "#eeeeee"},
+        {"id": "fundos", "label": "Fundos · recuo de 2 m", "pos": [-12, 22], "size": [12, 2], "color": "#e9e9e2"},
+        {
+          "id": "terreo-reserva-escada",
+          "label": "Escada comum a definir",
+          "pos": [-7.8, 14.5],
+          "size": [3.6, 0.6],
+          "color": "#4aa7aa"
+        }
+      ]
+    },
+    {
+      "id": "terreo-mezaninos",
+      "label": "Térreo — mezaninos",
+      "z0": 2.5,
+      "ceiling_height": 2.55,
+      "visible": false,
+      "rooms": [
+        {
+          "id": "k01-mezanino",
+          "label": "K1 — mezanino",
+          "pos": [-12, 10.95],
+          "size": [3.4, 3.0],
+          "walls": ["left", "right"],
+          "color": "#b8cce3"
+        },
+        {
+          "id": "k02-mezanino",
+          "label": "K2 — mezanino",
+          "pos": [-6.2, 10.95],
+          "size": [2.8, 2.75],
+          "walls": ["left", "right"],
+          "color": "#b8cce3"
+        },
+        {
+          "id": "k03-mezanino",
+          "label": "K3 — mezanino",
+          "pos": [-3.4, 10.95],
+          "size": [3.4, 3.0],
+          "walls": ["left", "right"],
+          "color": "#b8cce3"
+        },
+        {
+          "id": "k04-mezanino",
+          "label": "K4 — mezanino",
+          "pos": [-12, 15.894],
+          "size": [3.4, 2.706],
+          "walls": ["left", "right"],
+          "color": "#b8cce3"
+        },
+        {
+          "id": "k05-mezanino",
+          "label": "K5 — mezanino",
+          "pos": [-8.6, 16.254],
+          "size": [2.6, 2.346],
+          "walls": ["left", "right"],
+          "color": "#b8cce3"
+        },
+        {
+          "id": "k06-mezanino",
+          "label": "K6 — mezanino",
+          "pos": [-6, 16.254],
+          "size": [2.6, 2.346],
+          "walls": ["left", "right"],
+          "color": "#b8cce3"
+        },
+        {
+          "id": "k07-mezanino",
+          "label": "K7 — mezanino",
+          "pos": [-3.4, 15.894],
+          "size": [3.4, 2.706],
+          "walls": ["left", "right"],
+          "color": "#b8cce3"
+        }
+      ],
+      "items": [
+        {
+          "id": "k01-queen",
+          "type": "queen-bed",
+          "label": "K1 — colchão queen",
+          "pos": [-11.88, 11.45],
+          "size": [1.58, 1.98, 0.22],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k02-queen",
+          "type": "queen-bed",
+          "label": "K2 — colchão queen",
+          "pos": [-5.12, 11.325],
+          "size": [1.58, 1.98, 0.22],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k03-queen",
+          "type": "queen-bed",
+          "label": "K3 — colchão queen",
+          "pos": [-3.28, 11.45],
+          "size": [1.58, 1.98, 0.22],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k04-queen",
+          "type": "queen-bed",
+          "label": "K4 — colchão queen",
+          "pos": [-11.88, 16.247],
+          "size": [1.58, 1.98, 0.22],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k05-queen",
+          "type": "queen-bed",
+          "label": "K5 — colchão queen",
+          "pos": [-8.48, 16.427],
+          "size": [1.58, 1.98, 0.22],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k06-queen",
+          "type": "queen-bed",
+          "label": "K6 — colchão queen",
+          "pos": [-5.12, 16.427],
+          "size": [1.58, 1.98, 0.22],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k07-queen",
+          "type": "queen-bed",
+          "label": "K7 — colchão queen",
+          "pos": [-1.72, 16.247],
+          "size": [1.58, 1.98, 0.22],
+          "nightstand": {"side": "none"}
+        }
+      ],
+      "slab": {"thickness": 0.15, "openings": []}
+    },
+    {
+      "id": "superior",
+      "label": "2º andar — piso",
+      "z0": 5.2,
+      "ceiling_height": 5.05,
+      "visible": false,
+      "rooms": [
+        {
+          "id": "k08",
+          "label": "K8",
+          "pos": [-12, 7.55],
+          "size": [3.4, 7.75],
+          "walls": ["front", "rear", "left", "right"],
+          "color": "#fffdf6",
+          "windows": [{"id": "k08-janela", "wall": "front", "to": "exterior", "w": 1.55}],
+          "title": "K8 · P 25.5 · M 14.4 m² (referência)"
+        },
+        {
+          "id": "k09",
+          "label": "K9",
+          "pos": [-8.6, 7.55],
+          "size": [5.2, 6.85],
+          "walls": ["front", "rear", "left", "right"],
+          "color": "#fffdf6",
+          "windows": [{"id": "k09-janela", "wall": "front", "to": "exterior", "w": 2.4}],
+          "title": "K9 · P 31.1 · M 18.3 m² (referência)"
+        },
+        {
+          "id": "k10",
+          "label": "K10",
+          "pos": [-3.4, 7.55],
+          "size": [3.4, 7.75],
+          "walls": ["front", "rear", "left", "right"],
+          "color": "#fffdf6",
+          "windows": [{"id": "k10-janela", "wall": "front", "to": "exterior", "w": 1.55}],
+          "title": "K10 · P 25.5 · M 14.4 m² (referência)"
+        },
+        {
+          "id": "k11",
+          "label": "K11",
+          "pos": [-12, 15.3],
+          "size": [3.4, 6.7],
+          "walls": ["front", "rear", "left", "right"],
+          "color": "#fffdf6",
+          "windows": [{"id": "k11-janela", "wall": "rear", "to": "exterior", "w": 1.55}],
+          "title": "K11 · P 23.1 · M 12.0 m² (referência)"
+        },
+        {
+          "id": "k12",
+          "label": "K12",
+          "pos": [-8.6, 16.2],
+          "size": [2.6, 5.8],
+          "walls": ["front", "rear", "left", "right"],
+          "color": "#fffdf6",
+          "windows": [{"id": "k12-janela", "wall": "rear", "to": "exterior", "w": 1.55}],
+          "title": "K12 · P 15.3 · M 6.7 m² (referência)"
+        },
+        {
+          "id": "k13",
+          "label": "K13",
+          "pos": [-6, 16.2],
+          "size": [2.6, 5.8],
+          "walls": ["front", "rear", "left", "right"],
+          "color": "#fffdf6",
+          "windows": [{"id": "k13-janela", "wall": "rear", "to": "exterior", "w": 1.55}],
+          "title": "K13 · P 15.3 · M 6.7 m² (referência)"
+        },
+        {
+          "id": "k14",
+          "label": "K14",
+          "pos": [-3.4, 15.3],
+          "size": [3.4, 6.7],
+          "walls": ["front", "rear", "left", "right"],
+          "color": "#fffdf6",
+          "windows": [{"id": "k14-janela", "wall": "rear", "to": "exterior", "w": 1.55}],
+          "title": "K14 · P 23.1 · M 12.0 m² (referência)"
+        },
+        {
+          "id": "superior-corredor",
+          "label": "Corredor comum · 1,80 m",
+          "pos": [-8.6, 14.4],
+          "size": [5.2, 1.8],
+          "walls": [],
+          "color": "#eeece5"
+        }
+      ],
+      "stairs": [
+        {
+          "id": "k08-escada",
+          "label": "K8 — escada do mezanino (estimada)",
+          "from": [-9.26, 8.15, 5.2],
+          "to": [-8.61, 10.65, 7.7],
+          "risers": 14,
+          "walls": [],
+          "overlaps": ["k08"],
+          "overlays": ["k08"]
+        },
+        {
+          "id": "k09-escada",
+          "label": "K9 — escada do mezanino (estimada)",
+          "from": [-4.06, 8.15, 5.2],
+          "to": [-3.41, 10.65, 7.7],
+          "risers": 14,
+          "walls": [],
+          "overlaps": ["k09"],
+          "overlays": ["k09"]
+        },
+        {
+          "id": "k10-escada",
+          "label": "K10 — escada do mezanino (estimada)",
+          "from": [-3.24, 8.15, 5.2],
+          "to": [-2.59, 10.65, 7.7],
+          "risers": 14,
+          "walls": [],
+          "overlaps": ["k10"],
+          "overlays": ["k10"]
+        },
+        {
+          "id": "k11-escada",
+          "label": "K11 — escada do mezanino (estimada)",
+          "from": [-9.26, 21.1, 5.2],
+          "to": [-8.61, 18.6, 7.7],
+          "risers": 14,
+          "walls": [],
+          "overlaps": ["k11"],
+          "overlays": ["k11"]
+        },
+        {
+          "id": "k12-escada",
+          "label": "K12 — escada do mezanino (estimada)",
+          "from": [-6.66, 21.1, 5.2],
+          "to": [-6.01, 18.6, 7.7],
+          "risers": 14,
+          "walls": [],
+          "overlaps": ["k12"],
+          "overlays": ["k12"]
+        },
+        {
+          "id": "k13-escada",
+          "label": "K13 — escada do mezanino (estimada)",
+          "from": [-5.84, 21.1, 5.2],
+          "to": [-5.19, 18.6, 7.7],
+          "risers": 14,
+          "walls": [],
+          "overlaps": ["k13"],
+          "overlays": ["k13"]
+        },
+        {
+          "id": "k14-escada",
+          "label": "K14 — escada do mezanino (estimada)",
+          "from": [-3.24, 21.1, 5.2],
+          "to": [-2.59, 18.6, 7.7],
+          "risers": 14,
+          "walls": [],
+          "overlaps": ["k14"],
+          "overlays": ["k14"]
+        }
+      ],
+      "zones": [
+        {
+          "id": "recuo-superior",
+          "label": "Recuo frontal · vazio sobre o térreo",
+          "pos": [-12, 0],
+          "size": [12, 7.55],
+          "color": "#eeece5"
+        },
+        {
+          "id": "superior-reserva-escada",
+          "label": "Escada comum a definir",
+          "pos": [-7.8, 14.5],
+          "size": [3.6, 0.6],
+          "color": "#4aa7aa"
+        }
+      ]
+    },
+    {
+      "id": "superior-mezaninos",
+      "label": "2º andar — mezaninos",
+      "z0": 7.7,
+      "ceiling_height": 2.55,
+      "visible": false,
+      "rooms": [
+        {
+          "id": "k08-mezanino",
+          "label": "K8 — mezanino",
+          "pos": [-12, 10.65],
+          "size": [3.4, 4.235],
+          "walls": ["left", "right"],
+          "color": "#b8cce3"
+        },
+        {
+          "id": "k09-mezanino",
+          "label": "K9 — mezanino",
+          "pos": [-8.6, 10.65],
+          "size": [5.2, 3.519],
+          "walls": ["left", "right"],
+          "color": "#b8cce3"
+        },
+        {
+          "id": "k10-mezanino",
+          "label": "K10 — mezanino",
+          "pos": [-3.4, 10.65],
+          "size": [3.4, 4.235],
+          "walls": ["left", "right"],
+          "color": "#b8cce3"
+        },
+        {
+          "id": "k11-mezanino",
+          "label": "K11 — mezanino",
+          "pos": [-12, 15.071],
+          "size": [3.4, 3.529],
+          "walls": ["left", "right"],
+          "color": "#b8cce3"
+        },
+        {
+          "id": "k12-mezanino",
+          "label": "K12 — mezanino",
+          "pos": [-8.6, 16.023],
+          "size": [2.6, 2.577],
+          "walls": ["left", "right"],
+          "color": "#b8cce3"
+        },
+        {
+          "id": "k13-mezanino",
+          "label": "K13 — mezanino",
+          "pos": [-6, 16.023],
+          "size": [2.6, 2.577],
+          "walls": ["left", "right"],
+          "color": "#b8cce3"
+        },
+        {
+          "id": "k14-mezanino",
+          "label": "K14 — mezanino",
+          "pos": [-3.4, 15.071],
+          "size": [3.4, 3.529],
+          "walls": ["left", "right"],
+          "color": "#b8cce3"
+        }
+      ],
+      "items": [
+        {
+          "id": "k08-queen",
+          "type": "queen-bed",
+          "label": "K8 — colchão queen",
+          "pos": [-11.88, 11.768],
+          "size": [1.58, 1.98, 0.22],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k08-solteiro",
+          "type": "twin-bed",
+          "label": "K8 — colchão solteiro",
+          "pos": [-11.85, 13.885],
+          "size": [1.9, 0.88, 0.2],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k09-queen",
+          "type": "queen-bed",
+          "label": "K9 — colchão queen",
+          "pos": [-7.2, 11.41],
+          "size": [1.58, 1.98, 0.22],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k09-solteiro",
+          "type": "twin-bed",
+          "label": "K9 — colchão solteiro",
+          "pos": [-8.48, 10.77],
+          "size": [1.9, 0.88, 0.2],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k10-queen",
+          "type": "queen-bed",
+          "label": "K10 — colchão queen",
+          "pos": [-1.72, 11.768],
+          "size": [1.58, 1.98, 0.22],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k10-solteiro",
+          "type": "twin-bed",
+          "label": "K10 — colchão solteiro",
+          "pos": [-2.05, 13.885],
+          "size": [1.9, 0.88, 0.2],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k11-queen",
+          "type": "queen-bed",
+          "label": "K11 — colchão queen",
+          "pos": [-11.88, 15.121],
+          "size": [1.58, 1.98, 0.22],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k11-solteiro",
+          "type": "twin-bed",
+          "label": "K11 — colchão solteiro",
+          "pos": [-11.85, 17.221],
+          "size": [1.9, 0.88, 0.2],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k12-queen",
+          "type": "queen-bed",
+          "label": "K12 — colchão queen",
+          "pos": [-8.48, 16.312],
+          "size": [1.58, 1.98, 0.22],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k13-queen",
+          "type": "queen-bed",
+          "label": "K13 — colchão queen",
+          "pos": [-5.12, 16.312],
+          "size": [1.58, 1.98, 0.22],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k14-queen",
+          "type": "queen-bed",
+          "label": "K14 — colchão queen",
+          "pos": [-1.72, 15.121],
+          "size": [1.58, 1.98, 0.22],
+          "nightstand": {"side": "none"}
+        },
+        {
+          "id": "k14-solteiro",
+          "type": "twin-bed",
+          "label": "K14 — colchão solteiro",
+          "pos": [-2.05, 17.221],
+          "size": [1.9, 0.88, 0.2],
+          "nightstand": {"side": "none"}
+        }
+      ],
+      "slab": {"thickness": 0.15, "openings": []}
+    }
+  ],
+  "coordinates": [-26.987737, -48.641739],
+  "solar": {"utc_offset": -3, "season": "equinox", "time": "12:00"},
+  "terrain": {
+    "unit": "m",
+    "front": {"edge": ["frente-direita", "frente-esquerda"], "label": "Rua Bulgária · frente SSO ≈ 202,5°"},
+    "rear": {"edge": ["fundos-direita", "fundos-esquerda"], "label": "Fundos · NNE ≈ 22,5°"},
+    "north": {"label": "N"},
+    "boundary_order": ["frente-direita", "frente-esquerda", "fundos-esquerda", "fundos-direita"],
+    "corners": {
+      "frente-direita": {"easting": 0.0, "northing": 0.0, "z": 0},
+      "frente-esquerda": {"easting": -11.08655439, "northing": 4.59220119, "z": 0},
+      "fundos-esquerda": {"easting": -1.90215201, "northing": 26.76530997, "z": 0},
+      "fundos-direita": {"easting": 9.18440238, "northing": 22.17310878, "z": 0}
+    }
+  },
+  "zones": [{"id": "implantacao-kitnets", "pos": [-12, 7.55], "size": [12, 14.45], "visible": false}],
+  "building": {"anchor": "terrain.front-start", "reference": "implantacao-kitnets", "position": {"x": 0, "y": 7.55}}
+}
