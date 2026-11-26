@@ -258,7 +258,10 @@
         visible: false,
         openings: [{
           id: "stair-well",
-          rectangle: ["first-landing.x0", "upper-flight.y0", "upper-flight.x1", "upper-flight.y1"]
+          parts: [
+            { rectangle: ["first-landing.x0", "upper-flight.y0", "upper-flight.x1", "upper-flight.y1"] },
+            { rectangle: ["lower-flight.x0", "lower-flight.y0", "lower-flight.x1", "lower-flight.y1"] }
+          ]
         }]
       },
       rooms: [
