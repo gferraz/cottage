@@ -91,7 +91,7 @@
           id: "foyer",
           label: "foyer",
           classes: "circulation",
-          walls: [],
+          walls: ["front"],
           from: ["living.x1", "main.y0"],
           to:   ["x0 + 2.4", "y0 + 1.56"],
           doors: [
