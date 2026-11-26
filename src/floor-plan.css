@@ -1770,3 +1770,19 @@ body:has(.hide-headroom) #comfort-legend {
 .hide-headroom [data-stair-gradient="headroom"] {
   --stair-headroom-background: initial !important;
 }
+
+/* Hierarchical floor and roof visibility controls. */
+.visibility-group > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+}
+.visibility-group > summary::-webkit-details-marker { display: none; }
+.visibility-group > summary::before { content: "▸"; width: 12px; }
+.visibility-group[open] > summary::before { content: "▾"; }
+.visibility-group > summary .floor-option { font-weight: 650; }
+.visibility-children { padding-left: 36px; }
+.visibility-group .floor-option { white-space: normal; }
+.visibility-group input { flex-shrink: 0; }

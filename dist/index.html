@@ -1833,6 +1833,22 @@ body:has(.hide-headroom) #comfort-legend {
   --stair-headroom-background: initial !important;
 }
 
+/* Hierarchical floor and roof visibility controls. */
+.visibility-group > summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+}
+.visibility-group > summary::-webkit-details-marker { display: none; }
+.visibility-group > summary::before { content: "▸"; width: 12px; }
+.visibility-group[open] > summary::before { content: "▾"; }
+.visibility-group > summary .floor-option { font-weight: 650; }
+.visibility-children { padding-left: 36px; }
+.visibility-group .floor-option { white-space: normal; }
+.visibility-group input { flex-shrink: 0; }
+
 
 /* Architects Daughter by Kimberly Geswein; SIL OFL 1.1.
    License: fonts/architects-daughter-OFL.txt. Embedded for offline exports. */
@@ -2803,7 +2819,7 @@ code { background: var(--theme-button); padding: 2px 5px; border-radius: 4px; }
       <button id="download-markdown" type="button">↓ Markdown</button>
       <button id="download-dxf" type="button">↓ DXF</button>
       <fieldset class="floor-selector" id="floor-selector" hidden>
-        <legend>Pisos e telhados:</legend>
+        <legend>Visibilidade:</legend>
         <div id="floor-options"></div>
         <label class="floor-option visibility-switch" hidden>
           <input id="show-roofs" type="checkbox" />
@@ -16033,9 +16049,8 @@ class FloorPlan {
     if (floorOptions) {
       floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", true);
       floorOptions.addEventListener("change", (event) => {
-        const floors = this.currentConfig?.floors;
-        if (!Array.isArray(floors)) return;
-        this.toggleFloor(event.target.value, event.target.checked);
+        const input = event.target;
+        if (input.name === "floor-selection") this.toggleFloor(input.value, input.checked);
       });
     }
     if (solarSeasonSelect) {
@@ -16666,6 +16681,87 @@ class FloorPlan {
       : this.showAllFloors || floor.id === this.currentFloorId);
   }
 
+  renderVisibilityOptions() {
+    if (!this.floorOptions) return;
+    const collapsed = new Set([...this.floorOptions.querySelectorAll("details")]
+      .filter(group => !group.open).map(group => group.dataset.group));
+    this.floorOptions.replaceChildren();
+    const floors = FloorPlanModel.presentationFloors(this);
+    const selected = this.selectedFloorIds ?? new Set();
+    const roofs = this.allRoofs ?? [];
+    const option = (text, checked, change, partial = false) => {
+      const label = document.createElement("label");
+      label.className = "floor-option";
+      const input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = checked;
+      input.indeterminate = partial;
+      input.addEventListener("change", event => {
+        event.stopPropagation();
+        change(input.checked);
+      });
+      const caption = document.createElement("span");
+      caption.textContent = text;
+      label.append(input, caption);
+      return label;
+    };
+    const group = (key, title, entries, isSelected, change, leaf) => {
+      const details = document.createElement("details");
+      details.className = "visibility-group";
+      details.dataset.group = key;
+      details.open = !collapsed.has(key);
+      const summary = document.createElement("summary");
+      const count = entries.filter(isSelected).length;
+      const label = option(title, count === entries.length, change, count > 0 && count < entries.length);
+      // The disclosure arrow expands the group; its checkbox only changes visibility.
+      label.addEventListener("click", event => event.stopPropagation());
+      summary.append(label);
+      details.append(summary);
+      const children = document.createElement("div");
+      children.className = "visibility-children";
+      entries.forEach(entry => children.append(leaf(entry)));
+      details.append(children);
+      this.floorOptions.append(details);
+    };
+    const visibleCount = floors.filter(floor => selected.has(String(floor.id))).length +
+      roofs.filter(roof => this.showRoofs && !this.hiddenRoofs?.has(roof.id)).length;
+    const total = floors.length + roofs.length;
+    const all = option("Todos", total > 0 && visibleCount === total,
+      checked => this.toggleFloor("__all_floors__", checked), visibleCount > 0 && visibleCount < total);
+    all.querySelector("input").id = "floor-option-all";
+    this.floorOptions.append(all);
+    const storeys = new Map();
+    floors.forEach(floor => {
+      const key = floor.storey ? `storey:${floor.storey}` : `floor:${floor.id}`;
+      if (!storeys.has(key)) storeys.set(key, []);
+      storeys.get(key).push(floor);
+    });
+    storeys.forEach((entries, key) => {
+      const storey = entries[0].storey;
+      const title = ({ ground: "Térreo", upper: "Superior", basement: "Subsolo" })[storey] ||
+        storey || entries[0].label || entries[0].id || "Pavimento";
+      group(key, title, entries, floor => selected.has(String(floor.id)), checked => {
+        const next = new Set(selected);
+        entries.forEach(floor => checked ? next.add(String(floor.id)) : next.delete(String(floor.id)));
+        this.renderView({ selectedFloorIds: next,
+          activeFloor: Math.max(0, (this.currentConfig.floors ?? []).findIndex(floor => next.has(String(floor.id)))),
+          showAllFloors: next.size !== 1 });
+      }, floor => option(floor.label || floor.id || "Piso", selected.has(String(floor.id)),
+        checked => this.toggleFloor(floor.id, checked)));
+    });
+    const toggleRoofs = (entries, checked) => {
+      this.hiddenRoofs ??= new Set();
+      entries.forEach(roof => checked ? this.hiddenRoofs.delete(roof.id) : this.hiddenRoofs.add(roof.id));
+      this.showRoofs = roofs.some(roof => !this.hiddenRoofs.has(roof.id));
+      this.renderView();
+    };
+    if (roofs.length) group("roofs", "Telhados", roofs,
+      roof => this.showRoofs && !this.hiddenRoofs?.has(roof.id), checked => toggleRoofs(roofs, checked),
+      roof => option(roof.label || roof.id || "Telhado", this.showRoofs && !this.hiddenRoofs?.has(roof.id),
+        checked => toggleRoofs([roof], checked)));
+    this.floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", total === 0);
+  }
+
   toggleFloor(id, checked) {
     const floors = this.currentConfig?.floors ?? [];
     const selected = new Set(this.visibleFloors().map(floor => String(floor.id)));
@@ -16768,65 +16864,7 @@ class FloorPlan {
     if (!Number.isFinite(this.currentFloorHeight)) {
       throw new Error("floor.z0 precisa ser numérico");
     }
-    if (this.floorOptions) {
-      this.floorOptions.closest(".floor-selector")?.querySelector("#floor-option-all")?.closest("label")?.remove();
-      this.floorOptions.replaceChildren();
-      if (config.floors?.length) {
-        FloorPlanModel.presentationFloors(this).forEach((availableFloor, floorIndex) => {
-          const optionId = `floor-option-${availableFloor.id || floorIndex}`;
-          const label = document.createElement("label");
-          label.className = "floor-option";
-          const input = document.createElement("input");
-          input.type = "checkbox";
-          input.name = "floor-selection";
-          input.value = String(availableFloor.id || "");
-          input.id = optionId;
-          input.checked = this.selectedFloorIds.has(String(availableFloor.id));
-          const text = document.createElement("span");
-          text.textContent = availableFloor.label || availableFloor.id || "Pavimento";
-          label.append(input, text);
-          this.floorOptions.append(label);
-        });
-        for (const roof of this.allRoofs) {
-          const label = document.createElement("label");
-          label.className = "floor-option";
-          const input = document.createElement("input");
-          input.type = "checkbox";
-          input.name = "roof-selection";
-          input.addEventListener("change", event => event.stopPropagation());
-          input.checked = !this.hiddenRoofs?.has(roof.id);
-          input.addEventListener("change", () => {
-            this.hiddenRoofs ??= new Set();
-            if (input.checked) this.hiddenRoofs.delete(roof.id);
-            else this.hiddenRoofs.add(roof.id);
-            this.showRoofs = this.allRoofs.some(entry => !this.hiddenRoofs.has(entry.id));
-            this.renderView();
-          });
-          const text = document.createElement("span");
-          text.textContent = roof.label || roof.id || "Telhado";
-          label.append(input, text);
-          this.floorOptions.append(label);
-        }
-        if (config.floors.length > 0) {
-          const label = document.createElement("label");
-          label.className = "floor-option";
-          label.title = "Mostrar todos os pisos e telhados";
-          const input = document.createElement("input");
-          input.type = "checkbox";
-          input.name = "floor-selection";
-          input.value = "__all_floors__";
-          input.id = "floor-option-all";
-          input.addEventListener("change", () => this.toggleFloor("__all_floors__", input.checked));
-          const text = document.createElement("span");
-          text.textContent = "Mostrar tudo";
-          label.append(input, text);
-          this.floorOptions.closest(".floor-selector")?.append(label);
-        }
-        this.floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", config.floors.length < 2);
-      } else {
-        this.floorOptions.closest(".floor-selector")?.toggleAttribute("hidden", true);
-      }
-    }
+    this.renderVisibilityOptions();
     const title = config.title || "Estudo da planta";
     if (this.titleElement) this.titleElement.textContent = title;
     if (typeof document !== "undefined") document.title = title;
@@ -16859,10 +16897,9 @@ class FloorPlan {
     if (this.roofSwitch) {
       const hasRoofs = this.allRoofs.length > 0;
       this.roofSwitch.hidden = !hasRoofs;
-      this.floorOptions?.closest(".floor-selector")?.toggleAttribute("hidden", !hasRoofs && (config.floors?.length ?? 0) < 2);
       this.roofSwitch.checked = this.showRoofs;
       this.roofSwitch.indeterminate = this.showRoofs && this.allRoofs.some(roof => this.hiddenRoofs?.has(roof.id));
-      this.roofSwitch.closest(".visibility-switch")?.toggleAttribute("hidden", !hasRoofs);
+      this.roofSwitch.closest(".visibility-switch")?.toggleAttribute("hidden", true);
     }
     this.updateRoofVisibility();
     this.renderGuides(this.showAllFloors && config.floors
