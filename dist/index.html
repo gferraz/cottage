@@ -8495,8 +8495,10 @@ const FloorPlan3DSun = {
   },
 
   addToScene({ THREE, scene, position, bounds }) {
-    if (!position) return;
     scene.add(new THREE.HemisphereLight(0xffffff, 0x7d776b, 1.25));
+    // Unlocated studies still need daylight to show their materials.
+    // This direction is illustrative, rather than a geographic solar result.
+    position ??= { elevation: 45, direction: [-0.5, -0.5, Math.SQRT1_2] };
     if (position.elevation <= 0) return;
     const target = new THREE.Object3D();
     target.position.set(
